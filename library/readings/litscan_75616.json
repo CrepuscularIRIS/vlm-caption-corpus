@@ -1,0 +1,155 @@
+{
+ "paper_key": "litscan:75616",
+ "title": "PGT: Procedurally Generated Tasks for improving visual grounding in MLLMs",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75616.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3",
+   "Tables1–3,5",
+   "5.1,5.3",
+   "6 Limitations",
+   "B.2",
+   "D–E"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "向原图叠加随机几何体，程序产生关系/坐标/计数/距离/类比QA并加入SFT",
+  "why_non_obvious": "几何颜色与语义先验解耦，低成本几何标签可迁移自然图像视觉技能",
+  "trigger_condition": "When spatial failures may reflect weak supervision, add unambiguous procedural geometry tasks before changing the encoder",
+  "contribution_type": "synthetic supervision and diagnostic baseline",
+  "abstract_strategy": "随机可验证前置任务隔离视觉技能与语义捷径",
+  "abstract_trigger_condition": "可自动生成目标与答案且现有视觉特征可能足够",
+  "abstract_key_step": "同图额外QA训练，控制架构并做task leave-one-out",
+  "abstract_why_non_obvious": "训练改善说明可通过新监督改善，不严格证明预存同一能力或排除其他瓶颈",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75616#s1",
+   "object": "visual grounding instruction data",
+   "information": "procedural coordinates/colors/counts over original images",
+   "operation": "随机覆盖几何体+保留原QA+新QA，冻结vision做SFT/LoRA",
+   "claimed_effect": "Llama3 WhatUp77.8→97.4，CV2D58.5→71.8；Table3去distance深度72.9→61.7",
+   "conditions": [
+    "instruction tuning",
+    "no human geometry labels",
+    "5k adaptation for existing MLLMs"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "Full PGT               75.7        55.2       72.9      62.2"
+   },
+   "failure_boundary": "图像叠加会遮挡；样本数固定不意味着监督token/算力固定；无直接crop行为训练",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "以程序化任务提供视觉技能SFT支持，先检验监督缺失假设",
+   "strength": 2
+  },
+  {
+   "problem": "P39",
+   "how": "固定vision encoder的监督干预有助区分解码/对齐与视觉分辨率瓶颈",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "regular instruction tuning, same-size Specialized Mix",
+   "kind": "controlled data baseline"
+  },
+  {
+   "name": "leave-one-task-out; overlay vs separate; density",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "多个overlay积累产生clutter，3任务General61.1低于1任务63.1。",
+   "quote": "introduces the risk of severe image clutter.",
+   "locator": "Appendix E"
+  }
+ ],
+ "question": {
+  "observed_failure": "无PGT深度60.8，full72.9，去distance61.7",
+  "load_bearing_assumption": "局部视觉监督不足是可干预因素而非必须提高encoder分辨率",
+  "scope": "caption颜色/关系/计数能力的SFT诊断",
+  "success_criterion": "同训练token预算提升未见自然图事实准确率，保住普通QA",
+  "why_open": "程序几何迁移不保证对象语义/工具动作需要判断"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "targeted_self_supervised_objective",
+   "locator": "3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 leave-one-out tasks"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "I_{PGT}=I\\oplus L;\\ S_{aug}=S\\cup\\{(Q_{PGT},A_{PGT})\\};\\ X_{aug}=(I_{PGT},S_{aug})",
+    "locator": "3.2"
+   }
+  ],
+  "signal_routing": "程序标签增加SFT答案监督；原图原QA仍保留；训练adapter/LLM（从头instruction）或LLM LoRA（已有VLM）；不是reward/advantage。",
+  "normalization": "uniform task sampling；目标坐标normalized；具体CE mask/每样本vs每token聚合未示。无groupstd。",
+  "invariance": "非PBRS；随机几何打破预设语义关系，但不等于所有捷径消失。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "增加overlay数可遮挡本任务；distance移除使3D收益近消失；类比移除关系76.0反高full75.7；已饱和任务收益小。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同frozen encoder任务消融Table3；5%overlay Table5；AppendixE密度1/2/3任务。",
+  "negative_results": [
+   {
+    "text": "LLaVA-Next7B POPE87.8→86.1，通用能力不是逐指标不降。",
+    "locator": "Table2"
+   },
+   {
+    "text": "Separate data深度75.4高overlay72.9，但额外迭代，不能据此算力等价。",
+    "locator": "Table11"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：token预算匹配普通QA额外训练或随机标签也同样提升，则程序几何监督的特异解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Llama3/Vicuna/Qwen2.5 adapters; QwenVL/InternVL/LLaVA",
+   "framework": "LLaMA-Factory for adaptation",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "5k,2epochs,LoRA rank8 alpha32,lr1e-4；vision/projector冻结",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当怀疑视觉能力不足时，可先少量程序几何监督诊断；固定图像样本数仍需核额外QA token与遮挡率。"
+ }
+}

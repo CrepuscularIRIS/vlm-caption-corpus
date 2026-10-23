@@ -1,0 +1,68 @@
+{
+ "paper_key": "litscan:3105",
+ "title": "LongDocURL: a Comprehensive Multimodal Long Document Benchmark Integrating Understanding, Reasoning, and Locating",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3105.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3 dataset pipeline",
+   "§4 Tables 3–4",
+   "§5 error analysis",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将长文档任务按理解、推理、跨元素定位及证据页面/类型交叉分层。",
+  "key_step": "保留结构的Docmind文本与PyMuPDF文本、证据附近30页cut-off与整文档merge分别比较。",
+  "why_non_obvious": "输入结构与特权证据窗口会改变结论，不能把图像/文本分数差直接归因于推理。",
+  "trigger_condition": "When long-document scores mix retrieval and parsing, stratify evidence and compare input representations.",
+  "contribution_type": "benchmark",
+  "abstract_strategy": "分离输入瓶颈与评测瓶颈",
+  "abstract_trigger_condition": "When long-document scores mix retrieval and parsing, stratify evidence and compare input representations."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3105#s1",
+   "object": "长文档输入范式",
+   "information": "已知答案证据页用于cut-off；Docmind保留表格结构",
+   "operation": "在20%子集比较4种输入；非训练方法",
+   "claimed_effect": "GPT-4o cut-off64.4、merge44.9、PyMuPDF36.5、Docmind66.2；Qwen2-VL merge7.64含363/465 OOM并按465归一化。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2; Table4; footnote4",
+    "quote": "we cut 30 continuous pages around"
+   },
+   "failure_boundary": "cut-off使用gold证据位置，merge同时改变分辨率和上下文；不能声称真实全长检索性能。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:3105#s2",
+   "object": "错误归因",
+   "information": "随机97个GPT-4o错误",
+   "operation": "人工分为感知、推理、格式、抽取器等7类",
+   "claimed_effect": "感知32.7%、格式20.6%、推理16.8%、抽取器10.3%；格式/抽取器使总分非纯模型能力。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5; Figure6",
+    "quote": "A significant proportion of errors (20.6%) involves"
+   },
+   "failure_boundary": "有限错误样本无不确定性；模型自动验题为text-only，人工才读源视觉；无RL信号。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P48",
+   "strength": 1,
+   "how": "证据位置与答案评价分层可借鉴，但长文档金标窗口不等于在线crop选择。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

@@ -1,0 +1,156 @@
+{
+ "paper_key": "2609.37190",
+ "title": "HaPRL: Human-Anchored Process Reinforcement Learning for Visual Search Agent",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2609.37190.txt",
+  "sections_read": [
+   "Abstract/contributions; §3 Eqs1-6; §4 Tables1-5",
+   "§5 limitations; AppA.3; AppB settings/judge; AppC Tables8-10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把同图同问题的人类搜索轨迹作为judge奖励锚点，按任务加权五维过程分并乘终答正确性。",
+  "key_step": "人类事件蒸馏为文本trace，冻结judge按整trajectory评分；policy只见图和问题。",
+  "why_non_obvious": "正确答案可能来自错搜索；单独rubric远弱于匹配参考，错配参考甚至比outcome差。",
+  "trigger_condition": "When successful rollouts hide faulty search, rank them using matched evidence-acquisition references.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用实例匹配的过程锚点细分成功结果。",
+  "abstract_trigger_condition": "When outcome equality hides behavior quality, add instance-specific reference scoring.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "先收集过程，再保持正确性门控。",
+  "abstract_why_non_obvious": "人类参考不只是目标框，还记录探索顺序与死路；但不等于策略必要性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.37190#s1",
+   "object": "整条crop搜索轨迹reward",
+   "information": "process judge见原图、question、序列化rollout和同问题human trace；answer judge见GT；policy不见reference",
+   "operation": "5维task-weighted score乘binary correctness，组std GRPO",
+   "claimed_effect": "Qwen3VL4B avg44.26 vsoutcome33.98；shuffled28.63；好SFT下49.02 vs43.15",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eqs2-6; Tables1/5/9",
+    "quote": "All-wrong groups remain at zero because the correctness gate suppresses"
+   },
+   "failure_boundary": "human一致性并非当前policy取证必要性；过程评分与训练同judge，缺独立人审校准。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P52",
+   "strength": 2,
+   "how": "人类过程锚点能提供正确轨迹排序，但不能视作因果必要性。"
+  },
+  {
+   "problem": "P68",
+   "strength": 2,
+   "how": "给出小规模过程标注及后续outcome扩展的对照。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "OutcomeRL；judge-only；shuffled/noisy traces；final box/teacher path；更好SFT起点",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "单标注者1104题、单冻结judge；正文局限主要列未来领域扩展，未据此补造审稿意见。",
+   "locator": "§5/AppB.4-B.5"
+  }
+ ],
+ "question": {
+  "observed_failure": "VisualProbe Hard outcome准确率6.60→8.49，正确样本过程分71.54→65.56。",
+  "load_bearing_assumption": "答对轨迹都代表有效搜索，因此等分足够。",
+  "scope": "高分辨率crop agent，Qwen3VL/LLaVA4B8B，最多6轮",
+  "success_criterion": "同预算比outcome改善，破坏reference绑定应消除收益",
+  "why_open": "相同结果奖无法在正确轨迹之间区分取证质量。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table2"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table5/9"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "Eq2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_{proc}=\\sum_{k=1}^5w_k^{(p)}s_k,\\ \\sum w_k=1;\\ R=r_{out}r_{proc}",
+    "locator": "Eqs2-4"
+   },
+   {
+    "latex": "A_i=(R_i-\\bar R)/\\sqrt{G^{-1}\\sum_j(R_j-\\bar R)^2+\\epsilon}",
+    "locator": "Eq5"
+   }
+  ],
+  "signal_routing": "过程judge只在终答正确调用，整trajectory标量A进入所有生成token的clipped GRPO；不是逐crop标签/优势，也无答对子集单独路由。",
+  "normalization": "mean+std G8；epsilon在sqrt内；五维score先clip[0,1]、权重和1，weighted总分本地重算。",
+  "invariance": "不是PBRS；乘积过程分改变优化目标，正确性门控不保证最优准确率不变。",
+  "baseline_or_potential": "全组均值。",
+  "degenerate_cases": "全错组reward0且adv0；全对可由过程分区分；混合组错误轨迹虽R0仍获负A，不能照正文把它说成错误样本零梯度；过程score相同无额外信息。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同图trace vs打乱；无tracejudge；10%event噪声；人类vsGTteacher路径/最终框；SFT起点交叉。",
+  "negative_results": [
+   {
+    "text": "shuffle28.63低于outcome33.98；10%trace noise41.74低于44.26。",
+    "locator": "Table5"
+   },
+   {
+    "text": "更好SFT后收益10.28缩至5.87，不能全归因过程机制；作者差分分解不是因果可加性定理。",
+    "locator": "Table9"
+   }
+  ],
+  "seeds": "Table10两阶段3seeds固定数据split/顺序；stage2 gains5.83±.26 vs.88±.06，±SD而非CI；主表不据此当全跨seed验证。",
+  "falsifier": "独立人审若不认可过程分改善，或匹配teacher路径等效，human搜索语义/必要性解释须收缩。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VL4B/8B,LLaVAOneVision1.5 4B/8B; judge Qwen3VL30BA3B",
+   "framework": "verl/vLLM",
+   "group_size": 8,
+   "max_turns": 6,
+   "kl": 0.003
+  },
+  "cost": "1104trace单annotator27.6小时；RL3epochs batch48 8×H100/H20；两臂均调用judge记录过程，非免费baseline。",
+  "pitfalls": [
+   {
+    "text": "judge图像失败会降级text fallback，频率上升即停；checkpoint按20题rollout健康而非最低SFT loss。",
+    "locator": "AppB.2/B.4"
+   }
+  ],
+  "code": "https://github.com/zhangquanchen/HAPRL",
+  "lesson": "当过程奖依赖外部视觉judge，必须记录视觉输入成功与fallback；同时做匹配关系打乱和更好SFT起点对照。"
+ }
+}

@@ -1,0 +1,365 @@
+{
+ "paper_key": "2505.18842",
+ "title": "v1: Learning to Point Visual Tokens for Multimodal Grounded Reasoning",
+ "source": "candidates",
+ "decision": "reject",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.18842.pdf",
+  "version": "v7",
+  "version_evidence": "Cover: arXiv:2505.18842v7 [cs.CL] 5 Aug 2026; header Published as a conference paper at COLM 2026. The title prefix v1 names the model, not the arXiv revision.",
+  "sections_read": [
+   "pp.1–2 Abstract and 1 Introduction",
+   "p.3 2 Related Work",
+   "p.4 3 Visual Grounding Decays During Reasoning",
+   "pp.4–7 4 Method, 4.1–4.3",
+   "p.8 5 Implementation Details",
+   "pp.8–10 6 Experiments, 6.1–6.2, 7 Conclusion",
+   "pp.10–14 Acknowledgements and References",
+   "p.15 Appendix A and Table 3",
+   "pp.16–18 Appendix B–C, Tables 4–7, Figure 6",
+   "pp.18–19 Appendix D, Figure 7",
+   "pp.19–20 Appendix E, Tables 8–9",
+   "pp.20–21 Appendix F, Algorithm 1, G",
+   "pp.20–23 Appendix H and Figures 8–9",
+   "pp.24–25 Table 10 complete data-generation prompt"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把仅生成文本的自回归输出空间扩为词表 token 与原输入视觉 patch 位置的并集；复制被选 patch 的连续 embedding 作为下一步输入，配合显式视觉引用 SFT 数据。",
+  "key_step": "以两个线性投影计算 query–patch logits，与原 LM logits 拼接成单一输出分布；选中 pointer 后回填原 patch embedding。",
+  "why_non_obvious": "原 pointer-generator 将复制对象映射回离散词表，不能直接表示连续视觉输入；本方法改为位置引用，去掉两空间间的插值门。",
+  "trigger_condition": "When a decoder has meaningful continuous input embeddings but intermediate reasoning needs explicit re-access, apply position pointing and embedding copying to expose the relevant input again in the generated context.",
+  "reviewer_praise": [
+   "旧 ICLR 审稿 nUEgoOyWKd 肯定仅增两个线性头的低结构开销（reviews_evidence[0]）。",
+   "旧 ICLR 审稿 0YLUJRjTZ2 肯定 v1g 的潜在资源价值（reviews_evidence[1]）。"
+  ],
+  "reviewer_concern": [
+   "旧 ICLR 审稿 ptxzVLRWIk 质疑相对 coord 方法的优势证据（reviews_evidence[2]）；当前 v7 Table 2 已非该表。",
+   "旧 ICLR 审稿 nUEgoOyWKd 质疑注意力衰减即模型缺陷的解释（reviews_evidence[3]）。",
+   "旧 ICLR 审稿 0YLUJRjTZ2 质疑外部生成数据与自主调用可靠性（reviews_evidence[4]）。"
+  ],
+  "acceptance_signal": "manifest 决策原样 reject；ICLR 2026 meta-review 主要剩余关切为范围/通用性和 tool use。该评审对应旧稿，修订版未知；本地 v7 自称 COLM 2026 conference paper，不覆盖 manifest，也不能把旧评审当成 v7 评审。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Extend the output space with references to existing continuous inputs and copy selected representations into the evolving context.",
+  "abstract_key_step": "Concatenate ordinary output logits with position-selection logits, then replace a selected reference with its original continuous representation.",
+  "abstract_why_non_obvious": "A copy distribution over discrete symbols cannot directly retrieve continuous representations; index their positions instead of forcing a vocabulary mapping.",
+  "abstract_trigger_condition": "When intermediate inference needs renewed access to already encoded evidence, predict references in a shared output space and reinsert the corresponding representations."
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.18842#s1",
+   "object": "自回归输出空间和下一步输入 embedding",
+   "information": "当前 decoder hidden state、已有文本历史、初始图像 patch embeddings；不获得更高分辨率新像素，不调用外部 detector，不具有当前决策的反事实收益真值。",
+   "operation": "将词表 logits 与经 Lq/Lk 缩放点积产生的 patch-position logits 拼接；解码为 pointer 时把对应原 patch embedding 放回推理流。",
+   "output": "文本与指向原视觉 patch 的连续表示交替组成的推理序列。",
+   "claimed_effect": "作者报告 MathVision-mini 23.6→34.5；同一训练后禁用 pointing 为25.3（Tables1–2）。这不是仅头结构的孤立训练消融。",
+   "conditions": [
+    "有可复用的连续图像 embedding",
+    "300K grounded traces 监督微调",
+    "主要为 Qwen2.5-VL-7B；附录 Gemma3-4B 迁移",
+    "复制内容来自原图编码，不是 crop 后重编码"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.6 §4.2",
+    "quote": "On the subsequent decoding step, the input embedding at position t is replaced with the continuous vector ck , enabling the model to attend directly to the referenced content."
+   },
+   "failure_boundary": "App B/Fig6 报告 wrong-region、under-copying、high-count copying、ambiguous targets；不能因此推出最少裁图或必要性学习。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.18842#s2",
+   "object": "已有文字推理 trace 的视觉引用标注与 SFT 支撑",
+   "information": "TVC 中 QVQ 生成的推理 seed、Gemini-2.0-flash 分解出的对象描述、原图及离线 grounding；没有行为必要性反事实或最终策略的需求标签。",
+   "operation": "把文本中视觉引用改写为 detect 查询、缓存对象 ID，过滤不匹配/不唯一/≤2对象/不良格式，将框映射到 enclosed patch pointer 序列后监督训练。",
+   "output": "约300K条带 interleaved grounding 的 v1g 训练样本；约82%分解样本保留。",
+   "claimed_effect": "作者报告 copy-token accuracy 首 epoch 已趋饱和；Table9 推理 pointing correctness 82.7%、appropriateness 87.7%。该人工适当性不是因果必要性。",
+   "conditions": [
+    "已有可用推理 seed",
+    "可描述和可框定的视觉引用",
+    "离线 LLM 分解和 grounding 标注",
+    "过滤规则偏向至少3个对象"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.7 §4.3",
+    "quote": "The model collects and rewrites each visual reference as a detect call, which takes a short natural-language description and returns the corresponding image region. Retrieved regions are cached and assigned symbolic identifiers such as <objX> in order of appearance."
+   },
+   "failure_boundary": "App C 指出非结构化领域缺少 seed 与对齐；Table10 的 NEVER skip 规则与对象数过滤可能改变行为覆盖，后者为读者推断而非实验结论。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.18842#s3",
+   "object": "用于构造训练数据的 query-conditioned attention map",
+   "information": "离线 Qwen2.5-VL 对对象描述和去掉对象名称提示的两次 attention；不使用人工目标框指导生成；模型 attention 不等于当前训练策略的观测需要。",
+   "operation": "计算逐 image-token 的 A/A′ 对比，寻找峰值，对候选 crop ratios 扫描并选择内外 contrast sharpness 最大的框。",
+   "output": "语义描述对应的 bounding box，再转为 pointer 监督。",
+   "claimed_effect": "100个抽样数据样本、3位专家评分：correctness 83.3% vs GroundingDINO 29.3%，但 comprehensiveness 55.0%、tightness46.0%（Table8）。",
+   "conditions": [
+    "可提取指定层/头 attention",
+    "对象移除的 baseline prompt",
+    "经验选层与候选框比例，具体数值未报告"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.21 Appendix F Algorithm 1 step 5",
+    "quote": "Identify the peak region in R. Sweep over multiple candidate crop ratios; for each ratio, form a bounding region around the peak. Select the bounding box maximizing contrast sharpness between inside and outside regions. Convert the selected region to image-coordinate bounding box b."
+   },
+   "failure_boundary": "只有高层伪代码；层集合、crop ratios、sharpness 精确定义、A′近零处理未给出。不能把该图直接当作 crop reward 或 necessity mask。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "TVC-7B",
+   "kind": "method"
+  },
+  {
+   "name": "v1 inference without pointing",
+   "kind": "method"
+  },
+  {
+   "name": "Gemma3-4B (OpenCompass reference)",
+   "kind": "method"
+  },
+  {
+   "name": "GroundingDINO",
+   "kind": "method"
+  },
+  {
+   "name": "MathVision-mini/full",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVista-mini",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVerse-mini",
+   "kind": "benchmark"
+  },
+  {
+   "name": "EMMA-mini Physics/Coding",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "缺少结构化推理 seed 会限制跨域。",
+   "quote": "These domains often lack structured reasoning traces, making data collection more difficult.",
+   "locator": "p.17 Appendix C Beyond mathematical domains"
+  },
+  {
+   "text": "RL/弱监督检索尚留待未来，并未提出GRPO方法。",
+   "quote": "We leave this exploration to future work due to current resource constraints.",
+   "locator": "p.17 Appendix C Weak supervision and reinforcement learning"
+  },
+  {
+   "text": "可访问视觉证据不等于解决定位和符号推理。",
+   "quote": "These cases indicate that point-and-copy improves access to visual evidence but does not by itself resolve localization ambiguity or long-horizon symbolic reasoning.",
+   "locator": "p.17 Appendix B Failure cases"
+  }
+ ],
+ "question": {
+  "observed_failure": "作者在 RefCOCO testA 的 TVC-7B attention 诊断中报告，目标框 token 平均 attention / 全图 token 平均 attention 在中段趋于约0.8；注意力下降是观测，不能单凭此建立推理错误的因果机制。",
+  "load_bearing_assumption": "仅初始编码并把视觉表示放在固定上下文，足以支撑后续纯文字推理的持续视觉定位。作者挑战这一设计，但没有证明所有MLLM都因该假设失效。",
+  "scope": "具有可定位局部视觉证据的多模态数学推理；补充 EMMA physics/coding 和 Gemma3 迁移。",
+  "success_criterion": "在数学benchmark准确率提高，pointing开关与文本预算对照支持动态视觉重访的作用；附加评估grounding正确性和推理成本。",
+  "why_open": "相关工作依赖固定视觉上下文、结构化坐标或外部工具；传统pointer-generator的离散词表复制不能直接输出连续视觉embedding引用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "To train v1, we require fine-grained multimodal reasoning traces in which each step is grounded to specific visual evidence.",
+   "locator": "p.6 §4.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "All variants share the same Qwen2.5-VL-7B backbone:",
+   "locator": "p.9 §6.2 Ablation study"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "role": "primary",
+   "quote": "This design supports unified inference over discrete and continuous modalities without modifying the core architecture (Figure 2).",
+   "locator": "p.5 §4.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "p(x_1,\\ldots,x_T\\mid c)=\\prod_{t=1}^{T}p(x_t\\mid c,x_1,\\ldots,x_{t-1})",
+    "locator": "p.5 §4.1 unnumbered conditional objective"
+   },
+   {
+    "latex": "\\bar V=V\\cup C,\\quad \\mathrm{logit}_t=[\\mathrm{logit}_{gen}\\Vert\\mathrm{logit}_{ptr}],\\quad \\mathrm{logit}_{ptr}^{(k)}=\\frac{L_q(h_t)\\cdot L_k(c_k)^\\top}{\\sqrt D}",
+    "locator": "pp.5–6 §4.2 unnumbered equations (visually checked p.6)"
+   },
+   {
+    "latex": "\\mathcal L_z=\\lambda\\log\\bar Z,\\quad\\lambda=10^{-5},\\quad \\bar Z=\\sum_{j\\in\\mathrm{TopK}(x)}e^{x_j},\\quad k=40",
+    "locator": "p.8 §5 Training unnumbered z-loss (printed without square; visually checked)"
+   },
+   {
+    "latex": "R=A/A^{\\prime}",
+    "locator": "p.21 Appendix F Algorithm1 step4"
+   }
+  ],
+  "signal_routing": "SFT conditional next-token prediction over text and image-position targets. Box annotations become sequences of supervised pointer targets; selected pointer embeddings reuse image features. No reward, advantage, turn-level credit or RL mask is specified. Exact prompt/image loss masks and weighting between text/pointer positions are not reported.",
+  "normalization": "other: scaled dot-product 1/sqrt(D), softmax over concatenated output logits; top-40 log-partition regularizer; not group reward normalization.",
+  "invariance": "Original embedding table and language generation head dimensions are retained; output support and sequence inputs change through added pointer logits/heads. No policy-optimality invariance or potential-based shaping theorem.",
+  "baseline_or_potential": "No policy-value baseline or potential. A′ in annotation is attention under object-name-removed prompt, not a critic and not a reward baseline.",
+  "degenerate_cases": "No GRPO all-correct/all-wrong groups. Inference disabling pointing leaves a trained model with text-only outputs and lowers MathVision-mini to25.3. A′=0 handling is not reported; attention-ratio singularity is a reader-identified implementation unknown."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 同训练pointing on/off：34.5 vs25.3；Table6文本预算从8192→12800只使24.0→24.7，同12800预算v1为34.5。前者有训练-测试分布改变，后者不是所有数据/架构因素都相同的因果隔离。",
+  "controls": [
+   "同 Qwen2.5-VL-7B 未微调23.6与grounded-training后禁pointer25.3",
+   "文本TVC-SFT预算8192/12800对照",
+   "100样本、3位专家：v1g与GroundingDINO同grounding标准",
+   "Gemma3表使用OpenCompass参考分，不是本地匹配重训baseline",
+   "Table7 RL compute仅参考，作者明确不是受控baseline"
+  ],
+  "negative_results": [
+   {
+    "text": "高计数问题中16次pointing仍无法正确计数。",
+    "quote": "calls across the answer options without resolving the count.",
+    "locator": "p.17 Appendix B Failure cases (continued paragraph)"
+   },
+   {
+    "text": "短训练产生重复和不完整答案。",
+    "quote": "shorter training runs produced unstable behaviors such as repetition and incomplete reasoning without a final answer.",
+    "locator": "p.15 Appendix A Training Duration"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出的判别条件（未执行）：匹配监督数据、训练预算和输出预算的文本/坐标重访对照若达到同等收益，或真实pointer与同成本随机patch控制无差异，会削弱pointer特异作用解释；注意力下降若不预测受控错误也削弱grounding-decay解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B; supplementary Gemma3-4B",
+   "framework": "other: HuggingFace Transformers + DeepSpeed; batched vLLM reported for inference",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "epochs": 5,
+   "learning_rate": 3e-05,
+   "per_device_batch_size": 2,
+   "gradient_accumulation_steps": 4,
+   "gpus": "8 NVIDIA A100",
+   "optimizer": "AdamW beta1=.9 beta2=.95"
+  },
+  "cost": "作者报告300K×5epochs、约672 A100-equivalent GPU-hours。Table3 HF TVC 4057 total tokens/143.42s vs v1 4087 total tokens(990 copy)/154.04s; batched vLLM23.86s vs25.65s。约7%时间开销；1.6×是训练数据统计推得的保守上界（App A），不是测得的运行token倍数。",
+  "pitfalls": [
+   {
+    "text": "长推理trace使过短训练重复/无终答，作者沿用5epoch；pointer行为本身首epoch已饱和。",
+    "quote": "copy behavior required relatively little data and typically saturated within the first epoch, as indicated by an early plateau in copy-token accuracy.",
+    "locator": "p.15 Appendix A Training Duration"
+   }
+  ],
+  "code": "https://github.com/jun297/v1",
+  "lesson": "当复用连续视觉证据需要模型主动输出时，应先提供该行为的明确监督并校验局部grounding与成本；pointing会提升重访能力，但不会自动给出最少必要调用。"
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "明确构造pointer行为再SFT，提供行为支撑路径；不证明能通过RL恢复缺失直答/弃答。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "grounded合成trace用人工correctness/comprehensiveness/tightness审计，揭示监督噪声；不能将模型标注称人工金标。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "attention-contrast可供离线框质量候选，但论文不是过程奖励且没有crop必要性判定。",
+   "strength": 1
+  },
+  {
+   "problem": "P40",
+   "how": "复用视觉证据可能支持利用，但失败案例仍有符号推理错误，未直接解决正确caption与错误答案映射。",
+   "strength": 1
+  },
+  {
+   "problem": "P52",
+   "how": "100数据样本与100推理输出的3专家人工评测可迁移为审计结构；保留较低κ和tightness。",
+   "strength": 2
+  }
+ ],
+ "reviews_evidence": [
+  {
+   "category": "praise",
+   "summary": "旧版审稿肯定两个线性头的轻量结构。",
+   "source": "openreview_local_json",
+   "source_path": "2505.18842.json",
+   "note_id": "nUEgoOyWKd",
+   "locator": "OpenReview ICLR 2026 forum LF9bRCLHMW; review nUEgoOyWKd; content.strengths",
+   "quote": "The method introduces minimal additional parameters (two linear heads), making it easy to integrate into existing MLLMs without significant computational or architectural overhead."
+  },
+  {
+   "category": "praise",
+   "summary": "旧版审稿认为 v1g 可能成为有用数据资源。",
+   "source": "openreview_local_json",
+   "source_path": "2505.18842.json",
+   "note_id": "0YLUJRjTZ2",
+   "locator": "OpenReview ICLR 2026 forum LF9bRCLHMW; review 0YLUJRjTZ2; content.strengths",
+   "quote": "The proposed v1g dataset is likely to be a useful resource for future research on multimodal reasoning and grounding."
+  },
+  {
+   "category": "concern",
+   "summary": "旧版审稿认为与坐标方法相比的增益证据不足；该旧表格不是当前 v7 Table 2。",
+   "source": "openreview_local_json",
+   "source_path": "2505.18842.json",
+   "note_id": "ptxzVLRWIk",
+   "locator": "OpenReview ICLR 2026 forum LF9bRCLHMW; review ptxzVLRWIk; content.weaknesses",
+   "quote": "The difference is not significant to show the benefits of your pointing comparing to the coord."
+  },
+  {
+   "category": "concern",
+   "summary": "旧版审稿质疑注意力衰减与缺陷之间的因果解释。",
+   "source": "openreview_local_json",
+   "source_path": "2505.18842.json",
+   "note_id": "nUEgoOyWKd",
+   "locator": "OpenReview ICLR 2026 forum LF9bRCLHMW; review nUEgoOyWKd; content.weaknesses",
+   "quote": "The paper interprets the observed decline as evidence of model deficiency, yet does not justify why the speed of attention decay indicates unreasonable behavior."
+  },
+  {
+   "category": "concern",
+   "summary": "旧版审稿担心外部生成轨迹及自主执行可靠性；v7 区分 QVQ seed 与 Gemini decomposition。",
+   "source": "openreview_local_json",
+   "source_path": "2505.18842.json",
+   "note_id": "0YLUJRjTZ2",
+   "locator": "OpenReview ICLR 2026 forum LF9bRCLHMW; review 0YLUJRjTZ2; content.weaknesses",
+   "quote": "The SFT data pipeline relies on an external model (Gemini) to produce text-based traces."
+  },
+  {
+   "category": "decision_context",
+   "source": "openreview_local_json",
+   "source_path": "2505.18842.json",
+   "note_id": "aH42g9rqcI",
+   "locator": "OpenReview ICLR 2026 forum LF9bRCLHMW; meta-review aH42g9rqcI; content.summary",
+   "quote": "The main remaining concerns (though not major) that I consider not fully addressed/resolved/convincing, based on reviewer responses to rebuttals, plus my own assessment, are regarding limitations in the scope/generality (e.g. focus on math-related VQA) and questions about tool use."
+  }
+ ],
+ "reviews_source": {
+  "locator": "2505.18842.json"
+ }
+}

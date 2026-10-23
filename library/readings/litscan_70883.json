@@ -1,0 +1,156 @@
+{
+ "paper_key": "litscan:70883",
+ "title": "JUDO",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70883.txt",
+  "sections_read": [
+   "Abstract/Introduction contributions",
+   "§3",
+   "§4 Tables1–2/§4.4",
+   "§5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "先学异常图与正常参考的16×16 patch比较分割，再领域QA知识SFT，最后GRPO合并分割、答案、结构与伪rationale相似度。",
+  "why_non_obvious": "领域知识和视觉正常性参照分别注入，文本相似度仅作小权重对齐。",
+  "trigger_condition": "当领域VQA既缺异常定位又缺缺陷语义时，分阶段建立视觉比较与知识再联合优化。",
+  "contribution_type": "领域grounding与训练目标",
+  "abstract_strategy": "分开学习可见差异和领域语义，再对齐联合输出。",
+  "abstract_trigger_condition": "事实定位与解释知识是不同瓶颈时。",
+  "abstract_key_step": "结构化patch监督和领域rationale奖励互补。",
+  "abstract_why_non_obvious": "整体推理提升可伴随简单感知退化。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70883#s1",
+   "object": "异常区域坐标与缺陷推理",
+   "information": "query+同类正常图、GT异常mask、MMAD领域文本；GPT4o伪rationale见GT答案/图/知识",
+   "operation": "16²网格seg SFT→约13k领域QA SFT→GRPO，加入0.1×MiniLM rationale cosine与patch F1。",
+   "claimed_effect": "MMAD平均72.56→81.20；固定其余阶段加domain reward80.35→81.20；异常二分类71.39→65.04退化。",
+   "conditions": [
+    "Qwen2.5-VL7B；1-shot正常图参照",
+    "同293个MMAD训练图用于Stage1/3"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p8",
+    "quote": "+ GRPOdom + SegJux + DomInj (JUDO)              81.20"
+   },
+   "failure_boundary": "领域rationale语义相似不能保证视觉真实性；无crop/stop必要性决策。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "patch定位与解释分开监督可迁移视觉证据质量。",
+   "strength": 2
+  },
+  {
+   "problem": "P61",
+   "how": "整体改善掩盖简单任务退化。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "AnomalyR1 reimplementation",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO+RAG / progressive stages",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "简单异常二分类低于直接回答基座；以stage1+2为基准的保持不等于相对原模型无损。",
+   "quote": "anomaly discrimination accuracy drops sharply (71.39% → 61.90%)",
+   "locator": "§4.4 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "基座平均72.56，领域模型81.20，但二分类71.39→65.04。",
+  "load_bearing_assumption": "正常参考比较与领域知识能改善复杂缺陷解释。",
+  "scope": "工业异常7子任务",
+  "success_criterion": "分项答案准确与分割，而非只平均分。",
+  "why_open": "通用模型缺领域正常性与缺陷含义。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§4.4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_{domain}=0.1\\cos(\\phi(E_{gen}),\\phi(E_{pseudo}))",
+    "locator": "Eq1"
+   },
+   {
+    "latex": "R_{seg}=1\\ (P=P_G=\\emptyset);\\ 0.2+0.8F1(P,P_G)\\ (P,P_G\\ne\\emptyset);\\ 0\\ otherwise",
+    "locator": "Eq2"
+   }
+  ],
+  "signal_routing": "rationale cosine读think，seg读seg，答案/格式/早承诺规则另评分；正文未明确各分量合成权重、token局部mask或GRPO优势公式，不推定局部信用。",
+  "normalization": null,
+  "invariance": "非PBRS；cosine自身向量尺度不变，GRPO奖励归一实现未明。",
+  "baseline_or_potential": "无具体value/advantage式；正常参考是输入非RL baseline。",
+  "degenerate_cases": "两个非空但完全不交仍获seg0.2；不合格式0；同奖励组无差异；rationale相似可被复述模板利用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2固定其余阶段加domain reward；§4.4直答→CoT拆开。",
+  "negative_results": [
+   {
+    "text": "GRPO+RAG76.29低于GRPO77.29；CoT本身使二分类71.39→61.90。",
+    "locator": "Tables1–2/§4.4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若打乱pseudo rationale仍保留增益，则不能归因领域语义对齐。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B/MiniLM-L6-v2",
+   "framework": "TRL GRPO/PyTorch/ZeRO3",
+   "group_size": 16,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "4H200；SFT8+2epoch，RL14epoch；约1.4k RL QA。",
+  "pitfalls": [
+   {
+    "text": "pseudo rationale含GT信息，仅训练可用；相似度不是纯自监督。",
+    "locator": "§3.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当复杂推理平均分上升时，应保留直答与简单视觉子任务分层，不能用后期checkpoint稳定代替原模型非劣。"
+ }
+}

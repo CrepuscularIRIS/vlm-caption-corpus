@@ -1,0 +1,184 @@
+{
+ "paper_key": "litscan:65189",
+ "title": "Perceptual-Evidence Anchored Reinforced Learning for Multimodal Reasoning (PEARL)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_65189.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.4/Eq1–5",
+   "4.1",
+   "Table1–5/4.3",
+   "5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "从原QA（含答案）派生可验证感知checklist；同策略分别采感知与推理rollout，感知全零跳过推理，否则以感知组均分缩放标准化推理优势并联合优化感知。",
+  "key_step": "先验证最低限度视觉事实，再允许推理梯度；感知分支有自己的组内优势。",
+  "why_non_obvious": "独立probe能提供低噪信号，但平均通过不证明具体reasoning轨迹已使用该事实。",
+  "trigger_condition": "When correct final answers can hide false perception, train verifiable perception probes and gate reasoning updates.",
+  "contribution_type": "dual-objective perception-aware RL",
+  "abstract_strategy": "Use a separately verified prerequisite task to weight downstream optimization.",
+  "abstract_trigger_condition": "When downstream success can exploit flawed intermediate premises.",
+  "abstract_key_step": "Train prerequisite competence and scale downstream gradients after normalization.",
+  "abstract_why_non_obvious": "An auxiliary group-level success signal is a reliability proxy, not trajectory-level causal proof.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:65189#s1",
+   "object": "感知checklist双分支GRPO",
+   "information": "GPT4.1基于图/原QA含GT答案构造probe；包括从答案逆推。训练阶段可得probe真值，推理时无该oracle。",
+   "operation": "每题感知5次、推理5次；先平均K probe再平均G；Rpbar=0不推理；A_reason_std乘min(Rpbar,.5)，另加.1感知GRPO。",
+   "claimed_effect": "7B均分44.2 GRPO→47.9；MathVerse46.4→50.8；QA锚定probe47.9 vs dense45.5。",
+   "conditions": [
+    "probe低误标",
+    "同策略回答probe",
+    "规则可验短答案"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "QA-Anchored Checklist                    50.8         31.8"
+   },
+   "failure_boundary": "弱通过门仅Rpbar>0，不能证明每项/每条推理都正确；原答案生成probe有捷径风险。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "额外感知监督可约束终答奖励下的视觉漂移，但需改造成caption一致性。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "可验证视觉事实是过程监督候选；无逐crop价值。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "标准化后缩放保留组间幅度，区别reward整体缩放。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO/DAPO / perception-only / reasoning-only / dense-caption checklist / staged components",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "任务锚定probe可只覆盖原QA所指内容，模型可能通过probe而未理解全图。",
+   "quote": "only exploits information referenced by the original QA",
+   "locator": "4.3.2"
+  },
+  {
+   "text": "Eq4写mean不在[0,1]，对0–1奖励不可满足；按上下文应表达非全0/全1，但这里不替作者改公式。",
+   "locator": "Eq4",
+   "quote": "R̄r ∈"
+  }
+ ],
+ "question": {
+  "observed_failure": "人评dense checklist错误13.20%、无关60.78%，QA锚定5.13%/5.53%。",
+  "load_bearing_assumption": "终答正确性足以保证上游感知正确，更多描述就更好。",
+  "scope": "可规则验证的视觉数学/推理probe",
+  "success_criterion": "同底座数据的感知与推理性能、probe误标率",
+  "why_open": "终答允许幻觉推理或捷径"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 same settings checklist comparison"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "3.2 answer-conditioned verifiable probes"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "3.3–3.4 perception/reasoning separate objectives"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_p_i=(1/K) sum_j R_p_ij; Rbar_p=(1/G)sum_i R_p_i",
+    "locator": "3.3"
+   },
+   {
+    "latex": "A_reason=(R_reason-mean R_reason)/std R_reason; A_reason <- A_reason*min(Rbar_p,0.5)",
+    "locator": "Eq2–3"
+   },
+   {
+    "latex": "Jdual=J_GRPO(A_reason)+0.1*J_GRPO(A_perception)",
+    "locator": "Eq5/4.1"
+   },
+   {
+    "latex": "Rbar_r notin [0,1] OR Rbar_p notin [0,1]",
+    "locator": "Eq4 literal interval notation; inconsistent with stated intent"
+   }
+  ],
+  "signal_routing": "感知分支优化其短答案tokens；推理分支优化推理输出，组内标准化后乘跨分支平均因子。并非按caption token逐事实路由；probe答案不直接喂推理rollout的证据未见。",
+  "normalization": "mean+std; reasoning reweight applied after group normalization",
+  "invariance": "非PBRS；双任务/过滤及组间加权改变目标。std后乘因子不会被此前std约掉，若再归一化则另论。",
+  "baseline_or_potential": "两分支各自组均值，不是反事实动作baseline。",
+  "degenerate_cases": "Rpbar0跳过推理，若感知组也全0则仍无梯度；全部感知reward=.5也可能zero variance但未饱和端点筛选无法识别；min上限.5只相对抑制，不大于1放大。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "15K probe人评与dense替换；reason-only/perception-only/双分支；组件roadmap。",
+  "negative_results": [
+   {
+    "text": "Table4同时加filter并去KL，同时加reweight并early-stop，非单因子因果隔离；LogicVista54.0→51.9。",
+    "locator": "Table4"
+   },
+   {
+    "text": "摘要声称MathVerse比GRPO+6.6，但Table1是50.8−46.4=4.4；以表为准。",
+    "locator": "Abstract/Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：固定GT不变对probe做错配图/打乱题，检测是否从答案逆推绕过视觉；比较相同计算/全零组比例。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B/7B",
+   "framework": "EasyR1 AdamW GRPO/DAPO",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "ViRL39K，batch128，lr1e-6；两分支各G5，max2048token；lambda.1，最终roadmap去KL；硬件未知。",
+  "pitfalls": [
+   {
+    "text": "GT答案参与Inverse from Answer probe构造，生成器错误/答案捷径不可作为独立视觉gold。",
+    "locator": "3.2"
+   },
+   {
+    "text": "感知分支平均多个二元probe后是多值reward，非全0/1不等于组内有方差。",
+    "locator": "3.3–3.4"
+   }
+  ],
+  "code": "https://github.com/MiliLab/PEARL",
+  "lesson": "当probe均分用于门控时，应区分组均分非零、每项正确和实际reasoning读对；端点过滤也需检测中间常数奖励组。"
+ }
+}

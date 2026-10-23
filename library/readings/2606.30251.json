@@ -1,0 +1,390 @@
+{
+ "paper_key": "2606.30251",
+ "title": "TACO: Tool-Augmented Credit Optimization for Agentic Tool Use",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.30251.pdf",
+  "version": "v1",
+  "pages": 23,
+  "version_observed": "PDF p1 arXiv:2606.30251v1 [cs.MA] 29 Jun 2026; latest remote version not checked",
+  "sections_read": [
+   "Abstract; 1 Introduction; 2 Related Work",
+   "3.1 Setting and Notation; 3.2 DAPR; 3.3 OGAR; 3.4 Training; Eqs1–9; Figure2",
+   "4.1 Setup; 4.2 Performance; 4.3 Efficiency; 4.4 Ablations; 4.5 Generalization; 4.6 Dynamics; Tables1–4; Figure3",
+   "5 Conclusion; References pp8–10 (not independently followed)",
+   "Appendix A Takeaways; B.1 Algorithm1 and B.2 Edge Cases",
+   "Appendix C.1–C.8 Theoretical Motivation; Eqs10–16; Propositions1–3",
+   "Appendix D.1–D.6 benchmarks/baselines/setupweight sensitivity; Tables5–8",
+   "Appendix E Show Cases; Figures4–8; Appendix F Limitations"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "把最终答案优势与自身贪心前后探针差分分成两个标准化通道；按差分符号对结果信用分段门控，并对负差分关闭过程通道。",
+  "key_step": "在工具前后预填答案头读出成败；同一Δ既进入单独process GRPO通道又决定T1/C/T2的结果优势掩码。正文与算法对T2的门控不一致，不能视为唯一实现。",
+  "why_non_obvious": "只加过程分数仍可能让无关代码分享终答信用；差分与路由联用试图区分贡献和归属，但标准化、后续推理及掩码使“零增益无信用”“保最优”不能由原始差分直接推出。",
+  "trigger_condition": "When terminal correctness over-credits an optional branch and verifiable answer probes are faithful, compare pre/post branch outcomes and gate separately normalized outcome/process signals to differentiate branch responsibility.",
+  "reviewer_praise": [
+   "low_evidence: no local OpenReview reviews"
+  ],
+  "reviewer_concern": [
+   "low_evidence: reader concerns below are not reviewer reports"
+  ],
+  "acceptance_signal": "low_evidence; manifest decision=null; author-reported benchmark/ablation results are not acceptance evidence.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "比较可选分支前后的可校验输出，并把结果信用与差分信用分开标准化和路由。",
+  "abstract_key_step": "复用同一差分作为辅助目标和分段门控条件，区分共同前缀与新增分支。",
+  "abstract_why_non_obvious": "识别分支得分与信用支持集是两个问题；均值中心化后原始零差分未必对应零更新。",
+  "abstract_trigger_condition": "When a shared terminal signal credits both relevant and irrelevant segments, probe the optional branch and route separately scaled signals while checking the probe and mask contracts."
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.30251#s1",
+   "object": "包含T1、代码C、工具回执IMG与后续T2的视觉工具分支",
+   "information": "当前策略的(q,I,T1)和加上(C,IMG,T2)的后缀；用gold answer规则checker评分。a1/a2是预填答案头后的贪心读数，不是自然策略自由续写期望Q；post含额外推理，非独立像素作用；多调用只在最后读post。",
+   "operation": "在前后上下文预填</think>\\n<answer>并各贪心解码短答案，计算Δ=r_out(a2)−r_out(a1)，以组内mean/std形成A2，Δ<0时关闭其loss。",
+   "output": "每个工具分支一个Δ∈{−2,−1,0,1,2}与gA2；无工具时过程通道不激活，混合组统计纳入方式未定义。",
+   "claimed_effect": "Table3 full五benchmark平均72.0，additive-probe变体67.5；作者将差分解释为抑制probe hacking，但这是两种训练方案比较，非所有攻击已排除。",
+   "conditions": [
+    "有可校验答案且probe忠实，主要单调用；两个分支评分可比较。",
+    "同号/异号分组依赖无缺失的probe解析；未提供重复probe方差或自然动作一致性校准。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "App C.2 p13",
+    "quote": "We deliberately do not claim that ∆ isolates the visual observation IMG alone."
+   },
+   "failure_boundary": "额外T2、commit前缀、有限贪心输出与policy-selected分支均限定因果解释；parse失败=0仍可造±1差分；Δ=0中心化后可非零；未解决逐次多调用归因。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.30251#s2",
+   "object": "同题G个rollout的结果优势A1及T1/C/T2生成token",
+   "information": "终答af的r_out+format，以及probe差分Δ；未保证af与a2一致。mask按Δ不按A1符号；外部环境/图像token是否排除及精确length reduction未给。",
+   "operation": "按正文Eq6对T1保留Δ≥0的A1，对C∪T2保留Δ≠0的A1；过程gA2在Δ≥0时广播全序列；两个clipped-GRPO surrogate以1/.15相加。",
+   "output": "分段mA1与全序列gA2的联合更新；Fig2/Algorithm1对T2始终保留，和正文冲突。",
+   "claimed_effect": "Table3 full72.0 vs无OGAR70.0；Table2作者报告V*89.6%、2.3s vs PyVision88.7%、3.6s（batch1 A100）。不能由此断定只在必要时调用或稳定准确率非劣。",
+   "conditions": [
+    "有明确segment账本及最终采用的mask定义；本文源码未提供核实。",
+    "组内std非零或定义guard；clip与可优化sign一致。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p6",
+    "quote": "w/o OGAR          87.4    81.6    80.2   33.4     67.4     70.0"
+   },
+   "failure_boundary": "去掉某个token直接loss不保证共享参数不改变它；Δ=0仍可接A2，Δ<0的A1未必负；无explicit效率代价/约束，少调用是报告而非优化定理。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.30251#s3",
+   "object": "Thyme SFT轨迹与CodeV RL prompts",
+   "information": "真实执行回执和可校验gold；Qwen2.5-VL-7B无工具pass@8筛选；Gemini-3-Pro质量/环境清理；SFT checkpoint在G8题上能力。",
+   "operation": "重执行过滤错误回执，排除基础模型无需工具可解样本及低质量trace；2epoch SFT种Think–Code–Answer行为，再对剔除SFT全8正确题的prompt做1epoch RL。",
+   "output": "可执行工具SFT轨迹、较难RL集合及冻结reference policy；条数/采样细节/阶段seed未报。",
+   "claimed_effect": "Table4整体TACO recipe在Qwen2.5-VL五benchmark60.4→72.0、Qwen3-VL72.9→78.8；未单独消融清理或SFT因果贡献。",
+   "conditions": [
+    "sandbox、外部质量judge及原始语料可用；pass@8精确定义未清楚。",
+    "筛选基础模型不等于训练后策略，必须保留直答能力支撑。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "App D.4 pp16–17",
+    "quote": "we re-run every code block in our sandbox and discard trajectories with execution errors or with tool observations/answers inconsistent with the actual output"
+   },
+   "failure_boundary": "判分通道judge-free不表示数据生产无外部模型/API成本；删掉no-tool可解数据不证明保留样本真需工具，且直答coverage未报告。静态剔除全对题不是在线dynamic sampling。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Standard GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "additive-probe (w/o DAPR)",
+   "kind": "method"
+  },
+  {
+   "name": "w/o OGAR",
+   "kind": "method"
+  },
+  {
+   "name": "CodeV-RL",
+   "kind": "method"
+  },
+  {
+   "name": "PyVision-RL",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes/DeepEyesV2",
+   "kind": "method"
+  },
+  {
+   "name": "Pixel-Reasoner/Mini-o3",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B/Qwen3-VL-8B Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "V*/HR-Bench-4K/8K/MME-RealWorld",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVision/MathVista/MathVerse/WeMath/LogicVista",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar/ChartQA/BLINK",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者限定主要单调用；多调用整个branch一个差分，逐次归因留待未来。",
+   "locator": "App B.2 p12",
+   "quote": "Our experiments operate almost entirely in the single-call regime, for which the before/after split is cleanest; finer per-call attribution within a multi-call branch is left to future work."
+  },
+  {
+   "text": "作者明确不主张方差下降，反而差分可增方差；组标准化不是原始估计方差变小的证明。",
+   "locator": "App C.8 p15",
+   "quote": "differencing two probe scores can increase per-sample variance relative to a single outcome reward"
+  },
+  {
+   "text": "忠实probe为假设，当前策略贪心commit不等于自然自由续写或平均动作价值。",
+   "locator": "App C.8 p15",
+   "quote": "Faithful probing: the prefilled-header greedy decode reflects the answer the model would commit to from the given context."
+  },
+  {
+   "text": "作者承认不是精确逐步PBRS，故不可把Prop2转成TACO端到端保最优/非劣保证。",
+   "locator": "App C.5 p14",
+   "quote": "we treat it as a soundness argument rather than an end-to-end invariance guarantee."
+  },
+  {
+   "text": "parse失败置0的中性解释不成立：另一端±1时Δ=±1，且归一化可产生进一步信用；这是读者代数核查。",
+   "locator": "App B.2 p12",
+   "quote": "A probe whose decoded string cannot be parsed into a valid answer is scored rout = 0"
+  }
+ ],
+ "question": {
+  "observed_failure": "作者Table3 additive-probe平均67.5、无OGAR70.0，低于full72.0；Fig3 additive-probe最终VQA reward低于standard GRPO，作为错配/探针hacking诊断但无原始攻击计数。",
+  "load_bearing_assumption": "整条轨迹答对即可让每个工具片段分享正信用，以及绝对probe分数总能表示新增贡献。",
+  "scope": "有可验证答案、以单个代码工具分支为主的VLM RL；不覆盖逐次长程工具或开放答案可靠性。",
+  "success_criterion": "作者报告12benchmark平均、5benchmark端到端延迟及两成分消融；读者要求同初始化/数据/预算的匹配控制、真实调用分布、独立probe忠实性检查与seed区间，才能支持必要性和非劣主张。",
+  "why_open": "已有outcome广播与外部judge过程分数未区分共享前缀/新增分支责任；本文仍缺faithful probe实证、统一mask契约与多调用局部归因。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M13",
+   "locator": "App C.2 p13",
+   "quote": "Let c1 = (q, I, T1 ) be the context just before the call and c2 = (q, I, T1 , C, IMG, T2 ) the context just after it.",
+   "note": "执行共享前缀下的branch-off/on probe；不是同预算自然策略的完整因果Q估计，需保留该限定。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "App D.6 p17",
+   "quote": "We fix the accuracy weight α1 =1.0 and sweep the tool-value weight α2"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "App D.3 p16",
+   "quote": "we build on Qwen2.5-VL-7B with 2 epochs of SFT followed by 1 epoch of GRPO."
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "locator": "App C.7 p14",
+   "quote": "The two channels act on different supports",
+   "note": "按Δ与片段划分信用支持集；mask有源内冲突，不表示机制已证明解耦参数梯度。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_{out}(a)\\in\\{-1,0,+1\\},\\quad\\Delta=r_{out}(a_2)-r_{out}(a_1)",
+    "locator": "Eqs1–2 p3",
+    "note": "−1错误，0无可解析答案，+1正确，故Δ实际有五值，非旧map三值。"
+   },
+   {
+    "latex": "R_{acc,i}=r_{out}(a_{f,i})+0.5R_{fmt,i}",
+    "locator": "Eq3 p4"
+   },
+   {
+    "latex": "A_{1,i}=(R_{acc,i}-\\mu_{R})/\\sigma_R,\\quad A_{2,i}=(\\Delta_i-\\mu_\\Delta)/\\sigma_\\Delta",
+    "locator": "Eqs4–5 p4",
+    "note": "无epsilon/零std guard；无工具Δ缺失与混合组分母处理未定义。"
+   },
+   {
+    "latex": "m_i[t]=1[t\\in T_1\\land\\Delta_i\\ge0]+1[t\\in C\\cup T_2\\land\\Delta_i\\ne0]",
+    "locator": "Eq6 p4",
+    "note": "两集合不交；Fig2和Algorithm1 line13却对所有T2置1，记录两版本而不择一冒称实现。"
+   },
+   {
+    "latex": "g_i=1[\\Delta_i\\ge0],\\quad L_{TACO}=\\alpha_1L_{GRPO}(m A_1)+\\alpha_2L_{GRPO}(g A_2)",
+    "locator": "Eq7 p4; Eq16 p14",
+    "note": "α1=1, α2=.15; no-tool g inactive另行规定。"
+   },
+   {
+    "latex": "\\rho_t=\\pi_\\theta(a_t|s_t)/\\pi_{\\theta_{old}}(a_t|s_t);\\quad L_{GRPO}(A)=E_{\\tau,t}[\\min(\\rho_t A[t],\\operatorname{clip}(\\rho_t,1-\\epsilon,1+\\epsilon)A[t])]",
+    "locator": "Eqs8–9 pp4–5"
+   },
+   {
+    "latex": "\\max_\\theta L_{TACO}-\\beta E[D_{KL}(\\pi_\\theta\\Vert\\pi_{ref})],\\quad\\beta=0",
+    "locator": "§3.4 p5",
+    "note": "Algorithm1 line17 θ←θ−η∇L writes descent for the positive surrogate; source sign inconsistency. Exact implemented sign unknown."
+   },
+   {
+    "latex": "m^{Alg1}_i[t]=1[t\\in T_2\\lor(t\\in C\\land\\Delta_i\\ne0)\\lor(t\\in T_1\\land\\Delta_i\\ge0)]",
+    "locator": "Algorithm1 line13 p12"
+   },
+   {
+    "latex": "\\Delta=\\Phi(s_2)-\\Phi(s_1),\\quad\\Phi(s)=r_{out}(probe(s))",
+    "locator": "Eq14 p14"
+   },
+   {
+    "latex": "r^\\prime=r+\\gamma\\Phi(s^\\prime)-\\Phi(s),\\ \\Phi(terminal)=0\\ \\Rightarrow\\ Q_*^\\prime(s,a)=Q_*(s,a)-\\Phi(s)",
+    "locator": "Proposition2 p14",
+    "note": "独立标准PBRS条件式，不是当前gA2与mA1优化的保证。"
+   },
+   {
+    "latex": "\\nabla L=\\sum_t m[t]A_1\\nabla\\log\\pi_\\theta(o_t)",
+    "locator": "Eq15 p14",
+    "note": "未裁剪score-gradient示意；子项不翻符号不意味着总参数向量、其他token概率或性能不受影响。"
+   }
+  ],
+  "signal_routing": "按正文Eq6：Δ>0时A1给T1/C/T2，Δ<0时A1只给C/T2且gA2关闭，Δ=0时A1只给T1但gA2仍给全序列。T2包括最终答案。Fig2/Algorithm1另一版本对T2始终保留A1。Rfmt已并入A1，因此正文“masked tokens still receive format reward”缺少独立公式路径；不能擅补格式loss。直接回答AppB2仅answer tokens A1，no-tool reasoning覆盖未清。probe输出与环境token的实际训练mask、取平均分母未知。",
+  "normalization": "accuracy和rawΔ各自全组mean/std；g在A2计算后才乘；非成功子集标准化，未规定零std、missing/no-tool Δ、std样本/总体约定。α2在标准化后加权，调α2不会被A2内部std直接约掉；若先缩放所有Δ则可被标准化约掉。",
+  "invariance": "Prop1只证明两probe score同量平移时rawΔ不变，不保证实际泄漏对两端影响相同，不防选择性削弱pre/提高post。Δ=0不能推出A2=0：若其余组Δ为负，均值为负，零Δ可获正A2；若其余正则获负。Prop2需固定适用势函数、完整转移加和、terminal=0等条件；本文只有分支差分、g选择、全组标准化与结果mask，无完整telescoping，Φ(s2)也非规定terminal0，故无最优策略或少调用保证。任意势函数可满足PBRS，无需它精确等于state value；核心缺口是使用方式与边界条件。Prop3的逐token系数不翻符号不能保证共享参数更新后某token概率方向不变。",
+  "baseline_or_potential": "当前策略自probe的pre score r(a1)为branch参照，gold rule checker评分；不是冻结外部视觉读者，也不是重复MC期望Q。post包含工具结果和额外T2，像素因果贡献不隔离。理论将score记Φ，不足以使实际优化成为PBRS。",
+  "degenerate_cases": "全对且同格式A1零方差；全错且同格式同样，格式差可非零；静态剔除SFT全8正确题不排除RL新全对/全错组。所有Δ相同A2零方差且guard未知。g关闭负Δ样本后不再零均值；Δ0工具分支可获正或负过程信用。invalid前−1/后0得到+1却未答对，前+1/后0为−1；必要性四格不足覆盖unknown。无工具过程为空但混合组计算未知；工具概率≈0无DAPR新支撑，直答≈0没有强制平衡。多调用整个branch汇总，不能为每次crop定责；单调用最接近本文假设。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "实际Table3对比差分vs加和（不是移除过程通道），以及有/无OGAR；Table8固定α1扫α2；Fig3报告reward/length/entropy。尚无独立matched-budget分支像素负控或预写答案攻击率，不能以曲线单独证明anti-hacking及必要性。建议先做四格+invalid/no-tool/all-constant组的离线信号枚举、核Eq6/Alg1差异，再比较真实工具与预算匹配文本/同框低细节回执的独立终答收益；不启动实验。",
+  "controls": [
+   "作者：standard GRPO accuracy-only；additive-probe保留通道但Δ换sum；w/o OGAR保留DAPR但A1全token；α2=.05/.10/.15/.30/.50。",
+   "读者建议未运行：分别实现Eq6与Alg1作为显式两臂；A2与mask状态对应打乱；相同seed/数据/训练token与rollout预算；相同probe token预算；当前策略自然解码vs强制commit一致性。",
+   "在任何RL前记录A1/A2/g、总信用、零mask比例、实际calls、reply tokens、unknown probe及direct行为support，不用completion length替call计数。"
+  ],
+  "negative_results": [
+   {
+    "text": "Table3用additive probes平均67.5，比full72.0低4.5pt；“w/o DAPR”不是无process loss，不能解读为加过程通道本身的独立收益。",
+    "locator": "Table3 p6",
+    "quote": "w/o DAPR          85.1    77.2    78.0   31.1     65.9     67.5"
+   },
+   {
+    "text": "Table1 ChartQA ours86.7低于PyVision86.8；作者总体最优不等于各benchmark最优，且8B无工具骨干多项也更高。",
+    "locator": "Table1 p5",
+    "quote": "PyVision-RL-7B (Arxiv’26)     78.1   74.3     59.6       88.7    28.7     71.4      55.8     47.7   49.2   65.6   86.8      58.7   63.7"
+   },
+   {
+    "text": "把α2从.15增到.50时12benchmark均值68.1→67.7；无seed区间，不能宣称差异显著。",
+    "locator": "Table8 p23",
+    "quote": "1.0    0.50              67.7"
+   }
+  ],
+  "seeds": "not reported；Figure3曲线波动未注明为跨seed区间。没有统计非劣检验。",
+  "falsifier": "若probe标签与同预算自然策略分叉收益不一致，或打乱Δ/仅长度控制也复现收益，则分支贡献解释不足；若wrong→wrong工具被正A2奖励或mask减少正确answer监督，则“免罚必合理/不伤准确率”失败。若真实call计数无下降，仅回答缩短，不能用length支持少调用。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B主要；Qwen3-VL-8B泛化；Thyme cold-start",
+   "framework": null,
+   "group_size": 8,
+   "rollouts": "8 on-policy trajectories per prompt; two greedy short probes per tool branch; probe token limit not reported",
+   "steps": null,
+   "kl": 0,
+   "temperature": 1.0,
+   "max_turns": null,
+   "sft_epochs": 2,
+   "rl_epochs": 1,
+   "batch_size": 128,
+   "learning_rate": 1e-06,
+   "clip_epsilon": null
+  },
+  "cost": "8×80GB A100单节点训练；未报总GPU·h、实际训练token、清理数据规模/调用费用和两probe增量用时。Table2作者端到端batch1单A100每题延迟：V*2.3s、HR4K3.2s、HR8K3.5s、MathVision2.4s、MMStar2.0s。无训练judging API不等于数据生产零API（Gemini-3-Pro清理）；本次未运行。",
+  "pitfalls": [
+   {
+    "text": "作者用执行校验去除错误或虚构工具回执；迁移须把图像回执与动作真实绑定。",
+    "locator": "App D.4 p16",
+    "quote": "Execution validity: we re-run every code block in our sandbox"
+   },
+   {
+    "text": "作者认识绝对probe可能被预先写答案利用；差分只在common-mode假设下抵消，需独立审查。",
+    "locator": "App C.4 p13",
+    "quote": "Suppose a change to T1 shifts both probe scores by a common amount"
+   }
+  ],
+  "code": null,
+  "lesson": "当结果mask、process gate与group std先后相互作用时，rawΔ=0并不等于零信用，应先对四格+parse失败+无工具/零方差组枚举实际A1/A2/m/g，并核正文与伪代码是否同一契约，再谈少调用或安全路由（Eqs4–7；Algorithm1；AppB2/C4–C7）。"
+ },
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "同领域最近邻：双probe差分与结果分段mask直接针对整轨广播；仅单branch且probe忠实性未验证，需改造成逐次当前策略诊断。",
+   "strength": 2
+  },
+  {
+   "problem": "P13",
+   "how": "Eq6依赖pre/post差分，可做四格+unknown枚举参照；与Alg1冲突必须先消解，不能直接照搬为已验证实现。",
+   "strength": 2
+  },
+  {
+   "problem": "P14",
+   "how": "独立过程通道且保留部分结果通道，不同于fc完全替换；全序列A2/g会改变总体偏好，不证明项目fc失败已修复。",
+   "strength": 2
+  },
+  {
+   "problem": "P15",
+   "how": "只mask部分结果信用但Δ0仍可能正/负A2；fcz风险仍需测，T2契约矛盾最关键。",
+   "strength": 2
+  },
+  {
+   "problem": "P18",
+   "how": "wrong→wrong一律称necessary-but-failed缺必要性证据；整组过程信用也不保证全部免罚，保留unknown。",
+   "strength": 1
+  },
+  {
+   "problem": "P19",
+   "how": "AppC5给标准PBRS条件并承认实际不等价，提供边界检查而非可直接用的保最优塑形。",
+   "strength": 2
+  },
+  {
+   "problem": "P20",
+   "how": "单次T1/C/T2责任划分与多调用union C不能直接替代caption/回执逐轮账本。",
+   "strength": 2
+  }
+ ],
+ "source_discrepancies": [
+  "Eq6/§3.3将Δ0的C与T2均mask；Fig2和Algorithm1 line13始终保留T2，必须并列，实际源码未知。",
+  "正文称maximize positive surrogate，Algorithm1 line17写θ−η∇L；未定义负号loss转换。",
+  "正文称masked工具token仍收format，但format已并入被m屏蔽的A1；没有显式第三项loss。",
+  "AppB2把parse失败0说成不注入差分，与另一端±1产生±1的公式不符；“Δ>0只在错转对”漏parse边界。",
+  "Prop1 raw差分common-mode不变成立；后文“Δ0不给advantage”不普遍成立于组中心化。",
+  "Fig3b只有completion length没有calls/round counts；不能从其直接证明少调用或“only when needed”；非零token entropy不是动作support证明。Fig3/案例标题仍写TGPO，正文TACO。",
+  "Table3 caption/§4.6定义w/o DAPR为a1+a2，§4.4却写rewarding a1 directly；记录为sum variant，不静默忽略源不一致。",
+  "SFT necessity pass@8=1精确定义未知，不等同已证明genuine necessity；RL all8 correct也须格式相同才保证Racc同值。",
+  "视觉Fig5问题/图注说connector上方，实际trace/显示标签在下方；Fig8图注说crop，但trace明确无图处理、只有Fraction计算，且示例有重复python fence；不执行示例。Fig6答RF且自称不确定，没有probe或gold可证明必要/正确。",
+  "Table5列题集全量数但称standard eval split，部分full/test split实际用量未给协议版本；不据本地常识自动替换数字。"
+ ]
+}

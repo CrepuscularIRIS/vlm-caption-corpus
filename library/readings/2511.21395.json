@@ -1,0 +1,419 @@
+{
+ "paper_key": "2511.21395",
+ "title": "Monet: Reasoning in Latent Visual Space Beyond Images and Language",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.21395.pdf",
+  "version": "v2",
+  "version_observed": "PDF page 1: arXiv:2511.21395v2 [cs.CV] 27 Nov 2025; latest online version not checked",
+  "sections_read": [
+   "Abstract",
+   "1 Introduction",
+   "2.1 Think with Images",
+   "2.2 Reasoning in Latent Space",
+   "3.1 Overview",
+   "3.2 SFT Training Dataset Construction",
+   "3.3.1 SFT Stage 1",
+   "3.3.2 SFT Stage 2",
+   "3.3.3 SFT Stage 3",
+   "3.4 VLPO",
+   "4.1 Experiment Setup",
+   "4.2 Main Results",
+   "4.3 Component Analysis",
+   "4.4 Latent Size",
+   "5 Conclusion and Limitations",
+   "References",
+   "Appendix A Additional Experimental Results",
+   "Appendix B.1 SFT Training",
+   "Appendix B.2 RL Training",
+   "Appendix B.3 Training Data Construction",
+   "Appendix C Detailed Experimental Setup",
+   "Appendix D.1 Dataset Examples",
+   "Appendix D.2 Inference Examples",
+   "Equations 1-10",
+   "Tables 1-8",
+   "Figures 1-14"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "用有辅助图的冻结教师生成视觉监督，以三阶段 SFT 把它压入可自回归产生的 latent；RL 再对离散文本和连续 latent 使用不同的概率比。",
+  "key_step": "Stage 2 同时限制辅助图只被 latent 读取，并把 observation 对齐损失的反传限制在 latent 路径；Stage 3 去辅助图蒸馏目标 latent；VLPO 用同前缀新旧 latent 距离定义连续动作的代理概率比。",
+  "why_non_obvious": "只对后续文本做 NTP 可以通过记忆文本降低损失而不形成有效 latent；仅在观测 token 上对齐也可能绕过 latent，故前向信息通路与反向梯度通路都被限制。普通文本 GRPO 在该实现中没有连续 latent 的显式 log-prob。",
+  "trigger_condition": "When intermediate continuous states lack direct supervision and discrete-token policy losses omit them, apply constrained teacher distillation and a continuous-state policy-ratio surrogate to train those states.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision is null and no review source is supplied; this is a pinned arXiv v2 reading, not a peer-review outcome.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Construct a supervised bottleneck, remove privileged inputs through distillation, and include the bottleneck states in outcome-driven updates.",
+  "abstract_key_step": "Restrict forward information and backward alignment gradients to the intended intermediate states; estimate their update weights from distance to recorded states.",
+  "abstract_why_non_obvious": "A downstream prediction objective can be minimized through shortcut paths while leaving the intended intermediate computation ineffective.",
+  "abstract_trigger_condition": "When privileged observations are available only during training and a continuous intermediate state has no discrete likelihood, distill a restricted state and define a surrogate update for it."
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.21395#s1",
+   "object": "SFT 数据中的辅助图与关键观测 token 标注",
+   "information": "原始问答、原图、文本-图像 CoT；7B 在原图条件下的作答和不同的 72B 在辅助图条件下的作答；DeepSeek/Gemini 仅见题目和 CoT 文本来标 observation（App B.3），不是人工视觉金标，也不是同一策略的干预对比。",
+   "operation": "保留 7B 原图答错且 72B 仅辅助图答对的样本，再标记关键视觉观察文本。",
+   "output": "Monet-SFT-125K，Table 1 约 125.2K 条，118.6K 来自 Visual-CoT；训练包含 crop、grounding、画线和新图状态。",
+   "claimed_effect": "作者称过滤确保辅助图必要且准确；Table 1 给出数量，但未报告数据过滤单独消融或人工验证准确率，不能把两模型筛选视为必要性真值。",
+   "conditions": [
+    "可取得图文交错 CoT 和正确终答",
+    "基础 7B 与更强 72B 都能对样本评分",
+    "允许 API 模型为观测文本作标签"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Sec 3.2, PDF pp.3-4; Table 1",
+    "quote": "retain samples that Qwen2.5-VL-7B\n[1] incorrectly answers using only the question and the\noriginal image to ensure the necessity of auxiliary images.\nStage 2: From these samples, we keep those that Qwen2.5-\nVL-72B can correctly solve using only the auxiliary im-\nages, ensuring that the auxiliary images are accurate for\nreasoning."
+   },
+   "failure_boundary": "跨模型原图/辅助图比较混入模型能力差异；App B.3 的标注不看图；没有对保留直答/弃答/纠错覆盖率的保证。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2511.21395#s2",
+   "object": "模型生成的连续 latent 及其视觉信息通路",
+   "information": "Stage 2 teacher 看到辅助图；student 的 latent 看到辅助图，后续文本不能直接看辅助图；teacher observation hidden states 固定。Stage 3 和测试移除辅助图，仍保留问题原图和前缀；测试不能获得真实新观测。",
+   "operation": "图文交错 SFT warm-up；逐层余弦对齐 observation hidden states 并只经 latent 反传，配合 auxiliary-image→latent→observation mask；缓存目标 latent，再从 warm-up 初始化、无辅助图逐层对齐 latent 加 NTP。",
+   "output": "能预测 <latent>、回馈末层 hidden state 连续 K 步、插入 </latent> 后继续文本的 MSFT。",
+   "claimed_effect": "Table 5：Monet-SFT V*=82.20，HR4K=68.50，HR8K=66.00，MME-Lite=52.68，VisualPuzzles=30.48；去 latent-only BP 后 V*=46.07，但 VisualPuzzles 反升至 33.65。Table 2 的 Monet-SFT MME=55.03 与 Table 5 不一致，分别保留。",
+   "conditions": [
+    "教师 warm-up 后的 observation representations 含有可用视觉信息",
+    "支持自定义 attention mask、逐层表示提取、指定梯度路径",
+    "两种对齐权重均为 2.0；测试每段 latent 固定长度"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec 3.3.2, PDF p.5; Fig.3; Eqs.1-5; Tables 2,5",
+    "quote": "we restrict gradient flow from Lalign-obs to pass solely through the generated latent embeddings to the model parameters."
+   },
+   "failure_boundary": "多阶段训练更复杂；SFT 产生的 latent 在 OOD 上不稳定，K 增长并非总有益；latent 不能凭空恢复原图未输入的细节。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2511.21395#s3",
+   "object": "RL 中缺少显式离散概率的 latent 动作",
+   "information": "记录旧策略生成的 latent、同一问题/原图/历史前缀的新策略 latent、终答正确性和格式；没有逐个 latent 的必要性或正确性标签。",
+   "operation": "将旧 latent 在新 latent 为均值的固定 σ Gaussian 下的密度作为代理，以 exp(-||h_old-h_theta||²/(2σ²)) 替换 latent 位置 PPO ratio；文本保留普通 ratio，共享组内标准化结果优势。",
+   "output": "Monet-7B (Monet-SFT + VLPO)，σ=10，RL K=10，G=8。",
+   "claimed_effect": "Table 5 full VLPO / Monet-SFT+GRPO：V* 83.25/80.10，HR4K 71.00/69.00，HR8K 68.00/64.75，MME-Lite 55.50/54.19，VisualPuzzles 35.02/31.51。这些是作者点估计，没有独立复现或误差条。",
+   "conditions": [
+    "已用 SFT 学出 latent 行为",
+    "能记录旧 latent 并在同一前缀重算新 latent",
+    "代理 Gaussian 假设；非零组内奖励方差，作者用准确率筛选"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec 3.4, PDF p.6, Eqs.7-8; Table 5 p.8",
+    "quote": "The key idea of VLPO is to estimate the output probability of the continuous latent embeddings collected during rollout"
+   },
+   "failure_boundary": "Eq.8 分母印为 π_old(h_theta|context)，与右侧简化及普通固定动作 IS 比率不一致；连续采样噪声、latent KL、更新次数均未交代。按右侧代理精确同策略初始 h_theta=h_old 时导数为 0（读者推导），不能推断任意单次 on-policy 更新都会得到非零 latent 梯度。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Vanilla SFT on Monet-SFT-125K",
+   "kind": "method"
+  },
+  {
+   "name": "Vanilla SFT + GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "Monet-SFT + GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "LVR",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o",
+   "kind": "method"
+  },
+  {
+   "name": "Gemini 2.5 Pro",
+   "kind": "method"
+  },
+  {
+   "name": "Pangea-7B",
+   "kind": "method"
+  },
+  {
+   "name": "LLaVA-OneVision-72B",
+   "kind": "method"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HRBench4K/8K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "VisualPuzzles",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Thyme-RL 3.2K subset",
+   "kind": "dataset"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "三阶段 SFT 带来训练复杂度和开销。",
+   "quote": "Monet relies on a multi-stage SFT pipeline, which may increase the overall training complexity and overhead.",
+   "locator": "Sec 5, PDF p.9"
+  },
+  {
+   "text": "奖励设计影响尚未探索，不能由此支持效率奖励配方。",
+   "quote": "we have not yet explored how different reward designs might influence latent visual reasoning in MLLMs",
+   "locator": "Sec 5, PDF p.9"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table 5：Monet-SFT 加 GRPO 后 V* 82.20→80.10、HR8K 66.00→64.75；另一些任务有增益（HR4K 68.50→69.00、VisualPuzzles 30.48→31.51），故失败是不能一致改进。Fig.5 的 Ktest=0 与 >0 对比被作者用来区分文本增益和 latent 增益。",
+  "load_bearing_assumption": "仅训练后续文本、或对辅助图表示做简单对齐，就足够让连续 latent 学到任务所需视觉信息；文本 token GRPO 的提升可代表 latent 推理提升。",
+  "scope": "Qwen2.5-VL-7B 的连续视觉 latent；125K SFT + 3.2K Thyme-RL，四类真实感知/推理测试和 VisualPuzzles OOD。",
+  "success_criterion": "同一训练数据下与 vanilla SFT/GRPO、Monet-SFT+GRPO 比准确率；移除 latent（Ktest=0）和组件消融，检查 latent 是否带来收益；未预设非劣界或效率终点。",
+  "why_open": "既有直接 image-latent 对齐成本高，mean pooling 可能损伤细节；NTP 可走文本记忆捷径，连续 latent 没有离散词表概率，文本 GRPO 没有直接更新项。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "This stage adapts the model to the image–text interleaved reasoning pattern",
+   "locator": "Sec 3.3.1, PDF p.4",
+   "note": "先 warm-up 种下利用中间图的行为，再蒸馏和 RL；不代表我们缺失的弃答/改口已被覆盖。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "We remove the representation-alignment loss on observation tokens in SFT Stage 2 while retaining auxiliary-image embeddings in the student CoT",
+   "locator": "Sec 4.3, PDF p.7",
+   "note": "显式组件移除对照；仍不代表算力和所有预算均匹配。"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "role": "primary",
+   "quote": "we use Mstage2 to generate the latent embeddings",
+   "locator": "Sec 3.3.2, PDF p.5",
+   "note": "模型自产目标 latent 代替不可得的目标 latent 标签，再进行 Stage 3 蒸馏；符合 rubric rule 7。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "for latent steps yields our VLPO objective.",
+   "locator": "Sec 3.4, PDF p.6",
+   "note": "以离散文本/连续 latent 为判别属性，文本用 token 概率比，latent 用 Gaussian 距离代理；符合 rule 10。不把该数学假设标为已证明等价。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L_{\\mathrm{align-obs}}=\\frac1N\\sum_i\\sum_l\\left(1-\\cos(\\mathbf h_{\\mathrm{obs}}^{*(i,l)}.\\mathrm{detach}(),\\hat{\\mathbf h}_{\\mathrm{obs}}^{(i,l)})\\right)",
+    "locator": "Eq.1, PDF p.5"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{NTP}}=-\\frac1N\\sum_i\\sum_{y_t\\in T^{(i)}}\\log p(y_t\\mid y_{<t})",
+    "locator": "Eq.2, PDF p.5"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{stage2}}=\\mathcal L_{\\mathrm{NTP}}+\\alpha\\mathcal L_{\\mathrm{align-obs}},\\quad\\alpha=2.0",
+    "locator": "Eq.3 and following text, PDF p.5"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{align-latent}}=\\frac1N\\sum_i\\sum_l\\left(1-\\cos(\\mathbf h_{\\mathrm{latent}}^{*(i,l)}.\\mathrm{detach}(),\\hat{\\mathbf h}_{\\mathrm{latent}}^{(i,l)})\\right)",
+    "locator": "Eq.4, PDF p.6"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{stage3}}=\\mathcal L_{\\mathrm{NTP}}+\\beta\\mathcal L_{\\mathrm{align-latent}},\\quad\\beta=2.0",
+    "locator": "Eq.5 and following text, PDF p.6; beta here is alignment weight, not RL KL beta"
+   },
+   {
+    "latex": "\\mathcal J_{\\mathrm{GRPO}}(\\theta)=\\mathbb E_{Q,I,o\\sim\\pi_{\\mathrm{old}}}\\frac1G\\sum_{i=1}^G\\frac1{|o_i|}\\sum_{t=1}^{|o_i|}\\min\\left[r_{i,t}(\\theta)\\hat A_{i,t},\\operatorname{clip}(r_{i,t}(\\theta),1-\\varepsilon,1+\\varepsilon)\\hat A_{i,t}\\right]-\\beta\\operatorname{KL}(\\pi_\\theta\\|\\pi_{\\mathrm{ref}})",
+    "locator": "Eq.6, PDF p.6"
+   },
+   {
+    "latex": "\\hat A_{i,t}=\\frac{r_i-\\operatorname{mean}(\\{r_1,r_2,\\ldots,r_G\\})}{\\operatorname{std}(\\{r_1,r_2,\\ldots,r_G\\})}",
+    "locator": "Sec 3.4 after Eq.6, PDF p.6; r_i here is outcome reward"
+   },
+   {
+    "latex": "\\pi_\\theta(\\mathbf h^{\\mathrm{old}}_{i,t}\\mid Q,I,o_{i,<t})=\\exp\\left[-\\frac1{2\\sigma^2}\\|\\mathbf h^{\\mathrm{old}}_{i,t}-\\mathbf h^\\theta_{i,t}\\|^2-\\mathrm{const}\\right]",
+    "locator": "Eq.7, PDF p.6"
+   },
+   {
+    "latex": "r_{i,t}(\\theta)=\\frac{\\pi_\\theta(\\mathbf h^{\\mathrm{old}}_{i,t}\\mid Q,I,o_{i,<t})}{\\pi_{\\theta_{\\mathrm{old}}}(\\mathbf h^\\theta_{i,t}\\mid Q,I,o_{i,<t})}=\\exp\\left[-\\frac1{2\\sigma^2}\\|\\mathbf h^{\\mathrm{old}}_{i,t}-\\mathbf h^\\theta_{i,t}\\|^2\\right]",
+    "locator": "Eq.8 as printed, PDF p.6; denominator uses h_theta, retained verbatim as notation rather than silently corrected"
+   },
+   {
+    "latex": "\\mathcal L^\\prime_{\\mathrm{align-obs}}=\\frac1N\\sum_i\\operatorname{stop\\_grad}\\left(\\frac{\\partial\\mathcal L_{\\mathrm{align-obs}}}{\\partial\\hat{\\mathbf h}_{\\mathrm{latent}}^{(i,L)}}\\right)^\\top\\hat{\\mathbf h}_{\\mathrm{latent}}^{(i,L)}",
+    "locator": "Eq.9, Appendix B.1, PDF p.12"
+   },
+   {
+    "latex": "\\frac{\\partial\\mathcal L^\\prime_{\\mathrm{align-obs}}}{\\partial\\theta}=\\frac{\\partial\\mathcal L_{\\mathrm{align-obs}}}{\\partial\\hat{\\mathbf h}_{\\mathrm{latent}}^{(i,L)}}\\frac{\\partial\\hat{\\mathbf h}_{\\mathrm{latent}}^{(i,L)}}{\\partial\\theta}",
+    "locator": "Eq.10 as printed, Appendix B.1, PDF p.12; displayed derivation omits outer averaging notation"
+   }
+  ],
+  "signal_routing": "SFT warm-up/text NTP 预测文本及 <latent>，mask </latent>/<observation>/</observation> 标签（App B.1）。Stage 2 observation hidden-state alignment 目标 teacher detach，损失仅经 generated latent 回传参数；NTP 仍优化文本及上游 latent。Stage 3 逐层 latent 对齐 fixed target + 文本 NTP。RL 终答正确性(1/0)+格式奖励形成一个组内优势，广播到文本和 latent；文本用离散 ratio，latent 用 Eq.8 距离 ratio。没有逐步必要性、反事实 credit 或 latent 使用奖励；latent KL 的具体实现未给出。",
+  "normalization": "mean+std: group mean subtraction and group std division (Eq.6 text); 1/G and 1/|o_i| in policy objective; SFT cosine alignment sums layers with 1/N, not reward normalization. Appendix B.2 retains 0 < group accuracy < 0.6; exact zero-std epsilon unspecified.",
+  "invariance": "没有最优策略不变性或无偏策略梯度保证。RL 保留正确性+格式目标而扩展连续动作代理更新；Eq.8 不是经本文证明的真正 rollout sampling-density ratio。SFT mask/stop-gradient 改变信息通路和梯度通路；这些不构成 potential shaping。",
+  "baseline_or_potential": "同题 G=8 outcome rewards 的 mean 是 baseline；无 learned critic、MC fork、势函数或动作相对 baseline。SFT 的 warm-up teacher 和 Stage 2 targets 冻结，只是训练监督。",
+  "degenerate_cases": "全对/全错组 accuracy 被过滤；这只是丢弃无信号组，不能给全错难题创造信号，格式奖励是否令其仍有方差未交代。若 <latent> 概率趋零，latent 更新无样本支撑，未见强制采样或熵保护。读者推导：按 Eq.8 右式 r∈(0,1]；h_theta=h_old 时 r=1 且 ∂r/∂h_theta=0，所以严格同策略、同前缀、确定性 latent 的首个更新没有该项梯度，需先有参数变化/随机差异；文中未给相应实现诊断。σ→∞ 也使该梯度消失；Ktest=0 去掉 latent 路径而保留文本推理；固定 K 不等于学会 latent 停止。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table 5 用同 Monet-SFT 初始化对比 GRPO/VLPO，组件消融包括无 latent-only BP、无辅助图、无 observation alignment；Fig.5 比 Ktest=0 与 >0，在同模型内探测是否依赖 latent。它们支持作者机制解释，但没有预算严格匹配、随机 latent/置换监督/等范数噪声对照来排除额外计算或正则化。",
+  "controls": [
+   "Qwen2.5-VL-7B + vanilla SFT + GRPO：训练数据来源一致，架构/训练流程不同。",
+   "Monet-SFT + GRPO vs + VLPO；SFT与RL训练 latent 长度不同，Ktrain=8/10；Ktest 从 {8,10,12,16} 选最好，未说明独立选择集。",
+   "Table 2/5：分别去掉 latent-only BP、辅助图、observation alignment。",
+   "Fig.4：warm-up 过程中有/无辅助图的 observation token 预测率；Fig.5：Ktest=0 无 latent 控制。",
+   "没有报告真/随机 crop、同样本同策略前后补看对照或随机 latent 的匹配负对照。"
+  ],
+  "negative_results": [
+   {
+    "text": "GRPO 并非一致提升 latent 模型；Table 5 V* -2.10pp、HR8K -1.25pp，HR4K/MME/VisualPuzzles 同时仍有正增益，不能写成全线下降。",
+    "quote": "GRPO doesn’t consistently improve Monet-SFT, whereas VLPO does.",
+    "locator": "Sec 4.3 Takeaway 2, PDF p.7; Table 5 p.8"
+   },
+   {
+    "text": "单独保留 auxiliary-image→latent 的 NTP 而去 observation alignment：V* 75.39、VisualPuzzles 27.48，低于 full SFT 82.20/30.48。",
+    "quote": "removing the alignment loss causes a substantial drop in performance.",
+    "locator": "Sec 4.3 Takeaway 1, PDF p.7; Table 5"
+   },
+   {
+    "text": "去 latent-only BP 的巨大 ID 退化存在 OOD 例外：VisualPuzzles 33.65 高于 Monet-SFT 30.48；这是表格结果，不能把 almost all 改成 all。",
+    "quote": "Both ablation lead to performance degradation on almost all tasks.",
+    "locator": "Table 2 caption and values, PDF p.6"
+   },
+   {
+    "text": "作者报告 SFT 不足以使 OOD 从 latent 持续获益；Fig.5 长度增加不是单调增益。",
+    "quote": "only the VLPO-enhanced model consistently benefits from latent reasoning",
+    "locator": "Sec 4.4 Takeaway 1, PDF pp.7-8; Fig.5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出、未运行：固定数据/初始化/K/训练更新与计算预算多种子比较 VLPO 与 GRPO；再以同范数随机或跨题打乱 latent 为匹配负对照。如果真实 latent 不比这些对照更好，或 matched-budget VLPO 不改善 latent-present 相对 latent-absent 的增益，则削弱本文的视觉 latent 机制解释；第一步应直接测 Eq.8 的 latent 梯度与 ratio 分布，尤其首次 on-policy 更新。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B; observation selectors DeepSeek-V3.1/Gemini-2.5-Pro; data filters Qwen2.5-VL-7B/72B",
+   "framework": "EasyR1 (RL); TRL (SFT); VLMEvalKit (evaluation)",
+   "group_size": 8,
+   "rollouts": 8,
+   "steps": null,
+   "kl": null,
+   "temperature": 0.5,
+   "max_turns": null,
+   "rl_batch_size": 64,
+   "max_response_length": 4096,
+   "rl_learning_rate": 1e-06,
+   "sft_learning_rate": 1e-05,
+   "weight_decay": 0.01,
+   "sft_batch_size": 1,
+   "sft_gradient_accumulation": 16,
+   "sft_stage_steps": [
+    3885,
+    1000,
+    1000
+   ],
+   "sft_epochs_reported": "Sec 4.1 says Stage 1=4 epochs; Table 7 says 3885 steps (3 epochs); Stage 2/3=1000 (1.03 epoch)",
+   "rl_dataset": "3.2K subset of Thyme-RL; one epoch stated, optimizer update count unspecified",
+   "vlpo_sigma": 10.0,
+   "training_latent_length": {
+    "monet_sft": 8,
+    "vlpo": 10
+   },
+   "test_latent_candidates": [
+    8,
+    10,
+    12,
+    16
+   ],
+   "accuracy_filter_threshold": 0.6
+  },
+  "cost": "Table 7 reports SFT 3885+1000+1000 steps; Stage 1 epoch mismatch retained. RL: 3.2K data, 1 epoch, batch 64, G=8; actual sampled/discarded rollouts, token totals, wall time, GPU type/count/GPU·h not reported. Table 8 repeats SFT step rows and supplies no reliable RL optimizer steps. Training pixel caps per sequence: stage1/3 2000×28×28, stage2 1500×28×28; App C calls inference max visual tokens 8192×28×28 (unit ambiguous, likely pixel budget but not silently corrected).",
+  "pitfalls": [
+   {
+    "text": "多辅助图 OOM：microbatch=1，gradient accumulation=16，限制每条序列总像素。",
+    "quote": "To avoid OOM, we use a batch size of 1 and set gradient accumulation steps to 16.",
+    "locator": "Appendix B.1, PDF p.12"
+   },
+   {
+    "text": "防止通过非 latent 路径降低 alignment loss：用 Eq.9 surrogate 只保留 latent 路径。",
+    "quote": "we replace Lalign-obs with the following surrogate loss",
+    "locator": "Appendix B.1, PDF p.12, Eq.9"
+   },
+   {
+    "text": "不单独奖励 latent 调用，以免无差别调用；这只是作者设计动机，未报告调用效率消融。",
+    "quote": "we do not reward latent-reasoning behavior itself",
+    "locator": "Sec 3.4 Reward Design, PDF p.6"
+   }
+  ],
+  "code": "https://github.com/NOVAglow646/Monet",
+  "lesson": "当目标是让某个中间表示携带视觉信息时，仅让后续文本答对不保证中间表示有效；应分别检查前向观测通路、反向梯度通路和移除该表示的对照。本句是对作者实验的迁移解读，非本地验证。"
+ },
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "共享终答优势覆盖所有 latent，只解决连续动作缺少显式更新项，不解决每次 crop 的必要性或细粒度信用。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "warm-up 先教会使用辅助图，继而蒸馏 latent，再 RL；支持检查 SFT 行为前提，但没有直答/改口/弃答覆盖修复。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "Stage 2 的特权辅助图与 Stage 3 去辅助图蒸馏暴露教师/学生信息不等价；不证明缩放后的原图可辨。",
+   "strength": 1
+  },
+  {
+   "problem": "P42",
+   "how": "关键 observation hidden-state 对齐与限定梯度通路可作为 caption 表示监督候选，但本文发生在 SFT latent 学习，未监控 RL caption factual drift。",
+   "strength": 2
+  },
+  {
+   "problem": "P07",
+   "how": "过滤全错/高准确率组防止零方差，丢弃而不是解决全错难题无信号。",
+   "strength": 1
+  },
+  {
+   "problem": "P10",
+   "how": "Eq.8 代理在新旧 latent 相等时梯度为零，提示严格单次 on-policy 更新前必须检查非平凡差异；读者代数推论，不是作者 runtime 诊断。",
+   "strength": 1
+  }
+ ]
+}

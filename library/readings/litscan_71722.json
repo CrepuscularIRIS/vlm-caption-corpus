@@ -1,0 +1,167 @@
+{
+ "paper_key": "litscan:71722",
+ "title": "DeepEyesV2",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_71722.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 Tables1–5",
+   "§4.3 dynamics",
+   "§5–6",
+   "Appendix A.2"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "先用纯RL和tool bonus暴露代码支持不足/占位hacking，再用执行核验教师轨迹冷启动；RL只奖终答案/格式，混合感知、推理、搜索。",
+  "why_non_obvious": "扩展从crop到任意代码后，原先RL-only经验失效；tool支持需有效轨迹。",
+  "trigger_condition": "当新增工具语义复杂且RL逃避调用时，先诊断有效执行支持再补冷启动数据。",
+  "contribution_type": "多工具agent与数据训练recipe",
+  "abstract_strategy": "将工具收益筛选和能力补齐分配到不同训练阶段。",
+  "abstract_trigger_condition": "低基础成功率导致稀疏终局奖励难以建立工具行为时。",
+  "abstract_key_step": "无工具8次≤2正确的难题，再tool8次分流SFT/RL。",
+  "abstract_why_non_obvious": "有工具仍不会的样本需teacher示范，有工具已能成功的样本可RL。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:71722#s1",
+   "object": "code/search多轮工具轨迹",
+   "information": "图像/问题、沙盒执行结果、在线search top5；GT答案筛选与reward",
+   "operation": "教师闭环执行并只留最终正确且代码无错轨迹SFT，随后DAPO accuracy+format，联合感知/推理/search数据。",
+   "claimed_effect": "SFT→完整RL CharXiv reasoning44.3→48.9、MathVerse47.1→52.7、MMSearch56.8→63.7；纯RL加tool bonus退化为单个占位代码块。",
+   "conditions": [
+    "Qwen2.5-VL7B",
+    "16rollouts/prompt；code+image/text search"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p7",
+    "quote": "81.8    70.5       78.6          48.9       71.9          52.7     51.1    63.7"
+   },
+   "failure_boundary": "错误轨迹全过滤不保证纠偏行为；工具比例下降不是有因果验证的必要性标签。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "复杂代码tool冷启动缺失的直接失败证据。",
+   "strength": 3
+  },
+  {
+   "problem": "P38",
+   "how": "只留error-free轨迹可能缺少执行失败恢复支持。",
+   "strength": 2
+  },
+  {
+   "problem": "P63",
+   "how": "RL数据领域不全会牺牲其他能力。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "DeepEyesV2-SFT",
+   "kind": "ablation"
+  },
+  {
+   "name": "RL perception/reason/search data subsets",
+   "kind": "ablation"
+  },
+  {
+   "name": "direct RL/tool bonus pilot",
+   "kind": "diagnostic"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "tool bonus产生单块占位注释reward hacking。",
+   "quote": "comments rather than meaningful code, revealing the phenomenon of reward hacking.",
+   "locator": "§3.2 p5"
+  }
+ ],
+ "question": {
+  "observed_failure": "只感知RL使InfoSeek47.9→44.6，完整混合提升至51.1；纯RL最终避tool。",
+  "load_bearing_assumption": "现有tool执行能力和多领域行为覆盖是agent RL前提。",
+  "scope": "图像code与search任务",
+  "success_criterion": "有效执行/分领域答案/工具分布分别量化。",
+  "why_open": "cropping的成功经验不能直接扩到复杂代码生成。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§3.2"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Tables4–5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=R_{acc}+R_{format}",
+    "locator": "§3.4"
+   }
+  ],
+  "signal_routing": "终答案和格式序列奖励，最终无tool bonus；DAPO16样本，具体观测mask、优势和长度归一未列，不从算法名补全。",
+  "normalization": null,
+  "invariance": "非PBRS，无显式cost约束；数据分流改变训练分布非reward invariance。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "全错无格式差异组稀疏信号；模板code可hack调用bonus；只有成功执行示范无法保证未见错误恢复。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "§3.2纯RL/bonus pilot；Table4/5SFT与RL组成。",
+  "negative_results": [
+   {
+    "text": "InfoSeek51.1低于search-enabled基座53.7及MMSearch-R1 55.1；Table1 V*81.8低于DeepEyes85.6，反驳正文一概优于。",
+    "locator": "Tables1/3/§4.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若等预算、相同数据的有效执行模板已能达到相同性能，则多阶段能力解释需拆分。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B；teacher Gemini2.5Pro/GPT4o/ClaudeSonnet4",
+   "framework": "DAPO/DeepSpeed",
+   "group_size": 16,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "max response16384；RL batch256/LR1e-6/clip upper.30 lower.20；未给可核统一walltime。",
+  "pitfalls": [
+   {
+    "text": "Appendix A.2列V*为training来源又评V*，具体去重未在已读段落说明，保留数据边界未知。",
+    "locator": "AppA.2/Table1"
+   }
+  ],
+  "code": "https://visual-agent.github.io/",
+  "lesson": "当新工具比crop复杂时，先测试有效执行概率与bonus占位hacking，再用真实执行反馈造多样轨迹。"
+ }
+}

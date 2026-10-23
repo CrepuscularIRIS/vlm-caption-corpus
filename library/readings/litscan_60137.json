@@ -1,0 +1,178 @@
+{
+ "paper_key": "litscan:60137",
+ "title": "LookLess",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_60137.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 Tables1–4",
+   "Limitations",
+   "Appendix A prompts/B TablesA1–A2"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "每题当前模型强制tool4条、禁止tool4条、adaptive8条；前两组正确率差的符号定义必要性，联合正确/匹配四格奖励及一致性惩罚训练全部rollouts。",
+  "why_non_obvious": "用模型当前能力更新必要性，并保留两种提示下的训练支持；但提示干预不是同前缀纯动作反事实。",
+  "trigger_condition": "当crop使用随任务难度变化且过用/不用并存时，在线比较两个受控提示分支指导自主分支。",
+  "contribution_type": "rollout采样与奖励设计",
+  "abstract_strategy": "用受控条件的当前策略成功差来训练自由选择模式。",
+  "abstract_trigger_condition": "能支付双条件试验且资源收益随策略变化时。",
+  "abstract_key_step": "支撑分支既产必要性标签又参与梯度。",
+  "abstract_why_non_obvious": "反事实估计和支持训练耦合，去掉支撑分支梯度会降低效果。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:60137#s1",
+   "object": "crop与direct两类行为支持及adaptive选择",
+   "information": "当前policy每题4+4受控提示rollouts的GT准确率、8adaptive调用指示与正确性",
+   "operation": "必要性=1[acctool>accno_tool]；adaptive正确/错误×匹配/不匹配四格reward；受控分支也获instruction reward并参与更新。",
+   "claimed_effect": "五任务平均74.9 vs PixelReasoner74.1，tool ratio36.0% vs65.4%；HR4K73.4且tool ratio20.1%（86.6→20.1是66.5百分点）。",
+   "conditions": [
+    "4k SFT、7k RL；Qwen2.5-VL7B",
+    "最多3次zoom，16rollouts"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p6",
+    "quote": "(20.1)−66.5"
+   },
+   "failure_boundary": "tool ratio为是否调用的样本比例，非调用次数或walltime；4样本差值无置信区间，平局一律no-tool。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P05",
+   "how": "直接定义在线tool必要性，但由prompt级成功率而非纯动作反事实。",
+   "strength": 3
+  },
+  {
+   "problem": "P02",
+   "how": "受控分支维持工具/直答行为，adaptive降低冗余。",
+   "strength": 3
+  },
+  {
+   "problem": "P17",
+   "how": "强制/禁止提示改变策略语义，不能将差值解释为同状态ΔV。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Pixel Reasoner",
+   "kind": "method"
+  },
+  {
+   "name": "static necessity / no PN gradient",
+   "kind": "ablation"
+  },
+  {
+   "name": "all tool / all no-tool",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅zoom-in经验验证，其他工具协调未测。",
+   "quote": "pixel-space operation: zoom-in.",
+   "locator": "Limitations p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "PixelReasoner平均tool ratio65.4%且accuracy74.1，作者36.0%与74.9。",
+  "load_bearing_assumption": "受控提示的当前模型正确率差可预测中性提示下的工具收益。",
+  "scope": "题级是否zoom-in，最多3次",
+  "success_criterion": "五任务答案与tool ratio改善，需另外验证统计非劣及调用成本。",
+  "why_open": "离线静态必要性随训练能力变化会失效。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Eq7四格"
+  },
+  {
+   "vocab": "M",
+   "id": "M13",
+   "locator": "§4.2（近似，提示不同）"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§4.2/Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "N=\\mathbf1[acc_{tool}>acc_{no\\ tool}],\\quad m=\\mathbf1[\\mathbf1_{zoom}=N]",
+    "locator": "Eq5/7"
+   },
+   {
+    "latex": "r_{align}=(+1.6,+1.2,-0.8,-1.0)_{(correct,matched),(correct,unmatched),(wrong,matched),(wrong,unmatched)}",
+    "locator": "Eq7/TableA2"
+   },
+   {
+    "latex": "R_{necessity}=r_{correct}+0.08r_{instr};\\quad R_{adapt}=r_{correct}+0.05r_{align}-0.1Var(\\mathbf1_{zoom})",
+    "locator": "Eq8–10/TableA2"
+   }
+  ],
+  "signal_routing": "necessity8与adaptive8均进入更新；工具/禁用分支奖励含遵循提示，adaptive奖正确且匹配必要性。文中没有完整token-level目标、mask、组的划分及标准化公式，保留未知。",
+  "normalization": null,
+  "invariance": "非PBRS。rcons是同题adaptive组共享标量：若只在adaptive子组中心化则严格抵消，若全部16联合中心化则只区分子组，不能由公式声称逐条奖励一致选择；具体归一实现未给。",
+  "baseline_or_potential": "当前policy受控提示正确率比较，是策略条件差而不是learned value。",
+  "degenerate_cases": "两分支全对或全错都标N=0；4次采样噪声可误判。Eq6用存在一个allowed action，不足以严格约束整轨迹禁止tool。一致性本身可偏向全用/全不用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "静态必要性72.1 vs动态74.9；去必要性分支梯度73.7 vs74.9。",
+  "negative_results": [
+   {
+    "text": "All No-Tool72.4、All Tool72.5均低于adaptive74.9；固定必要性46.9%tool却低准确率。",
+    "locator": "Table3/§5.3.3"
+   },
+   {
+    "text": "V*相对SFT tool ratio9.4→59.1上升，不是各任务都减少tool。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "SFT seed49；RL多seed未报告",
+  "falsifier": "对同前缀仅干预首个动作且扩采样后，若必要性标签大量反转或效果不超固定两分支混采，在线必要性解释减弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B",
+   "framework": "Open-R1/OpenRLHF",
+   "group_size": 16,
+   "max_turns": 3,
+   "kl": 0
+  },
+  "cost": "每prompt4tool+4no-tool+8adaptive；max generation10000；不能把tool ratio降低等同训练/推理walltime同比下降。",
+  "pitfalls": [
+   {
+    "text": "摘要/表66.5应读作百分点，非相对降低66.5%；Eq6存在量词弱于全文遵循提示叙述。",
+    "locator": "Table1/Eq6"
+   }
+  ],
+  "code": null,
+  "lesson": "当用受控分支监督自由分支时，应区分提示变化、采样噪声及梯度支持收益，并检查组共享奖励是否被中心化抹去。"
+ }
+}

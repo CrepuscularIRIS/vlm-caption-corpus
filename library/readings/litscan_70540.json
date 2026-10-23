@@ -1,0 +1,144 @@
+{
+ "paper_key": "litscan:70540",
+ "title": "RegionReasoner",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70540.txt",
+  "sections_read": [
+   "Abstract",
+   "§4.1–4.4 Eq1–7",
+   "§5.1 Tables1,3–4",
+   "§5 component analysis",
+   "§6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "对文本推理中的reference bbox引用与scene/focus关键词重合给过程奖励，维持多轮引用一致。",
+  "why_non_obvious": "引用格式与图像正确性是不同层；可解析引用能检测坐标传播但不保证视觉内容真实。",
+  "trigger_condition": "当多轮指代表述漂移时，把参考框作为显式接口并核对引用与caption实体一致性。",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当多轮指代表述漂移时，把参考框作为显式接口并核对引用与caption实体一致性。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "对文本推理中的reference bbox引用与scene/focus关键词重合给过程奖励，维持多轮引用一致。",
+  "abstract_why_non_obvious": "引用格式与图像正确性是不同层；可解析引用能检测坐标传播但不保证视觉内容真实。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70540#s1",
+   "object": "多轮referring检测/分割",
+   "information": "固定原图、每轮query、给定或前轮传播reference boxes；scene/focus/think均模型文本",
+   "operation": "正确引用框+关键词重合+空间词prior叠加geometry reward，跨turn GAE更新完整结构输出",
+   "claimed_effect": "Table3多轮RefCOCO+ AP74.8→80.7，RefCOCOg73.6→78.2；single87.9→87.7/87.5→87.9。",
+   "conditions": [
+    "Qwen2.5VL7B；7轮benchmark；原图不变"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables3–4; §4",
+    "quote": "+ Ref-cite + Consist. + Logic       ✓             ✓            ✓            87.7               87.9              80.7            78.2"
+   },
+   "failure_boundary": "不是实际crop工具；奖励自生成caption与think一致可能共同幻觉；无stop学习。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "显式caption→think实体一致约束直接触及多轮语义漂移。",
+   "strength": 3
+  },
+  {
+   "problem": "P43",
+   "how": "过程奖励可解析但不是独立视觉grounding证据。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "每turn GAE而不是各块专门credit，须区分。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "VisionReasoner base rewards",
+   "kind": "method"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "base多轮AP74.8/73.6低于单轮87.9/87.5；加信号到80.7/78.2。",
+  "load_bearing_assumption": "引用和自生成caption重合可稳定视觉定位，而不只是文字复述。",
+  "scope": "固定图多轮指代检测/分割",
+  "success_criterion": "乱序/错误caption负对照与GT框外观证据对照，比较geometry独立指标。",
+  "why_open": "奖励文本可相互复制；未观察实际crop新像素，不能说明取证收益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Ov(X,Y)=|K(X)\\cap K(Y)|/\\max(|K(X)|,1);\\ R_{cons}=Ov(scene,think)+.6\\,1[B_{ref}\\ne\\emptyset]Ov(focus,think)+.4\\ell(think)",
+    "locator": "Eq5–6"
+   },
+   {
+    "latex": "R=R_{base}+R_{ref}+R_{cons};\\quad \\hat A_t=\\sum_l(\\gamma\\lambda)^l[r_{t+l}+\\gamma V(s_{t+l+1})-V(s_{t+l})]",
+    "locator": "Eq7; §4.4"
+   }
+  ],
+  "signal_routing": "整turn action为scene/focus/think/answer序列，likelihood ratio在turn序列层定义；GAE含learned value head；不等于GRPO组均值std，虽作者命名GRPO。引用reward的精确命中分母为引用数，非要求框数。",
+  "normalization": "per-channel",
+  "invariance": "各reward component归一/clip[0,2]后求和；未见组std。非PBRS；终态V=0。Ltotal把maximize Lclip与+value/-entropy/+KL混写，优化符号实现未知。",
+  "baseline_or_potential": "learned V critic；正文no additional task-specific heads与value head有张力。",
+  "degenerate_cases": "无reference Rref=1；空关键词overlap=0；有bbox关键词但不引用可获λ项；预测引用错误乘.5，不能保证不hack。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Tables3–4逐加cite/consistency/logic，固定schema检查；单轮vs多轮。",
+  "negative_results": [
+   {
+    "text": "全奖励single-round AP RefCOCO+87.7低于base87.9，分割74.1低于base74.9。",
+    "locator": "Tables3–4"
+   }
+  ],
+  "seeds": "固定random seeds，具体数值未读到。",
+  "falsifier": "若错误caption复制仍高reward且geometry降，则一致性并非视觉忠实性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "文称GRPO；公式为critic GAE clipped policy",
+   "group_size": 8,
+   "max_turns": 7,
+   "kl": null
+  },
+  "cost": "4H100约10h，batch16，lr1e-6。",
+  "pitfalls": [
+   {
+    "text": "Table1标Avg与可见七轮数值不直接相符，记录Table3原报告聚合数而不推导独立提升。",
+    "locator": "Tables1,3"
+   },
+   {
+    "text": "缺完整base reward定义/GAE参数及一致优化符号，未补实现。",
+    "locator": "§4.3–4.4"
+   }
+  ],
+  "code": null,
+  "lesson": "当过程奖励只核文本一致时，要用独立geometry或像素证据评估，不能把复述当因果grounding。"
+ }
+}

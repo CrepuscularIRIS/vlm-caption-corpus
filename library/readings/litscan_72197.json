@@ -1,0 +1,179 @@
+{
+ "paper_key": "litscan:72197",
+ "title": "InSight-o3",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_72197.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 pp4–10 Tables1–5",
+   "B.3 p20 Table6",
+   "D.1 p32",
+   "D.4 text p35"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "decompose_and_delegate",
+  "key_step": "固定外部vReasoner，将在线搜索任务反馈和离线框IoU混合，仅RL训练vSearcher。",
+  "why_non_obvious": "在线任务不共享同一prompt组，改全局reward标准化；昂贵闭环反馈与便宜离线标签互补。",
+  "trigger_condition": "reasoner强但高密度区域检索弱、联合agent训练复杂时。",
+  "contribution_type": "双agent框架+hybrid subagent RL+O3-Bench",
+  "abstract_strategy": "拆分推理与视觉定位，固定强上层并适配低层。",
+  "abstract_trigger_condition": "局部oracle可得且动态委托任务分布与静态数据不同。",
+  "abstract_key_step": "在线奖励=reasoner helpful且最终正确，离线奖励=thresholded IoU，两者1:1训练。",
+  "abstract_why_non_obvious": "共同成功避免仅teacher好评但答案错；仍会把上层错误归给正确检索。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:72197#s1",
+   "object": "vSearcher返回区域轨迹",
+   "information": "离线GT框与GPT5nano区域描述；在线GPT5mini搜索描述/帮助评分、最终答案正确性由GPT5nano判",
+   "operation": "1[ntool>0](.2format+.8IoU)；在线IoU替换为1[helpful且correct]；离线组内/在线全局标准化。",
+   "claimed_effect": "GPT5mini O3 39.0→61.5；hybrid61.5vs在线59.6/离线58.8，每步941s vs1223/105s。",
+   "conditions": [
+    "冻结reasoner，只训练Qwen2.5-VL7B searcher",
+    "在线collage15,303，离线layout10,186，两类不同数据"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p10",
+    "quote": "86.9 +6.3         41.2 +3.5    61.5 +14.0 941s"
+   },
+   "failure_boundary": "hybrid消融同时改变数据来源，不能只归因优化；系统依赖外部reasoner且不是完全开放单模型。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P48",
+   "how": "O3-Bench345QA/204images多区域地图图表，target-layout oracle提供感知瓶颈证据。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "低层序列奖励受到上层最终答案约束，并非逐crop因果信用。",
+   "strength": 2
+  },
+  {
+   "problem": "P39",
+   "how": "reasoner输入分辨率强烈影响工具增益。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "same reasoner + untrained Qwen searcher",
+   "kind": "matched baseline"
+  },
+  {
+   "name": "in-loop only/out-of-loop only",
+   "kind": "ablation"
+  },
+  {
+   "name": "oracle target layouts",
+   "kind": "diagnostic"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "正确crop仍可被reasoner忽视或错误推断；O3多数错误被作者归为reasoner。",
+   "locator": "D.4 p35",
+   "quote": "most wrong answers are due to vReasoner, not vSearcher."
+  }
+ ],
+ "question": {
+  "observed_failure": "GPT5mini O3仅39.0，提供GT layouts67.5；Qwen7B27.4→35.4仍低，定位和推理两种能力瓶颈。",
+  "load_bearing_assumption": "强reasoner可可靠委托与评价局部证据，混合离线标签补稳定性。",
+  "scope": "高密度多区域图表/地图",
+  "success_criterion": "相同reasoner比较trained/untrained searcher，按分辨率与领域分层。",
+  "why_open": "单纯小目标perception基准不足评估多区域组合。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "B.3 Table6"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2–5"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=1[n_{tool}>0](0.2r_{format}+0.8r_{IoU}),\\quad r_{IoU}=\\max(0,IoU-.25)/.75;\\quad\\hat r_{IoU}=1[s=c=1]",
+    "locator": "Eq1/§4.1/D.1"
+   },
+   {
+    "latex": "A=(r-\\mu(r))/\\sigma(r);\\quad J=M^{-1}\\sum_i |o_i|^{-1}\\sum_t[\\min(\\rho_t A,\\operatorname{clip}(\\rho_t)A)-\\beta KL]",
+    "locator": "Eq2 p7"
+   }
+  ],
+  "signal_routing": "离线每prompt8输出归一，在线全部N动态search任务全局归一；每searcher输出一reward、所有生成token同adv，工具response mask=0，context含观测。Eq2长度|oi|是否包含masked响应实现未核。",
+  "normalization": "other",
+  "invariance": "正仿射reward缩放在对应归一集合内被std抵消(零方差/eps例外)；在线全局mix使相同任务奖励受其他任务难度分布影响。非PBRS；至少一次crop gate直接禁止direct框拿reward。",
+  "baseline_or_potential": "离线组均值/在线跨任务全局均值；不是固定ref动作反事实。",
+  "degenerate_cases": "上层答错使好crop无IoU奖励；错误全局一致/方差0边界未给；早期正确crop可受之后reasoner失败牵连；强制至少1次可能浪费。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3去feedback/outcome/globalnorm；Table2分辨率；Table5混合与单源。",
+  "negative_results": [
+   {
+    "text": "Gemini高res +searcher在HR4K83.5→82.3、VProbe39.6→36.2、MME56.5→56.3；GPT4o VProbe/ MME也下降。",
+    "locator": "Table1"
+   },
+   {
+    "text": "作者承认searcher工具平均约1次，粗区域易找使crop作用有限；no-tool gate消融avg63.2→62.1只是小幅改善。",
+    "locator": "§5.2/Table3"
+   }
+  ],
+  "seeds": "多数评测3trials，MME单次；训练seeds未知",
+  "falsifier": "proposed：固定区域任务/相同数据和compute比较hybrid，交叉更换reasoner并独立标注crop正确性，以分离被上层连坐的负adv。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B Instruct searcher；GPT5mini2025-08-07 reasoner",
+   "framework": "verl GRPO variant，冻结vision+adapter",
+   "group_size": 8,
+   "max_turns": 6,
+   "kl": 0.01
+  },
+  "cost": "batch24 LR1e-6 150steps onpolicy；训练3.2Mpx/9Kctx T1，eval12.8Mpx/32K T0；两级各max6调用。Hybrid941s/step，不等于推理walltime。",
+  "pitfalls": [
+   {
+    "text": "reasoner 1280² vs3500²决定search增益，必须对齐输入预算；benchmark用三强模型全答对剔除，难度是条件选择。",
+    "locator": "§3.2/Table2"
+   },
+   {
+    "text": "O3-Bench生成以layout caption/OCR送GPT5，再人工核验；不是未经核验机器gold。",
+    "locator": "§3.2"
+   }
+  ],
+  "code": "https://github.com/m-Just/InSight-o3",
+  "lesson": "报告两级调用、外部judge/teacher和分辨率；用真实委托分布校准局部模型，但避免把联合终局错直接当局部grounding错。"
+ }
+}

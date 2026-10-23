@@ -1,0 +1,173 @@
+{
+ "paper_key": "litscan:14436",
+ "title": "DyFo: A Training-Free Dynamic Focus Visual Search for Enhancing LMMs in Fine-Grained Visual Understanding",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_14436.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.1–3.2 Eq2–6",
+   "§4.1–4.3 Tables1–6",
+   "§5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "将局部图像和语义线索组成focus节点，把放大/放宽视野变成树搜索动作，采用现成MCTS/UCT。",
+  "why_non_obvious": "视觉专家定位与LMM语义互补，搜索需允许缩小也允许扩展而非单向越裁越小。",
+  "trigger_condition": "When visual evidence may lie outside the current narrow focus, search a tree containing both semantic focus and scatter actions.",
+  "contribution_type": "method",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "When visual evidence may lie outside the current narrow focus, search a tree containing both semantic focus and scatter actions.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "将局部图像和语义线索组成focus节点，把放大/放宽视野变成树搜索动作，采用现成MCTS/UCT。",
+  "abstract_why_non_obvious": "视觉专家定位与LMM语义互补，搜索需允许缩小也允许扩展而非单向越裁越小。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:14436#s1",
+   "object": "training-free focus tree",
+   "information": "LMM文本线索，Lang-SAM返回框/mask局部图像；节点图文一致性和面积比用于启发评分",
+   "operation": "semantic focus/scatter更新节点；UCT选择、随机扩展、reward回传；跨节点reward加权投票",
+   "claimed_effect": "Qwen2-VL V*72.25→81.15；LLaVA48.68→59.16；maxdepth5诊断MCTS搜索长度3.20 vsBFS5.65",
+   "conditions": [
+    "固定预训练LMM+Lang-Segment-Anything，无训练；搜索预算固定"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables3,6; Eq2–6",
+    "quote": "DyFo-Q (ours)         80.00         82.89          81.15 (+8.90)            attribute recognition (115 samples) and spatial relation-\n                                                                                   ship reasoning (76 samples). Attribute recognition eval-\nTable 3. Results on V* Bench comparing our method with existing                    uates models on identifying detailed object attributes like"
+   },
+   "failure_boundary": "一致性不是任务正确性；Eq5乘有效面积比而非反面积/调用代价，不能据此推断少crop目标。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P30",
+   "strength": 2,
+   "how": "提供扩大当前视野的恢复动作，而非重复小框平移。"
+  },
+  {
+   "problem": "P33",
+   "strength": 2,
+   "how": "预算/树搜索停止由外部算法管理，不是策略学习stop。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "图文一致性判据不能替代当前策略是否需要crop。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Regular LMM",
+   "kind": "model"
+  },
+  {
+   "name": "A*/BFS/DFS",
+   "kind": "search"
+  },
+  {
+   "name": "Lang-SAM alone",
+   "kind": "tool"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "A*启发式条件不易满足。",
+   "quote": "found that finding appropriate heuristics to meet these con-\nditions is challenging, especially when the target node is\nuncertain. We believe this limitation causes A* to perform",
+   "locator": "§4.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "V* Qwen2-VL72.25到81.15；Table4 Qwen只focus空间70.25到两动作82.89。",
+  "load_bearing_assumption": "更紧的局部框总能改善任务相关信息。",
+  "scope": "训练外自然图像视觉搜索，2种动作",
+  "success_criterion": "固定maxdepth比较搜索长度与VQA；比较单动作和双动作。",
+  "why_open": "窄框可能丢上下文，专家错定位和LMM幻觉会相互强化。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§3.2.2 MCTS/UCT"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4 action ablation"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "T^{i+1}=L(f^i,A^i),\\ I^{i+1}=E(T^{i+1},I^i,A^i)",
+    "locator": "Eq2"
+   },
+   {
+    "latex": "R_{f^i}=\\mathbf1_{I=T}\\,s_{f^i}/s_o;\\quad Q(f,a)=\\sum_{f^i\\in N_f}R_{f^i}",
+    "locator": "Eq4–5"
+   }
+  ],
+  "signal_routing": "reward仅用于外部MCTS节点Q及最终投票，没有梯度回传到LMM/视觉专家；UCT另加访问数探索项。真实局部像素由视觉专家定位返回。",
+  "normalization": "other",
+  "invariance": "有效面积除原图面积；Q按文中Eq4求和而非访问均值。非PBRS，也无GRPO std；不保证与任务准确率目标等价。",
+  "baseline_or_potential": "图文语义一致性是搜索启发分，不是已校准动作Q或策略价值势函数。",
+  "degenerate_cases": "所有节点不一致→reward全0，投票tie处理未读到；同一致性较大面积得分更大；错误共识可高分；单步无树搜索恢复。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4单focus/scatter vs组合，Table5独立专家 vs协作，Table6相同maxdepth5换search算法/空间；并非学习算法比较。",
+  "negative_results": [
+   {
+    "text": "LLaVA空间单focus55.50，双动作53.95，故双动作非每项提升。",
+    "locator": "Table4"
+   },
+   {
+    "text": "A*可用启发式难满足admissible条件，不应声称MCTS理论优于A*。",
+    "locator": "§4.3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若打乱一致性得分或同预算宽框也有相同增益，则不支持该启发式提供有效搜索指导。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5-7B / Qwen2-VL-7B + Lang-SAM",
+   "framework": "MCTS/UCT, inference only",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2×NVIDIA L40；Table6 maxdepth5、搜索长度3.20；实际总调用数/延迟未读到。",
+  "pitfalls": [
+   {
+    "text": "搜索树深度与总节点/模型调用成本不同，不能把3.20当每题全部crop数。",
+    "locator": "§4.3 Efficiency Study"
+   },
+   {
+    "text": "一致性indicator的完整判定提示/阈值未在已读方法明确给出。",
+    "locator": "Eq5"
+   }
+  ],
+  "code": null,
+  "lesson": "当局部观测丢上下文时，应允许扩大视野并保留多尺度证据；把树搜索开销和单条轨迹步数分开报告。"
+ }
+}

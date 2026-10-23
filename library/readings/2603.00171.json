@@ -1,0 +1,397 @@
+{
+ "paper_key": "2603.00171",
+ "title": "LookWise: Knowing When and Where to Look for Fine-Grained Visual Reasoning in Multimodal Large Language Models",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2603.00171.pdf",
+  "version": "v3",
+  "version_observed": "PDF p.1 arXiv:2603.00171v3 [cs.CV] 30 May 2026; 未核查线上最新版本；页眉期刊名称不替代 manifest decision。",
+  "pages": 14,
+  "sections_read": [
+   "Abstract",
+   "I Introduction",
+   "II Related Work A-C",
+   "III-A Analysis: When and Where to Look",
+   "III-B Overview",
+   "III-C Confidence-Based Module (1-3)",
+   "III-D Semantic-Guided Localization (1-3), Target Extraction Prompt",
+   "IV-A Implementation Details",
+   "IV-B Qualitative Analysis",
+   "IV-C Quantitative Analysis",
+   "IV-D Efficiency Analysis (1-2), Algorithm 1",
+   "IV-E Ablation Study (1-2)",
+   "IV-F Confidence Sensitivity (1-3)",
+   "IV-G Discussion & Generalization (1-2)",
+   "V Conclusion",
+   "References and author biographies pp.12-14",
+   "Equations 1-5",
+   "Tables I-VIII",
+   "Figures 1-8"
+  ],
+  "appendix": null
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "先复用初答生成 token 概率决定是否增加视觉观测，再把问题拆为实体名，以实体条件注意力和多尺度窗口寻找局部区域；全部在推理时完成。",
+  "key_step": "C=初答各生成 token 概率的算术平均；C≥τ 返回已生成初答，C<τ 才调用实体抽取和定位。定位使用 where is the <target> 的文本→图像注意力，按局部峰值相对四邻域的面积归一化对比度选窗口。",
+  "why_non_obvious": "额外图像不保证有益，局部显著文字可以把正确初答误导为错误；直接问是否需要看会先消耗一次生成。问题全文的注意力又可能只看一个目标或看错实例，因此何时看与看哪里需要不同信号。",
+  "trigger_condition": "When global-answer confidence is low and raw question attention confuses small or multiple targets, apply confidence-gated target-conditioned localization to acquire local evidence only for routed samples.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null，未提供 reviews_path；期刊版式不构成接收证据。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Reuse an initial prediction to route uncertain cases to additional observation, then condition localization on explicitly extracted entities.",
+  "abstract_key_step": "Threshold the arithmetic mean of generated-symbol probabilities; for routed cases, extract entity descriptions and maximize neighborhood contrast over candidate observation windows.",
+  "abstract_why_non_obvious": "Extra observation can distract an already correct predictor; asking separately whether to inspect adds computation, and a broad query can merge or miss its intended entities.",
+  "abstract_trigger_condition": "When initial prediction confidence separates cases and relevant entities can be named, route uncertain cases to targeted observation while returning confident predictions immediately."
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.00171#s1",
+   "object": "初答后的推理分支：直接返回或额外局部观察",
+   "information": "当前推理模型看到原图I、问题Q及自己生成初答的逐token softmax概率；推理门控不看GT、未来crop效果或外部冻结读者。调τ需另有代表性验证集；验证标签与切分细节未交代。",
+   "operation": "先生成Answer_pre，计算C=(1/T)ΣP(y_t|·)，C≥τ直接返回，C<τ调用局部定位并结合原图+crop再答；验证条件允许时maxτ[TPR−λFPR]，否则用固定阈值。",
+   "output": "初答或一次局部增强后的终答；门控只在推理协议中实施，无训练梯度。",
+   "claimed_effect": "作者Table III/IV：Qwen AOKVQA 71.96→73.10，crop100→32.40%，26m24s→12m33s；V*85.86→86.38，crop100→77.48%，但64→78min。Table VIII固定τ=.96四任务均高于base，非主表全部数字。",
+   "conditions": [
+    "模型可提供生成token概率；初答可作为最终答案复用",
+    "低初答置信度需与实际局部观测收益相关，不能仅与语言不确定性相关",
+    "优化τ需要代表性验证数据；固定阈值结果仍需按分布检查"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "[redacted: project-internal]",
+    "quote": "our strategy yields a +1.14% on AOKVQA and +0.52% on V*-\nBench."
+   },
+   "failure_boundary": "自信错误可能被直接保留；低置信知识/推理错误不一定能被crop修复。Fig2标签由置信度增加定义，无以正确性收益为金标的AUROC/校准结果。V*裁图少而时间更长；非多轮learned停止策略。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.00171#s2",
+   "object": "crop位置及范围",
+   "information": "从问题抽取实体；当前MLLM看到原图、where is the <target>，读取特定层的目标token→图像token注意力，知道图像网格与原始尺寸；不看GT框/答案或真实逐框收益。",
+   "operation": "以含Reason/target的few-shot提示提取实体；Qwen Layer22取目标最后token、LLaVA Layer14平均目标最后词的token，跨head平均后reshape网格；8种尺度滑窗找注意力峰值，再最大化峰值减四邻窗均值除面积的sharpness；映射坐标、clamp并裁图，空间关系可合并实体框。",
+   "output": "高分辨率局部图，与全图共同输入终答；多目标示例做框的空间并集。",
+   "claimed_effect": "Table V Qwen语义定位75.90→85.86 V*、66.36→72.50 HR4K；LLaVA56.02→62.80 V*。这些是作者组件比较，完整门控后的Qwen V*为86.38。",
+   "conditions": [
+    "可访问内部注意力并正确还原视觉网格",
+    "初始分辨率足以在注意力中激活目标",
+    "实体抽取保留真正区分实例的语义；窗口包含所需关系上下文"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "III-D2, p.6; Eq.4-5; Table V p.10",
+    "quote": "We then feed this prompt to the MLLM and extract the cross-\nattention responses between the target tokens and image tokens\nto obtain a target-conditioned attention map."
+   },
+   "failure_boundary": "LLaVA336×336的注意力网格粗，小目标难定位；远距关系紧框可能丢上下文。实体提示要求不含形容词却例子保留wooden/white/red，具体实现语义未澄清。未报告GT定位IoU或同预算随机实体/随机框负对照。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.00171#s3",
+   "object": "同类别多实例的候选观察框",
+   "information": "语义注意力图的高响应区域与候选框IoU；不看实例GT或逐框答案正确性。",
+   "operation": "按注意力阈值保留前景候选框，对IoU>.5的框做NMS式去重，再把保留局部证据交给最终预测。",
+   "output": "减少重叠候选的局部区域集合。",
+   "claimed_effect": "作者称能减少空间冗余、改善实例定位/计数；没有独立多实例NMS消融或量化收益，不能分配Table I整套收益给本操作。",
+   "conditions": [
+    "邻近实例在注意力中仍有可分峰",
+    "注意力前景阈值和候选框生成合理；正文未给其数值"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "III-D3, pp.6-7",
+    "quote": "boxes with an IoU greater than 0.5\nare treated as duplicates and pruned."
+   },
+   "failure_boundary": "同类实例本身高重叠可能被误删；无阈值、召回率或计数负对照；不把去重等同真实实例分离保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-3B",
+   "kind": "method"
+  },
+  {
+   "name": "LLaVA-v1.5-7B",
+   "kind": "method"
+  },
+  {
+   "name": "MLLMs-Know",
+   "kind": "method"
+  },
+  {
+   "name": "ZoomEye",
+   "kind": "method"
+  },
+  {
+   "name": "DC2",
+   "kind": "method"
+  },
+  {
+   "name": "VisCrop (Table I;正文称ViCrop)",
+   "kind": "method"
+  },
+  {
+   "name": "Pixel Reasoner",
+   "kind": "method"
+  },
+  {
+   "name": "LLM-Prompting routing",
+   "kind": "method"
+  },
+  {
+   "name": "Full Local Inspection",
+   "kind": "method"
+  },
+  {
+   "name": "AOKVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "POPE",
+   "kind": "benchmark"
+  },
+  {
+   "name": "V*-Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HR-Bench 4K/8K",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者自述：验证阈值优化要求验证数据代表测试分布；未报告验证样本数、切分或独立测试选择流程。",
+   "quote": "This optimization strategy assumes access to representa-\ntive validation data.",
+   "locator": "III-C2 p.5"
+  },
+  {
+   "text": "LLaVA固定输入导致注意力粗，微小目标定位受限。",
+   "quote": "Since\neach visual token corresponds to a relatively large image\nregion, the resulting attention maps are inherently coarse.",
+   "locator": "IV-G1 p.11"
+  },
+  {
+   "text": "远距实体紧框会损失关系上下文，作者承认与搜索法的权衡。",
+   "quote": "them may inadvertently discard the surrounding contextual\ninformation necessary for inferring broad relational tasks.",
+   "locator": "IV-G1 pp.11-12"
+  }
+ ],
+ "question": {
+  "observed_failure": "无差别裁图：AOKVQA all-crop71.96 vs confidence73.10，100% vs32.40%crop，26m24s vs12m33s（TablesIII-IV）；Fig3给正确speeding→错误slow down及cocoa不变两个例子。原问句注意力在Fig5漏掉第二物体/漂移到成人，但该定位失败无总体发生率。",
+  "load_bearing_assumption": "更多局部像素总有帮助，且问题级注意力自动对应每个被询问的实体；作者用错误案例、分布和组件比较挑战这两个默认前提。置信度上升能代表必要性是其新增、未独立校准的前提。",
+  "scope": "两款现成MLLM上的训练免费、初答后一次路由+局部增强；四基准族（HR4K/8K分列），不是8轮crop RL。",
+  "success_criterion": "在相同backbone下提高终答准确率并减少局部处理/实测推理时间；分别报告，不能把crop减少推出时间减少；没有预注册非劣界。",
+  "why_open": "搜索法反复评估区域耗时，注意力法总裁图且多对象错位；低成本when信号与实体级where信号未在所比较基线中结合。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "To investigate this, we conduct a token-level confidence\nanalysis before and after cropping.",
+   "locator": "III-A1 p.3",
+   "note": "先测已有模型裁前后变化，再设计门控；该测量的标签是置信度变化而非因果正确性收益。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "we compare model performance with and without this\ncomponent (Table V).",
+   "locator": "IV-E2 p.9",
+   "note": "分别移除组件的研究动作；并不保证所有成本、门控阈值和选择过程控制充分。"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "LookWise prioritizes inference efficiency and precise target-\nlevel localization over exhaustive global search.",
+   "locator": "IV-G1 p.12",
+   "note": "将效率与空间任务准确率权衡写清；不是准确率非劣证明。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "If the confidence is high, the model answers directly;\notherwise, LookWise activates semantic-guided localization\nand performs a second prediction with local visual details.",
+   "locator": "II-C p.3; III-C pp.5-6",
+   "note": "rule10：用初答置信度区分样本资源，分别直接返回/增加观测；不是把普通两阶段流水线本身当分解证据。"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "role": "supporting",
+   "quote": "we instantiate a target-\nspecific localization prompt as “where is the <target>”.",
+   "locator": "III-D2 p.6",
+   "note": "rule13：提取实体后通过新条件提示同一现成模型做定位，无参数更新。未标rule1：虽挑战always-crop但无保证重推导；未标controlled_diagnostic_design：分布图未隔离置信度标签的内生混淆。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Y=\\{y_1,y_2,\\ldots,y_T\\}",
+    "locator": "Eq.1 p.5"
+   },
+   {
+    "latex": "C=\\frac{1}{T}\\sum_{t=1}^{T}P(y_t\\mid\\cdot)",
+    "locator": "Eq.2 p.5"
+   },
+   {
+    "latex": "J_\\lambda(\\tau)=\\operatorname{TPR}(\\tau)-\\lambda\\operatorname{FPR}(\\tau),\\quad\\lambda>0",
+    "locator": "Eq.3 p.5"
+   },
+   {
+    "latex": "A_{\\mathrm{1D}}=\\operatorname{Agg}(\\operatorname{Attn}(Z^{E}_{\\mathrm{text}}\\to Z_{\\mathrm{img}}))",
+    "locator": "Eq.4 p.6"
+   },
+   {
+    "latex": "\\Delta_r=\\frac{V_{\\max}-\\operatorname{Mean}(V_{\\mathrm{adj}})}{w_r\\times h_r}",
+    "locator": "Eq.5 p.6"
+   }
+  ],
+  "signal_routing": "无训练损失、reward/advantage或token梯度。初答所有生成token的概率只汇总为一次C；C≥τ复用初答，C<τ触发定位与重新回答。目标实体token的注意力路由到图像网格；Eq5决定窗口大小，框空间并集用于多目标。Eq3 λ只用于验证阶段阈值选择，不是每crop奖励系数。",
+  "normalization": "other: Eq2按初答长度T做概率算术平均；注意力跨heads平均；Eq5除窗口面积。没有GRPO组内mean/std或RLOO，TPR/FPR是类别条件率而非episode回报。",
+  "invariance": "推理时参数不变，但观测和终答策略改变；没有保持最优策略不变的PBRS保证。Eq3改λ改变路由阈值。概率均值不对分词/回答措辞或温度不变，不能称已校准epistemic uncertainty。",
+  "baseline_or_potential": "没有critic、势函数、MC价值基线或冻结外部评分器。原图初答为输出与置信度来源；III-A分析中Need Processing按Score_crop>Score_org定义。Eq3没有明确重述正类标签、验证切分和TPR/FPR计算协议，不能当作已给出GT必要性监督。",
+  "degenerate_cases": "读者静态推论：τ≤0且C∈[0,1]时全部直答；τ>1时全部局部增强；τ=1时除C=1外几乎全部增强。T=1时C仅该token概率，T=0无定义且原文未给处理。高置信错误直接被保留；低置信不可视觉修复的题仍花费crop。全对/全错组与p(action)≈0/1无训练梯度含义；若所有C落同侧路由退化为固定策略。注意力均匀时各Δ≈0，tie-break未报告。单轮初答即终答，不能外推多轮纠偏。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table III/IV在Qwen同定位模块上比较all-crop与置信门控，同时报告准确率/crop率/时间；Table V有/无实体语义定位；Table II比较显式询问与复用初答概率的路由耗时；TableVI-VIII阈值扫描。Fig3展示错误反例。它们区分部分组件，但不能仅由Fig2分布推出正确性收益可识别。",
+  "controls": [
+   "Table I baseline/MLLMs-Know有*标记为作者复现；其他方法列无*，不能假设全部在同一实现与解码条件复现。",
+   "Table IV门控只少处理部分样本，但初答额外成本可使V*时间增长；应同时看时间而非只看Crop%。",
+   "Table V Qwen有语义行的71.96/85.86/72.50与完整Table I的73.10/86.38/73.25不同，符合尚无置信门控；LLaVA有语义行却完全等于完整方法，门控因子控制细节不清。",
+   "Fig2没有报告必要性GT、AUROC、ECE、样本量或相同初答置信度条件内的收益检验。",
+   "缺相同crop率随机门控/置换置信度、随机实体或同面积随机crop、同计算预算重复全图答案等负对照；未报告LLM-Prompting的准确率/路由率。",
+   "阈值验证集身份、独立test集及选择过程未明确；高固定阈值扫描不等于无测试选择偏差。"
+  ],
+  "negative_results": [
+   {
+    "text": "无差别crop可以把正确全图答案改错，Fig3是示例而非发生率。",
+    "quote": "a crop containing\na salient “SLOW DOWN” sign misleads the model to answer\nwith the sign text, overriding the correct global prediction.",
+    "locator": "III-A1 p.3; Fig3 p.4"
+   },
+   {
+    "text": "V*门控相对all-crop裁图少22.52个百分点但耗时增加14分钟（64→78）；作者表中直接报告，不能写成所有任务省时。",
+    "quote": "w/o confidence-based decision 85.86 1h04m 100%\nw/ confidence-based decision 86.38 1h18m 77.48%",
+    "locator": "Table IV p.9"
+   },
+   {
+    "text": "LookWise并非全面胜过ZoomEye；Table I Qwen V*86.38<89.01，LLaVA V*62.80<83.25、HR4K47.38<49.88、HR8K42<48.63。作者承认紧框与全局关系权衡。",
+    "quote": "This exhaustive approach\nmakes them more robust for complex spatial queries but\nincurs massive computational overhead",
+    "locator": "IV-G1 p.12; Table I p.8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出、未运行：在独立冻结样本和同一checkpoint下配对初答/真实crop/随机同面积crop，标签定义为正确性净收益，检查C对该标签的AUROC及高置信错题；将C跨题打乱并匹配crop率与总计算，若真实门控不优于置换或不达P34预设AUROC≥.7，则不支持迁移为必要性信号。语义定位也需随机实体同预算对照；统计非劣按g4协议另行设计。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-3B and LLaVA-v1.5-7B",
+   "framework": null,
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "training": false,
+   "gpu": "NVIDIA H200 (count unspecified)",
+   "qwen_max_pixels": 3211264,
+   "llava_resolution": [
+    336,
+    336
+   ],
+   "attention_layer": {
+    "qwen": 22,
+    "llava": 14
+   },
+   "target_token_selection": {
+    "qwen": "last token of target sequence",
+    "llava": "mean of tokens in final word of target phrase"
+   },
+   "scale_ratios": [
+    1.0,
+    1.2,
+    1.4,
+    1.6,
+    1.8,
+    2.0,
+    4.0,
+    6.0
+   ],
+   "base_window_sizes": [
+    224,
+    448
+   ],
+   "nms_iou_threshold": 0.5,
+   "attention_foreground_threshold": null,
+   "fixed_thresholds_reported": [
+    0.92,
+    0.96
+   ],
+   "aokvqa_utility_optimum": {
+    "lambda": 1.5,
+    "tau": 0.734
+   }
+  },
+  "cost": "无训练。Table II Confidence总推理时间：AOKVQA12m33s, POPE1h08m, V*1h22m, HR4K1h36m, HR8K3h01m；LLM-Prompting为16m45s,1h33m,1h29m,1h47m,3h06m。Fig6 HR8K ZoomEye10h35m vs Ours3h01m，读者计算635/181≈3.51×，与作者约4×有差异。Table IV V*有门控1h18m也不同于TableII1h22m。GPU数/题数/并行batch/解码温度/视觉及文本token总数未交代，不能把总时间转为可靠每题或GPU·h。",
+  "pitfalls": [
+   {
+    "text": "直接询问是否需要看，简单题也多一次生成；复用可直接返回的初答避免这个额外路由步骤，但初答本身不是零成本。",
+    "quote": "generate a text-based decision before solving the actual\ntask.",
+    "locator": "IV-D2 pp.8-9"
+   },
+   {
+    "text": "模型间注意力层与目标token聚合不同，不能照搬Qwen层号到其他架构。",
+    "quote": "we extract attention scores from Layer 22, utilizing the last\ntoken of the target sequence as the query.",
+    "locator": "IV-A p.7"
+   }
+  ],
+  "code": "https://github.com/Xiaoxiang100/LookWise",
+  "lesson": "当裁图门控复用初答置信度时，应把初答、实体抽取、定位和再答的耗时都计入预算，并用正确性净收益单独校准门控；少裁图不保证更快。迁移到新模型前先核注意力层、token索引与网格映射。本句是读者工程归纳，未检查作者代码或本地运行。"
+ },
+ "relevance": [
+  {
+   "problem": "P26",
+   "how": "直接给出training-free不确定性触发局部观测近邻，但由外部阈值控制，未让RL策略学会何时看；不能声称解决缺失示范/奖励。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "提供可实现的自身初答概率均值信号；不是选项熵，未报告正确性收益必要性AUROC，现有项目门槛仍未过。",
+   "strength": 2
+  },
+  {
+   "problem": "P31",
+   "how": "门控减少无差别局部处理，但只有初答后一次路由，不解决多轮recover与停止冲突。",
+   "strength": 1
+  },
+  {
+   "problem": "P48",
+   "how": "报告AOKVQA/POPE/V*/HR4K/8K和H200时间；有跨模型证据，但无种子/CI或统一复现全部基线。",
+   "strength": 2
+  },
+  {
+   "problem": "P53",
+   "how": "两模型的注意力分辨率与层/token取法不同，为迁移到Qwen3-VL-4B提供实现边界。",
+   "strength": 1
+  },
+  {
+   "problem": "P61",
+   "how": "Fig3正确初答被crop误导说明保留初答的价值；非本项目SFT已会题回归率评测。",
+   "strength": 1
+  }
+ ]
+}

@@ -1,0 +1,482 @@
+{
+ "paper_key": "2607.14547",
+ "title": "AdaTurn: Budget-Aware Test-Time Scaling for Active Visual Perception Agents",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.14547.pdf",
+  "version": "v1",
+  "version_evidence": "p.1 arXiv:2607.14547v1 [cs.CV] 16 Jul 2026; online latest not checked",
+  "page_count": 22,
+  "fulltext_path": "2607.14547.txt",
+  "sections_read": [
+   "Abstract/introduction pp.1–3; Fig1",
+   "2.1–2.3 Related Work p.3",
+   "3.1 budget-aware action loop p.4; Eqs1–5/Fig2",
+   "3.2 Forced-Answer DAPO pp.5–6; Eqs6–10/Fig3",
+   "3.3 dynamic budgets/scheduling pp.6–7; Figs4–5",
+   "4.1–4.4 setup/main results/ablations/applicability pp.7–9; Tables1–2/Figs6–7",
+   "5 Conclusion p.9",
+   "References pp.10–12",
+   "Appendix A training p.13/Table3",
+   "Appendix B scheduling pp.13–14/Algorithm1",
+   "Appendix C ablations pp.13–14",
+   "Appendix D general capability p.14/Table4",
+   "Appendix E judge prompts pp.14–15",
+   "Appendix F all agent prompts pp.15–16",
+   "Appendix G successful rollouts p.16/Figs8–11 pp.18–21",
+   "Appendix H failure p.16/Fig12 p.22",
+   "Appendix I limitations/impact p.17"
+  ],
+  "visual_pages_inspected": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   13,
+   14,
+   15,
+   16,
+   18,
+   19,
+   20,
+   21,
+   22
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把外部最大交互轮次写入策略状态，训练时采样预算；对边界仍发工具请求的轨迹，撤回不可执行末轮，在旧证据前缀上注入强制作答指令并重新生成终答，以全保留轨迹的结果优势学习边界行为。再按预算估计负载分配rollout。",
+  "key_step": "不要把预算耗尽仅记错或mask；生成可评分的最终回答，并让它的结果优势训练之前的搜索轨迹与终答。",
+  "why_non_obvious": "最后一轮动作空间从继续/回答变为仅回答，预算盲策略可能尚未出答案就被终止；只训练终答或屏蔽前序轨迹均较差，说明边界恢复与此前搜索不能在本设置中随意分离。",
+  "trigger_condition": "When externally imposed interaction budgets vary and a policy requests an infeasible tool at the boundary, condition on the budget, regenerate an answer from the last executable prefix, and optimize the completed trajectory.",
+  "reviewer_praise": [
+   "low_evidence: manifest无reviews_path，未提供独立审稿。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 无审稿来源；下列读者限定不冒充reviewer意见。"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null；arXiv/preprint不推断接收。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Expose the resource limit as context and convert an infeasible boundary action into a trainable completion from the last valid state.",
+  "abstract_key_step": "Resample a feasible final decision under an explicit exhaustion instruction and propagate its outcome through the retained preceding trajectory.",
+  "abstract_why_non_obvious": "A boundary changes which actions are executable; discarding that boundary removes precisely the feedback needed to learn constrained completion.",
+  "abstract_trigger_condition": "When a fixed termination rule clips valid work before completion, vary the supplied limit and train a feasible completion branch while retaining the history that produced it."
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.14547#s1",
+   "object": "Agent policy state and dynamic maximum-turn budget",
+   "information": "策略看到Q、原图I、Tmax、此前生成及crop observations；不知道GT答案、实际正确性或剩余证据价值。预算是外部资源，不是必要性标签。",
+   "operation": "将Tmax作为输入；训练预算4到12、同一任务可配不同预算，推理按请求设置4/8/16/24/32等预算；t<Tmax允许工具或答案，边界只允许答案。",
+   "output": "同一模型随预算改变搜索深度的策略。",
+   "claimed_effect": "Table1四轮AdaTurn vsMini-o3：VisualProbe Hard39.0 vs26.5、Medium47.6 vs36.7、Easy61.2 vs42.4，V*85.2 vs79.2；32轮Hard48.1 vs48.0、Medium51.0 vs50.4。这些为整套方法而非预算输入单独消融。",
+   "conditions": [
+    "Tmax真实提供且executor与模型轮次计数一致。",
+    "训练含预算变化与终答/工具行为；推理16–32超过训练4–12。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Sec3.3 p.6",
+    "quote": "sample Tmax from a predefined set of candidate budgets and inject it into the prompt as part of the"
+   },
+   "failure_boundary": "未给预算集合精确枚举/抽样概率，未写清同题G16是否共享Tmax。AppendixF所谓exact system prompt没展示Tmax插值位置。不能把多预算能力当做学会自然必要时少crop；未给平均实际调用/终止率。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.14547#s2",
+   "object": "Over-budget tool-request rollouts and completed-trajectory policy gradient",
+   "information": "最后有效前缀保留已采集证据，未执行被拒绝的crop。政策在h_minus及预算耗尽control下生成答案；GT答案只供结果评分。Qwen3-32B evaluator见问题/GT/预测文本，不见图像或完整工具证据。",
+   "operation": "若边界产生工具请求，roll back到最后可执行前缀，附加必须回答的control，采样替代终答；按最终准确率评分，对保留的完整rollout生成token广播组归一化优势，以token-normalized DAPO更新；默认format权重0。",
+   "output": "原本无可评答案的截断案例变成有结果反馈的完成轨迹。",
+   "claimed_effect": "Fig7所有forced-answer变体四轮优于Mini-o3；默认全轨迹准确率目标整体最好，final-turn-only更差；Table1四轮MME-RW64.0 vs50.1。不能从该整体比较独立量化训练收益与推理wrapper收益。",
+   "conditions": [
+    "已有证据足以回答，或至少可由训练reward区分答案质量。",
+    "回滚、control前缀、behavior logprob及actor打分上下文一致；图像缓存/位置正确重建。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Fig3 p.5 caption",
+    "quote": "instead rolls back to the last valid prefix and explicitly trains the model to produce a final answer"
+   },
+   "failure_boundary": "强制有答案不保证正确：AppH/Fig12错误锁定他人后幻觉作答。文中称“supervised decision”但实际是结果reward RL，不是GT answer cross-entropy。拒绝工具/强制前缀/environment token具体mask未给；不能声称局部必要性credit或自然终止已学会。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.14547#s3",
+   "object": "Multi-engine rollout request assignment",
+   "information": "调度器只用每请求assigned Tmax和各server已分配预算和；不知道最终早停轮数、生成长度、图像token量或真实任务难度。",
+   "operation": "按Tmax降序，逐请求分配给累计预算最小的engine并加Tmax；并行Generate后等待全部完成，再按原prompt索引恢复结果顺序。",
+   "output": "更均衡的预算负载与较低batch尾延迟。",
+   "claimed_effect": "Fig5训练rollout generation平均1.34×speedup；budget load imbalance为各engine预算和的max−min。不是整训练1.34×或每题推理加速保证。",
+   "conditions": [
+    "Tmax与成本大致相关；多个engine及异质预算。",
+    "保留prompt/result映射及正确group身份。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Fig4 p.6 caption",
+    "quote": "assigned budget and greedily place each one on the engine with the current lowest accumulated load,"
+   },
+   "failure_boundary": "预算是成本proxy，早停/长文本/多图像可使排序不准；同预算或单engine无此异质收益。没有最优调度保证、不同集群规模或真实推理吞吐表。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B-Instruct;Qwen3-VL-4B/8B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes;Mini-o3;Pixel Reasoner;Chain-of-Focus;SEAL;DyFo;GPT-4o;LLaVA-OneVision",
+   "kind": "method"
+  },
+  {
+   "name": "Masked-prefix;final-turn-only RL;format reward;uniform chunk scheduling",
+   "kind": "method"
+  },
+  {
+   "name": "Mini-o3 cold-start;DeepEyes_train_4K;VisualProbe_train",
+   "kind": "dataset"
+  },
+  {
+   "name": "VisualProbe Hard/Medium/Easy;V*Bench;HR-Bench4K/8K;MME-RealWorld",
+   "kind": "benchmark"
+  },
+  {
+   "name": "OCRBench;ChartQA;DocVQA val;CV-Bench;MathVista testmini;ScienceQA img",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Benchmark accuracy;max rollout time across engines;max−min summed budget load",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只覆盖图像crop agents，不覆盖video或广泛工具生态。",
+   "quote": "Our study is restricted to image-based agents and does not cover video settings, where",
+   "locator": "AppI p.17"
+  },
+  {
+   "text": "证据不足下强制作答可能过度承诺并幻觉，未设计弃答保证。",
+   "quote": "remains ambiguous. In such cases, the model may still hallucinate by overcommitting to an imperfect",
+   "locator": "AppH p.16"
+  },
+  {
+   "text": "general capability有明确下降，不能升级统计非劣。",
+   "quote": "Ours                                           85.5       80.0        93.0       77.6            68.1               83.7",
+   "locator": "Table4 p.14; comparebase81.5/79.6/94.6/73.9/68.2/89.0"
+  }
+ ],
+ "question": {
+  "observed_failure": "Mini-o3 VisualProbe-Hard从32轮48.0降为4轮26.5；Medium50.4→36.7，MME-RW65.5→50.1。论文以catastrophic truncation解释，但未报告“无有效答案”频率及与已答错的分解。",
+  "load_bearing_assumption": "固定预算/隐藏预算下训练的策略能在任意更短部署预算自然产出有效答案；对截断轨迹罚错或mask足以学习边界。",
+  "scope": "单图多轮crop/zoom agent，外部可变Tmax，特别最后可执行动作边界；不设计逐crop价值或最优预算分配器。",
+  "success_criterion": "在相同名义最大轮次下提高accuracy，保留较大预算收益，并降低异质rollout engine尾延迟；没有准确率非劣下平均工具成本最小化目标。",
+  "why_open": "前作强调长搜索收益，未把外部期限与最后一轮动作集合改变作为显式输入和训练事件；过预算惩罚混淆探索与无法完成，mask则丢失边界信号。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M02",
+   "quote": "we do\nnot primarily ask how to obtain longer trajectories; we ask how the same agent should behave when",
+   "locator": "Sec2.2 p.3; focus externally varying allowed length"
+  },
+  {
+   "vocab": "M",
+   "id": "M08",
+   "quote": "We adopt Decoupled Clip and Dynamic Sampling Policy Optimization (DAPO)",
+   "locator": "Sec3.2 p.5; builds named optimizer rather than inventing std variant"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "Masking earlier prefix turns degrades performance,",
+   "locator": "AppC p.13/Fig7; performed loss-scope ablation, exactmask details not fully specified"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "Wall-clock time                  about 2 hours                       about 3 days",
+   "locator": "Table3 p.13; device and walltime report, no trainingtoken totals"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "role": "primary",
+   "quote": "instead rolls back to the last valid prefix and explicitly trains the model to produce a final answer",
+   "locator": "Fig3 p.5; redesign termination event into resampled completion branch"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "role": "supporting",
+   "quote": "budget without switching models or retraining the policy.",
+   "locator": "Sec3.3 p.6; inference-time budget changes after one conditioned training"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "x=(Q,I,T_{max}),\\quad h_t=(Q,I,T_{max},(y_1,o_1),\\ldots,(y_{t-1},o_{t-1}))",
+    "locator": "Eqs1–2 p.4"
+   },
+   {
+    "latex": "y_t\\sim\\pi_\\theta(\\cdot\\mid h_t),\\quad o_t=\\mathcal E(I,y_t),\\quad\\mathcal Y_t=\\begin{cases}\\mathcal C\\cup\\mathcal A&t<T_{max}\\\\\\mathcal A&t=T_{max}\\end{cases}",
+    "locator": "Eqs3–5 p.4; executor Eq4 only when tool and t<Tmax"
+   },
+   {
+    "latex": "\\hat A^{(i)}=\\frac{R^{(i)}-G^{-1}\\sum_{j=1}^{G}R^{(j)}}{\\operatorname{Std}(\\{R^{(j)}\\}_{j=1}^G)+\\delta}",
+    "locator": "Eq6 p.5"
+   },
+   {
+    "latex": "\\mathcal L_{DAPO}(\\theta)=-\\mathbb E\\left[\\frac{1}{\\sum_{i=1}^{G}|Y^{(i)}|}\\sum_{i=1}^{G}\\sum_k\\min\\left(\\rho_{i,k}\\hat A_{i,k},\\operatorname{clip}(\\rho_{i,k},1-\\epsilon_{low},1+\\epsilon_{high})\\hat A_{i,k}\\right)\\right]",
+    "locator": "Eq7 p.5; A_i,k=A^(i), token normalized"
+   },
+   {
+    "latex": "\\rho_{i,k}=\\frac{\\pi_\\theta(y_k^{(i)}\\mid x,y_{<k}^{(i)})}{\\pi_{\\theta_{old}}(y_k^{(i)}\\mid x,y_{<k}^{(i)})}",
+    "locator": "Eq8 p.5; history/control/observations implicit, implementation masks undisclosed"
+   },
+   {
+    "latex": "\\widetilde Y^{(i)}=\\begin{cases}Y^{(i)}&Y^{(i)}\\text{ answers within }T_{max}\\\\(h_{T_{max}}^{-(i)},\\widetilde a_{T_{max}}^{(i)})&y_{T_{max}}^{(i)}\\in\\mathcal C\\end{cases},\\quad\\widetilde a_{T_{max}}^{(i)}\\sim\\pi_\\theta(\\cdot\\mid h_{T_{max}}^{-(i)},b_{T_{max}})",
+    "locator": "Eq9 p.6"
+   },
+   {
+    "latex": "R^{(i)}=\\lambda_{acc}r_{acc}(\\widetilde Y^{(i)},g)+\\lambda_{fmt}r_{fmt}(\\widetilde Y^{(i)}),\\quad(\\lambda_{acc},\\lambda_{fmt})=(1,0)\\text{ default}",
+    "locator": "Eq10 p.6; Table3 p.13 default resolves generalformula"
+   }
+  ],
+  "signal_routing": "默认全保留rollout生成token共享最终答案的group advantage，包括前序搜索和新生成终答，不按crop边际价值路由。边界被拒工具序列依Eq9回滚替换；是否删除其全部think+grounding、control prompt是否mask、观察图像token是否excluded及具体denominator实现未列。AppF以未闭合<think>第一人称文字作Force-to-Answer prefill，不是GT答案监督；须核对其被当prompt还是action。masked-prefix与final-turn-only为较差的消融而非默认。",
+  "normalization": "明确mean+std+delta，G16；每条优势广播token，loss除组内生成token总数，长轨迹在同组总和里含更多token项。不是RLOO、无std或独立效率通道。delta/std约定/clip具体数值、ppo epochs未披露，不能仅因用DAPO推断dynamic filtering的阈值与补采样流程。Table3 KLnone，默认reward只accuracy。",
+  "invariance": "不是PBRS，无最优策略不变定理。Tmax改变允许行为与任务，强制终答改变生成支撑并引入control条件；不声称与预算盲自由生成同一策略分布。组共同常数reward被减均值精确抵消；整体正缩放在delta可忽略时被std约去，小系数不是等比例小梯度保证。调度只重排requests并恢复原索引，意图保持样本/奖励含义，但缓存和group绑定未执行验证。",
+  "baseline_or_potential": "组内reward均值基线；无critic、势函数、答now/crop配对价值估计或necessityoracle。Qwen3-32B提供语义答案评价，输入Q/GT/prediction文本；无图像、crophistory、Tmax或GT证据区域。AppendixE明确performance judge，训练r_acc是否同judge/同prompt未明确，不能直接认定。",
+  "degenerate_cases": "全对或全错且默认binaryreward时组std0、分子0，delta使优势0；新forced答案只有产生组内对错差时增加有效学习信号。未披露是否过滤/重采这些组。若自然p(answer)≈0，预算边界control能生成答案，但不保证首轮自然直答支撑；p(tool)≈0会早停，FA分支不触发，未强制探索。Tmax1形式上只能答、无crop，但训练仅4–12未验证单轮。预算太小证据不够会幻觉；预算很大若早答则不自动补验。单engine/同预算调度优势消失，预算和不等于token/walltime。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig7比较完整FA与mask/final-only/format变体，支持保留前序信用；Fig5同类异质budget训练下比较uniform与budget-balanced的engine time/load；Tables1–2多预算/多骨干。未提供相同base+相同forced-answer推理wrapper但不训练FA的明确对照，也缺budgetcondition-only×FA-only×dynamicbudget的完整因子消融，故不能将全部差值归因训练边界而排除测试时救回答案。",
+  "controls": [
+   "名义Tmax匹配不保证实际模型生成次数、采样token、总图像或walltime相同；失败末轮工具文字生成后再生成终答的成本应单列。",
+   "DeepEyes表1使用6turns；GenericVLM和商业模型并非等turns工具对照。Main Mini-o3/ours同7B规模，但训练数据/初始化/预算机制与计算量未逐项等配。",
+   "G16的input x包含Tmax，形式上组内应共用budget；实现是否perprompt/perrollout抽样与变长结果reorder绑定未说明。",
+   "外部Qwen3-32B semanticjudge非人工金标；提示无图像且未报告校准、一致率或各benchmark是否完全统一判分。",
+   "Fig7没有各点数值表/误差线；不将目测小差写精确百分点。Table2 Qwen3训练与数据同recipe细节未分列。"
+  ],
+  "negative_results": [
+   {
+    "text": "prefix mask较差；final-turn-only更差，精确token mask区别未披露。",
+    "quote": "reinforcement learning to only the final forced-answer turn performs worse still,",
+    "locator": "AppC p.13/Fig7 p.9"
+   },
+   {
+    "text": "额外formatreward轻微有害，默认置0。",
+    "quote": "Adding an explicit format reward is also mildly harmful.",
+    "locator": "AppC p.13"
+   },
+   {
+    "text": "Forced answer找错人后幻觉，强制完整性不等于正确性。",
+    "quote": "the model is forced to answer using incomplete information and instead anchors on a different person",
+    "locator": "AppH p.16/Fig12 p.22"
+   },
+   {
+    "text": "32轮Qwen2.5 V*86.9<Mini88.2，VP Easy66.7<67.0；Qwen3-4B HR4K79.8<Mini80.0。",
+    "quote": "Ours (32 turns)                                                 48.1        51.0            66.7      86.9                   77.5   73.4             66.3",
+    "locator": "Table1 p.7;Table2 p.9"
+   },
+   {
+    "text": "Table4对base DocVQA94.6→93.0、MathVista68.2→68.1、ScienceQA89.0→83.7；并非全面保留。",
+    "quote": "Ours                                           85.5       80.0        93.0       77.6            68.1               83.7",
+    "locator": "Table4 p.14"
+   }
+  ],
+  "seeds": "VisualProbe/V* Avg@32指重复评测32runs，HR8runs、MME1run，不是32/8独立训练种子、投票或best-of-N。未报训练seeds/CI/方差、judge重复稳定性。训练时长单次recipe报告不提供复现误差。",
+  "falsifier": "读者提出、未执行：固定同SFT、数据、budget、parser、像素及真实生成预算，比较预算条件/FA训练/仅FA推理wrapper的因子对照；分解无答案率、有效答案条件正确率、forced比例、自然earlystop与实际token/walltime。若全部低预算收益来自推理wrapper救回输出而FA训练无额外收益，应收窄训练机制主张。对随机/配错预算、judge人工复核及准确率非劣检验；若scheduler在等真实成本或不同长度分布下无收益，则只保留本配置调度结果。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct main; Qwen3-VL-4B/8B-Instruct transfer",
+   "framework": "VERL RL; LLaMA-Factory SFT",
+   "group_size": 16,
+   "rollouts": null,
+   "steps": null,
+   "kl": 0.0,
+   "temperature": null,
+   "max_turns": "training4–12; evaluation4,8,16,24,32",
+   "batch_size": 64,
+   "mini_batch_size": 32,
+   "sft_lr": 1e-05,
+   "rl_lr": 1e-06,
+   "sft_epochs": 3,
+   "rl_epochs": 1,
+   "sft_schedule": "10%warmup+cosine",
+   "rl_schedule": "none",
+   "context_length": 32768,
+   "min_pixels": 40000,
+   "max_pixels": 2000000,
+   "sft_freeze": "visionencoder+projection frozen,LLMtrainable",
+   "rl_freeze": "visionencoder/projection/LLM alltrainable",
+   "reward_weights": "accuracy1.0,format0.0",
+   "data": "Mini-o3 cold-start SFT; DeepEyes_train_4K+VisualProbe_train RL; sizes/split dedup not stated"
+  },
+  "cost": "Table3 SFT8A100×约2h≈16GPUh；RL16A100(2nodes×8)×约3days≈1152GPUh。这两项GPUh为读者算术推导、非精确测量；未披露A100显存、训练总token/更新数/rollout数量、各骨干单独成本。Fig5平均1.34×是rollout阶段尾延迟速度比，不是整训练/每题成本降低；预算按turn不是token或GPU秒。",
+  "pitfalls": [
+   {
+    "text": "异质budget让慢engine卡住全batch，按预算和贪心调度并恢复原索引。",
+    "quote": "Wait for all Oi and reorder results to match original indices of P ;",
+    "locator": "Algorithm1 p.14"
+   },
+   {
+    "text": "只对最终强制作答学习不足；保留早期搜索生成token的结果信用。",
+    "quote": "default full-rollout, accuracy-only FA-DAPO design.",
+    "locator": "AppC p.13"
+   },
+   {
+    "text": "结构奖励可挤占准确率信号，默认不加；具体ablation系数未给。",
+    "quote": "Adding an explicit format reward is also mildly harmful.",
+    "locator": "AppC p.13"
+   }
+  ],
+  "code": null,
+  "code_verified": false,
+  "lesson": "当预算边界会回滚并重新生成终答时，应把被丢弃工具token、强制prefill、保留历史图像、自然终答各自的mask/logprob及实际生成费用对齐；只记录最终有效轮数会漏算拒绝后续写，也不能把强制有答案误判成模型已学会自然停止。"
+ },
+ "relevance": [
+  {
+   "problem": "P08",
+   "how": "token-normalized loss仍令长轨迹包含更多token项，未分离首决策或效率credit。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "结果优势仍广播所有token，不区分有用/多余crop；前序mask反而差。",
+   "strength": 2
+  },
+  {
+   "problem": "P15",
+   "how": "final-only/prefixmask较差支持保留搜索结果信用的条件性经验，但不是本任务零crop信用复现。",
+   "strength": 2
+  },
+  {
+   "problem": "P17",
+   "how": "预算耗尽answer-now是改条件的completion训练，不能当自然策略同状态Q估值。",
+   "strength": 2
+  },
+  {
+   "problem": "P23",
+   "how": "强制<think>prefill及回滚上下文需与actor打分绑定，原文细节不足。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "Mini-o3coldstart先提供工具行为，FA后续训练边界完成，不证明RL无SFT也可生行为。",
+   "strength": 1
+  },
+  {
+   "problem": "P28",
+   "how": "强制作答仍可能幻觉，未提供弃答的行为或奖励。",
+   "strength": 1
+  },
+  {
+   "problem": "P31",
+   "how": "预算小会在错误目标上过早承诺，Fig12具体展示。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "直接把Tmax纳入状态并训练最后允许动作；但无显式剩余证据充分性估计。",
+   "strength": 3
+  },
+  {
+   "problem": "P35",
+   "how": "硬截止不能保证难题准确率，提升整体小预算不等于必要探索保留。",
+   "strength": 2
+  },
+  {
+   "problem": "P38",
+   "how": "多轮SFT加4–12随机预算使长短行为共存，未做纠偏稀少的独立诊断。",
+   "strength": 1
+  },
+  {
+   "problem": "P45",
+   "how": "重复eval不是训练seed；小差无CI。",
+   "strength": 1
+  },
+  {
+   "problem": "P55",
+   "how": "回滚/重建前缀与image spans是实现风险，paper未给具体mask。",
+   "strength": 2
+  },
+  {
+   "problem": "P58",
+   "how": "scheduler减少批次异质长rollout尾延迟，可迁移系统层而非信用目标。",
+   "strength": 2
+  },
+  {
+   "problem": "P63",
+   "how": "已测通用能力，ScienceQA掉5.3pp反对全面保留措辞。",
+   "strength": 2
+  },
+  {
+   "problem": "P69",
+   "how": "预算适应主要解决可输出答案，不等于准确率非劣下少裁图。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "measurement_and_source_audit": {
+  "ambiguities_and_conflicts": [
+   "Eq10是泛化accuracy+format式，但Table3 default(1,0)和AppC明确accuracy-only；不得把默认写成加formatreward。",
+   "Eq7 clip下界1−eps_low、上界1+eps_high；随后文字称low/high分别positive/negativeadvantages，方向与常见有效clip分支不一致。记录原式不按这句倒置实现，具体eps缺失。",
+   "Eq5在t=Tmax只允许A，但policy仍实际产生被拒C，Eq9回滚再生成。示例把初次失败生成与再生成都叫Turn4/8；名义max turns不是相同数目的LM decoding passes，废弃generation费用未计量。",
+   "Eq9 rollout写成h_minus+answer但control b用于条件；Eq7–8用Y,x,y历史的简写，没有明确control/environmenttoken及rewoundprefix打分mask。AppendixF Force-to-Answer是未闭<think>第一人称prefill；Fig2/8–12另有tool rejection user文字，两者序列化组合未完整给出。",
+   "AppendixF system prompt没有Tmax占位符，虽正文说inject budget；具体插值/每轮剩余数呈现方式未知。抽样分布及组内共享budget未报告，不能称uniform。",
+   "摘要称训练和推理都randomize budget，Sec3.3推理是practitioner设定，实验固定4/8/16/24/32；推理随机化分布无定义。",
+   "Figs6–7横轴标#Frames，而caption/body说rollout turns，按正文解释并保留标签冲突。Fig6与Fig7 Mini-o3高budget V*曲线近87，Table1为88.2；图表存在待核数值不一致，不以图估值覆盖表格。",
+   "Table4 caption“preserves or improves”不成立于每项：DocVQA−1.6pp、MathVista−.1pp、ScienceQA−5.3pp。文字remainingcompetitive不是预设非劣或遗忘安全证据。",
+   "32轮Qwen2.5也并非全胜：V*落后1.3pp、VPEasy落后.3pp；图1八轮Mini47.8与Table1三十二轮50.4不同预算不可混用。",
+   "Sec4.2的+12.5%、+10.9%等实际上是表中百分比差的百分点，非相对提升。",
+   "Performance judge只有Q/GT/prediction；未明示训练racc是否复用该judge。通用bench评分细节、judge温度/seed/校准不明。",
+   "Fig9 caption声称redirects search；图中最后新crop被拒，forcedanswer改读旧observation3，并非实际执行新区域搜索。Fig10/11声称成功但提供的是局部图/文字示意，不能据此认证所有推理文字真实；Fig11想crop observation7却命令source original_image，两者语义未对齐。",
+   "无消融把仅测试时强制回答与训练FA收益分开，也无实测catastrophictruncation发生率；不能把accuracy差全视作消除无答案率。"
+  ],
+  "source_evidence": [
+   {
+    "kind": "author_claim",
+    "locator": "AppE p.14",
+    "quote": "Specifically, we use Qwen3-32B as a binary evaluator"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "AppE p.15",
+    "quote": "2. **Ground Truth Answer**: {ground_truth}"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Sec4.1 p.8",
+    "quote": "VisualProbe and V* Bench are averaged over 32 repeated runs to reduce stochastic variation, while"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "AppF p.16",
+    "quote": "<think>I have exhausted my tool-calling budget and must answer the question using the"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "AppH p.16",
+    "quote": "remains ambiguous. In such cases, the model may still hallucinate by overcommitting to an imperfect"
+   }
+  ],
+  "cost_units": "Tmax为agent交互最大轮，按公式最多Tmax−1次成功toolexecution加最后答案；被拒末轮工具文本及再生成可额外耗token。每个turn可用crop不同来源图，像素与回答长度均变化。scheduler的load是分配Tmax求和，图中walltime另测。1.34×不是34%时间下降（倒数约25.4%）也非整个训练同幅度加速。",
+  "information_boundary": "Agent只见Q/I/budget/history；budgetexecutor见计数及toolrequest；终答judge见Q/GT/prediction文本，无图像；无必要性judge/证据价值oracle。最后强制答案可利用此前任何已观察图，不能取得被拒新crop。"
+ }
+}

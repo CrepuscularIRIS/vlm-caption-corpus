@@ -1,0 +1,152 @@
+{
+ "paper_key": "litscan:38063",
+ "title": "ReFocus: Visual Editing as a Chain of Thought for Structured Image Understanding",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_38063.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.3",
+   "4/Table1–3",
+   "5/Table4",
+   "AppendixD.1–D.3/Table6–7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "由模型生成编辑伪代码，调用确定性高亮/遮盖/框选，再读回修改后的图；正确轨迹蒸馏到小模型。",
+  "key_step": "在外部图像空间显式实施选择注意，而不只在文字CoT中描述注意对象。",
+  "why_non_obvious": "编辑不增加原始语义像素也可改善读取，但需要可定位结构与正确选择，遮盖也会丢信息。",
+  "trigger_condition": "When clutter prevents reliable grounding in structured images, edit the selected regions before rereading.",
+  "contribution_type": "inference tools and SFT data",
+  "abstract_strategy": "Change the observable representation to expose a selected subproblem.",
+  "abstract_trigger_condition": "When irrelevant observations compete with task-relevant evidence.",
+  "abstract_key_step": "Select, edit, observe, then solve; distill successful trajectories.",
+  "abstract_why_non_obvious": "Editing can facilitate reasoning without recovering unseen evidence, but localization information can be privileged.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:38063#s1",
+   "object": "结构化图表视觉编辑",
+   "information": "表格CV2轮廓；CharXiv top10轮廓交LLM选；ChartQA使用原数据集轴值坐标与CV2图区域。",
+   "operation": "模型选高亮、遮盖或画框的函数与参数；执行后图像返回上下文。",
+   "claimed_effect": "Table1 GPT4o五月VWTQ66.5→76.9、CharXiv49.0→57.3；八月CharXiv48.9→46.2。",
+   "conditions": [
+    "结构化图表坐标可得",
+    "工具参数正确",
+    "额外多轮预算"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "VWTQ               66.4            77.2            77.6                   74.8"
+   },
+   "failure_boundary": "仅重表示原信息；ChartQA坐标来自数据集，不能宣称整个系统只看裸图；并非所有任务改善。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "conversational GPT4o without editing / VisProg updated GPT4o / QA SFT / text CoT SFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者Table1称consistent gains across all tasks，但八月GPT4o在CharXiv下降；表中部分delta也与原始行相减不一致，记录以原始分数为准。",
+   "locator": "Table1",
+   "quote": "-2.7"
+  }
+ ],
+ "question": {
+  "observed_failure": "VWTQ原模型66.4，加入mask77.2、draw77.6。",
+  "load_bearing_assumption": "文字推理可自行可靠忽略图中的无关部分。",
+  "scope": "表格及子图/横纵柱图",
+  "success_criterion": "同模型同问题编辑vs无编辑准确率",
+  "why_open": "细粒度定位/OCR在复杂结构图仍错"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "4.3/Table3 editing-type ablation"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "3.3 edit-observe loop"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "推理工具输出图像进入下一轮；SFT监督thought1,bbox,thought2,answer，无RL reward/advantage。生成训练数据先验答案过滤，失败一次后提示gold再试，仍错丢弃。",
+  "normalization": "other: standard SFT; exact token mask and reduction unspecified in sections read",
+  "invariance": "无PBRS/无策略不变性；重画改变输入分布，遮盖可毁证据。",
+  "baseline_or_potential": "无critic；对照无编辑对话/QA或文字CoT训练。",
+  "degenerate_cases": "无编辑退回对话；定位错误可遮掉答案；全错样本被丢弃导致选择偏差；组内std不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3固定单编辑类型；Table4同14K集合QA/CoT/VCoT比较。",
+  "negative_results": [
+   {
+    "text": "GPT4o八月CharXiv48.9→46.2；oracle编辑图给小模型VTabFact普遍下降。",
+    "locator": "Table1–2"
+   },
+   {
+    "text": "Table7最佳CoT包含edited image而VCoT不包含，二者超参也不同，2.6点差不能严格归因bbox单一因子。",
+    "locator": "Table4/Table7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：在无数据集坐标、等总token/轮次条件下比较自动坐标与oracle坐标；若优势消失则限定定位支架。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "GPT4o; Phi3.5vision SFT",
+   "framework": "Python visual editing; full SFT",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "SFT 8×RTX A6000 48GB，batch64，2epochs；QA/VCoT/CoT最佳lr分别5e-7/1e-6/5e-6；总耗时未读到。",
+  "pitfalls": [
+   {
+    "text": "ChartQA轴坐标由数据集提供；CharXiv随机抽200再GPT筛多子图143，不是完整1000test。",
+    "locator": "3.1"
+   },
+   {
+    "text": "15,059训练样本经gold提示重试/正确性过滤得到14,344，其中12,819有编辑。",
+    "locator": "5/D.1"
+   }
+  ],
+  "code": null,
+  "lesson": "先记录坐标来源和编辑前后图，检查工具没有额外语义泄漏；蒸馏比较须控制额外图输入和答案提示采样。"
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "将工具编辑与bbox选择构造成SFT行为，迁移需加入真实crop与失败后修正覆盖。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "同输入多表示检验读图错误来源。",
+   "strength": 2
+  }
+ ]
+}

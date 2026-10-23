@@ -1,0 +1,58 @@
+{
+ "paper_key": "litscan:3305",
+ "title": "Pixel-Level Reasoning Segmentation via Multi-turn Conversations",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3305.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3 PRIST",
+   "4 architecture/training",
+   "Table3/Table6",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "从目标对象反向构造分解问题树和多轮澄清对话，再用双视觉编码及语义区域对齐连接语言描述与SAM掩码。",
+  "key_step": "将对象描述[OBJ]CLASS[SEG]的可变长隐藏态压成掩码提示，联合文本CE与像素BCE/DICE。",
+  "why_non_obvious": "多轮用户意图澄清与像素定位同时变化，单轮隐式查询不足；但这不是自主工具恢复。",
+  "trigger_condition": "When target intent changes through dialogue, construct explicit clarification histories and align the final description to pixel masks.",
+  "contribution_type": "dataset and architecture",
+  "abstract_strategy": "Build progressive clarification paths ending in a fine-grained grounded target.",
+  "abstract_trigger_condition": "When ambiguous intent requires interaction, align the clarified description with a concrete output region."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3305#s1",
+   "object": "多轮意图分割模型",
+   "information": "完整对话历史、图像与人工GT掩码；训练有确定单目标。",
+   "operation": "GPT4o分解目标相关问题树生成对话，人工标mask；训练projection/mask decoder，以L=Lt+2BCE+.5DICE监督。",
+   "claimed_effect": "PRIST 8.3K场景/24K话语；Table3 MIRAS stage2 CIoU14.72，对比OMG-LLaVA13.84；refCOCOg去双编码73.2→70.6。",
+   "conditions": [
+    "有多轮用户澄清和掩码监督",
+    "单目标可确定"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "MIRAS (Stage-2)                      14.72   24.22     40.61      30.34"
+   },
+   "failure_boundary": "不支持空目标/多目标；双视觉模块冗余；分割消融在RES而非PRIST，不能归因到多轮收益。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P38",
+   "how": "树到对话的数据构造可作多轮示范近邻，但这里是用户澄清而非裁图/纠错。",
+   "strength": 1
+  },
+  {
+   "problem": "P43",
+   "how": "像素对齐有GT mask，当前项目缺此监督且不是过程价值。",
+   "strength": 1
+  }
+ ]
+}

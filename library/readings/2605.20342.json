@@ -1,0 +1,465 @@
+{
+ "paper_key": "2605.20342",
+ "title": "ParaVT: Taming the Tool Prior Paradox for Parallel Tool Use in Agentic Video Reinforcement Learning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.20342.pdf",
+  "version": "v2",
+  "version_evidence": "p.1 arXiv:2605.20342v2 [cs.CV]21May2026; online latest not checked",
+  "page_count": 22,
+  "fulltext_path": "2605.20342.txt",
+  "sections_read": [
+   "Abstract/introduction pp.1–3; Figs1–2",
+   "2 RelatedWork pp.3–4",
+   "3.1 architecture/SFT/data pp.4–5; Fig3",
+   "3.2 PARA-GRPO pp.5–7; Eqs1–3",
+   "4 implementation/evaluation/ablations pp.7–9; Tables1–2; Fig4",
+   "5 Conclusion pp.9–10",
+   "References pp.10–13",
+   "Appendix A limitations/impact p.14",
+   "Appendix B implementation pp.14–17; Tables3–4; Eq4",
+   "Appendix C prompts pp.17–18",
+   "Appendix D illustrative rollouts p.18",
+   "Appendix E/F dynamics/cross-model pp.18–20; Table5; Figs5–7",
+   "Appendix G usage pp.20–21; Fig8",
+   "Appendix H.1–H.3 all negative results pp.21–22; Fig9"
+  ],
+  "visual_pages_inspected": [
+   4,
+   6,
+   7,
+   8,
+   9,
+   16,
+   17,
+   19,
+   20,
+   21,
+   22
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将独立时间窗的视觉裁剪分配给共享权重子代理并只返回文字摘要；针对温度采样中的格式漂移与无工具捷径，联合格式partial-credit奖励、固定think前缀和每题共享的overview帧预算随机化。",
+  "key_step": "同一GRPO组共享随机n，改变可见证据量以产生call/skip结果差；先保持可解析结构，才可能执行和奖励工具行为。",
+  "why_non_obvious": "贪心评测格式好不代表训练采样格式好；更强SFT可使工具更不必要、RL调用归零；仅增加调用激励或仅修格式都不能同时稳定两者。",
+  "trigger_condition": "When a tool-capable model loses parseability under sampled RL and overview observations make skipping tools competitive, anchor schema rewards and randomize observation budgets within prompt groups while exposing parallel-tool demonstrations.",
+  "reviewer_praise": [
+   "low_evidence: no reviews_path or peer-review source in manifest."
+  ],
+  "reviewer_concern": [
+   "low_evidence: no local peer-review source supplied; reader concerns are separate."
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null; do not infer acceptance from arXiv or author claims.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Delegate independent observation windows to shared solvers; return compact summaries and train with schema-sensitive rewards under varied initial information budgets.",
+  "abstract_key_step": "Hold the information budget constant across each comparison group while varying it across groups, and preserve executable structural boundaries.",
+  "abstract_why_non_obvious": "A stronger initial solver can eliminate the benefit of acting, while a more active solver can fail to produce executable actions.",
+  "abstract_trigger_condition": "When sampled optimization exposes competing structural habits and passive observations erase action benefit, jointly preserve executable structure and vary available evidence to create informative comparisons."
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.20342#s1",
+   "object": "Temporal-window tool interface, SFT traces and main-agent observation stream",
+   "information": "Main agent sees overview frames/query and later textual sub-agent summaries. Each sub-agent sees assigned crop window (up to16frames) and shares model weights; complete sub-agent prompt/context permissions not supplied. In trace conversion curator sees sequential tool responses/assistant continuations to check independence.",
+   "operation": "Merge adjacent nonoverlapping, non-cross-referencing crops into parallel calls; leave dependent refinements sequential; convert visual tool outputs to text from the existing assistant continuation. At inference dispatch K independent windows to shared-weight sub-agents, concatenate summaries and answer.",
+   "output": "97K-reported cold-start mix and a parallel text-mediated temporal search policy.",
+   "claimed_effect": "Same trained checkpoint Table2C: parallel vs sequential VideoMME62.1/69.4 vs61.4/68.8; LongVideoBench60.4 vs57.7; LVBench39.8 vs37.5; MLVU65.0 vs64.1; MMVU68.6 vs66.7. Eq4 estimates~60% main-context input-token reduction atK2.5, not measured whole-system speedup.",
+   "conditions": [
+    "Windows truly independent; sub-agent summaries preserve relevant facts.",
+    "SFT supports multi-call syntax; finite serving capacity can constrain concurrency."
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Sec3.1.1 p.4",
+    "quote": "Within\na single turn, the main agent emits K parallel <tool_call> invocations on disjoint temporal\nwindows, each dispatched to one of K independent sub-agents that share weights with the main\nagent. Each sub-agent grounds only its assigned window, samples a short crop, and returns a textual\nsummary rather than resampled frames. The gathered summaries are concatenated into a single\n<tool_response> block on which the main agent reasons to generate the final <answer>."
+   },
+   "failure_boundary": "Dependent refinement cannot be flattened; textual summaries may omit evidence. Peer outvoting is an architectural rationale, no controlled mislocalized-peer intervention or formal voting rule is shown. Shared weights do not prove sub-agent generation tokens receive RL loss; exact gradient inclusion is not disclosed.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.20342#s2",
+   "object": "Sampled response format and composite GRPO reward",
+   "information": "Checker sees generated tag structure, reasoning-content length/order and final task answer against GT. No causal visual grounding judgment; Think Prefix is injected before free generation.",
+   "operation": "Pin opening<think>newline; award partial answer/schema credit and anchor closed-think/full-flow structure, penalize unclosed-think; sum format+accuracy+parseable-tool bonus into scalar reward for GRPO.",
+   "output": "More parseable sampled trajectories and executable tool calls.",
+   "claimed_effect": "Table2: vanilla meanformat0.13/calls0.02; anchor-only0.35/.19; full0.41/.21; prose reports fullpeak0.64. Table5 step19 think/tool/answer closure58.9/52.6/41.1% vs cold-start51.8/47.4/30.1%; distinct metrics and streams.",
+   "conditions": [
+    "SFT500 initialization and trainingtemperature0.7; chosen schema/parse rules.",
+    "Accuracy signal jointly active;160steps format-only did not improve0.13."
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec3.2.3 p.7",
+    "quote": "Rfmt scores structural compliance\nand embeds the anchor reward Ranchor from Equation (1) (including the −γ penalty for unclosed\ntags), so format stability and anchoring are optimized within a single scalar rather than as separate\nlosses."
+   },
+   "failure_boundary": "Eq1 conditions overlap and exact alpha/beta aggregation unspecified. Paper says reward fires at structural positions but Eq3/AppB explicitly scalar; no token-local positive mask/formula supports localized PG attribution. Prefix mask, sub-agent/observation mask and full optimizer reduction not disclosed.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.20342#s3",
+   "object": "Per-prompt overview-frame budget and call/skip reward contrast",
+   "information": "Sampled n is shared by all8rollouts for a prompt; policy sees only that overview plus retrieved crop summaries. No explicit needed-crop ground truth or forced paired call/skip rollout value estimation. Ground-truth task labels score final answers.",
+   "operation": "Draw n uniformly from{4,8,16,32,64}; preserve n64 easy regime and create lower-observation tasks where successful crop retrieval can improve task reward; combine with schema anchoring and small tool-format bonus.",
+   "output": "Mixture of observation-constrained and overview-sufficient groups, supporting tool exploration.",
+   "claimed_effect": "Table2: nFrames-only calls1.36 withformat0.10; fullcalls0.21 withformat0.41; without Rtool calls0.04/format0.33. Full beats vanilla GRPO in six QA splits but gain is mostly SFT relative to base.",
+   "conditions": [
+    "Important evidence is omitted by reduced overview but recoverable by tool.",
+    "Both action types still sampled and outputs parseable."
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Sec3.2.2 p.6 Eq2",
+    "quote": "nFrames Gating creates the missing gap by randomizing the overview-frame budget per prompt:"
+   },
+   "failure_boundary": "Random deletion makes a modified task, not calibrated necessity supervision for full-budget input. Stronger cold-start can answer even under gating and emits zero tools; weak-prior Qwen2.5 stayszero520steps. No hard support guarantee; too much scarcity induces overcalling.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-8B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Video-R1;VideoChat-R1;VideoRFT;Time-R1;ReWatch-R1;Video-Thinker",
+   "kind": "method"
+  },
+  {
+   "name": "Conan;LongVT-RFT;SAGE;VideoZoomer",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o;Gemini1.5Pro official reports",
+   "kind": "method"
+  },
+  {
+   "name": "SFT500;vanillaGRPO;anchor-only;nFrames-only;removeRtool;removegamma",
+   "kind": "method"
+  },
+  {
+   "name": "Same-checkpoint sequential dispatch",
+   "kind": "method"
+  },
+  {
+   "name": "VideoMME;LongVideoBench;LVBench;MLVU;MMVU;Charades-STA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MCQ accuracy;temporal mIoU;open-ended tokenF1;meanformatreward;calls/rollout",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Cross-model contrast is observational, not a controlled prior intervention; full method only validatedQwen3-8B.",
+   "quote": "The cross-model evidence for the role of the prior comes from a single Qwen2.5-VL vs. Qwen3-VL\ncontrast (consistent with a causal interpretation but not equivalent to a controlled intervention), and the\nfull PARA-GRPO pipeline has only been validated on Qwen3-VL-8B; extending to other tool-native\nLMM families and a broader pretraining-prior sweep is future work.",
+   "locator": "AppA p.14"
+  },
+  {
+   "text": "RL gains primarily format/tool stability; standalone greedy-eval gain aboveSFT modest.",
+   "quote": "The RL stage delivers its primary contribution as deployment-time format and\ntool-use stability under temperature sampling rather than as a large standalone greedy-eval delta on\ntop of the cold-started checkpoint; further amplifying the eval-time translation is an open direction.",
+   "locator": "AppA p.14"
+  },
+  {
+   "text": "Onlycrop_video; other tools not verified.",
+   "quote": "Only the crop_video\ntool is evaluated; whether the recipe generalizes to other tool families (text retrieval, scene-graph\nextraction, audio transcription) is open.",
+   "locator": "AppA p.14"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table2 SFT calls/rollout2.50→vanillaGRPO0.02, meanformatreward stays0.13. Table5 rawtemp.7 closure think51.8→26.8%,tool47.4→18.2%,answer30.1→19.6% within9steps. Weak-priorQwen2.5 has0tools over520steps despite format~.85.",
+  "load_bearing_assumption": "A tool-native pretrained model plus format-SFT and generic outcome GRPO will retain executable tool behavior; stronger coldstart/greedy format compliance implies stable sampled exploration.",
+  "scope": "Parallel temporal crop_video inQwen3-VL8B long-video QA/grounding with shared-weight summarizer agents.",
+  "success_criterion": "Improve training-time meanformatreward and maintain nonzero moderate calls while improving held-out64-frame accuracy/mIoU. No registered accuracy-noninferiority/cost limit, no necessity-label evaluation.",
+  "why_open": "Sequential agents accumulate context; standard outcome+format optimization permits skipping when overview suffices and format drift undertemperature leaves tool calls unparsable. Existing token-sparse gradient interventions neglect the structural boundaries needed for execution."
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "Rows are computed from raw τ =0.7 training-stream rollouts, so they reflect compliance during RL",
+   "locator": "AppF.1 p.18; per-tag sampled-rollout measurement before intervention interpretation"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "Block C isolates the inference-time paradigm from the policy by changing only\n the dispatch mode on the same trained checkpoint.",
+   "locator": "Sec4.3 p.9"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "Without supervised exposure to parallel traces, probe RL runs from the base checkpoint fail\nto produce parseable rollouts (Section D), and the GRPO advantage signal collapses before any\ntool-use credit can be assigned.",
+   "locator": "Sec3.1.2 p.5"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "quote": "RL\nfrom this stronger init produces zero tool calls throughout training.",
+   "locator": "AppH.2 p.21; stronger coldstart counterexample"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "role": "primary",
+   "quote": "each dispatched to one of K independent sub-agents that share weights with the main\nagent. Each sub-agent grounds only its assigned window, samples a short crop, and returns a textual\nsummary rather than resampled frames.",
+   "locator": "Sec3.1.1 p.4; temporal subproblems routed to crop-grounding solvers"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_{anchor}(y)=\\begin{cases}+\\alpha&\\text{if </think> correctly closed}\\\\+\\beta&\\text{if full <think>→</think>→<answer> flow preserved}\\\\-\\gamma&\\text{if <think> opened but never closed}\\end{cases}",
+    "locator": "Eq1 p.6; overlapping positive conditions retained, accumulation/precedence unspecified"
+   },
+   {
+    "latex": "n\\sim Uniform(\\{4,8,16,32,64\\})",
+    "locator": "Eq2 p.6; same n for allG8rollouts of prompt"
+   },
+   {
+    "latex": "R(x,y)=R_{acc}(y,a^*)+\\lambda_{fmt}R_{fmt}(y)+R_{tool}(y),\\quad R_{fmt}=R_{base}+\\lambda_{anchor}R_{anchor}",
+    "locator": "Eq3 p.7; decomposition p.6/AppB16"
+   },
+   {
+    "latex": "T_{seq}(K)\\approx K(16K_{visual}+300_{sys})+\\frac{K(K+1)}2\\,50_{hist},\\quad T_{par}(K)\\approx16K_{visual}+300_{sys}+K\\,50_{hist}",
+    "locator": "Eq4 p.17;16K_visual denotes~16,000visual tokens, not16×number-of-calls K"
+   }
+  ],
+  "signal_routing": "Eq.3/App.B 将任务准确性、格式/anchor 和工具 bonus 合成单个标量，再使用 GRPO 组相对优势。anchor 评分检查特定标签，但正方法未给逐 token 优势或 mask 公式。Think Prefix 在生成时强制，其 actor logprob/mask 未披露；Answer Suffix 是部分格式奖励，不能当作强制终答解码。H.3 的结构 token PG mask 是失败对照。子代理生成 token 是否纳入 RL 损失、工具摘要是否作环境 token，均未明确。",
+  "normalization": "[redacted: project-internal]",
+  "invariance": "不是势函数塑形，也没有最优策略不变定理。格式/工具 bonus 改变奖励偏好；随机 n 改变输入观察和训练分布，固定前缀限制行为支撑。若实现采用标准 mean/std，则组共同常数 bias 被抵消、整体正比例缩放在忽略 epsilon 时被抵消；不能据此推断每个系数都可控。小原始奖励差不必然意味着小归一化优势。单标量相加也不证明格式梯度与内容梯度互不竞争。",
+  "baseline_or_potential": "未给显式 critic、反事实价值基线或 potential；组相对奖励基线只作文字描述。无冻结读者必要性 judge。共享权重子代理负责局部视频摘要，GT 标签用于最终任务评分。",
+  "degenerate_cases": "全组完整标量奖励相等时没有相对结果信号，零方差数值处理未知；全错仍可能因格式/tool bonus 不同产生梯度，全对的 call/skip 也可能因 bonus 不同而非零差。p(tool)≈0 时未强制采样工具，随机帧预算不能保证支撑；Qwen2.5 与更强 SFT 的零调用是原文反例。n=64 可保持直答充分，n=4 可能连定位线索都缺失，过度稀缺导致过调用。K=1 并行收益消失，K=0 可在思考后直答。固定 opening think 不强制闭合；共享权重摘要错误可以相关，不能保证多数正确。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table 2B 比较 anchor/nFrames 的组合及去除 Rtool/γ，区分格式和调用激励。Table 2C 固定训练 checkpoint 更改 dispatch；H.3 比较标签替换和结构梯度 mask。两个骨干的对比支持 prior 假说，但 Appendix A 明确承认不是受控因果干预。",
+  "controls": [
+   "组内 G=8、温度 .7；同题所有 rollout 共享 n，避免组内输入预算不同。",
+   "Table 2C 未报告总像素、子代理 token 或 wall time 匹配；同 checkpoint 不自动保证等计算。",
+   "Table 1 按模型原生 prompt 类评测；商业模型用官方结果，不遵循统一64帧协议。Video-Thinker 的 LVBench 因重叠留空，VideoZoomer 的 Charades 因输出协议不兼容不可测。",
+   "SFT-500 按训练格式稳定性选择；106K 更强数据和212K早期混合不是纯比例单变量对照。",
+   "Figure 6 的十个 checkpoint r=.86,p<.01 是训练过程相关，不是独立种子或格式因果证明。"
+  ],
+  "negative_results": [
+   {
+    "text": "Gating-only calls1.36butformat.10; full.21/.41.",
+    "quote": "nFrames Gating alone pushes\nκ to 1.36 but leaves fτ stuck at 0.10.",
+    "locator": "Sec4.3 p.9;Table2B"
+   },
+   {
+    "text": "160stepsformat-onlystays.13.",
+    "quote": "After 160 steps of format-only optimization, fτ remained at\n0.13 with no upward trend,",
+    "locator": "AppH.1 p.21"
+   },
+   {
+    "text": "Task-awareaccuracycoefficients improve trainrewardbutheldoutVME61.81<62.11,LVB58.26<60.40.",
+    "quote": "Task-aware shaping improves\ntraining signal quality without translating into held-out eval gains, so we keep the simpler unweighted\naccuracy reward in the default recipe.",
+    "locator": "AppH.1 p.21"
+   },
+   {
+    "text": "Pre-RFTpeaksformat.40butdegradesdownstream; reportedpartial-formatdataqualityconfound.",
+    "quote": "Subsequent RL from\nthis Pre-RFT init peaked at fτ =0.40, but the partially-formatted samples in the SFT corpus degraded\nthe cold-start quality on every downstream metric, ruling out the pre-RL refinement route.",
+    "locator": "AppH.2 p.21"
+   },
+   {
+    "text": "StrongerSFTVideoMME61.3→62.3yetRLtoolcallszero.",
+    "quote": "RL\nfrom this stronger init produces zero tool calls throughout training.",
+    "locator": "AppH.2 p.21"
+   },
+   {
+    "text": "ZeroingstructuraltokenPGdropsformat.13→.11in11steps.",
+    "quote": "After 11 steps, fτ dropped to 0.11 (below baseline 0.13): zeroing\ngradients on format tokens tells the model format is irrelevant to reward, the opposite of what\nstabilizing format requires.",
+    "locator": "AppH.3 p.22"
+   },
+   {
+    "text": "SFTtool_code emitsnativecall5.4%morethantrainedcode1.8%;substitutiondoesnotfixreversion.",
+    "quote": "The <tool_code>-trained model still generates <tool_call> in 5.4% of\nrollouts (despite never seeing it during SFT), while its trained <tool_code> appears in only\n1.8%.",
+    "locator": "AppH.3 p.22"
+   }
+  ],
+  "seeds": "未报告独立种子数量/ID、多运行均值方差或置信区间。曲线是训练内 rollout 均值；Table 5 的 N=166/56 是样本数，不是种子数；Figure 6 p 值来自十个 checkpoint 的相关性。",
+  "falsifier": "读者提出、未执行：固定采样温度、prompt、GT 和 parser，核对强制前缀的行为支撑与 logprob；比较帧预算 gating、匹配的随机视觉破坏和全帧输入，报告分任务 call/skip 奖励与方差及独立必要性标签。如果收益仅来自人为隐藏信息或格式 bonus，不能支持全预算真实必要性结论。用相同窗口/摘要、总像素和模型 token 比较并行/串行，实测 wall time；注入错误子代理后再判断容错。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-8B-Instruct 主代理和共享权重子代理；Qwen2.5-VL-7B 用于跨模型诊断",
+   "framework": "other: AReaL asynchronous RL (FSDP + SGLang); lmms-engine SFT",
+   "group_size": 8,
+   "rollouts": 56,
+   "steps": null,
+   "kl": 0.01,
+   "temperature": 0.7,
+   "max_turns": null,
+   "rollouts_scope": "batch size 7 × group size 8 = 56，为推导的单次更新 rollout 数，不是全训练总量",
+   "learning_rate": 2e-06,
+   "clip_ratio": 0.2,
+   "max_new_tokens": 2048,
+   "reward_bias": -0.2,
+   "max_parallel_calls": null,
+   "steps_note": "主曲线约50–60步，弱 prior 对比520步，格式单独训练负结果160步；完整最终主运行步数未明确。",
+   "sft": "1500 steps, checkpoints every100; select step500; LR2e-5, batch32, AdamW; reported97K mix; max_pixels50176=224², fps1, max_frames64.",
+   "frame_budget": [
+    4,
+    8,
+    16,
+    32,
+    64
+   ],
+   "subagent_max_frames": 16,
+   "anchor_weight": 0.5,
+   "format_weight": 1.0,
+   "anchor_alpha_beta_gamma": [
+    0.4,
+    0.3,
+    0.3
+   ]
+  },
+  "cost": "Appendix B 报告可用两台8卡机器（每卡≥80GB）；RL 用一节点7卡FSDP+1卡SGLang。每步约50分钟（rollout35、更新15）；流水线后等待从约500秒降至<2秒，不代表 rollout 计算只需2秒。总GPU小时、训练token与主运行总步数未报告。Eq.4 在作者假设每帧256视觉token下估计 K=2.5 时主上下文输入节省约60%；未计所有子代理视觉编码/摘要生成，也不是实测延迟，本项目不沿用该token常数。",
+  "pitfalls": [
+   {
+    "text": "Asyncvideoembeddingcacheneedsroom;increasecache4096MBunderreportedconfig.",
+    "quote": "We set SGLANG_VLM_CACHE_SIZE_MB=4096\nto accommodate 64-frame video embeddings (∼134 MB each).",
+    "locator": "AppB p.15"
+   },
+   {
+    "text": "HeterogeneoustoolmessagesneedserializedJSONratherthanArrowstructschema.",
+    "quote": "All splits are stored as Parquet files with the messages column serialized\nas a JSON string, sidestepping Arrow’s schema requirement when individual messages have heteroge-\nneous tool-call structure.",
+    "locator": "AppB p.16"
+   },
+   {
+    "text": "StructuraltokenPGzeroingisnotformatprotection.",
+    "quote": "variant that selectively zeros the policy-gradient contribution of structural tokens (e.g., <think>,\n<tool_call>) so that RL only updates semantic content tokens, following prior work on sparse\ncritical-token reweighting [20]. After 11 steps, fτ dropped to 0.11 (below baseline 0.13):",
+    "locator": "AppH.3 p.22"
+   }
+  ],
+  "code": "https://github.com/EvolvingLMMs-Lab/ParaVT",
+  "code_verified": false,
+  "lesson": "当贪心输出合规但训练温度下结构标签崩溃时，先用真实rollout按标签统计解析率并核对强制前缀的采样/打分一致性；不要把全轨迹格式奖励误当成局部token信用，也不要用降低初始视觉信息量来替代真实必要性验证。"
+ },
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "格式/工具奖励进入groupnormalization，缺完整公式；不能直接证明小系数可控或小rawgap等于小advantage。",
+   "strength": 2
+  },
+  {
+   "problem": "P02",
+   "how": "相反失败方向：该任务skiptool塌缩，我们常见alwayscrop；同为结果奖励和采样支撑耦合，不可照搬工具加分。",
+   "strength": 1
+  },
+  {
+   "problem": "P11",
+   "how": "结构奖励依赖parseability，但未给逐调用因果信用，也未定义局部优势mask。",
+   "strength": 1
+  },
+  {
+   "problem": "P23",
+   "how": "ThinkPrefix改变行为支撑；注入前缀的actor打分/屏蔽需要核对。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "SFT并行示范必需但更强SFT反使工具归零；示范比例与行为支撑有关。",
+   "strength": 2
+  },
+  {
+   "problem": "P29",
+   "how": "tool概率塌缩与格式崩溃相互作用；随机帧预算不保证动作支撑。",
+   "strength": 2
+  },
+  {
+   "problem": "P38",
+   "how": "把独立序列工具合并平行示范，仅dependencycheck通过才可重组。",
+   "strength": 1
+  },
+  {
+   "problem": "P42",
+   "how": "主代理用文字summary作证据，没有summary真实性独立奖励；仍可能写对/读错或summary幻觉。",
+   "strength": 1
+  },
+  {
+   "problem": "P45",
+   "how": "没有种子/CI；多checkpoint不替代复现。",
+   "strength": 1
+  },
+  {
+   "problem": "P55",
+   "how": "解析失败、partialcredit和fallback答案抽取改变奖励总体；需审计真实tokenmask。",
+   "strength": 2
+  },
+  {
+   "problem": "P58",
+   "how": "并行分发+文本回传节约主上下文，不自动降低总计算/墙钟。",
+   "strength": 1
+  },
+  {
+   "problem": "P60",
+   "how": "AReaL异步但策略陈旧/IS纠正细节不披露，迁移需核对。",
+   "strength": 1
+  },
+  {
+   "problem": "P65",
+   "how": "按观测预算制造训练异质性，不是按真实工具收益选择题。",
+   "strength": 2
+  },
+  {
+   "problem": "P69",
+   "how": "它优化工具可用性/格式稳定性，不等同于我们准确率非劣下少裁图。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "measurement_and_source_audit": {
+  "reported_gains": "Table 1 对 Qwen3 基线七个 split 的绝对差依次为 2.2、1.0、8.2、6.7、6.7、0.6、0.8，最后一项为 mIoU。作者 +7.9% 是相对提升均值，不是 +7.9 个百分点，且混合 accuracy/mIoU。SFT 到 PARA 的提升更小，Appendix A 已承认。",
+  "format_units": "fτ 是训练格式奖励均值，完整方法为 .41；.64 是峰值，不能写作平均或64%可解析率。Table 5 标签闭合率使用冷启动N=166及训练N=56；tool-call率18.2/9.5/31.7/52.6%并非56的整数计数比例，条件分母不清，保留原值不反推计数。κ=.21调用/rollout 与 Figure7 的14.4%任意工具标签使用率不同；parsed calls 和 tags 的定义/总体未完全对齐。",
+  "information_boundary": "默认 RL 不用 learned judge 或 necessity oracle。准确率按 MCQ exact match、temporal IoU、OE token F1 对 GT；格式评分读生成结构。三层 fallback 答案抽取可在标签不完美时给准确性奖励，因此 malformed 不等于自动零奖励（明确的早期退化输出例外）。随机帧预算制造信息不足，但不标注单次调用必要性；局部代理读裁剪帧，主代理读摘要文本。",
+  "source_ambiguities": [
+   "摘要/结论称锚定在结构 token 位置触发，但 Eq.3 是标量奖励；未披露正方法局部 PG mask。H.3 的结构 mask 是失败对照。",
+   "Eq.1 正条件重叠，α和β累加或优先级未说明；Rbase列出的部分信用相加1.1（尚未加anchor），格式奖励不是二值合规率。",
+   "Table 4 的 reward bias −.2 未列入 Eq.3；Rtool 小奖励具体数值未给，最大轮数/并行K上限也未给。",
+   "Eq.4 只近似主上下文重编码，256视觉token/帧是作者假设；224²像素配置与实际token映射未复核。K个子代理计算和摘要生成没有完整计入；并行依赖容量，未证明walltime或总计算恒定。",
+   "Qwen2.5与Qwen3跨模型比较同时改变家族、规模及预训练，作者承认不是prior受控消融；checkpoint相关也不是因果证据。",
+   "Table 3 七个SFT来源求和95.5K，正文称97K；四舍五入或缺失1.5K未解释，不能自行补数。工具示范28.5K约30%。",
+   "Figure 8(b)图内标题为+No-tool penalty，caption却称no-penalty variant，干预标签不一致。",
+   "H.3称full中14.4%出现任意tool tag，Figure9对应9.0+3.6=12.6%；可能来自不同总体/定义但未说明，不能强行合并。",
+   "主文称过滤项与策略无关，但实际仅在SFT时离线过滤一次；长答案仍可能有部分F1，未证明后续策略永远无信号。",
+   "中心架构是一轮并行，但SFT保留相依调用为串行；实际最大dispatch轮数和数据协议支撑未完全披露。"
+  ],
+  "source_evidence": [
+   {
+    "kind": "author_claim",
+    "locator": "Sec3.2.3 p.7",
+    "quote": "Racc scores the rollout against the ground truth using a task-appropriate metric (exact match for MCQ,\ntemporal IoU for grounding, token-level F1 for open-ended QA)."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "AppB p.17",
+    "quote": "The answer extraction follows a 3-level fallback: (1) content within <answer> tags; (2) if no\n<answer> tag, content after </think> excluding tool calls; (3) last non-empty line."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "AppB p.16",
+    "quote": "The filter runs once and is not\nre-applied as the policy evolves."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Sec4.3 p.9; peaknotmean",
+    "quote": "Only\n the full recipe stabilizes both axes, with fτ rising past step 45 to a peak (0.64)"
+   }
+  ]
+ }
+}

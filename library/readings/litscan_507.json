@@ -1,0 +1,48 @@
+{
+ "paper_key": "litscan:507",
+ "title": "MMCoQA",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_507.txt",
+  "sections_read": [
+   "Abstract/contributions; §4 dataset; §5.1-5.4 method; Table3/§6.3; conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "构建跨文本/表格/图像的对话检索QA，基线将问题context编码、分模态retrieval与extractors组合。",
+  "key_step": "冻结knowledge encoders预索引；问句预测模态，答案由retrieval+modality+span分数求和选取。",
+  "why_non_obvious": "多轮共指与模态变化同时存在，给定正确证据仍不能消除抽取瓶颈。",
+  "trigger_condition": "When conversational evidence spans modalities, separate context resolution, retrieval and modality-specific extraction.",
+  "contribution_type": "benchmark_and_baseline",
+  "abstract_strategy": "用oracle部件替换分解串联系统误差。",
+  "abstract_trigger_condition": "When a multistage system fails, compare retrieved and supplied evidence to locate bottlenecks."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:507#s1",
+   "object": "多模态对话retrieval/extraction pipeline",
+   "information": "当前问题和历史，语料库；Gold question/Gold answer/EG仅诊断oracle臂",
+   "operation": "多encoder内积检索+模态classifier+spanextractor，候选答案总分排序",
+   "claimed_effect": "MAE testF1 2.19，给GT证据28.33；goldquestion+EG36.93；top2000 recall41.53",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5/Table3",
+    "quote": "knowledge encoders are frozen"
+   },
+   "failure_boundary": "无工具停止/视觉细节取证策略；图像extractor答案词表来自训练集，开放答案能力有限。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 1,
+   "how": "oracle证据对照帮助拆分取证与回答错误，但非caption+crop信用方法。"
+  }
+ ]
+}

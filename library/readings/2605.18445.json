@@ -1,0 +1,403 @@
+{
+ "paper_key": "2605.18445",
+ "title": "What's Holding Back Latent Visual Reasoning?",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.18445.pdf",
+  "version": "v2",
+  "version_observed": "PDF p1 arXiv:2605.18445v2 [cs.CV] 19 May 2026; remote latest not checked",
+  "pages": 16,
+  "sections_read": [
+   "Abstract; §1 Introduction; Fig1",
+   "§2 Background; Eq1; Fig2; LVR/LanteRn/ILVR/Monet training distinctions",
+   "§3 Latent interventions; Fig3; Table1",
+   "§4 Pause tokens, masked training, Tetris-like rotations; Figs4–5; Tables2–3",
+   "§5 Predicted/oracle geometry; Fig6; Table4; USP and retrieval definitions",
+   "§6 Discussion and limitations; §7 Related work; §8 Conclusion; references",
+   "Appendix A Table5 full intervention results",
+   "Appendix B Table6 model checkpoints",
+   "Appendix C random subregion source/size distribution",
+   "Appendix D Monet oracle extraction",
+   "Appendix E text-only filtering",
+   "Appendix F Table7 Tetris retraining hyperparameters",
+   "Appendix G Tetris data format/shape families; Fig7",
+   "Appendix H Monet-RL answer extraction and forced completion",
+   "Appendix I length truncation and flattening for §5"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "先替换latent而不是只看benchmark增益；再用oracle/等步数pause对照检查辅助内容是否有增量；构造masked与旋转诊断数据建立依赖的正对照，并用predicted–oracle检索区分生成质量与使用问题。",
+  "key_step": "同checkpoint干预z，保留原题图；用无信息但合理的其他样本latent和zeros/noise/skip交叉验证，再比较oracle latent与pause训练。",
+  "why_non_obvious": "SFT/RL后准确率提升不保证中间表示有作用；表示可被生成却被答案路径绕过。oracle可用但generated无效又说明使用能力与生成能力不同。",
+  "trigger_condition": "When a model reports gains from intermediate representations, replace their content, compare oracle versus equal-compute placeholders, and test a positive-control task before attributing gains to intermediate reasoning.",
+  "reviewer_praise": [
+   "low_evidence: manifest has no reviews_path or external review artifact"
+  ],
+  "reviewer_concern": [
+   "low_evidence: reviewer evidence unavailable; source limitations and reader concerns recorded separately"
+  ],
+  "acceptance_signal": "low_evidence; manifest decision=null; preprint is not an acceptance decision",
+  "contribution_type": "empirical",
+  "abstract_strategy": "Intervene on an intermediate channel to separate content use from computation and representation production.",
+  "abstract_key_step": "Hold the upstream input fixed, substitute irrelevant channel contents, then compare ideal contents with equal-step placeholders and a task requiring that channel.",
+  "abstract_why_non_obvious": "A performance gain can survive removal of the alleged mediator, while an effective ideal mediator can coexist with a failed producer.",
+  "abstract_trigger_condition": "When an intermediate channel is credited for improved outputs, test whether its content is necessary, useful when ideal, and accurately generated."
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.18445#s1",
+   "object": "已训练模型推理latent块的内容与长度",
+   "information": "看到原题/图、生成latent与checkpoint相应oracle编码；对照为下一样本中间图/裁图、零向量、Gaussian或空块。没有每题潜在工具价值真值、无新增实际crop观测。",
+   "operation": "用do(z=z′)替换latent后贪心解码；random用s_(t+1)的helper或子图且匹配VisCoT尺寸比例；zeros/noise保留K，skip立即插end。",
+   "output": "原模型与干预后的准确率比较；Monet-RL缺boxed时额外强制答案补全，必须单列协议。",
+   "claimed_effect": "Fig3/Table5各模型×BLINK/V*至少一种dummy在约2pp内或更高；如LVR BLINK标准68、noise75、zeros76；ILVR V*标准63、zeros65但skip46。Table1 Monet-SFT VisCoT标准76、random75、skip78但zeros41。",
+   "conditions": [
+    "原始输入与对应checkpoint不变，干预只定位latent通道",
+    "跨样本random仅近似合理分布，不能确保完全无标签相关性",
+    "除skip外步数保留；skip同时变长度，OOD失败不能单独证明内容有用"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "quote": "there is always at least one intervention",
+    "locator": "§3 p5; Fig3/Table5"
+   },
+   "failure_boundary": "保持总体准确率不等于逐题答案不变/每个latent无因果作用；可能正确和错误互换、文本前缀已经携带信息，且Monet-RL修复改变自然终止行为。无逐题switch率或干预重复种子/CI。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.18445#s2",
+   "object": "中间图像监督的信息增量与可消费性",
+   "information": "训练和oracle评测可见GT helper图；masked把关键区域从主图抹去但保留helper；旋转oracle直接示出C的变换，属于特权辅助信息，不是模型自行生成成功。",
+   "operation": "过滤强文本模型能答对的样本；比较同数据同时间步的pause baseline与oracle latent；在masked VisCoT和4K Tetris训练/400测试中重训LanteRn，以oracle和dummy衡量是否学会用通道。",
+   "output": "把latent bypass与latent生成失败拆成两种可测瓶颈。",
+   "claimed_effect": "Table2普通VisCoT oracle79/pause79；masked oracle75/random61/noise59/zeros59/pause59。Table3 Tetris oracle86 vs generated33/random30/noise26/zeros25/pause34。",
+   "conditions": [
+    "oracle输入是训练同分布的helper表示；mask任务刻意不可从原图完整恢复",
+    "Tetris仅Qwen2.5VL3B/LanteRn，单seed42",
+    "AppG question示例直接提供rotation描述；是否所有训练输入同样包含未澄清，不能断言完整A→B变换推断能力"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "quote": "This\nensures that the baseline uses the same number of time steps and compute but cannot condition on\nthe intermediate image.",
+    "locator": "§4 p6 Pause Tokens; Tables2–3"
+   },
+   "failure_boundary": "正对照证明oracle通道在这些任务可被利用，不证明自主生成可用。mask下不可能由主输入恢复被抹去内容；Tetris generated33≈pause34，不是推理方法修复。完整真实世界数据方案仍开放。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.18445#s3",
+   "object": "生成latent与oracle latent的样本级/步级几何对应",
+   "information": "300条VisCoT的predicted/oracle embeddings；oracle由各原模型训练recipe生成，Monet stage2最后层；只测cosine geometry，不看到因果内容标签或所有可用信息。",
+   "operation": "长度截齐并flatten后做matching-oracle top1/5/10检索、无关generated更相似的USP、组内pairwise cosine；逐latent时间步另测相邻cosine。",
+   "output": "检索对应关系、跨样本与跨步相似度的诊断表；与干预结果互补。",
+   "claimed_effect": "Table4 retrieval@10最高10%，USP99–100%，generated组内cos .82–.98；Monet oracle .96高于pred .91，不能泛称oracle都更多样。Fig6多模型generated后期相邻cos约.99。",
+   "conditions": [
+    "Table4需相同长度截齐/flatten；Fig6不flatten",
+    "不同framework oracle语义/空间并非独立真值",
+    "300样本范围与AppE 5k heldout关系未说明"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "quote": "we flatten the resulting representations before\ncomputing cosine similarity.",
+    "locator": "Appendix I p16; §5/Table4 p8"
+   },
+   "failure_boundary": "高cos或低oracle retrieval本身不证明没有任务信息；无whitening/linear probe/alternative-space稳健性或干预以恢复几何的因果实验。Monet oracle本身集中，teacher表示不能当独立gold。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "LVR-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Monet-7B RL and SFT stage3; stage2 oracle teacher",
+   "kind": "method"
+  },
+  {
+   "name": "ILVR7B comt checkpoint",
+   "kind": "method"
+  },
+  {
+   "name": "LanteRn3B SFT/RL",
+   "kind": "method"
+  },
+  {
+   "name": "Pause-token training",
+   "kind": "method"
+  },
+  {
+   "name": "Random subregion / zeros / noise / skip / oracle latent",
+   "kind": "method"
+  },
+  {
+   "name": "VisCoT and filtered LanteRn data",
+   "kind": "dataset"
+  },
+  {
+   "name": "BLINK spatial/object-localization subset; V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Tetris-like rotation 4K train/400 eval",
+   "kind": "dataset"
+  },
+  {
+   "name": "Retrieval@1/5/10; USP; cosine similarity",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明确masked输入不足答题，属于非现实诊断条件。",
+   "quote": "this setup deviates from realistic settings in that the input image alone is insufficient to solve\nthe task",
+   "locator": "§4 p6"
+  },
+  {
+   "text": "作者明确不同监督/骨干是否仍bypass尚未知。",
+   "quote": "it remains an open question to what extent\nsubstantially different design decisions in the supervision signal or the base model can affect when\nmodels bypass latent tokens.",
+   "locator": "§6 p9"
+  },
+  {
+   "text": "作者明确无法覆盖所有现有模型。",
+   "quote": "a comprehensive analysis of all existing\nmodels is infeasible",
+   "locator": "§6 p9"
+  },
+  {
+   "text": "作者保留Monet oracle也集中的例外。",
+   "quote": "Monet is an exception, with high similarity in both predicted and oracle latents.",
+   "locator": "§5 p8"
+  }
+ ],
+ "question": {
+  "observed_failure": "四架构在BLINK/V*每个设定至少一种无信息替代保持约同水平；普通VisCoT oracle79与pause79相同；Tetris oracle86/generated33显示53pp缺口（Fig3/Tables2–3）。",
+  "load_bearing_assumption": "引入连续latent后获得准确率提升，就表明最终答案因果使用了有内容的latent推理；以及可用oracle就能被模型准确预测。",
+  "scope": "四种off-the-shelf 3B/7B latent visual模型与LanteRn诊断重训；非所有latent方法、非真实多轮crop。",
+  "success_criterion": "固定模型替换latent的准确率影响；oracle相对等步数pause增量；positive-control中oracle/dummy差；匹配oracle检索与generated内部相似度。",
+  "why_open": "已有工作强调性能，未分开数据oracle无增量与生成表示失真；同时代Li2602.22766测生成相似/干预但本文报告补oracle关系和训练数据诊断。该差异为本文§7表述，本次未独立重读该前作。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "We take off-the-shelf checkpoints and run\neach of them as is (standard inference).",
+   "locator": "§3 p4",
+   "how": "先不训练干预既有模型，再做诊断训练。"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "quote": "Both models achieve the same accuracy",
+   "locator": "§4 p6 Pause Tokens",
+   "how": "核对原输入是否足够，避免把新增通道出现当作能力来源。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "the baseline uses the same number of time steps and compute",
+   "locator": "§4 p6",
+   "how": "pause control隔开内容与额外时间步，skip则不具同一控制性质。"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "primary",
+   "quote": "it allows us to disentangle if failures come from limitations of the modeling approach",
+   "locator": "§4 p6",
+   "how": "内容替换、oracle/pause、masked正对照构成隔离混杂的诊断。"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "role": "supporting",
+   "quote": "finding a single\nintervention with comparable accuracy already demonstrates that the latent tokens generated with the\nstandard inference procedure are not necessary to achieve that level of performance.",
+   "locator": "§3 p5",
+   "how": "用实际counterexample挑战性能提升=使用latent内容的前提；推翻限于该准确率水平，不证明逐样本无作用。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L=-\\frac1T\\sum_{t=1}^T\\log P_\\theta(y_t\\mid y_{<t},z,x)+\\gamma\\frac1K\\sum_{k=1}^K\\ell(\\hat z_k,z_k^*)",
+    "locator": "§2 Eq1 p3",
+    "scope": "综述共同SFT目标；Tetris γ.05/MSE/K8；不擅自填新RL目标"
+   },
+   {
+    "latex": "z:=z^*\\ \\text{(teacher forcing)},\\qquad z:=\\hat z\\ \\text{(free running)}",
+    "locator": "§2 Eq1后 p3",
+    "scope": "LVR/LanteRn oracle context；Monet free-running；ILVR momentum teacher"
+   },
+   {
+    "latex": "P_\\theta(y\\mid\\mathrm{do}(z=z^\\prime),x)",
+    "locator": "§3 p4 inline",
+    "scope": "干预评测分布，非优化目标"
+   },
+   {
+    "latex": "z^\\prime=[L_s,0_{1:K},L_e],\\quad z^\\prime=[L_s,\\epsilon_{1:K},L_e],\\ \\epsilon_k\\sim\\mathcal N(0,1),\\quad z^\\prime=[L_s,L_e]",
+    "locator": "§3 p4 inline",
+    "scope": "zeros/noise/skip的定义；Gaussian噪声是干预，不是latent policy分布"
+   },
+   {
+    "latex": "\\mathrm{USP}=\\mathbb E_{i,j\\ne i}\\mathbf1[\\operatorname{sim}(\\hat z^{(i)},\\hat z^{(j)})>\\operatorname{sim}(\\hat z^{(i)},z^{*(i)})]",
+    "locator": "§5 p8 inline",
+    "scope": "Table4相同长度flatten后cosine；高值不等于独立因果证明"
+   },
+   {
+    "latex": "\\mathbb E_{i,j\\ne i}\\operatorname{sim}(\\hat z^{(i)},\\hat z^{(j)}),\\quad\\mathbb E_{i,j\\ne i}\\operatorname{sim}(z^{*(i)},z^{*(j)})",
+    "locator": "§5 p8 inline",
+    "scope": "generated与oracle组内几何统计"
+   }
+  ],
+  "signal_routing": "SFT文本下一token CE与latent alignment两个loss；teacher forcing下文本消费oracle，生成latent由MSE/cos单独对齐；Monet消费自己latent，ILVR目标由EMA teacher。本文新训练Tetris冻结vision tower和merger、更新LLM。作者背景说LVR/LanteRn后续RL仅text tokens受监督；本文没有新RL算法，不能补作当前策略credit。",
+  "normalization": "Eq1文本按T平均、alignment按K平均，γ=.05（Tetris）；无组均值/std/RLOO奖励归一化。诊断cosine归一化向量方向；Table4先截同长度再flatten，Fig6逐步直接比较。",
+  "invariance": "不涉及PBRS/最优策略保持。same-K dummy保持latent块步数但不保证计算耗时严格相同；skip改变长度。cosine对正比例整体尺度不变，忽略模长；aggregate accuracy不变不蕴含逐题预测或梯度不变。",
+  "baseline_or_potential": "pause是等时间步训练对照，不是价值baseline；oracle由中间图与各framework teacher/encoder派生，不是策略自身价值。没有势函数、critic或fork MC估值。",
+  "degenerate_cases": "全对/全错组与p≈0优势退化n/a：本研究主要是固定模型干预和SFT。若模型从不产生latent_start，干预无施加机会，文中未报告该比例。K0 skip去通道并改长度；零向量不该用于cosine除范数，Table4并未说把zero干预加入几何分析。oracle也集中时高generated相似度不足以隔离病因（Monet）。",
+  "gradient_audit": "本文未提出修复PG或首动作梯度；MSE教师强制可对齐目标但不保证答案路径使用预测latent，free-running有曝光差异。跨latent递归BPTT/target detach细节在本文未统一给出，不假定四模型相同。LLM参数共享与固定监督数据可能产生旁路，论文通过诊断支持而不是提供无偏性定理。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "四种内容替换先检验channel内容；oracle与same-step pause分离可用信息和额外计算；masked和Tetris正对照显示通道可以被消费；oracle与generated缺口及geometry进一步定位生成瓶颈。",
+  "controls": [
+   "同checkpoint standard/oracle/random/zeros/noise/skip",
+   "random来自下一样本，匹配VisCoT尺寸比例并用对应框架编码",
+   "pause与oracle训练同数据/步数，mask移除主图内容但保留helper",
+   "Tetris四选项标签平衡，train4000/eval400",
+   "Monet-RL统一规则缺boxed触发forced completion，但实际触发率未报告",
+   "没有逐题prediction-switch、CI、重复干预种子或全部自然完成率对照"
+  ],
+  "negative_results": [
+   {
+    "text": "普通VisCoT oracle/pause均79，oracle内容未显示额外收益。",
+    "quote": "Both models achieve the same accuracy",
+    "locator": "§4 p6 Table2"
+   },
+   {
+    "text": "Tetris oracle86、generated33、pause34；oracle可用不意味着可生成。",
+    "quote": "the\nmodel’s generated latents during standard inference achieve performance only slightly above random\nchance",
+    "locator": "§5 p7 Table3"
+   },
+   {
+    "text": "部分OOD干预明显伤害模型：ILVR V* skip63→46；Monet-SFT VisCoT zero76→41。",
+    "quote": "Some out-of-distribution interventions are too harsh for some models",
+    "locator": "§3 p5; Tables1/5"
+   },
+   {
+    "text": "Monet换不同层或层平均提oracle未得到明显性能差异；未给分层数值。",
+    "quote": "These variations yielded no meaningful differences in performance",
+    "locator": "Appendix D p14"
+   }
+  ],
+  "seeds": "Tetris retraining single seed42 explicitly Table7; no multi-seed CI. Off-the-shelf/noise/random repeats unspecified, greedy text decoding; no statistical equivalence test for 2pp margin.",
+  "falsifier": "读者提出未执行：匹配时长和完成协议后，多种内容保持对照若产生稳定paired accuracy drop且oracle优于pause，反驳该模型/任务bypass判断；正对照若失效则审计不敏感；若geometry变化不改善生成答案则不能把cosine collapse当唯一因果瓶颈。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Audit LVR7B, Monet7B SFT/RL, ILVR7B, LanteRn3B SFT/RL; diagnostic retraining Qwen2.5-VL-3B/LanteRn",
+   "framework": "LanteRn implementation and model-specific evaluation; no specific training library named here",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "decoding": "greedy for standard/interventions; Gaussian noise only intervention",
+   "latent_size": 8,
+   "tetris_epochs": 15,
+   "learning_rate": 1e-05,
+   "lr_scheduler": "cosine",
+   "warmup_ratio": 0.05,
+   "gamma": 0.05,
+   "latent_loss": "mse",
+   "bf16": true,
+   "freeze_vision_tower": true,
+   "freeze_merger": true,
+   "freeze_llm": false,
+   "per_device_train_batch_size": 6,
+   "gradient_accumulation_steps": 8,
+   "eval_steps": 80,
+   "seed": 42,
+   "hardware": "4×NVIDIA GH200,98GB each",
+   "tetris_train": 4000,
+   "tetris_eval": 400,
+   "geometry_eval": 300,
+   "filtered_viscot_eval_declared": 5000
+  },
+  "cost": "仅报告Tetris 4×GH200、15 epochs、4000样本、batch6/device、accum8；没有GPUh、training tokens、total update count、audit forward count/latency。pause被作者称同compute，但未给timing表。",
+  "pitfalls": [
+   {
+    "text": "Monet-RL受干预后可能只写观察不输出可提取答案；作者加统一缺boxed强制补全。",
+    "quote": "we apply a\nforced completion step whenever boxed{answer} is missing from the model output.",
+    "locator": "Appendix H p16"
+   },
+   {
+    "text": "随机图不是独立随机重采；用下一样本helper，缺失时取其输入子图并匹配尺寸。",
+    "quote": "we use the subsequent\nsample st+1",
+    "locator": "Appendix C p13"
+   },
+   {
+    "text": "表示比较要先对齐长度；ILVR可变latent步数，Table4 flatten而Fig6不flatten。",
+    "quote": "we first truncate predicted and oracle tokens to the same number of\ntime steps",
+    "locator": "Appendix I p16"
+   }
+  ],
+  "code": "https://github.com/GuilhermeViveiros/LanteRn.git",
+  "code_inspected": false,
+  "lesson": "当中间通道被宣称有推理价值时，应同时测内容替换、oracle上限和等步数pause，并记录格式失败与补全协议；否则“准确率没变”可能混合旁路、对照分布失真和输出修复，不能直接变成逐次工具信用。",
+  "latent_distribution_and_replay": "未建latent stochastic density/IS ratio；generated hidden autoregression，oracle teacher forcing/free-running按框架区分。干预用Gaussian不代表policy采Gaussian。Monet oracle来自stage2完整sequence/crop/特定attention mask的last-layer hidden并存.pt，再作为gt_latent_embeds注入；exact mask及是否答案泄漏需源码核对，不能凭描述认证。",
+  "stop_and_pixels": "§2概括固定块6–12步后自动插end；Tetris K8；AppI允许ILVR可变步数/多块，不能硬写所有模型都固定总步数。skip强制end；Monet-RL缺答案再追加boxed前缀直到EOS。标准latent推理无新的外部像素获取；oracle/random干预有特权helper图编码，不能当真实部署自主补看。",
+  "data_scope_unknowns": "原LanteRn143024文本过滤约30%，由Qwen3VL235B只看question答对即丢弃；这只是该过滤器表现，不证明剩余样本无text shortcut。AppE5k heldout、§5 300 VisCoT分析，未给子集关系。Tetris AppG样例question自带rotation描述及oracle示出变换，须区分辅助答案展示与自主变换发现。"
+ },
+ "relevance": [
+  {
+   "problem": "P41",
+   "how": "多种干预与same-step pause/positive control有助发现替换本身改变行为；Monet forced completion也显示测量协议可能变任务。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "可以借鉴对已取观测内容做消融，但全文没有逐次MC工具必要性标签或信用路由。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "用被审计策略本身对干预响应，避免另一个冻结读者替策略判断需要；oracle/teacher仍不是当前策略价值。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "中间数据需要为模型提供可用增量，冷启动只生成格式不保证答案依赖；与缺少行为不同。",
+   "strength": 1
+  },
+  {
+   "problem": "P40",
+   "how": "区分“有信息但未利用”和“生成信息差”是诊断启示，但latent cosine不适合直接判断caption事实性。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "最终准确率/latent外观不能证明证据使用，内容置换与正对照可做评测审计。",
+   "strength": 2
+  },
+  {
+   "problem": "P45",
+   "how": "明确Tetris单seed42、干预无CI；2pp接近不能充当统计非劣。",
+   "strength": 1
+  },
+  {
+   "problem": "P33",
+   "how": "固定latent长度和skip干预不是剩余budget最优停止学习。",
+   "strength": 1
+  }
+ ]
+}

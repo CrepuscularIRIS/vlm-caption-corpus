@@ -1,0 +1,363 @@
+{
+ "paper_key": "2607.01191",
+ "title": "Perceive-to-Reason: Decoupling Perception and Reasoning for Fine-Grained Visual Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.01191.pdf",
+  "version": "v1",
+  "pages": 24,
+  "version_observed": "PDF p.1 arXiv:2607.01191v1 [cs.CV] 1 Jul 2026; local manifest version read, remote latest not checked.",
+  "sections_read": [
+   "Abstract and Introduction pp.1–2; Figures1–2",
+   "2 Related Work pp.2–3",
+   "3.1–3.3 Methodology pp.3–4; Eqs1–6; Figure3",
+   "4.1–4.4 Experiments pp.5–8; Tables1–4; Figures4–8",
+   "5 Conclusion p.8; Limitations and Ethics p.9; References pp.9–11",
+   "Appendix A Diagnostic Study p.12 Table5",
+   "Appendix B.1–B.2 Methodology Details p.12 Algorithm1 and prompts",
+   "Appendix C.1–C.2 Training Details p.13 Table6",
+   "Appendix D.1–D.2 Evaluation Details pp.13–14",
+   "Appendix E.1–E.5 Additional Analysis pp.14–16 Figures9–12",
+   "Appendix E case figures13–20 pp.17–24"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "将单一多模态模型的定位与作答行为分成两个角色，以框与真实裁图作中间接口；交替固定上一阶段另一角色，仅由终答正确性优化当前角色。",
+  "key_step": "P阶段为同题采8个框集合，经冻结R生成答案再打二元分；R阶段固定P提供同一组视觉证据，采8个答案。各自组内mean+std优势只更新活跃角色，部署复用最终共享参数。",
+  "why_non_obvious": "同一个终答奖励同时混合定位错误和解释错误；冻结另一角色使对比条件较稳定，但仍不识别错误的唯一原因，也不等于逐框因果信用。共享参数更新还会跨角色迁移，所谓冻结只针对阶段中产生反馈的副本。",
+  "trigger_condition": "When locating small evidence and interpreting it are coupled under answer-only labels, alternate optimization of an evidence selector and an evidence-conditioned solver while fixing the other role at a prior-stage checkpoint.",
+  "reviewer_praise": [
+   "low_evidence: no reviews_path in manifest; independent reviewer praise unavailable."
+  ],
+  "reviewer_concern": [
+   "low_evidence: independent reviews unavailable; reader concerns are recorded in limitations and evidence_design."
+  ],
+  "acceptance_signal": "low_evidence; manifest decision=null retained; no acceptance inferred from arXiv venue.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Separate selection from interpretation, pass a structured intermediate artifact, and alternate updates with a stable partner.",
+  "abstract_key_step": "Sample alternatives only for the active role, score their final outcomes through a fixed partner, standardize within the group, and update that role before exchanging roles.",
+  "abstract_why_non_obvious": "A terminal outcome confounds upstream selection and downstream interpretation; holding a partner stable reduces variation without requiring intermediate labels, but does not identify causality or guarantee either partner is correct.",
+  "abstract_trigger_condition": "When a sequential workflow has only terminal labels and each stage can already produce valid outputs, hold one stage stable while optimizing the other, then exchange their responsibilities."
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.01191#s1",
+   "object": "Two-stage deployment interface between evidence localization and answering",
+   "information": "Perceiver sees original image I and question-derived prompt T_p(Q), including question options if present; no GT answer or GT bbox is provided by Eq1/B.1. Reasoner sees question, original image overlaid with predicted boxes, and up to first three real crop images. It is not a text-only blind reader. Eq2 does not explicitly pass raw Perceiver text/labels; their rendering details are unspecified.",
+   "operation": "Prompt the same final VLM to emit JSON boxes and labels; parse coordinates with regex, annotate all predicted boxes, crop first three boxes, then answer with the role-specific prompt in a clean second context.",
+   "output": "Two model calls with structured box artifact and real visual observations retained at inference.",
+   "claimed_effect": "Figure4: untrained Qwen3-VL-4B directCoT/P2R inference 81.7/89.0 V-Star,73.8/78.3 HR4K,67.0/73.8 HR8K. Trained P2R-4B directCoT/P2R 84.8/93.2,78.4/81.9,72.5/80.5. These separate some inference and training contributions.",
+   "conditions": [
+    "Base model can already localize using the prompt",
+    "Original high-resolution pixels remain accessible for cropping",
+    "Perceiver prompt assumes each object type appears only once",
+    "At most first three predicted regions receive local crops"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.3 p.6 Figure4",
+    "quote": "replacing direct CoT with P2R inference improves\nthe score from 81.7% to 89.0% for Qwen3-VLInstruct-4B, and from 84.8% to 93.2% for P2R-4B.\nMoreover, P2R-4B remains stronger than Qwen3VL-Instruct-4B even under direct CoT prompting,\nindicating that the benefits of PRA-GRPO are not\nlimited to the dedicated P2R inference pipeline.\nCombining P2R training with P2R inference yields\nthe strongest performance on all three benchmarks."
+   },
+   "failure_boundary": "Additional cost vs direct prompt; no learned skip/crop decision or iterative recovery; random or incomplete boxes hurt. Original image remains available so correct answers need not use the proposed crop.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.01191#s2",
+   "object": "Perceiver response distribution over bounding-box sets during P phase",
+   "information": "Active P observes I,T_p(Q). Frozen R from previous-stage checkpoint sees each predicted annotated image/crops and Q, but not GT answer as input. The answer-matching reward function sees generated Y_i and dataset GT Y after the complete R rollout. No future token is put into P input; terminal feedback is not online necessity information. Training does not use bbox GT in the stated objective; oracle boxes only enter diagnostics/evaluation.",
+   "operation": "Sample G=8 box sets for each example, obtain one downstream answer per box set through the frozen Reasoner, compute r_i=1[Y_i=Y], standardize the group, and apply clipped GRPO plus KL to active P outputs only.",
+   "output": "Outcome-supervised localization policy conditioned on a fixed partner; not a separately labeled box-quality reward.",
+   "claimed_effect": "Table3 P-Only+Base vs Base+Base mean80.4→82.4; reusing P-Only for R raises mean83.5. Figure6 localization hit rate/IoU trends improve during P training.",
+   "conditions": [
+    "Frozen partner has nontrivial success discrimination across box sets",
+    "Mixed reward groups and box diversity exist",
+    "Parsing and crop construction preserve coordinates and spatial context"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.3 p.4",
+    "quote": "Concretely, PRA-GRPO alternates between optimizing the Perceiver and the Reasoner, while keeping the other role fixed. This turns final answer\ncorrectness into a role-aware supervision signal: in\nthe perception phase, the quality of the predicted\nevidence is evaluated through the answer produced\nby a fixed Reasoner; in the reasoning phase, answer\ngeneration is optimized conditioned on evidence\nprovided by a fixed Perceiver."
+   },
+   "failure_boundary": "Correct evidence can still be punished if frozen R fails; original-image shortcuts can reward unused boxes; all-equal binary groups give zero task advantage. DAPO one-box collapse shows exploration support is not guaranteed.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.01191#s3",
+   "object": "Reasoner response distribution and shared checkpoint schedule during R phase",
+   "information": "Frozen P from previous stage supplies one B and visual inputs for all G answers per example. Active R sees annotated original,crops,Q; terminal reward sees GT Y. The training snapshot for other role is fixed during a stage, while active shared theta changes and is later used in both roles. KL reference update schedule is not stated precisely.",
+   "operation": "Freeze P evidence generation, sample G=8 answers on its visual inputs, optimize R with standard group-relative clipped objective and KL; use one epoch per role and prefer P→R; deploy the final shared model in both roles.",
+   "output": "Final shared checkpoint with role-conditioned responses; each stage has its own rollout and policy-gradient target.",
+   "claimed_effect": "Figure5 P→R V-Star93.2 vs R→P90.6; Table3 P-Only+R-Only mean84.8 vs final shared85.2, but HR8K81.0 vs80.5 reverses the comparison. Table1 final4B mean85.2 vs base74.2.",
+   "conditions": [
+    "R can interpret provided local evidence",
+    "Previous-stage checkpoint held fixed during feedback generation",
+    "Shared-parameter transfer does not excessively degrade the other role"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Appendix B.2 p.12 Algorithm1",
+    "quote": "Training alternates between Perceiver\nand Reasoner phases. In each phase, the active\nrole is optimized while the other role is frozen using the checkpoint from the previous stage. For\neach training sample, we draw a group of rollouts\nfrom the active role, compute binary rewards from\nfinal-answer correctness, and derive group-relative\nadvantages under GRPO. The resulting objective\nis then used to update only the active role."
+   },
+   "failure_boundary": "Updating shared parameters changes both roles when redeployed; no distinct parameter blocks are guaranteed frozen. Very small84.8→85.2 mean gap lacks seed uncertainty; one-stage-only and two-stage compute not matched by reported token/GPU-hours.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-Instruct 2B/4B/8B/32B",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o and o3",
+   "kind": "method"
+  },
+  {
+   "name": "DyFo, ZoomEye",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes, PixelReasoner, Thyme",
+   "kind": "method"
+  },
+  {
+   "name": "Direct CoT vs P2R inference, P-only, R-only, P→R, R→P",
+   "kind": "method"
+  },
+  {
+   "name": "Text-only GRPO; DAPO",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL official tool-use pipeline",
+   "kind": "method"
+  },
+  {
+   "name": "V-Star; HR-Bench4K/8K; MME-RealWorld-Lite; ReasonSeg",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者限制：比直接提示更昂贵、规模受算力限制、只有稀疏终答监督，未评估交互或长时程。",
+   "quote": "This work has several limitations. First, although\nP2R is simple and effective, its two-stage pipeline\nintroduces additional inference cost compared with\ndirect prompting. Second, due to limited computational resources, we have not explored PRA-GRPO\nat larger training scales, so its full scaling behavior\nremains unclear. Third, PRA-GRPO relies only on\nfinal-answer supervision, which avoids the need\nfor bounding box annotations but also provides\na sparse learning signal. Finally, our evaluation\nmainly focuses on fine-grained visual reasoning\nand related multimodal benchmarks; broader generalization to interactive or long-horizon settings\nremains for future work.",
+   "locator": "Limitations p.9"
+  },
+  {
+   "text": "BBox和裁图中间产物不应被当作完全忠实的决策解释。",
+   "quote": "Second, although P2R\nprovides intermediate outputs such as bounding\nboxes and cropped regions, these should not be interpreted as fully faithful explanations of model decisions.",
+   "locator": "Ethics p.9"
+  },
+  {
+   "text": "原文Prompt假设同类对象只出现一次；真实重复实例场景不由本协议保证。",
+   "quote": "Note that each object type appears\nonly once in the image.",
+   "locator": "Appendix B.1 p.12"
+  }
+ ],
+ "question": {
+  "observed_failure": "不训练诊断Table5：Qwen3-VL-4B在V-Star DirectCoT81.7%，提供GT框和裁图90.6%，差8.9pp；仍有9.4%失败。定位/增分辨率/提示改变共同作用，不能全归因推理不变。",
+  "load_bearing_assumption": "单一交错推理过程加终答奖励能自然学到准确where-to-look，并把正确性信用归给定位或解释；作者将其改成显式两角色与交替优化。",
+  "scope": "高分辨率小目标及跨对象空间关系，2B/4B/8B Qwen3-VL，10K图问答训练，单次定位后作答。",
+  "success_criterion": "在相同骨干上分离训练与推理收益；定位Hit Rate/IoU及V-Star、HR4K/8K、MME-Lite准确率提高，报告吞吐代价。",
+  "why_open": "工具交错上下文与独立搜索不能直接解决共享模型里仅终答监督下的角色信用混杂；本文没有回答已有正确caption到错误选项的专门P40频率。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "We conduct a simple diagnostic study on VStar (Wu and Xie, 2024) to probe a key question\nbehind this work: is fine-grained visual reasoning limited more by reasoning or by perception?\nUsing Qwen3-VL-4B, we compare a standard Direct CoT setting with an Oracle Hint setting that\nprovides ground-truth bounding boxes from the\nofficial V-Star annotation file, together with the corresponding cropped regions. Table 5 shows that\nOracle Hint improves overall accuracy from 81.7%\nto 90.6%, with consistent gains on both attribute\nand spatial questions. The result suggests that many\nfailures are caused not by the inability to reason\nover evidence, but by the inability to first find the\nright evidence to reason over.",
+   "locator": "Appendix A p.12 Table5",
+   "note": "实际执行base模型DirectCoT/OracleHint不训练诊断；Oracle同时改变框、裁图与输入，不标成严格单变量机制证明。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "Replacing the Base Reasoner\nwith the P-Only checkpoint improves the average\nscore from 82.4% to 83.5% (P-Only + Base vs.\nP-Only + P-Only), indicating that Perceiver-only\ntraining also benefits the model when reused in\nthe Reasoner role. Likewise, replacing the Base\nPerceiver with the R-Only checkpoint increases\nthe average score from 82.7% to 83.4% (Base\n+ R-Only vs. R-Only + R-Only), suggesting that\nReasoner-only training also transfers to the Perceiver role. However, simply combining separately\ntrained checkpoints remains weaker than the final\nalternating model (84.8% vs. 85.2%), suggesting\nthat PRA-GRPO better integrates both capabilities\nwithin a single shared model.",
+   "locator": "§4.4 p.7 Table3",
+   "note": "实际执行固定P更换R、固定R更换P的checkpoint组合；该局部对照可分角色迁移，但整体训练预算仍未匹配。"
+  },
+  {
+   "vocab": "M",
+   "id": "M08",
+   "quote": "However, in our setting, we find that DAPO is\nless suitable for training the Perceiver. In particular, during the Perceiver phase, DAPO causes the\npredicted bounding box count to drop rapidly and\nquickly converge to one. This behavior is problematic for tasks that require multiple boxes. For example, many samples in the spatial relationship reasoning split of V-Star require comparing the relative\npositions of two objects. If the model outputs only\na single bounding box, it cannot reliably capture\nboth objects, leading to a clear performance drop.\nOn the 4B model, DAPO achieves only 85.8% on\nV-Star Spatial, whereas GRPO reaches 94.7%.\nWe hypothesize that this issue is related to the\nremoval of the KL divergence term in DAPO. Without KL regularization, the policy can more easily\ndrift away from the original response pattern and\ncollapse to a simpler mode that generates only one\nbounding box. While such behavior may not be\nproblematic in pure text reasoning, it is harmful in\nour setting, where the model must maintain flexible\nmulti-box perception behavior. We therefore use\nGRPO instead of DAPO in all main experiments.",
+   "locator": "Appendix E.4 p.16",
+   "note": "实际比较命名GRPO/DAPO并保留GRPO；KL单因果解释仅作者猜测，DAPO同时改动多项。"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "For fairness, we do not include direct efficiency\ncomparisons with visual search methods. Our experiments use a unified vLLM (Kwon et al., 2023)\nbackend, whereas visual search methods typically\nrely on more complex multi-stage pipelines and often use different backends. Direct wall-clock comparisons would therefore be confounded by implementation differences.",
+   "locator": "Appendix E.2 p.15",
+   "note": "统一vLLM测官方tool-use/base/P2R，并明确不同backend视觉搜索不作直接耗时比较。"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "role": "primary",
+   "quote": "This two-stage formulation turns fine-grained visual reasoning into an explicitly structured process:\nthe Perceiver determines where to look, while the\nReasoner focuses on how to reason from the evidence. By making evidence localization an explicit\nintermediate step rather than an implicit byproduct\nof answer generation, P2R offers a more suitable\nformulation for fine-grained visual reasoning.",
+   "locator": "§3.2 p.3",
+   "note": "中间bbox及裁图连接定位与解释两个role-conditioned solver，虽然共享基础参数。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "Concretely, PRA-GRPO alternates between optimizing the Perceiver and the Reasoner, while keeping the other role fixed. This turns final answer\ncorrectness into a role-aware supervision signal: in\nthe perception phase, the quality of the predicted\nevidence is evaluated through the answer produced\nby a fixed Reasoner; in the reasoning phase, answer\ngeneration is optimized conditioned on evidence\nprovided by a fixed Perceiver.",
+   "locator": "§3.3 p.4",
+   "note": "按角色区分rollout/更新对象，另一角色冻结，终答监督作差异化处理；不是按全对全错分组统计，因此不标M04。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal B\\sim\\pi_p(\\cdot\\mid I,\\widetilde Q_p;\\theta),\\quad\\widetilde Q_p=T_p(Q)",
+    "locator": "Eq1 p.3"
+   },
+   {
+    "latex": "Y\\sim\\pi_r(\\cdot\\mid I_a,I_c,Q;\\theta),\\quad I_a=\\operatorname{annotate}(I,\\mathcal B),\\ I_c=\\operatorname{crop}(I,\\mathcal B)",
+    "locator": "Eq2 and text p.3"
+   },
+   {
+    "latex": "r_i=\\mathbb I[Y_i=Y]",
+    "locator": "Eq3 p.4"
+   },
+   {
+    "latex": "A_i=\\frac{r_i-\\operatorname{mean}(\\{r_j\\}_{j=1}^G)}{\\operatorname{std}(\\{r_j\\}_{j=1}^G)+\\epsilon}",
+    "locator": "Eq4 p.4"
+   },
+   {
+    "latex": "\\mathcal J_{\\mathrm{GRPO}}^\\phi(\\theta)=\\mathbb E_{x,\\{o_i\\}_{i=1}^G}\\left[\\frac1G\\sum_{i=1}^G\\min\\left(\\rho_i A_i,\\operatorname{clip}(\\rho_i,1\\pm\\varepsilon)A_i\\right)-\\beta\\operatorname{KL}[\\pi_{\\phi,\\theta}\\Vert\\pi_{\\rm ref}]\\right]",
+    "locator": "Eq5 p.4",
+    "note": "Visual transcription of sequence-level schematic; exact token loss aggregation/masks are not specified in paper, no invented pertoken denominator."
+   },
+   {
+    "latex": "\\rho_i=\\frac{\\pi_{\\phi,\\theta}(o_i\\mid x)}{\\pi_{\\phi,\\theta_{old}}(o_i\\mid x)},\\quad\\phi\\in\\{p,r\\}",
+    "locator": "Eq6 p.4"
+   }
+  ],
+  "signal_routing": "P阶段o_i=B_i，二元终答奖励经组标准化作用于主动定位response；生成终答的冻结R不反传。R阶段o_i=Y_i，固定框/图像输入不作为主动response更新，仅R答案response接收组优势。两阶段均KL损失0.01，use_kl_in_reward=False；无caption充分性、逐crop必要性或结果四格门控。论文只给sequence-level式，具体token/视觉mask未核源码。",
+  "normalization": "mean+std: each prompt group G=8 of active-role samples uses Eq4, epsilon for stability. Both roles same estimator; KL applied in loss, not reward. No RLOO/no-std or per-channel cost component.",
+  "invariance": "没有势函数塑形或最优策略不变定理。保持终答正确性任务奖励形式，但改变可行轨迹结构、冻结伙伴条件分布和训练schedule；KL约束也改变正则化目标。纯正缩放二元reward在忽略epsilon时被std抵消；不能据此声称新增cost保留作用。共享theta更新允许跨role行为变化。",
+  "baseline_or_potential": "同题当前活跃role的8个终答结果均值作为baseline，std缩放；P阶段由上一阶段冻结R给出结果，R阶段由上一阶段冻结P给出观测。没有critic、MC direct/crop价值差、未来状态势函数；π_ref与frozen partner是不同概念，reference是否每阶段重置未明确。",
+  "degenerate_cases": "全对/全错组ri恒定则Ai=0，task PG为零，仅可能剩KL；G=1同样退化。若所有框都让R答错或R不看框均答对，P没有差异信号；若定位策略只输出一框，多对象关系会受损。没有direct/crop选择，无法从本方法证明恢复p(direct)≈0；训练时移除一阶段会成为P-only/R-only条件GRPO，部署依然两阶段。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Figure4交叉base/trained×direct/P2R分离部分推理收益；Figure5 P-only/R-only/顺序对照；Table3固定一角色交换checkpoint检验迁移；Figure12无框/随机框/自生成/GT框检验信息来源；Figure11统一vLLM吞吐。",
+  "controls": [
+   "Table5 oraclehint诊断含GTbbox+realcrop，不是单独bbox或纯分辨率对照。",
+   "Figure12 V-Star Qwen3-4B no/random/self/oracle=81.7/78.5/89.0/90.6；P2R=84.8/83.2/93.2/93.7；随机框负对照真实存在，但形状/数量/面积匹配方式未写。",
+   "Table3 cross-checkpoint combinations expose shared-parameter spillover; P-Only+R-Only84.8 vsP2R85.2 average, HR8K favorsseparate81.0 vs80.5.",
+   "Figure8 three training iterations PRA-GRPO54.8→57.1 vs text-onlyGRPO53.8→55.1 onMME-Lite; iteration≠matchedgeneratedtokens or walltime.",
+   "E.4 DAPO ablation changesKL,clipping,dynamic sampling,tokenloss,overlongshaping jointly; no isolatedKLonly arm."
+  ],
+  "negative_results": [
+   {
+    "text": "随机框使base81.7→78.5，P2R84.8→83.2；信息错误仍会伤害。",
+    "quote": "In contrast, random bounding boxes hurt performance, further showing that\naccurate region localization is essential.",
+    "locator": "Appendix E.3 p.15 Figure12"
+   },
+   {
+    "text": "DAPO使预测框数迅速降为1，多对象空间题85.8%，GRPO94.7%；这是报告结果，KL原因未隔离。",
+    "quote": "However, in our setting, we find that DAPO is\nless suitable for training the Perceiver. In particular, during the Perceiver phase, DAPO causes the\npredicted bounding box count to drop rapidly and\nquickly converge to one. This behavior is problematic for tasks that require multiple boxes. For example, many samples in the spatial relationship reasoning split of V-Star require comparing the relative\npositions of two objects. If the model outputs only\na single bounding box, it cannot reliably capture\nboth objects, leading to a clear performance drop.\nOn the 4B model, DAPO achieves only 85.8% on\nV-Star Spatial, whereas GRPO reaches 94.7%.",
+    "locator": "Appendix E.4 p.16"
+   },
+   {
+    "text": "正确定位钟楼但错读11为12；只裁河一部分丢失全局位置范围；两个失败都没有证明正确caption被错误映射。",
+    "quote": "We also show two representative failure cases\nin Figures 19 and 20. In Figure 19, the model correctly localizes the clock tower and zooms into the\nrelevant clock face, indicating that the Perceiver\nidentifies the right evidence. The error instead\ncomes from fine-grained visual recognition in the\ncropped region: the model mistakenly interprets the\nhour hand as pointing to 12 rather than 11, which\nleads to the wrong answer. This example suggests\nthat even with accurate localization, P2R-4B can\nstill fail on subtle visual reading tasks that require\nprecise interpretation of small details.\nIn Figure 20, the model also successfully detects\nthe river, but the selected box covers only part of\nthe river rather than the full river region on the left\nside of the image. As a result, the cropped evidence does not fully preserve the spatial context\nneeded to distinguish whether the answer should\nbe “left” or “upper.” This incomplete localization\nintroduces ambiguity in the reasoning stage. If the\nfull left-side river region were captured, this ambiguity would likely be avoided. This case highlights\nthat, beyond finding the relevant object, the spatial extent of the selected region is also crucial for\ncorrect downstream reasoning.",
+    "locator": "Appendix E.5 p.16; Figures19–20 pp.23–24"
+   }
+  ],
+  "seeds": "not reported: no independent training seed count, variance, CIs or significance tests. Greedy evaluation temperature0 ensures deterministic decoding conditions, not multi-seed reproducibility.",
+  "compute_confound": "P+R each1epoch while single-role1epoch; no equal-token/updates/GPU-hour comparison reported. Trainingpixelbudget2048×32×32 versus evaluation4096×32×32; crop inputs raise visual exposure. Fig11 direct model slower/fastertradeoff is separate from training-cost causality.",
+  "falsifier": "Reader-proposed, not executed: match totalvisualtokens,generatedtokens,updates and compute between staged andjointtraining; permute boxes with matchedshape/count and use partner-swaps; if matchedjoint orrandomstagepartition reproduces gains, role-specific attribution is not established. ForP40 require human-audited correctfact→wronganswer subset and unchangedcropbudget, not overallaccuracy alone."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-Instruct-2B/4B/8B; one shared final model, previous-stage partner copies duringtraining",
+   "framework": "verl",
+   "group_size": 8,
+   "rollouts": 8,
+   "steps": null,
+   "kl": 0.01,
+   "temperature": null,
+   "evaluation_temperature": 0,
+   "max_turns": 2,
+   "max_turns_note": "Two functional inference stages; not reported as a multi-turn tool max_turns config.",
+   "train_batch_size": 64,
+   "ppo_mini_batch_size": 64,
+   "ppo_micro_batch_size_per_gpu": 8,
+   "learning_rate": 1e-06,
+   "epochs": "1 per Perceiver and 1 per Reasoner phase; scaling analysis3iterations",
+   "entropy_coeff": 0,
+   "use_kl_in_reward": false,
+   "kl_loss_type": "low_var_kl",
+   "perceiver_prompt_response_limits": [
+    2560,
+    1024
+   ],
+   "reasoner_prompt_response_limits": [
+    8704,
+    2048
+   ],
+   "train_eval_max_pixels": [
+    2097152,
+    4194304
+   ],
+   "gpus": "4 H100 on1node",
+   "data": "10K randommix:DeepEyes3K,VisualProbe3K,ZwZ4K; no additional SFT phase described"
+  },
+  "cost": "4H100; actual GPU-hours,generated/trainedtokens andupdatecounts not reported. P phase perexample G=8 activeP outputs plus8 frozenRanswers; R phase1 frozenP output plus8 activeRanswers (Algorithm1 structural count, not measuredcost). Deployment2modelcalls andup-to3crops. Figure11 vLLM P2R slowerthanbase fasterthanofficialtooluse; plot-only throughput, exactnumbers not transcribed.",
+  "pitfalls": [
+   {
+    "text": "不限制原图绘制框数，只crop前三个；顺序改变会改变局部输入且可能截掉第四个必要对象。",
+    "quote": "The predicted bounding boxes are parsed from\nthe model outputs using regular expressions. During post-processing, to keep the visual context\nwithin the input limit, we do not restrict the number\nof boxes rendered on the original image, but crop\nlocal patches from only the first three predicted\nboxes.",
+    "locator": "Appendix B.2 p.12"
+   },
+   {
+    "text": "作者怀疑DAPO移除KL导致单框模式；应先记录多框/单框分布并单变量核对，不能当作已证KL机制。",
+    "quote": "We hypothesize that this issue is related to the\nremoval of the KL divergence term in DAPO. Without KL regularization, the policy can more easily\ndrift away from the original response pattern and\ncollapse to a simpler mode that generates only one\nbounding box. While such behavior may not be\nproblematic in pure text reasoning, it is harmful in\nour setting, where the model must maintain flexible\nmulti-box perception behavior. We therefore use\nGRPO instead of DAPO in all main experiments.",
+    "locator": "Appendix E.4 p.16"
+   }
+  ],
+  "code": "https://github.com/ZJU-REAL/Perceive-to-Reason",
+  "code_status": "Link extracted from local PDF p.1 annotation; repository not fetched/read/executed; availability and implementation fidelity not verified. Manifest github=null retained in metadata provenance.",
+  "lesson": "当终答监督要训练多对象定位时，应逐阶段监控框数、范围和空间题表现；论文DAPO单框塌缩说明整体准确率不足以诊断模式丢失，但KL修复的独立因果作用仍需专门控制。两角色共享参数时，冻结的是生成反馈的checkpoint副本，不是保证另一个部署角色行为永远不变。"
+ },
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "分角色/交替更新可作定位vs解释的邻近训练对照；未测caption已正确而终答错的EUF，也不提供盲读文本充分性，更没有不增加crop的P40判据。",
+   "strength": 1
+  }
+ ],
+ "information_boundary": {
+  "training_GT": "Finalanswer Y only inrewardcomparison. Dataset provenance includesregion-groundedteacher-generatedZwZ, so answer-onlytraining objective doesnotmean datawithoutregionalpriors. No GTbboxintrainingloss; GTbbox usedforTable5oracle,Figure12oracle,andFigure6HitRate/IoUevaluation.",
+  "future_information": "P reward deliveredafterfrozenRcompleteanswer; modelinputsuseI,Q,predictedregions,notfuturetokensorGTanswer. Thisisordinaryterminalsupervision ratherthanonlineprocessoracle.",
+  "facts_vs_necessity": "Correctfinalanswer witha boxsetdoesnotproveboxtruth,pixeluse,orcounterfactualnecessity; Rcanuseoriginalimageorprior. Figure12randomnegativehelpsaggregateevidence butdoesnotlabelindividualactions.",
+  "training_vs_inference": "TrainingusesG8rolloutsandfrozenpartner evaluation; inferencegreedy2stagesononefinalmodelwithrealcrops; no latent-only internalization, no best-of-Nsearch, no explicitwhen-to-cropdecision."
+ },
+ "source_discrepancies": [
+  {
+   "locator": "Figure15 p.19",
+   "finding": "Visual example lists B ELEVATE and D ELEVATE identically, while explanation says D hasperiod; exampleformat ambiguity limitscaseinterpretation, not proof ofdataset-wideevaluationbug."
+  },
+  {
+   "locator": "Figure18 p.22; AppendixB.2",
+   "finding": "Rendered example JSON containsstrayquote/braces, consistent withregexparserratherthanstrictJSONvalidation; actualparserfailurehandlingnotdocumented."
+  },
+  {
+   "locator": "Table3 p.7",
+   "finding": "Fullalternatingwinsmean0.4pp overseparatelytrainedP+R but losesHR8K0.5pp. Do not describeuniform superiority."
+  }
+ ]
+}

@@ -1,0 +1,48 @@
+{
+ "paper_key": "litscan:4168",
+ "title": "VISA",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_4168.txt",
+  "sections_read": [
+   "Abstract/contributions; §3.1-3.4; §4 training/evaluation; Table2; Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把文档RAG回答、来源文档ID和证据bounding box联合生成，构建Wiki/Paper截图监督。",
+  "key_step": "NQ long-answer HTML转box；PubLayNet box驱动合成QA；三候选包含hard negatives且20%移除GT文档，SFT学No answer。",
+  "why_non_obvious": "正确回答不代表能定位视觉来源；模型72B零样本box仅1.5%。",
+  "trigger_condition": "When document citations are too coarse, supervise answer generation jointly with source-region coordinates.",
+  "contribution_type": "dataset_and_method",
+  "abstract_strategy": "将不可检验的引用变成可定位的证据输出。",
+  "abstract_trigger_condition": "When evidence location matters, expose it as an explicit supervised output."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:4168#s1",
+   "object": "RAG的答案与来源box输出",
+   "information": "测试见截图与问题，GT答案/box仅训练和评估；无证据候选有显式拒答训练",
+   "operation": "不改架构的next-token SFT，输出answer/id/absolute box；训练随机外部裁切",
+   "claimed_effect": "Wiki single 7B box54.2/answer65.2 vs72B zero1.5/60.4；multi有oracle box32.3/answer41.8",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3-4; Table2",
+    "quote": "the model was trained to generate “No answer.”"
+   },
+   "failure_boundary": "单局部证据、短答案假设；box是输出归因，不证明生成答案因果依赖该区域。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 1,
+   "how": "可借鉴证据输出与无证据拒答数据，但文档定位非caption后crop必要性机制。"
+  }
+ ]
+}

@@ -1,0 +1,137 @@
+{
+ "paper_key": "litscan:70701",
+ "title": "ChartVSR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70701.txt",
+  "sections_read": [
+   "Abstract",
+   "§2.2–2.3",
+   "§3.2–3.3",
+   "§4.1",
+   "Tables3–6",
+   "§4.4–4.5",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "先生成像素点并绘制反馈反复校正，再以正确点作为视觉锚读取图表值。",
+  "why_non_obvious": "把where和what分开；模型可发现自己标记的遗漏/偏移，而文本反思不能直接暴露这些错误。",
+  "trigger_condition": "当密集图表的结构遗漏主导时，先可视化定位结果检查再解码数值。",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当密集图表的结构遗漏主导时，先可视化定位结果检查再解码数值。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "先生成像素点并绘制反馈反复校正，再以正确点作为视觉锚读取图表值。",
+  "abstract_why_non_obvious": "把where和what分开；模型可发现自己标记的遗漏/偏移，而文本反思不能直接暴露这些错误。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70701#s1",
+   "object": "图表像素定位与数值解析",
+   "information": "原始图、模型点坐标、叠加标记图；训练渲染器GT像素/数值",
+   "operation": "定位→绘制标记→自检/纠正或确认stop→原图+点decode JSON",
+   "claimed_effect": "ChartP平均AP38.41 vs去VSR36.54；首轮错误110→51，第二/三轮54/52。",
+   "conditions": [
+    "Qwen2.5VL3B；800K合成样本；训练包含纠错和确认正确"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables4–6",
+    "quote": "ChartVSR                0.11       51.95        67.44        39.83     0.02       49.30       63.67       37.66   38.41"
+   },
+   "failure_boundary": "只重呈现已有图信息，非外部新证据；自确认可能错误；后续轮不保证提升。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "迭代收益首轮集中，支持测停止而不是固定多轮。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "SFT明确教从错标记纠正和从正确标记终止。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "将定位正确与数值解释分开，避免中间视觉锚等价答案正确。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "w/o VSR",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "错误110→51→54→52；首轮正确确认88.2%，后续76%左右。",
+  "load_bearing_assumption": "模型看到自身可视化标记能识别并修复，而非被错误标记锚定。",
+  "scope": "图表数据点解析",
+  "success_criterion": "按轮记录新纠正/新引入错误和额外forward成本；错误/正确标记分别测。",
+  "why_open": "剩余错误可能感知能力不足，多迭代不是补能力。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [],
+  "signal_routing": "SFT三种refine任务（初始定位/纠错/确认）和decode任务；全文所读未给明确loss/token mask，不补。推理停止为模型确认或最大轮数，非RL。",
+  "normalization": "other",
+  "invariance": "无PBRS/优势；标记反馈不增加原始信息，只改变表征与注意。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "错误标记被确认为对则提前stop；正确定位仍可能数值解读错；增加轮数可引入新错误。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4去VSR/再去pixel；Table5逐轮纠错；Table6调用成本。",
+  "negative_results": [
+   {
+    "text": "StrictAP仍极低：easy .11/hard .02；精确数值仍难。",
+    "locator": "Table3"
+   },
+   {
+    "text": "更多refine不单调减少错误。",
+    "locator": "Table5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若等调用预算无标记重读同样修正，则可视化锚的独立作用不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8H200全参SFT1epoch batch128；推理baseline1call，VSR至少3call，上限n+2。",
+  "pitfalls": [
+   {
+    "text": "输入长边固定1036（28倍数）以保持坐标一致；迁移不能忽略resize。",
+    "locator": "§4.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当纠错收益在首轮饱和时，报告新增错误与调用预算，用正确确认样本训练stop。"
+ }
+}

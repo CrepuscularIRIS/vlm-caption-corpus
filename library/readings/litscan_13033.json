@@ -1,0 +1,183 @@
+{
+ "paper_key": "litscan:13033",
+ "title": "SegAgent: Exploring Pixel Understanding Capabilities in MLLMs by Imitating Human Annotator Trajectories",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_13033.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3",
+   "§4.1–4.4 Algorithms1–2",
+   "§5.1–5.4 Table1 and Fig4 discussion",
+   "§6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "GT mask误差生成纠正点击轨迹；学生rollout后保留提升IoU的动作、用模拟器修复退步动作，再做指令微调。",
+  "why_non_obvious": "近最优规则轨迹缺少学生真实错误状态；分步修复能给学生到达的状态提供正确后续。",
+  "trigger_condition": "When oracle trajectories omit student errors but exact state quality is available, relabel visited error states and train corrected actions.",
+  "contribution_type": "task+trajectory construction+search",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "When oracle trajectories omit student errors but exact state quality is available, relabel visited error states and train corrected actions.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "GT mask误差生成纠正点击轨迹；学生rollout后保留提升IoU的动作、用模拟器修复退步动作，再做指令微调。",
+  "abstract_why_non_obvious": "近最优规则轨迹缺少学生真实错误状态；分步修复能给学生到达的状态提供正确后续。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:13033#s1",
+   "object": "SegAgent StaR+ training trajectories",
+   "information": "原图、当前mask、目标描述；数据构造可看GT mask，推理不见GT",
+   "operation": "规则点击中心纠错生成SFT；rollout后按每步IoU变化保留或用Fsim替换动作；从S0用D0∪Dn再训练",
+   "claimed_effect": "ThinObject5K baseline IoU71.45→86.57，一轮StaR+",
+   "conditions": [
+    "交互分割工具可执行点击并生成mask；GT较干净"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.1,4.3 Algorithm1; §5.4",
+    "quote": "generate the mask. For fair comparison, our SegAgent-                    pared to the baseline IoU of 71.45."
+   },
+   "failure_boundary": "IoU提高是分割目标，不代表caption+crop的信息增益；低增益过滤可能误删排除式搜索。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:13033#s2",
+   "object": "PRM-guided local candidate search",
+   "information": "当前mask覆盖原图，模型预测当前mIoU；候选动作实际调用分割工具取得下一mask",
+   "operation": "每步采K候选，PRM评分选最高；最终返回已访问mask中预测分最高者",
+   "claimed_effect": "K=1 PRM较固定步数 DIS+2.36、ThinObject+4.09；K=3再+7.43/+10.59",
+   "conditions": [
+    "评估RES T7 K1；HRES T11 K3"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.4 Algorithm2; §5.4",
+    "quote": "An interesting observation is that although Qwen is                  by 2.36 and on ThinObject by 4.09. Furthermore, when we"
+   },
+   "failure_boundary": "这是回滚到最好mask的外部选择，不是LLM自主stop动作；PRM误校准会选错。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "用学生状态的修复示范补纯oracle轨迹覆盖缺口。"
+  },
+  {
+   "problem": "P37",
+   "strength": 3,
+   "how": "确实使用低IoU增益过滤；在裁图任务未必合理，提供明确适用边界。"
+  },
+  {
+   "problem": "P33",
+   "strength": 2,
+   "how": "过程分数用于停止/选择最佳历史mask；不等于剩余预算最优停止。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen box + SAM",
+   "kind": "initial-box matched baseline"
+  },
+  {
+   "name": "SFT fixed-step greedy",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "GT mask噪声会使轨迹末尾动作错误。",
+   "quote": "tive point: (175,483).” The action is then converted into a                especially pronounced toward the end of a trajectory (see\nformat compatible with the interactive segmentation model                  Fig. 2), where noise in Mtarget can cause erroneous actions\nvia a predefined post-processing function. Subsequently, all               that misguide the MLLM during training. To address this,",
+   "locator": "§4.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "RefCOCO通常1–2步足够，难反映精细多步能力；ThinObject SFT IoU71.45。",
+  "load_bearing_assumption": "近最优模拟点击足以覆盖学生偏离状态，且长轨迹终端GT可靠。",
+  "scope": "交互分割点击及mask修复",
+  "success_criterion": "同工具/初始框下最终cIoU提升，额外搜索成本可核。",
+  "why_open": "局部错误传播与GT噪声使多步修复训练不稳定。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4.1–4.3"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "§4.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R(s_t)=IoU(M_t,M_{target})",
+    "locator": "§3"
+   },
+   {
+    "latex": "a_{t+1}=F_{sim}(M_t,M_{target});\\quad S_n=train(S_0,D_0\\cup D_n)",
+    "locator": "§4.1; Algorithm1"
+   }
+  ],
+  "signal_routing": "SFT监督文本点击坐标/正负属性；PRM为额外文本mIoU预测；StaR+按真实IoU筛修轨迹然后SFT，未给PPO/GRPO梯度。模型看当前mask叠原图，工具执行仍用全部历史点击；不是新像素crop。",
+  "normalization": "other",
+  "invariance": "IoU差用于筛修，不是gamma Phi(s′)-Phi(s) PBRS；会改变训练数据分布。",
+  "baseline_or_potential": "无advantage baseline；PRM预测mask质量不等于动作Q或视觉证据必要性。",
+  "degenerate_cases": "全候选都错时PRM仍可能选坏mask；GT噪声让改好真实轮廓反被判降IoU；单步无逐步纠错；无显式stop token。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同一Qwen box初始化下比较Qwen box+SAM与SegAgent；HRES SFT、StaR+、PRM K1、PRM K3逐层比较。",
+  "negative_results": [
+   {
+    "text": "规则生成轨迹近最优但缺多样性；RefCOCO GT噪声和简单mask使长轨迹包含无意义操作。",
+    "locator": "§4.1,4.3,5.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "对caption+crop，若删除低增益步骤导致必要排除/纠偏轨迹减少，则否定直接迁移过滤规则。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA-v1.5-7B / Qwen-VL-7B; SAM / SimpleClick",
+   "framework": "DeepSpeed ZeRO2; instruction tuning",
+   "group_size": null,
+   "max_turns": 11,
+   "kl": null
+  },
+  "cost": "8×80GB GPU，2 epochs；总GPU小时未知；HRES每步K3工具执行。",
+  "pitfalls": [
+   {
+    "text": "model状态不含历史动作但工具仍用历史，重放必须保留两者差别。",
+    "locator": "§3–4, Algorithm2 note"
+   },
+   {
+    "text": "生成轨迹用GT阈值stop；测试PRM停止/最佳历史mask选择；不能混为同一种停止监督。",
+    "locator": "§4.1,4.4"
+   }
+  ],
+  "code": "https://github.com/aim-uofa/SegAgent",
+  "lesson": "当自动专家轨迹缺学生错误状态时，可在可精确验真的任务中补修复示范；先确认质量分数与目标一致，不能用低即时收益规则剔除合理探索。"
+ }
+}

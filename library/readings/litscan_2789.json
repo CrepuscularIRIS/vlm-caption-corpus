@@ -1,0 +1,59 @@
+{
+ "paper_key": "litscan:2789",
+ "title": "VLM2-Bench",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2789.txt",
+  "sections_read": [
+   "Abstract p1",
+   "贡献/§2数据构造 pp2–4",
+   "§3/Table1–3 pp5–7",
+   "§4提示干预 pp7–8",
+   "Limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "构造图像间一般/对象/人物线索关联任务，以真假成对验证减少单一yes/no偏置，比较分辨率、语言推理和视觉crop提示。",
+  "key_step": "同一语义正反问必须同时正确，并用CLIP相近干扰对象提高匹配难度。",
+  "why_non_obvious": "知道类别不等于识别同一实例；语言描述可能丢细粒度信息，额外crop并非对所有线索有益。",
+  "trigger_condition": "When category knowledge hides instance-linking errors, test matched cues with distractors and paired opposite questions.",
+  "contribution_type": "diagnostic_benchmark",
+  "abstract_strategy": "Separate recognition from cross-context correspondence using paired consistency tests.",
+  "abstract_trigger_condition": "When label knowledge can mask relational failures, require consistent decisions on matched and unmatched instances."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2789#s1",
+   "object": "跨视图同实例/变化关联评测",
+   "information": "3060QA，人工验证编辑数据、对象/人物多图和相似干扰项；GC以caption条件edit指令logprob<-2筛难例。",
+   "operation": "构造matching/tracking/comparison/count/group/videoidentity任务；真假pair都对才成功；分辨率降低及CoT/检测器crop作诊断。",
+   "claimed_effect": "GPT4o2024-08 overall59.56 vs human94.44；Qwen2.5VL7B55.86；16倍降分辨率其Matching35.91→9.27。",
+   "conditions": [
+    "同实例标签可靠",
+    "受筛选任务分布"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p5",
+    "quote": "59.56  -34.88"
+   },
+   "failure_boundary": "overall不含开放式VID；不是主动工具策略；降低分辨率造成下降不足以排除所有捷径，人物facecrop一般不改善。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "跨视图实例关联可暴露证据整合弱点，但不是caption终答映射同一机制。",
+   "strength": 1
+  },
+  {
+   "problem": "P48",
+   "how": "可作为补充视觉诊断，非本多轮crop目标直接benchmark。",
+   "strength": 1
+  }
+ ],
+ "scientific_replication": false
+}

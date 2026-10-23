@@ -1,0 +1,299 @@
+{
+ "paper_key": "2505.08617",
+ "title": "OpenThinkIMG: Learning to Think with Images via Visual Tool Reinforcement Learning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.08617.pdf",
+  "version": "v2",
+  "sections_read": [
+   "Abstract; §1 Introduction (pp1–2)",
+   "§2.1 tools and Table1 (pp3–4)",
+   "§2.2 distributed controller (pp4–5)",
+   "§2.3.1 cold start, Eqs1–2; §2.3.2 RL, Eqs3–6 (pp5–6)",
+   "§3.1–3.3 trajectory generation and Algorithm1 (pp6–7)",
+   "§4.1–4.7 experimental setup, Fig2–4 and analyses (pp7–11)",
+   "§5 Related Work; §6 Conclusion (p11)",
+   "References (pp12–14, bibliographic context only)",
+   "Appendix A / Fig5 trajectory-generation prompt and demonstrations (pp15–17)"
+  ],
+  "visual_pages_inspected": [
+   5,
+   8,
+   9,
+   10
+  ],
+  "version_note": "本地PDF首页水印为arXiv:2505.08617v2，9 Jul 2025；未联网宣称是最新版本。manifest local_path为空但下载文件实际存在。"
+ },
+ "rs": {
+  "innovation_approach": "先用工具轨迹与等量纯文本推理混合冷启动，再让策略在可交互视觉工具环境中按终答奖励优化；将静态模仿扩展为反馈驱动的工具选择。",
+  "key_step": "保留每次工具输出作为下一步可见上下文，并把冷启动与交互式GRPO串接；并非另造逐次裁图必要性奖励。",
+  "why_non_obvious": "工具调用行为需要先有训练支持，但仅模仿固定轨迹不能证明会按新问题调整；视觉返回不仅是附注，而是改变后续决策可见信息。",
+  "trigger_condition": "When static demonstrations provide action syntax but do not determine effective action sequences on new instances, apply mixed demonstration initialization followed by environment-feedback optimization to improve adaptive action selection.",
+  "reviewer_praise": [
+   "low_evidence: manifest未关联OpenReview审稿，未据作者实验伪造审稿赞扬。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 未取得审稿；本记录的证据缺口属于阅读者核查，不归给审稿人。"
+  ],
+  "acceptance_signal": "null: manifest.decision=null；PDF首页标注Work in progress，不推断会议接收或等级。",
+  "contribution_type": "system",
+  "abstract_strategy": "Initialize a conditional decision procedure from both intervention and non-intervention demonstrations, then optimize it with feedback from the actual execution environment.",
+  "abstract_key_step": "Feed executed outcomes back into the decision context and update the decision sequence using a verifiable terminal target.",
+  "abstract_why_non_obvious": "Imitating successful fixed sequences supplies behavior support but does not establish when their interventions remain useful under changed conditions.",
+  "abstract_trigger_condition": "When a learned procedure can imitate actions but cannot adapt their sequence, combine diverse initialization with feedback-driven sequence optimization."
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.08617#s1",
+   "object": "用于策略冷启动的示范分布",
+   "information": "可见训练题图像、问题、GPT-4o计划、实际工具输出和训练真值；Qwen2-VL-72B与规则/人工参与过滤。看不到同题执行/不执行工具的随机化反事实效果，也未测学生能否读取所有教师细节。",
+   "operation": "以工具计划→执行补全→过滤构造1471条轨迹，再混入等量纯文本CoT，共2942例做2epoch SFT。",
+   "output": "具有工具调用与纯文本回答支持的初始化策略。",
+   "claimed_effect": "作者报告Qwen2-VL-2B base 29.56%→SFT45.67%，+16.11pt（Fig2b）。这是整套冷启动效果，未做混合比例或无文本混合的受控消融。",
+   "conditions": [
+    "训练题来自ChartGemma，工具输出可执行且绑定正确",
+    "有外部教师、规则与人工过滤流程",
+    "仍需多样化示范；本文未证明能新增弃答/纠偏行为"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2 p7 mixed cold-start dataset; Fig2b p8; §4.3 p9",
+    "quote": "This mixed dataset, totaling 2,942 examples, formed the basis for our Cold-Start process."
+   },
+   "failure_boundary": "冷启动因果分量未隔离；只保留通过答案与逻辑检查的轨迹，失败探索、合理排除和纠偏的覆盖未报告。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.08617#s2",
+   "object": "多轮工具交互的策略目标与可见状态",
+   "information": "当前题、先前工具返回、采样轨迹和终答真值；没有逐步必要性标签、反事实无工具结果或独立过程奖励真值。",
+   "operation": "采样G条动作轨迹、执行视觉工具并回填结果，以±1终答奖励构造group-relative advantages，通过带clip/KL的目标更新策略。",
+   "output": "优化后的工具选择与顺序策略，训练中同时记录调用数、完成长度与奖励准确率。",
+   "claimed_effect": "作者报告Fig2b RL59.39% vs SFT45.67%（+13.72pt）/Text-RL51.63%（+7.76pt）；§4.4平均调用约0.63→0.10–0.12，§4.5完成长度约66→83–86。调用数曲线为训练期统计，未证明测试题上的必要性或总成本下降。",
+   "conditions": [
+    "已有cold-start支持工具行为",
+    "ChartGemma和可用视觉工具服务",
+    "终答规则可判等价；论文未公开完整优势和mask定义"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2.3.2 Eq5 p5; Reward Design Eq6 p6; Fig2–3 pp8–9",
+    "quote": "This represents a +29.83 point improvement over the base model and a +13.72 point gain over SFT alone."
+   },
+   "failure_boundary": "终答奖励不提供逐次信用或少裁约束；group-relative的std/epsilon细节未给出，不能补写为已核实现。训练调用数下降可由任务/混合冷启动/工具质量等共同解释，未控制必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2-VL-2B-Instruct / QWEN-BASE",
+   "kind": "method"
+  },
+  {
+   "name": "QWEN-SFT (mixed cold start)",
+   "kind": "method"
+  },
+  {
+   "name": "Text-based RL",
+   "kind": "method"
+  },
+  {
+   "name": "TACO-8B",
+   "kind": "method"
+  },
+  {
+   "name": "CogCoM-13B",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4.1 (zero-shot, no external tools)",
+   "kind": "method"
+  },
+  {
+   "name": "Gemini-2.0-flash-exp (zero-shot, no external tools)",
+   "kind": "method"
+  },
+  {
+   "name": "ChartGemma: 14501 train / 1000 test as reported",
+   "kind": "dataset"
+  },
+  {
+   "name": "Rule-based string/numeric answer equivalence",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "图表任务上基础2B模型29.56%，混合SFT45.67%，仍低于交互RL59.39%（Fig2b）。作者认为静态工具序列难泛化；这些分数是现有方法差距，不是按需工具失败率。",
+  "load_bearing_assumption": "模仿固定工具轨迹即可学到动态环境中的有效调用策略。",
+  "scope": "ChartGemma图表推理、Qwen2-VL-2B、多种视觉工具；系统接口较广，实证范围只有这一任务族。",
+  "success_criterion": "测试终答准确率提高，同时训练调用次数下降；原文未预设准确率非劣界、总计算预算或逐题必要性指标。",
+  "why_open": "已有SFT工具方法解决调用语法与固定轨迹模仿，但缺少在实际视觉返回下改进策略的交互训练环节；没有说明正确性奖励在什么条件下必然带来少用工具。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "we first perform supervised fine-tuning",
+   "locator": "§2.3.1 p5"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "we tracked the average number of tool calls per sample throughout the training phase",
+   "locator": "§4.4 p9"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "role": "primary",
+   "quote": "we batch invoke the corresponding vision tools via our tool server",
+   "locator": "§3.2 p6, following §3.1 symbolic action planning",
+   "rationale": "对本文实际执行的轨迹构造操作贴标签：把任务拆为结构化工具计划，调用外部视觉工具求解并回填结果；不将一般SFT→RL硬套为释放固定生成组件。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L_{\\mathrm{SFT}}(\\theta)=-\\frac1N\\sum_{i=1}^N\\log P_\\theta(\\tau^{(i)}\\mid Q^{(i)},I^{(i)})=-\\frac1N\\sum_{i=1}^N\\sum_{t=1}^{n^{(i)}}\\log P_\\theta(a_t^{(i)},o_t^{(i)}\\mid Q^{(i)},I^{(i)},a_{<t}^{(i)},o_{<t}^{(i)})",
+    "locator": "Eq2, §2.3.1 p5; visually transcribed"
+   },
+   {
+    "latex": "J_{\\mathrm{GRPO}}(\\theta)=\\mathbb E_{q,\\{\\rho_i\\},\\{\\omega_i\\}}\\left[\\frac1G\\sum_{i=1}^G\\frac1{n_i}\\sum_{t=1}^{n_i}\\min\\left(r_{i,t}(\\theta)\\hat A_{i,t},\\operatorname{clip}(r_{i,t}(\\theta),1-\\epsilon,1+\\epsilon)\\hat A_{i,t}\\right)\\right]-\\beta D_{\\mathrm{KL}}[\\pi_\\theta\\Vert\\pi_{\\mathrm{ref}}]",
+    "locator": "Eq5, §2.3.2 p5; visually transcribed"
+   },
+   {
+    "latex": "r_{i,t}(\\theta)=\\frac{\\pi_\\theta(a_{i,t}\\mid q,\\omega_{i,<t})}{\\pi_{\\theta_{\\mathrm{old}}}(a_{i,t}\\mid q,\\omega_{i,<t})}",
+    "locator": "unnumbered definition below Eq5, p5"
+   },
+   {
+    "latex": "R^{(i)}=\\begin{cases}+1,&\\mathrm{is\\_equivalent}(a^{(i)},\\hat a^{(i)}),\\\\-1,&\\text{otherwise}.\\end{cases}",
+    "locator": "Eq6, Reward Design p6"
+   }
+  ],
+  "signal_routing": "Eq5按trajectory内action索引t写更新、以先前工具输出为条件；Eq6明确终答奖励。未给token级mask或caption/action/observation信用路由；Eq2字面包含(a_t,o_t)，不可自行断言外部观察token被排除。",
+  "normalization": null,
+  "normalization_details": "只写group-relative advantages，未给减均值/std/epsilon公式。Eq5明确先除G再除各轨迹动作数n_i；不是已核实的token损失分母。",
+  "invariance": "不是PBRS/势函数塑形；反馈改变状态信息，RL优化终答正确性。无代价项，不保证最优策略变为少裁；未给无偏或策略不变证明。",
+  "baseline_or_potential": "仅称group-relative，具体基线与优势估计未明；没有学习的裁图势函数。",
+  "degenerate_cases": "[redacted: project-internal]"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "作者Fig2b比较base/SFT/Text-RL/V-ToolRL，试图隔离冷启动及视觉返回作用；但Text-RL在Fig3c起点不同，未充分报告相同初值/样本/预算细节，不能视为完美单变量对照。",
+  "controls": [
+   "QWEN-SFT对照交互RL",
+   "Text-based RL缺少视觉工具返回的对照",
+   "相同2B骨干内部对照；TACO/CogCoM和闭源模型的尺寸/训练/工具权限不同"
+  ],
+  "negative_results": [
+   {
+    "text": "相对于无工具的Gemini2.0-flash-exp，V-ToolRL仍低8.81pt：59.39 vs68.20（Fig2a）；作者措辞competitive，不能记作全线胜出。",
+    "quote": "achieves a competitive result when compared to G EMINI (68.20%)",
+    "locator": "§4.3 p8; Fig2a"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "迁移判别建议（未运行）：保持同一SFT/数据/采样预算比较真实视觉返回与等量空/置换返回；若返回置换仍带来同等收益，或调用下降伴随需要工具子集失分，则不支持“视觉反馈学会按需调用”的解释。此处不是提出新的训练立项。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2-VL-2B-Instruct；trajectory teacher GPT-4o；filter Qwen2-VL-72B",
+   "framework": "other",
+   "group_size": null,
+   "rollouts": null,
+   "steps": 500,
+   "kl": 0,
+   "temperature": null,
+   "max_turns": null
+  },
+  "cost": "§4.2：4或8张NVIDIA Tesla A100、ZeRO-3+FlashAttention-2；SFT2942例/2epochs/lr2e-5/batch128/warmup3%；RL14501训练题/500steps/lr1e-6/batch144/max_sequence2048/β0。未报告GPU小时、总训练token、rollout次数G或延迟；§3.1的T=.7是教师造轨迹，不是RL温度。",
+  "pitfalls": [
+   {
+    "text": "论文提示模板承认OCR输出可能不准或无序，故返回文本不能当作独立视觉真值。",
+    "quote": "Note: the text may not always be accurate or in order.",
+    "locator": "Appendix A, Fig5 OCR description p15"
+   }
+  ],
+  "code": "https://github.com/zhaochen0110/OpenThinkIMG",
+  "lesson": "当图像工具返回改变后续可见上下文时，单一调用次数会遗漏推理文本和视觉输入开销，应当联报工具次数、生成token及真实计算成本，并核对动作/观察mask（Fig3a–b、§4.4–4.5；mask实现本文未给）。"
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "混合工具/纯文本示范先提供行为支持，再RL；不证明能从缺失示范中学出弃答或改口。",
+   "strength": 2
+  },
+  {
+   "problem": "P02",
+   "how": "纯终答奖励下作者报告调用次数下降，是不同任务配方的反例线索；不能推翻本项目调用上升的运行证据。",
+   "strength": 1
+  },
+  {
+   "problem": "P05",
+   "how": "有训练调用数与准确率，但没有必要性真值、总成本或非劣检验；迁移需补判据。",
+   "strength": 2
+  },
+  {
+   "problem": "P20",
+   "how": "明确动作—返回交替状态，token级监督归属未给；可作mask审计的问题来源。",
+   "strength": 1
+  },
+  {
+   "problem": "P36",
+   "how": "采用教师+规则+人工过滤，但人工规模/一致性未报告，不能将高质量声明当金标。",
+   "strength": 1
+  },
+  {
+   "problem": "P45",
+   "how": "未报告种子数或置信区间，图表收益不能替代本项目多种子验证。",
+   "strength": 2
+  }
+ ],
+ "audit_findings": [
+  {
+   "kind": "source_internal_conflict",
+   "text": "摘要称相对SFT +28.83pt，正文与图是59.39−45.67=13.72pt；相对base才是29.83pt。",
+   "quote": "SFT-initialized counterpart (+28.83 points)",
+   "locator": "Abstract p1 versus Fig2b p8 and §4.3 p9"
+  },
+  {
+   "kind": "source_internal_conflict",
+   "text": "摘要/引言称平均超过TACO/CogCoM12.7pt；Fig2a数值59.39,30.50,15.07，按两者简单平均差为36.605pt，原文未解释12.7的聚合口径。",
+   "quote": "by an average of +12.7 points.",
+   "locator": "Abstract p1 versus Fig2a p8"
+  },
+  {
+   "kind": "source_internal_conflict",
+   "text": "§4.7称饼图例子15.0%差，图4推导40−15=25且终答25%；已看原图，按25记录案例输出，不用正文15作实测数字。",
+   "quote": "correctly calculating a 15.0% difference.",
+   "locator": "§4.7 p10 versus Fig4 p10"
+  },
+  {
+   "kind": "source_internal_conflict",
+   "text": "正文计划提示称5个示范，附录图5说明为3个；已读附录只有三段所示示范，实际造数所用完整prompt未知。",
+   "quote": "five demonstration examples",
+   "locator": "§3.1 p6 versus Appendix A/Fig5 caption p17"
+  },
+  {
+   "kind": "reader_inference",
+   "text": "Eq5将t定义为action但文字还说step reward依赖intermediate outputs；Eq6只具体定义terminal±1。本记录不把未定义的过程奖励补成已实现。",
+   "quote": "We compute a reward",
+   "locator": "§2.3.2 p5 versus Reward Design p6"
+  },
+  {
+   "kind": "reader_inference",
+   "text": "训练样本调用下降与输出长度上升同时发生，故调用少不能推出总token、FLOPs、墙钟或必要性改进。",
+   "quote": "The average completion length (tokens) of model outputs increases",
+   "locator": "Fig3 caption p9"
+  }
+ ]
+}

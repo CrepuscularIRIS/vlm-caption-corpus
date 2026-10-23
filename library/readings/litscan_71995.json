@@ -1,0 +1,172 @@
+{
+ "paper_key": "litscan:71995",
+ "title": "MedVR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_71995.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4.5 pp3–9",
+   "Appendix A.3 Table6 p18",
+   "Algorithm1 p21",
+   "D.1–2 p23",
+   "H p29"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "先在tool坐标高熵处fork，再用最终正确轨迹的区域并集多数票生成IoU工具奖励。",
+  "why_non_obvious": "需要答案标签但不需要中间框标签；探索采样与伪奖励互相依赖。",
+  "trigger_condition": "有基本crop能力但无专业领域grounding标注时。",
+  "contribution_type": "探索分配与自生工具奖励",
+  "abstract_strategy": "用成功策略的重叠替代昂贵中间标注。",
+  "abstract_trigger_condition": "终答案可验证且已有成功视觉路径时。",
+  "abstract_key_step": "half rollout预算保留给熵触发fork，剩余补独立样本。",
+  "abstract_why_non_obvious": "共识只来自成功子集而非所有采样；错误一致性仍可能存在。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:71995#s1",
+   "object": "crop区域与rollout预算",
+   "information": "当前policy词汇熵、GT答案成功筛选、各成功轨迹全部框的union；没有GT中间框",
+   "operation": "Pbranch=.5+.5(Htool−Hbase)，8条base+8条探索预算；成功footprint逐像素strict-majority，IoU>.5奖1否则.5。",
+   "claimed_effect": "Table2文本RL 94.50/53.40/21.38；纯tool94.31/52.62/22.26；EVR+CCA96.77/54.31/26.38。",
+   "conditions": [
+    "Qwen2.5-VL7B",
+    "OmniMedVQA训练，PMC-VQA/MedXpertQA OOD"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p7",
+    "quote": "96.77       54.31   26.38"
+   },
+   "failure_boundary": "共同偏差/共享fork相关性可能制造共识；不是反事实必要性测量。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "无中间框标注时构造grounding伪奖励。",
+   "strength": 3
+  },
+  {
+   "problem": "P34",
+   "how": "tool坐标熵与grounding IoU相关性支持探索代理，未证明answer不确定性校准。",
+   "strength": 2
+  },
+  {
+   "problem": "P65",
+   "how": "成功区域共识没有标记无tool已会样本。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Textual RL / zoom only / EVR only / CCA only",
+   "kind": "ablation"
+  },
+  {
+   "name": "Ground-truth mask replacement",
+   "kind": "oracle"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅Zoom-in；临床专家中间推理评估尚未完成，训练昂贵。",
+   "locator": "Appendix H p29",
+   "quote": "the reinforcement learning process can be computationally intensive."
+  }
+ ],
+ "question": {
+  "observed_failure": "只加zoom使OmniMedVQA94.50→94.31、PMC53.40→52.62。",
+  "load_bearing_assumption": "成功路径的多数区域足够接近相关证据；坐标熵能定位需探索的动作。",
+  "scope": "medical crop VQA",
+  "success_criterion": "固定rollout预算的答案/groundingIoU及训练成本。",
+  "why_open": "工具开放不自然等于有效使用，医学框标注昂贵。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§4.4 entropy vs IoU"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2/6"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Figure6"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=R_{acc}+R_{format}+1[R_{acc}>0]R_{tool}",
+    "locator": "Eq2 p4"
+   },
+   {
+    "latex": "\\hat M(u,v)=1[\\sum_{i\\in T^+}M_i(u,v)>|T^+|/2];\\quad R_{tool}=0.5+0.5\\,1[IoU(M_i,\\hat M)>0.5]",
+    "locator": "Eq4–5 pp5–6"
+   }
+  ],
+  "signal_routing": "最终序列reward；尽管称credit assignment，未展示tool-token专属advantage。Eq1写KL，实施明确去KL和standard value normalization，具体advantage/观测mask未列。",
+  "normalization": "other",
+  "invariance": "实施去std避免其幅度抵消，但非PBRS，工具bonus改变偏好；baseline entropy是探索代理基线不是policy advantage baseline。",
+  "baseline_or_potential": "Hbase=initial-token mean entropy；Htool滚动均值，窗口和probability clipping未在已读段落确定。",
+  "degenerate_cases": "Algorithm1仅|T+|>1计算CCA，≤1 fallback未定义；空footprint双方IoU 0/0未定义；成功者自身投票且fork相关；all-correct各tool同分时无相对区分；没有tool探索支持则EVR不触发。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2组件消融；A.3 GT-mask oracle79.62%/61.33mIoU vs CCA79.08%/59.62mIoU。",
+  "negative_results": [
+   {
+    "text": "3B OmniMedVQA文本RL93.8>MedVR92.1，与跨所有规模均提升的宽泛说法不符；主表MedXQA26.4略低Lingshu26.5。",
+    "locator": "Tables1/3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：leave-one-out独立轨迹共识 vs fork共识、full-image常数框、固定同预算randombranch，并按无tool已会分层。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B",
+   "framework": "GRPO clip-higher，去KL/std",
+   "group_size": 16,
+   "max_turns": 6,
+   "kl": 0
+  },
+  "cost": "32 H20、64 iterations、batch256；Figure6仅方向性训练每步更快，未提取数值；O(n²)→O(nlogn)主张缺明确定义n及推导，不能视已证复杂度。",
+  "pitfalls": [
+   {
+    "text": "8base+8fork预算用尽不足补独立样本；共享prefix带来样本相关性。",
+    "locator": "Algorithm1"
+   },
+   {
+    "text": "无SFT冷启依赖Qwen指令/JSON/crop先验，annotation-free不代表答案无标注。",
+    "locator": "D.1/Eq2"
+   }
+  ],
+  "code": null,
+  "lesson": "将探索和共识奖励分别消融；共识要检查自身投票、fork相关、空集合和单成功分支。"
+ }
+}

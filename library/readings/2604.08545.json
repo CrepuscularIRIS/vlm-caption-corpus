@@ -1,0 +1,365 @@
+{
+ "paper_key": "2604.08545",
+ "title": "Act Wisely: Cultivating Meta-Cognitive Tool Use in Agentic Multimodal Models",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2604.08545.pdf",
+  "version": "v1",
+  "version_observed": "PDF p.1: arXiv:2604.08545v1 [cs.CV] 9 Apr 2026; latest remote revision not checked",
+  "pages": 21,
+  "sections_read": [
+   "Abstract; 1 Introduction; Figures1–2",
+   "2.1 Multimodal Large Language Models; 2.2 Agentic Multimodal Models",
+   "3.1 Problem Formulation and Reward Coupling; Eqs1–5",
+   "3.2.1 Dual Reward Design; Eqs6–10",
+   "3.2.2 Hierarchical Policy Update; Eq11; Algorithm1",
+   "3.2.3 Implicit Curriculum",
+   "3.3.1 SFT Data Curation; 3.3.2 RL Data Curation",
+   "4.1 Setup; 4.2 Main Results; Tables1–2",
+   "4.3 Ablations; Table3; 4.4 Cases; Figures4–5",
+   "5 Conclusion; References",
+   "Appendix A System Prompt; Figure6",
+   "Appendix B Additional Case Studies; Figures7–9"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "HDPO 将准确性与调用经济性分为两个相对优势和两个裁剪损失；效率仅在同题成功轨迹子集比较，并配合可执行性/能力/质量过滤及无工具SFT数据。",
+  "key_step": "Q={回答正确的rollout}；|Q|≥2时对1/(T+1)仅在Q中减均值除std，Q外与小Q置0，再在loss层以0.15混合效率通道。",
+  "why_non_obvious": "在全组归一化成功门控的效率奖励仍会奖励任何成功轨迹；必须改变效率比较的参考集合，同时保留原正确性通道。它不等于梯度正交或严格词典序约束。",
+  "trigger_condition": "When same-query successful trajectories have different execution costs, apply success-conditioned relative advantages and a separate weighted loss to favor economical successful behavior.",
+  "reviewer_praise": [
+   "low_evidence: no local OpenReview review artifact in manifest"
+  ],
+  "reviewer_concern": [
+   "low_evidence: reviewer concerns unavailable; reader limitations are recorded separately"
+  ],
+  "acceptance_signal": "low_evidence; manifest decision=null, local arXiv v1 only",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Separate primary success from conditional resource economy before normalization and recombine their update objectives.",
+  "abstract_key_step": "Compare resource use only among successful alternatives to the same input; suppress this channel when fewer than two qualify.",
+  "abstract_why_non_obvious": "A success-gated score standardized over all alternatives can still conflate success with economy; change the reference population as well as the score.",
+  "abstract_trigger_condition": "When successful alternatives vary in resource use, compare them within the eligible set and preserve a separate primary-success update."
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.08545#s1",
+   "object": "同题G条完整多轮轨迹的效率比较集合",
+   "information": "看到终答LLM judge二值正确性、format及整轨工具调用次数T；看不到同状态无工具反事实或每次调用的因果价值。",
+   "operation": "将R_tool=1/(T+1)赋给正确轨迹；只在正确集合Q内标准化，Q外或|Q|<2置零。",
+   "output": "每轨一项条件效率优势A_tool，成功集合内中心化；没有局部动作价值。",
+   "claimed_effect": "作者Fig1报告V* tool usage98%→2%、accuracy88.7→91.1；HR合并80%→1%、80.1→82.8。是调用率图示与整体方法效果，非独立证明Q门控或逐次必要性。",
+   "conditions": [
+    "同题至少两个正确且T不同的采样才有非零效率信号",
+    "需要可用的终答judge、可靠执行计数和低成本正确动作采样支撑",
+    "T统计API调用还是工具轮、并行调用口径和错误调用计数未详述"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.2.1 p.6 Eqs8–10; Fig1 p.2",
+    "quote": "When fewer than two rollouts are correct"
+   },
+   "failure_boundary": "若成功样本都至少一次调用，通道不能直接比较零调用；相同T无信号；失败探索不收费。两个通道共用参数仍可能干扰。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2604.08545#s2",
+   "object": "准确性与条件效率的策略损失",
+   "information": "两个独立标准化优势、相同策略和rollout组；不提供梯度内积约束、真实latency或非劣置信界。",
+   "operation": "保留全组R_acc=.9R_ans+.1R_fmt的GRPO，分别计算两项PPO式裁剪loss，再以w_acc=1,w_tool=.15加权更新。",
+   "output": "双loss更新；w_tool在优势归一化之后仍可调。",
+   "claimed_effect": "Table3相同backbone/data下.15相对accuracy-only五项为88.7→91.1、81→83.5、79.2→82、51→54.1、76.9→78；.10/.20的V*却低于88.7。没有seed/CI及同预算scalarized对照。",
+   "conditions": [
+    "两项损失需各自裁剪，不能默认先混优势再做一次clip等价",
+    "工具/环境token mask与长度聚合需查实现；论文未展开",
+    "需在独立开发集定权重并报告测试选择规则，原文没有说明"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.3 p.10; Table3 p.11; Eq11 p.7",
+    "quote": "under identical backbone and\ntraining data configurations."
+   },
+   "failure_boundary": "归一化独立不使参数梯度正交，不保证准确率单调或Pareto非劣；.20低于.15全部五项且V*低于GRPO。没有严格accuracy-first约束或动态对偶。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2604.08545#s3",
+   "object": "SFT轨迹和RL prompt的行为/反馈支持",
+   "information": "沙箱执行结果与展示反馈、base Qwen3VL8B无工具8次结果、Gemini3.1Pro多维judge及RL每题8次采样；不是当前每个训练状态的无工具价值。",
+   "operation": "丢弃执行错误或反馈不一致轨迹、过滤base直答全通过的工具演示、作多维质量过滤，另加入OpenMMReasoner无工具推理；RL保留8次采样混合对错的题。",
+   "output": "约5K RL prompts（45%perception/36%search/19%math-general）；SFT总数与各过滤保留数未报告。",
+   "claimed_effect": "作者声称改善环境真实性和抑制盲用工具；没有逐过滤消融或错误率前后数，不能把最终效果分解归因各筛选。",
+   "conditions": [
+    "执行环境与实际工具一致、judge可靠",
+    "必须保留直答和必要工具的行为支持，筛选不能只留下重工具样本",
+    "原文pass@8=1与consistently solved/all G成功并用，其估计量定义含糊"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§4.1 p.8; §3.3 pp.7–8",
+    "quote": "To preserve intrinsic reasoning capabilities, we additionally incorporate tool-free\nreasoning data from OpenMMReasoner"
+   },
+   "failure_boundary": "base能力筛选/冻结judge不等于训练中当前策略必要性；预筛混合结果不保证后续每组多样性，且过滤全对题可能移除效率信号。没有在线动态重筛证据。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "standard GRPO (w_tool=0)",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-8B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyesV2",
+   "kind": "method"
+  },
+  {
+   "name": "Pixel-Reasoner",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme",
+   "kind": "method"
+  },
+  {
+   "name": "SenseNova-MARS-8B",
+   "kind": "method"
+  },
+  {
+   "name": "Skywork-R1V4-30B-A3B",
+   "kind": "method"
+  },
+  {
+   "name": "V*Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HRBench4K/8K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "TreeBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld",
+   "kind": "benchmark"
+  },
+  {
+   "name": "CharXiv",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVista/MathVerse",
+   "kind": "benchmark"
+  },
+  {
+   "name": "WeMath",
+   "kind": "benchmark"
+  },
+  {
+   "name": "DynaMath",
+   "kind": "benchmark"
+  },
+  {
+   "name": "LogicVista",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者给出效率过重伤害性能这一适用边界。",
+   "quote": "an overly aggressive weight (wtool =0.20) precipitates\nperformance degradation across all benchmarks.",
+   "locator": "§4.3 p.11; Table3"
+  },
+  {
+   "text": "作者将更开放长程环境作为未来工作；本地原文没有独立Limitation节。",
+   "quote": "Future work will explore extending this meta-cognitive framework to more open-ended, long-horizon\nenvironments.",
+   "locator": "§5 p.13"
+  }
+ ],
+ "question": {
+  "observed_failure": "Fig1 accuracy-only GRPO在V*98% tool usage、88.7 accuracy；HDPO报告2%、91.1。Table3显示把效率权重从.15加到.20，V*91.1→87.4，说明效率压力仍可牺牲性能。",
+  "load_bearing_assumption": "正确性与执行成本放入一个组标准化奖励即可获得稳定、语义清楚的效率压力。",
+  "scope": "同题多轮工具RL中的成功条件效率比较；不涵盖通用必要性真值、精确局部信用或严格非劣保证。",
+  "success_criterion": "在同backbone/data及匹配成本下，同时报告准确性与调用/latency；原文仅报告若干accuracy及调用率，没有预设非劣界和CI。",
+  "why_open": "accuracy-only不区分成功轨迹成本；混合奖励会随组方差改变尺度；但本方法仍缺饱和采样支撑及必要调用的独立因果检验。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "under identical backbone and\ntraining data configurations.",
+   "locator": "§4.3 p.10",
+   "rationale": "作者声明消融保持backbone/data；完整预算匹配仍未报告。"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "the tool reward explicitly optimizes\nfor execution economy",
+   "locator": "§3.2.1 p.6",
+   "rationale": "将资源经济性列独立目标，但不把改善点当非劣证明。"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "supervised fine-tuning (SFT) for cold-start initialization, followed\nby reinforcement learning (RL) via HDPO.",
+   "locator": "§4.1 p.9"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "the efficiency signal remains strictly grounded in intra-task relative\nperformance.",
+   "locator": "§3.2.1 p.6",
+   "rationale": "按终答正确性区分eligible/noneligible并施加不同效率操作；未声称解决该研究模式的全部开放问题。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_i^{mix}=R_i^{acc}+\\alpha R_i^{tool};\\quad \\mathrm{Var}(R^{mix})=\\sigma_{acc}^2+\\alpha^2\\sigma_{tool}^2+2\\alpha\\mathrm{Cov}(R^{acc},R^{tool})",
+    "locator": "Eqs1,3 pp.4–5; scalarized comparator"
+   },
+   {
+    "latex": "A_i^{mix}=\\widetilde R_i^{acc}/\\sigma_{acc}+O(\\alpha)",
+    "locator": "Eq5 p.5; requires nonzero fixed sigma_acc for the expansion"
+   },
+   {
+    "latex": "R_i^{acc}=0.9R_i^{ans}+0.1R_i^{fmt};\\quad A_i^{acc}=(R_i^{acc}-\\mathrm{mean}_gR^{acc})/(\\mathrm{std}_gR^{acc}+\\epsilon)",
+    "locator": "Eqs6–7 p.6"
+   },
+   {
+    "latex": "R_i^{tool}=\\mathbf{1}[R_i^{ans}>0]/(T_i+1),\\quad Q=\\{j:R_j^{ans}>0\\}",
+    "locator": "Eqs8–9 p.6"
+   },
+   {
+    "latex": "A_i^{tool}=\\begin{cases}(R_i^{tool}-\\mathrm{mean}_{k\\in Q}R_k^{tool})/(\\mathrm{std}_{k\\in Q}R_k^{tool}+\\epsilon),&i\\in Q,|Q|\\ge2\\\\0,&\\mathrm{otherwise}\\end{cases}",
+    "locator": "Eq10 p.6"
+   },
+   {
+    "latex": "L_{HDPO}=w_{acc}L_{GRPO}(A^{acc})+w_{tool}L_{GRPO}(A^{tool}),\\quad(w_{acc},w_{tool})=(1,0.15)",
+    "locator": "Eq11 p.7; implementation p.9"
+   }
+  ],
+  "signal_routing": "原文两项均按完整rollout给标量A并调用标准PPO式surrogate，没有单独决策token、逐次crop价值或移除结果通道。L_GRPO未展开token/sequence聚合、环境返回mask、重要性比粒度及clip常数，均未知；不能从名字补实现。保留两项分别clip，通常不等于先混A再clip。",
+  "normalization": "accuracy全组mean+std；efficiency仅Q内mean+std且|Q|<2或同成本时0。std样本/总体约定、epsilon数值未知；loss权重在归一化后。",
+  "invariance": "非PBRS、非严格词典序/非劣约束；改变偏好并可能改变最优策略。只消除了共享奖励std中的交叉项，未约束共享参数梯度内积，不能由此推出正交/零冲突。正仿射重缩放单一通道reward在epsilon可忽略时被std约掉；loss外权重w不被该步约掉。Eq5要求sigma_acc>0，不能用于常量正确性/格式组；那时alpha>0的效率标准化尺度可抵消，区别于混合组小alpha信号淹没。",
+  "baseline_or_potential": "同题全组准确性均值和同题成功集合效率均值；均依赖抽样，没有critic/PBRS势能/同状态分支MC价值。终答由LLM judge给二值标签，具体judge身份未写明，不能直接等同SFT Gemini3.1Pro。",
+  "degenerate_cases": "全对同format：A_acc=0，T不同仍有A_tool；全对T相同两项均0。全错Q空，eff0；accuracy仅在format不同等情况下可能非零。混合但仅1成功eff0。p(直答)≈0没有直答成功样本，通道最多区分已采到的调用次数；无强制探索。G=1 eff0，acc分母std约定未报告。无工具T0奖励1，一次T1为.5；只有一种T时效通道0。两正确样本不同T时standardized幅度主要由std约定决定而非绝对成本差；稀疏Q噪声与长序列权重未知。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3在作者所称同backbone/data下比较w_tool=0/.10/.15/.20，支持双通道在所报配置可提升性能；没有匹配权重扫描的scalarized成本臂、Q内打乱T的占位臂、去conditional中心化臂或真实梯度冲突测量。",
+  "controls": [
+   "standard GRPO w_tool=0",
+   "三个w_tool权重",
+   "基础Qwen3VL8B；其他模型为不同backbone工具协议，不能当单变量因果对照",
+   "无SFT-only、无各数据过滤独立消融、无完整训练更新/token/工具walltime匹配"
+  ],
+  "negative_results": [
+   {
+    "text": "Table3 V* .10=88.0与.20=87.4均低于GRPO88.7，虽正文说.10 clear improvements；.20低于.15全部五项。原表数字为作者报告，不独立复现。",
+    "quote": "a conservative weight (wtool =0.10) provides clear improvements over standard GRPO",
+    "locator": "§4.3 p.11; Table3",
+    "quote_context": "Source prose overgeneralizes; inspect the V* column."
+   },
+   {
+    "text": "原文承认高效率权重有伤害，不能证明accuracy不可能退化。",
+    "quote": "an overly aggressive weight (wtool =0.20) precipitates\nperformance degradation across all benchmarks.",
+    "locator": "§4.3 p.11"
+   }
+  ],
+  "seeds": "not reported; neither training seed count nor confidence intervals or error bars supplied; cannot infer single seed",
+  "falsifier": "固定同一SFT/数据/更新预算后，Q内置换调用次数的效率通道若同样改善，则原成本对应机制解释不成立；独立必要观测子集若掉点或准确性非劣界未过，则不能称学会必要才调用。此为未执行读者判别设计。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-8B-Instruct",
+   "framework": null,
+   "group_size": 16,
+   "rollouts": "16 per RL prompt; offline RL filtering uses8",
+   "steps": null,
+   "kl": 0,
+   "temperature": null,
+   "max_turns": null,
+   "sft_epochs": 2,
+   "sft_lr": 1e-05,
+   "rl_lr": 1e-06,
+   "batch_size": 128,
+   "max_response_tokens": 16384,
+   "weights": {
+    "accuracy": 1.0,
+    "tool": 0.15
+   }
+  },
+  "cost": "8 NVIDIA B200；约5K RL prompts，SFT2epochs/batch128，RL batch128×G16；没有训练总token/更新步数/rollout GPU时/真实latency/调用单价。Fig1 tool usage比例不能替代平均调用数与总体成本。",
+  "pitfalls": [
+   {
+    "text": "作者发现执行失败却配成功反馈，采用执行与反馈一致性筛选。",
+    "quote": "strictly discarding any\ntrajectory that exhibits execution failures or feedback inconsistencies.",
+    "locator": "§3.3.1 p.8"
+   }
+  ],
+  "code": "https://github.com/Accio-Lab/Metis",
+  "lesson": "当把效率只在成功集合中标准化时，应同时记录|Q|、Q内T方差、零调用成功支持及各通道token质量；单看归一化后的通道幅度不能证明动作支撑、必要性或准确率安全。"
+ },
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "将旋钮移到loss之外保留可调性，但两通道仍除std；不等于取消尺度问题。",
+   "strength": 2
+  },
+  {
+   "problem": "P02",
+   "how": "保留准确性并鼓励成功低成本行为，但不保证直答采样。",
+   "strength": 2
+  },
+  {
+   "problem": "P04",
+   "how": "效率独立比较避免被准确性方差共同缩放，缺RLOO同预算实证。",
+   "strength": 2
+  },
+  {
+   "problem": "P06",
+   "how": "成功集合可包含混合组中的正确轨迹，但没有零调用支撑则推不到不裁。",
+   "strength": 2
+  },
+  {
+   "problem": "P12",
+   "how": "效率子集中心化，区别于未中心化dV附加项；非同前缀信用。",
+   "strength": 2
+  },
+  {
+   "problem": "P14",
+   "how": "保留结果通道并另加成功子集效率是fc信用替换失败的替代改造方向；没有直接检验本项目fc失败是否修复。",
+   "strength": 2
+  },
+  {
+   "problem": "P15",
+   "how": "保留结果通道再叠加效率loss，不能继承为所有token已安全。",
+   "strength": 2
+  },
+  {
+   "problem": "P61",
+   "how": "有无工具SFT补充但无原直答正确子集保持率和非劣检验。",
+   "strength": 1
+  }
+ ]
+}

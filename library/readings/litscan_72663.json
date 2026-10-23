@@ -1,0 +1,172 @@
+{
+ "paper_key": "litscan:72663",
+ "title": "AdaReasoner",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_72663.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 pp3–9 Tables1–6",
+   "B.4 pp18–19",
+   "C.1 pp19–20",
+   "C.3 Tables7–8 pp22–23",
+   "D pp23–24"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "人工抽象轨迹加入回退/工具失败，真实执行工具补观测，teacher连CoT；再以格式门+工具层级score+答案训练多轮。",
+  "why_non_obvious": "SFT支持熟悉工具组合同时可能固化新工具策略，需分task验证。",
+  "trigger_condition": "复杂工具规划缺支持、具专门高精度工具时。",
+  "contribution_type": "轨迹构造+multi-tool RL+server",
+  "abstract_strategy": "把感知/计算委托给可靠模块，用显式失败轨迹教恢复再RL适配。",
+  "abstract_trigger_condition": "已有可靠外部oracle而模型缺组合策略。",
+  "abstract_key_step": "分navigation/verification观察同一A*工具采用与抑制。",
+  "abstract_why_non_obvious": "新增工具在相关任务有益，在验证任务可成干扰，反思轨迹也不必然提升泛化。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:72663#s1",
+   "object": "多轮tool planning轨迹",
+   "information": "Molmo7B-D Point、OCR、A*等专家返回；人工任务blueprint与Gemini2.5Flash填CoT；GT终答案/参数有效性",
+   "operation": "SFT包含reflection/backtrack/tool failure，ToolGRPO按全轨迹格式门和平均toolscore/答案reward优化。",
+   "claimed_effect": "7B VSP31.64→97.64；无A*时reflection91.36vs67.27，但仅推理新增A*使reflection模型91.36→68.55。",
+   "conditions": [
+    "VSP/Jigsaw/GUI任务",
+    "最多10轮，Qwen2.5-VL3B/7B"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p8",
+    "quote": "84.33   99.80    91.36     63.89   99.61    80.36"
+   },
+   "failure_boundary": "专家工具承担问题部分求解；近满分不是单独基础模型推理提升，SFT可能限制新工具泛化。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "复杂组合需要有效轨迹冷启。",
+   "strength": 3
+  },
+  {
+   "problem": "P38",
+   "how": "显式失败/回退轨迹与新工具泛化的正负证据。",
+   "strength": 3
+  },
+  {
+   "problem": "P65",
+   "how": "相同A*在nav有益而verify有害，需要task分层。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "DirectSFT/GRPO/TC/TG/TC+TG",
+   "kind": "ablation"
+  },
+  {
+   "name": "A* unavailable/inference-only/RL；reflection on/off",
+   "kind": "controlled diagnostic"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "GUIQA的SFT引入策略偏置，使WebMMU低于纯TG。",
+   "locator": "D p24",
+   "quote": "the standalone Tool-GRPO approach actually outperforms the combined pipeline (72.97 vs. 68.16)."
+  }
+ ],
+ "question": {
+  "observed_failure": "7B新增A*只推理时nav44.83→62.33但verify94.20→80.00；reflection新tool成功率16.89%。",
+  "load_bearing_assumption": "可学规划取决于专家工具质量及SFT先验是否适合任务，不只模型规模。",
+  "scope": "结构化nav/jigsaw与GUIQA",
+  "success_criterion": "按tool相关/无关任务拆准确率、调用、执行成功与反思迁移。",
+  "why_open": "单crop成功recipe不回答多工具干扰与冷启僵化。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table5"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "Tables3–4"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Table2/5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=\\bigl(\\prod_t R_{format,t}\\bigr)(\\lambda_{tool}\\overline R_{tool}+\\lambda_{acc}R_{acc});\\quad A_i=(r_i-\\bar r)/std(r)",
+    "locator": "§3.3/Eq3–5"
+   }
+  ],
+  "signal_routing": "trajectory累计格式门+平均工具turn score后序列GRPO；Eq4每轨迹长度归一、具体observation mask未见明确。Table8std=true、KL0。",
+  "normalization": "mean+std",
+  "invariance": "共同正缩放在std中抵消，λ比改变排序和tradeoff；平均tool分对重复同分调用不惩罚；非PBRS。",
+  "baseline_or_potential": "组内均值，N4；非局部counterfactualbaseline。",
+  "degenerate_cases": "正文§3.3 Racc=1且正确自动8分(不论tool)，附录Eq9 Racc=4+Eq5加权，未写自动8override；精确reward配方存在冲突，不能编造解决。单格式错全reward0；无tool平均分T=0 fallback未明；正确全8同组将A=0(若正文实施)。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Tables3–4给工具context的诊断；Table5反思×新A*；Table6权重比。",
+  "negative_results": [
+   {
+    "text": "TC+TG GUIChat88.57低于TG92.52、WebMMU68.16低于72.97；GUI可能被手写轨迹限制。",
+    "locator": "Table2/D"
+   },
+   {
+    "text": "Table6从0:1到1:2 VSP71.45→70.55，非正文声称随ratio单调；外部Point100%和A*承担核心能力。",
+    "locator": "Tables3/6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：固定有效tool能力/数据预算，对比随机失败轨迹与指定反思轨迹，未见新tool上测适应；同时独立核奖励实现。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B/7B；Molmo7B-D Point；Gemini2.5Flash CoT",
+   "framework": "LLaMAFactory/ToolRL+ToolServer",
+   "group_size": 4,
+   "max_turns": 10,
+   "kl": 0
+  },
+  "cost": "8GPU RL batch32 LR1e-6 max response20480 PPOepoch1；SFT3epochs LR1e-5 maxsamples332649(配置上限不等于已用样本)。walltime未给。",
+  "pitfalls": [
+   {
+    "text": "工具参数内容有效性如何逐task判断已读段落未给通用执行定义；语法奖励可能奖无用有效调用。",
+    "locator": "B.4"
+   },
+   {
+    "text": "反思在无A*提高表现，在新A*时可能刚性拒学；不能只保留正结果。",
+    "locator": "Table5"
+   }
+  ],
+  "code": "https://github.com/ssmisya/AdaReasoner",
+  "lesson": "失败与回退示范值得造，但同时留新tool泛化对照；在代码核实前不要照抄冲突reward常数。"
+ }
+}

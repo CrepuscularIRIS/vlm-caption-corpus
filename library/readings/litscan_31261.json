@@ -1,0 +1,197 @@
+{
+ "paper_key": "litscan:31261",
+ "title": "CogCoM: A Visual Language Model with Chain-of-Manipulations Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_31261.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§2–4",
+   "§5 Tables1–4 Figure6",
+   "Appendix E.5 limitations",
+   "Appendix F training"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把视觉操作及结果变成可监督多轮轨迹，合成时以视觉模型填充语言计划占位符。",
+  "key_step": "GPT-4计划→GroundingDINO/PaddleOCR执行→多结果分支DFS筛最终gold答案路径→按新图分段SFT并累积KV。",
+  "why_non_obvious": "不只输出CoT；数据保留操作参数、结果与新图。教师执行能力和学生内化能力不同，最终正确不保证过程正确。",
+  "trigger_condition": "When a visual answer needs intermediate localization or magnification, supervise manipulation-result chains and retain prior-turn context.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将隐式能力拆成可训练中间动作",
+  "abstract_trigger_condition": "When a visual answer needs intermediate localization or magnification, supervise manipulation-result chains and retain prior-turn context.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "GPT-4计划→GroundingDINO/PaddleOCR执行→多结果分支DFS筛最终gold答案路径→按新图分段SFT并累积KV。",
+  "abstract_why_non_obvious": "不只输出CoT；数据保留操作参数、结果与新图。教师执行能力和学生内化能力不同，最终正确不保证过程正确。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:31261#s1",
+   "object": "CoM轨迹构造",
+   "information": "GPT-4仅语言计划；VFMs看图；末端gold答案用于筛选",
+   "operation": "为grounding多框展开树，DFS只保留最终匹配gold路径；70K自动CoM并入训练",
+   "claimed_effect": "Table4 TextVQA64.5→71.1，MMVet45.9→46.1，MathVista34.8→35.7；自动正路径率.3555。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.1; §5.4 Table4; p5 footnote2",
+    "quote": "The success rate of GPT-4 to achieve the positive paths is 0.3555."
+   },
+   "failure_boundary": "新增70K数据混合而非同预算伪轨迹对照；最终匹配不是逐步因果验证。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:31261#s2",
+   "object": "多轮视觉重输入",
+   "information": "历史KV与当前新图；推理时grounding/OCR结果由VLM输出",
+   "operation": "CropZoomIn实际裁上轮图并bicubic放大；按Eq2拼接截断KV，新图连接后继续生成",
+   "claimed_effect": "Table1 GQA71.7 vs CogVLM65.2；ST-VQA70.0 vs61.0；Fig6 CoM-only2K步48.41、8K步55.59答案分。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.1 Eq2; Tables1; Figure6",
+    "quote": "the new image It will be cropped from It−1"
+   },
+   "failure_boundary": "“无需外部工具”不等于无需像素执行器；重复局部裁剪可能丢失全局证据。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P23",
+   "strength": 2,
+   "how": "示范操作/结果及训练推理多轮接口可迁移，但教师视觉执行不保证学生同能力。"
+  },
+  {
+   "problem": "P39",
+   "strength": 2,
+   "how": "按实际新图分割监督轨迹建立crop后继续观察行为支持。"
+  },
+  {
+   "problem": "P40",
+   "strength": 2,
+   "how": "grounding引用框需与后续crop和答案绑定。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "CogVLM",
+   "kind": "method"
+  },
+  {
+   "name": "CogCoM without70KCoM",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen-VL",
+   "kind": "method"
+  },
+  {
+   "name": "LLaVA-1.5",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "造数视觉工具的框粒度与文字识别出错，最终答案过滤不能检出全部中间错误。",
+   "quote": "The inaccuracy of visual tools.",
+   "locator": "Appendix E.5 p20"
+  },
+  {
+   "text": "五示例造成语言步骤同质化。",
+   "quote": "The lack of diversity in linguistic reasoning steps.",
+   "locator": "Appendix E.5 p20"
+  }
+ ],
+ "question": {
+  "observed_failure": "加入70K轨迹TextVQA+6.6但MMVet仅+.2；crop步骤实际证据贡献尚未隔离。",
+  "load_bearing_assumption": "末端gold匹配的教师路径能教会学生可靠读crop而非模板记忆。",
+  "scope": "固定SFT样本预算替换少量caption→crop→新观察轨迹。",
+  "success_criterion": "正确率非劣且crop后实体绑定/纠错改善，在真crop对随机等面积crop中有差异。",
+  "why_open": "原消融新增数据且无匹配假crop、无当前policy必要性标签。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§2六类原子操作与§3执行占位符"
+  },
+  {
+   "vocab": "rs",
+   "id": "representation_transformation",
+   "locator": "§3.2多图链转多轮VQA"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "att(X)=softmax(Q_t K_t'^T/sqrt(d)) V_t'; K_t'=trunc(concat(K_0,...,K_t)); V_t'=trunc(concat(V_0,...,V_t))",
+    "locator": "Eq2"
+   },
+   {
+    "latex": "s_K=Levenshtein(Kprime,K)/N; s_acc=(0.6*s_K+0.4*s_C)/2",
+    "locator": "§5.1.2 reported metric, not loss"
+   }
+  ],
+  "signal_routing": "训练next-token prediction只更新6.5B视觉expert；轨迹文本包括操作、参数、结果和答案。非PPO/RL，未读到精确response mask/token归一化。图像由本地操作产生，不能假设可微crop。",
+  "normalization": "attention softmax/√d；框坐标000–999；训练token loss平均方式未知；评测Levenshtein除N。",
+  "invariance": "非PBRS；新增数据改变监督分布，无策略不变性保证。",
+  "baseline_or_potential": "无优势baseline或potential；CogVLM为实验baseline。",
+  "degenerate_cases": "无gold末端匹配→路径被丢弃；正确终点可含错误中间证据。KV截断会丢早期信息。评测公式把distance与BLEU相加且再除2，方向/范围不一致风险未解决，不代补1-distance；RL全对/全错组不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4删除70KCoM其余设置不变，隔离新增轨迹数据但不隔离中间操作与新增样本。",
+  "negative_results": [
+   {
+    "text": "RefCOCO val92.34<92.51、RefCOCOg val89.32<89.46 baseline。",
+    "locator": "Table2"
+   },
+   {
+    "text": "MMVet只+.2相对移除CoM，未证明大幅通用增益。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "等量普通QA/伪操作轨迹取得同样crop后纠偏收益，则显式操作机制的独立贡献不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "CogCoM17B: EVA2CLIP-E4B + Vicuna7B +6.5Bvisualexperts",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "Table6 stage1-1 3840 A100-days、stage1-2 256、stage2 160；并非轻量训练。",
+  "pitfalls": [
+   {
+    "text": "自动教师视觉工具仅造数据；学生推理预测的框/文字需独立核，不等同工具真返回。",
+    "locator": "§3 vs §4"
+   },
+   {
+    "text": "正文570K、表6 576K；摘要6K而正文7K人工数学样本，保留版本内差异。",
+    "locator": "Abstract; §3.2; Table6"
+   }
+  ],
+  "code": "https://github.com/THUDM/CogCoM (not inspected)",
+  "lesson": "当视觉工具输出被蒸馏为语言监督时，应分开核查教师执行成功率、学生结果准确率和真实像素回流，避免把接口模仿当成工具能力。"
+ }
+}

@@ -1,0 +1,517 @@
+{
+ "paper_key": "2605.16416",
+ "title": "CAVE: A Structured Credit Assignment Approach for Fragmented Visual Evidence Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.16416.pdf",
+  "version": "v2",
+  "version_observed": "PDF p.1 arXiv:2605.16416v2 [cs.CV] 21 Oct 2026; latest online version not checked",
+  "pages": 24,
+  "sections_read": [
+   "Abstract; 1 Introduction; 2 Related work pp.1–3",
+   "3.1 Interleaved visual reasoning trajectory; 3.2.1 Belief update; 3.2.2 Evidence acquisition; 3.2.3 Adaptive focus; 3.3 Policy optimization, Algorithm 1 pp.3–5",
+   "4 TRACER-Bench pp.5–6; 5.1–5.5 Experiments pp.6–9; Tables 1–5; Fig.4; 6 Conclusion p.9",
+   "References pp.10–12",
+   "App.A cases Figs.5–6 pp.13–14; App.B.1–B.3 scenario design/statistics/quality pp.13–18, Tables6–9",
+   "App.C.1–C.3 training construction/isolation pp.18–20, Table10/Figs.11–12",
+   "App.D.1–D.3 hyperparameters/resource/efficiency pp.20–22, Figs.13–14",
+   "App.E teacher forcing; F statistical significance/Table11; G limitations pp.22–23",
+   "App.H broader impacts; I assets/Table12 p.23; App.J characterization p.24"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "将中间进展拆为金答案belief、标注视觉evidence、受进展门控的zoom尺度三个过程分，按轮衰减聚合到GRPO轨迹奖励；配套有可控跨区依赖及perception标注的TRACER。",
+  "key_step": "在真实rollout结束后，以策略在相邻上下文中teacher-force固定金答案/证据文本计算平均token logprob增量；证据只保留正增量，再用这些进展门控与uncertainty目标面积匹配的zoom奖励。",
+  "why_non_obvious": "有价值的前置证据可能尚未提高答案belief；只奖终答或单一答案信息增益会漏掉这种进展。但非负证据gain、概率增益与真实观测必要性不同，作者没有因果必要性证明。",
+  "trigger_condition": "When multi-round visual reasoning requires fragmented precursor evidence that does not immediately increase answer belief, apply separately measured belief, evidence, and progress-gated focus credits before group-relative optimization.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null, no reviews_path or review notes; PDF is a preprint.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Partition intermediate progress by functional role and combine role-specific signals before optimizing complete trajectories.",
+  "abstract_key_step": "Score fixed targets under neighboring states, retain precursor gains, and gate an action-shape preference by observed progress.",
+  "abstract_why_non_obvious": "A prerequisite can become available before it improves the final decision; a single terminal utility cannot represent all forms of progress.",
+  "abstract_trigger_condition": "When successful decisions require prerequisites whose gains are delayed, measure prerequisite recovery separately from final-target progress and require progress before rewarding action shape."
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.16416#s1",
+   "object": "相邻上下文的答案belief进展及轨迹过程奖励",
+   "information": "策略p_theta、实际rollout状态M_t/M_t+1、金答案正文token；看不到同状态不执行该动作的结果，不是MC成功率或反事实工具价值。",
+   "operation": "rollout后在每个状态teacher-force金答案正文，取每token平均logprob的相邻差作为c_bu；裁剪[-1,2]、乘.8^(t-1)、求和，与另两通道按.4/.3/.3混合后按组mean/std归一化。",
+   "output": "有正有负的belief局部分与最终每轨迹一个advantage；不单独指定该轮token信用。",
+   "claimed_effect": "作者Table2 Belief-Only overall29.6%，Full33.3%，基座25.9%；Table4a去belief：Tunnel Vision28.9 vs31.3、TRACER-Core34.1 vs36.9、MME-RS56.7 vs59.2。是消融证据，非每步价值正确的独立证明。",
+   "conditions": [
+    "autoregressive策略能在同一真实多模态上下文条件下重打分",
+    "答案body span准确，格式前后缀不计",
+    "gold只进入评分pass，不污染后续rollout",
+    "从10k冷启动SFT拥有基本工具行为"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.2.1 p.4; Sec.3.3/Alg.1 p.5; Tables2/4a pp.7–8; App.E p.22",
+    "quote": "We only score the answer body to avoid the influence of format templates or irrelevant prefixes and\nsuffixes on the estimation. This credit term rewards intermediate steps that move the model state\ncloser to the correct answer, thereby constraining answer-oriented state updates."
+   },
+   "failure_boundary": "belief增益可以由生成文本/答案自一致性带来，未证明由新增像素引起；teacher-forced likelihood不等于自然答案成功率。局部分汇总后，不能据此声称正负credit只到相应tool token。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.16416#s2",
+   "object": "先于答案改善的任务证据可恢复性",
+   "information": "生成器/人工核验得到的K个必要证据文本、当前策略和相邻真实上下文；无独立像素消融、无无工具分支。",
+   "operation": "对每个evidence unit按正文token平均teacher-forced logprob打分，只保留相邻状态正增量，按K平均，裁剪/轮衰减后加入轨迹reward。",
+   "output": "非负的证据获取通道；不要求模型生成规范化解释。",
+   "claimed_effect": "作者Table4a去evidence：Tunnel Vision29.6 vs31.3，BabyVision15.3 vs17.3，TRACER-Core34.7 vs36.9，MME-RS55.9 vs59.2。Fig4冷启动策略上证据gain与成功正相关但有波动。",
+   "conditions": [
+    "训练样本有可信的perception证据字段；不等于只有问答标签",
+    "证据unit是必要且视觉grounded，不能直接复述答案",
+    "unit切分、评分span和上下文保持一致"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.2.2 p.4; Table4a p.8; App.B.3 p.18, App.E p.22",
+    "quote": "For training samples equipped with task-critical evidence annotations, we represent the intermediate\nvisual information required for answer formation as a set of K textualized visual evidence units,"
+   },
+   "failure_boundary": "本课题未有此类金证据单元，不能用现有未核验caption当GT直接搬运。只留正增益不惩罚丢失证据，可能让噪声/反复失而复得获益；概率可恢复性不等于像素使用因果性。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.16416#s3",
+   "object": "zoom面积与当前不确定性的匹配",
+   "information": "teacher-forced答案top500 entropy，实际crop面积比，belief/evidence正进展；不需要GT框，但仍依赖GT答案/证据评分。",
+   "operation": "将entropy归一到[0,1]，目标面积rhohat=.02+.28u；以1-exp(-([c_bu]+ + c_ea))门控(1-|rho-rhohat|)，仅有效zoom给c_af，再并入同一轨迹reward。",
+   "output": "有进展且面积接近目标的非负zoom分；不是调用次数惩罚或stop规则。",
+   "claimed_effect": "作者Table4a去focus：TV29.3→31.3，Baby16.5→17.3，TRACER-Core35.2→36.9，MME-RS57.6→59.2。Table5整体有用zoom诊断率55.4% vs cold21.4%/DeepEyes43.1%；完整系统DeepEyes调用1.97→2.03，不能将整体效率称全部由focus造成。",
+   "conditions": [
+    "合法zoom可确定面积比",
+    "top-k entropy的归一化方式须在实现明确",
+    "正进展门控自身可信且不被文字/概率投机驱动"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.2.3 pp.4–5; Alg.1 p.5; Table4a p.8; Table5 p.9; App.D.1 p.20",
+    "quote": "To avoid rewarding zoom actions with appropriate scale but no actual contribution, we further gate\nthe reward using positive state progress after observation:"
+   },
+   "failure_boundary": "u的具体NormEntropy公式、top-k概率重归一化、面积参照图未完整给出。即使正进展真实也不意味着该zoom必要或最优。无进展时af=0，不是裁图负奖；文本动作af=0但bu/ea未必为0。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-8B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL3.5-8B",
+   "kind": "method"
+  },
+  {
+   "name": "MiniCPM-V 4.5",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-5.2",
+   "kind": "method"
+  },
+  {
+   "name": "Gemini 3.1 Pro",
+   "kind": "method"
+  },
+  {
+   "name": "R1-OneVision / VLAA-Thinker / ThinkLite-VL",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "Cold-start",
+   "kind": "method"
+  },
+  {
+   "name": "Correct Only",
+   "kind": "method"
+  },
+  {
+   "name": "CAVE Belief-Only",
+   "kind": "method"
+  },
+  {
+   "name": "CAVE w/o Belief / Evidence / Focusing",
+   "kind": "method"
+  },
+  {
+   "name": "Tunnel Vision / BabyVision / TRACER-Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar / RealWorldQA / HallusionBench-Image / BLINK / MathVista-mini / MathVerse-mini",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者仅在中等规模开源骨干验证，大模型scaling未建立。",
+   "quote": "Our empirical evaluation focuses on open-source VLM backbones at moderate model scales, allowing\ncontrolled same-backbone comparisons and detailed analysis of intermediate reasoning behaviors.",
+   "locator": "App.G p.22"
+  },
+  {
+   "text": "当前动作空间以局部zoom重观察为主，外部视觉工具/显式区域比较仍属未来工作。",
+   "quote": "as the main visual action space. Future work may extend structured credit assignment to richer\nmultimodal actions, such as explicit region comparison, object-level grounding, and external visual\ntool invocation.",
+   "locator": "App.G pp.22–23"
+  }
+ ],
+ "question": {
+  "observed_failure": "作者Table2 Qwen2.5-VL7B overall25.9%，DeepEyes28.5%，而Belief-Only29.6%仍低于Full33.3%；Table5冷启动useful-zoom诊断率21.4%。作者把低语义可分、远距离视觉证据组合界定为FVR。",
+  "load_bearing_assumption": "一个答案侧state-utility gain足以表征所有有用中间视觉步骤；先拿到必要证据但尚未影响答案belief的步骤会被漏掉。",
+  "scope": "Qwen2.5-VL3B/7B、最多5轮interleaved zoom、具备prompt-answer-perception监督的四类TRACER及TV-style训练。",
+  "success_criterion": "同骨干碎片视觉任务准确率提高，并在相近推理预算下有更高过程诊断分、保留一般多模态能力；无准确率非劣+严格少裁图预注册。",
+  "why_open": "通用tool-use能重看图但不专门监督前置证据获取/跨区状态推进；单一belief或终答奖区分不了这些角色。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "To avoid self-validation bias on the model trained by CAVE, we conduct\nthe analysis using an interleaved reasoning model that has only undergone cold-start training, which\nhas not yet been directly optimized by belief gain or evidence gain",
+   "locator": "Sec.5.4 p.8 / Fig.4",
+   "mapping_note": "对应使用未被所测奖励优化的冷启动模型做信号诊断；仍是作者结果相关分析，不是独立必要性金标。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "All variants use the same base model, interleaved reasoning structure, and training\nconfiguration, changing only the process credit terms or the data sources used in the second-stage\ntraining.",
+   "locator": "Sec.5.3 p.7",
+   "mapping_note": "奖励消融与数据消融分开展示；未公开全部训练配方值限制外部复核。"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "All training experiments are conducted on a single node with 8 NVIDIA A800 80GB GPUs.",
+   "locator": "App.D.2 p.21",
+   "mapping_note": "[redacted: project-internal]"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "CAVE does not adopt a single state-utility gain, but attributes\nthe state transition Mt → Mt+1 induced by action at from three complementary perspectives:\nanswer belief improvement, visual evidence observation, and region focus matching.",
+   "locator": "Sec.3.2 p.4",
+   "mapping_note": "按进展功能拆成不同信号；不误标label-free自监督，因为答案/evidence均有GT。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\tau=\\{(M_t,a_t,o_t)\\}_{t=1}^{T_\\tau},\\quad a_t\\sim\\pi_\\theta(\\cdot\\mid M_t),\\quad M_{t+1}=Update(M_t,a_t,o_t),\\quad T_\\tau\\le T",
+    "locator": "Sec.3.1 p.3, unnumbered"
+   },
+   {
+    "latex": "V_{bu}(M_t)=\\frac1{|\\mathcal A|}\\sum_{i\\in\\mathcal A}\\log p_\\theta(y_i^*\\mid M_t,y_{<i}^*),\\quad c_t^{bu}=V_{bu}(M_{t+1})-V_{bu}(M_t)",
+    "locator": "Sec.3.2.1 p.4, unnumbered"
+   },
+   {
+    "latex": "s_j(M_t)=\\frac1{|\\mathcal E_j|}\\sum_{i\\in\\mathcal E_j}\\log p_\\theta(p_{j,i}\\mid M_t,p_{j,<i}),\\quad c_t^{ea}=\\frac1K\\sum_{j=1}^K[s_j(M_{t+1})-s_j(M_t)]_+",
+    "locator": "Sec.3.2.2 p.4, unnumbered"
+   },
+   {
+    "latex": "H_t=\\frac1{|\\mathcal A|}\\sum_{i\\in\\mathcal A}Entropy_k(i),\\quad u_t=NormEntropy_k(\\mathcal A\\mid M_t)\\in[0,1],\\quad \\hat\\rho_t=\\rho_{min}+(\\rho_{max}-\\rho_{min})u_t",
+    "locator": "Sec.3.2.3 p.4; Alg.1 line4 p.5; normalization unspecified"
+   },
+   {
+    "latex": "g_t=1-\\exp(-([c_t^{bu}]_++c_t^{ea})),\\quad c_t^{af}=\\mathbf1[type(a_t)=Zoom]g_t(1-|\\rho_t-\\hat\\rho_t|)",
+    "locator": "Sec.3.2.3 p.4; Alg.1 lines5–6 p.5"
+   },
+   {
+    "latex": "C_m(\\tau)=\\sum_{t=1}^{T_\\tau}w_t^m\\phi_m(c_t^m),\\quad m\\in\\{bu,ea,af\\}",
+    "locator": "Sec.3.3 p.5; Alg.1 line8"
+   },
+   {
+    "latex": "R_{CAVE}(\\tau)=\\lambda_{bu}C_{bu}(\\tau)+\\lambda_{ea}C_{ea}(\\tau)+\\lambda_{af}C_{af}(\\tau)",
+    "locator": "Sec.3.3 p.5; App.D.1 p.20"
+   },
+   {
+    "latex": "\\hat A_i=\\frac{R_{CAVE}(\\tau_i)-\\operatorname{mean}_{j=1}^G R_{CAVE}(\\tau_j)}{\\operatorname{std}_{j=1}^G R_{CAVE}(\\tau_j)+\\delta}",
+    "locator": "Sec.3.3 p.5, unnumbered; delta value unreported"
+   },
+   {
+    "latex": "\\lambda_{bu}:\\lambda_{ea}:\\lambda_{af}=4:3:3\\quad(0.4,0.3,0.3),\\quad k=500,\\quad (\\rho_{min},\\rho_{max})=(0.02,0.30)",
+    "locator": "App.D.1 p.20"
+   },
+   {
+    "latex": "w_t^m=0.8^{t-1},\\quad\\phi_m(c)=\\operatorname{clip}(c,-1,2),\\quad T=5",
+    "locator": "App.D.1 p.20"
+   },
+   {
+    "latex": "G_q=(V_q,E_q),\\quad\\mathcal P_q=\\{p_1,\\ldots,p_K\\},\\quad y=g(\\mathcal P_q,q)",
+    "locator": "App.J p.24, task characterization only"
+   }
+  ],
+  "signal_routing": "正文明确先算local action-induced transition credits，再聚成每轨迹R_CAVE并算一个A_i；优化仅assistant-generated tokens，tool observations/system/environment-injected信息response_mask=0。未给不同轮/工具/推理/答案的独立A_{i,t}；因此是动作层测量、轨迹层奖励，不能描述成TACO/VEG式token优势路由。bu和ea评任何assistant action导致的state change（text reasoning、tool、final answer皆在3.1动作定义内），只有af显式乘Zoom指示。App.E teacher-forcing只作rollout后reward评分，不进入rollout/后续状态，也不是target序列SFT损失。实际terminal-state评分细节与reward scorer更新时机未给。",
+  "normalization": "mean+std",
+  "normalization_notes": "明确组内减均值、除std+delta；delta数值与sample/population std未报。答案/每证据unit内先按token长度均值，ea再对K均值。三通道先加权混成总reward再统一标准化，不是per-channel std。local credit clip[-1,2]与PPO ratio clipping不同；未给PPO ratio clip数值或loss reduction。",
+  "invariance": "没有策略不变性定理。读者推导：若仅bu、不clip、不衰减，sum_t(V_{t+1}-V_t)=V_terminal-V_initial，但终端势不为0仍不能自行宣称PBRS不变性。实际w=.8^(t-1)乘的是Vnext-V而非配套gamma Vnext-V，且clip、ea正部与af非负zoom项破坏简单telescoping；这是改变轨迹目标。单纯共同正比例缩放reward在delta可忽略时被std约掉，但各通道相对权重改变排序，不能说4:3:3全被抵消。",
+  "baseline_or_potential": "V_bu是当前策略teacher-forced金答案平均log-likelihood状态分，s_j是证据平均log-likelihood；不是critic、不是MC真实成功率、不是冻结外部读者。训练advantage baseline为组均值；无动作无关counterfactual baseline。",
+  "degenerate_cases": "读者推导：若整个group的R_CAVE相同，A_i=0（delta>0时）；答案全对或全错不必然同过程分，故仍可有advantage。无evidence标注K=0使ea式无定义，论文未指定fallback，不能悄悄置0照搬。p(直答)≈0/1缺另一动作采样时无支撑保证；cold-start只提供初始行为。无正belief且ea=0则g=0，af=0；bu<0仍可负奖。无zoom仅af=0，bu/ea未必为0。高置信u=0目标面积.02、最高不确定u=1目标.30；这不是是否zoom门控。单轮仅一次局部分、无跨轮累积优势。ea只留正增量，证据下降不扣分；反复涨落可累积正ea而不能视为净信息增益。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4a使用同骨干/冷启动/数据/配置，只移除各通道，Table4b另改数据来源；Belief-Only与Full对比检验前置证据/focus是否超越单一答案gain。Fig4在未受这些奖励优化的cold-start模型上验证分数-成功相关，减轻训练后自验证。Table5同评测协议比较token/round/call/time，支持收益并非只靠更长输出，但非严格固定实际消耗的随机工具负对照。",
+  "controls": [
+   "Cold-start vs Correct Only vs Full；去bu/ea/af时其余通道保持相对比例（App.D.1）。",
+   "Belief-Only保持骨干、初始化、数据、rollout设置和优化recipe（App.D.1），具体G/LR/batch未公开。",
+   "训练数据w/o TV、w/o RS、w/o TRACER-Core和DeepEyes+perception对照，见Table4b。",
+   "TRACER测试980=4×245；独立生成seed/layout/instance，真实图使用disjoint images或non-overlap regions；同抽象规则族并非完全不同分布。",
+   "Table11作者实例级paired McNemar；不等于多seed训练稳定性。"
+  ],
+  "negative_results": [
+   {
+    "text": "Belief-only overall29.6%仍低于Full33.3%，单一答案gain不足；evidence相关有波动。",
+    "quote": "but remains clearly weaker than the full CAVE, indicating that belief gain is an effective process\nsignal, yet is insufficient by itself to cover precursor evidence acquisition and visual-action focusing.",
+    "locator": "Sec.5.2 p.6 / Table2 p.7"
+   },
+   {
+    "text": "单独correct reward对BabyVision 11.3低于cold11.6，Full17.3；总性能和各子集非必然同向。",
+    "quote": "Correct Only uses the final-answer correctness reward; and the remaining variants remove belief\nupdate, evidence acquisition, or adaptive focus control, respectively.",
+    "locator": "Sec.5.3 p.7 / Table4a p.8"
+   },
+   {
+    "text": "距离/hop增加时各模型准确率总体下降，CAVE并未解决长程视觉困难。",
+    "quote": "as distance\nand the number of hops increase, the accuracy of all models generally decreases",
+    "locator": "Sec.5.4 p.9 / Fig.4c,d p.8"
+   }
+  ],
+  "seeds": null,
+  "seeds_notes": "训练random seed数/值未报告，不能擅写single。App.F Table11给测试实例二项normal-approx 95%CI及paired McNemar，Fig4b Wilson intervals；这些都不衡量训练种子方差。",
+  "statistics_reported": {
+   "Table11_TunnelVision": {
+    "n": 1350,
+    "cave": 31.3,
+    "base": 24.4,
+    "gap": 7.0,
+    "gap_ci95": [
+     3.6,
+     10.3
+    ],
+    "mcnemar_p": 5.4e-05
+   },
+   "Table11_BabyVision": {
+    "n": 388,
+    "cave": 17.3,
+    "base": 11.0,
+    "gap": 6.3,
+    "gap_ci95": [
+     1.4,
+     11.2
+    ],
+    "mcnemar_p": 0.0123
+   },
+   "Table11_TRACER": {
+    "n": 980,
+    "cave": 42.5,
+    "base": 34.0,
+    "gap": 8.5,
+    "gap_ci95": [
+     4.2,
+     12.7
+    ],
+    "mcnemar_p": 0.000118
+   },
+   "overall_arithmetic_check": "Reader check: (31.3*1350+17.3*388+42.5*980)/2718=33.34%, compatible with Table2 overall33.3 after rounding; not an unweighted category macro-average."
+  },
+  "falsifier": "读者提出，未执行：在相同GT/前向与训练预算下，打乱evidence文本或匹配边际分布的placeholder通道若复现Full提升，则证据语义不承重；固定真实/同尺寸错误crop比较若仍得到同gain，则不能归因为视觉证据使用；在直答够用题上调用增加且非劣失败，会否定其直接迁移为少裁图方法。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B; CAVE-3B uses 3B backbone",
+   "framework": "verl",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": 5,
+   "cold_start_samples": 10000,
+   "rl_samples": 5000,
+   "hardware": "single node 8 NVIDIA A800 80GB",
+   "precision": "mixed precision (dtype unreported)",
+   "gradient_checkpointing": true,
+   "entropy_top_k": 500,
+   "rho_min": 0.02,
+   "rho_max": 0.3,
+   "credit_weights": [
+    0.4,
+    0.3,
+    0.3
+   ],
+   "round_decay": 0.8,
+   "local_credit_clip": [
+    -1,
+    2
+   ]
+  },
+  "setup_notes": "KL曲线被监控，但系数/目标未报；G、LR、batch、rollout温度、精确更新数、PPO裁剪和loss reduction未报。图13–14横轴约0–80+不能当完整steps配置。max_turns=5 reasoning rounds而非5必然工具调用。",
+  "cost": "作者App.D.2：8×A80080GB，7B cold-start约10h，process RL约24h（含rollout、工具重观察、credit计算及GRPO）。读者按8卡全程占用推算80+192=272 GPU·h，非原文逐项实测GPU账本。Table5每样本：CAVE 1566 assistant tokens/2.51 rounds/2.03 calls/4.27s，cold1935/3.12/2.46/5.24s，DeepEyes1643/2.48/1.97/4.53s；工具图像与环境消息不计token。推理设备/并发与teacher-forcing独立开销未给，不能泛化4.27s。",
+  "pitfalls": [
+   {
+    "text": "teacher-forced gold只能在独立reward pass，不注入真实后续状态。",
+    "quote": "This scoring pass is only used for reward computation and does not\naffect rollout generation or later context states.",
+    "locator": "App.E p.22"
+   },
+   {
+    "text": "优化必须排除工具返回与环境注入信息，避免把观测当动作学习。",
+    "quote": "Optimization is applied only to the\nassistant-generated tokens; the observations returned by tools, system prompts, and environmentinjected information serve only as contextual conditions, with their response masks set to 0, and\ndo not participate in policy-gradient computation.",
+    "locator": "Sec.3.3 p.5"
+   },
+   {
+    "text": "作者拒绝直接用AI rationale构造证据，改从生成状态提取并人工核验；caption不能无审计当GT。",
+    "quote": "Instead, we derive perception units\nfrom the latent generation state of each scripted scenario, which allows us to control the evidence\ntype, difficulty, and dependency structure during data construction.",
+    "locator": "App.B.3 p.18"
+   },
+   {
+    "text": "奖励权重用训练来源独立validation选，避免测试集调参。",
+    "quote": "We select the reward weights using a small validation-based sweep on the\nvalidation split constructed from the training sources, without using any reported test benchmark for\nhyperparameter selection.",
+    "locator": "App.D.1 p.20"
+   }
+  ],
+  "code": null,
+  "lesson": "当答案gain遗漏前置证据时，可在有生成器真值和人工核验的证据集上分别测量belief/evidence进展；必须把teacher-forcing和环境token隔离，并区分局部分测量与轨迹优势的实际接收者。以这些分数定义的useful-zoom率只作内部诊断，迁移到少裁图须另测直接作答支撑、像素因果作用及完整成本。"
+ },
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "有具体可实现的视觉证据过程分；但需要perception标签且不能当逐次必要性金标。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "action-level打分后汇成trajectory advantage，未解决逐次tool段信用区分；有信息来源可迁移。",
+   "strength": 2
+  },
+  {
+   "problem": "P14",
+   "how": "ea/af非负、trajectory累积存在激励调用风险；作者不是fc式替换crop段优势，且DeepEyes1.97→2.03而非显著少调用。",
+   "strength": 2
+  },
+  {
+   "problem": "P17",
+   "how": "独立teacher-force金答案body减格式影响，但自然作答与条件似然仍不同，需校准。",
+   "strength": 2
+  },
+  {
+   "problem": "P18",
+   "how": "evidence gain尝试奖励未转为答案成功的前置证据；合理搜索未命中且gain0仍不可辨。",
+   "strength": 2
+  },
+  {
+   "problem": "P20",
+   "how": "给出assistant/environment mask边界，却没有caption/tool/answer分段advantage。",
+   "strength": 2
+  },
+  {
+   "problem": "P45",
+   "how": "报告实例级CI/McNemar及cold-start诊断，可借鉴；训练seed方差仍缺。",
+   "strength": 1
+  }
+ ],
+ "unknowns": [
+  "G/总rollout/学习率/batch/更新数/采样温度/ratio clip/KL系数",
+  "task-anchoring正确性/格式/round项的数值权重及与R_CAVE归一化的精确合成顺序",
+  "NormEntropy归一化公式、top-k重归一化、delta、std实现、crop area参照图",
+  "teacher-forcing scorer的checkpoint同步/stop-gradient实现、terminal-state及K=0处理、token loss reduction",
+  "训练seed数与值、原始paired预测、验证集大小及权重候选明细、推理计时硬件/并发"
+ ],
+ "source_ambiguities": [
+  {
+   "issue": "正式advantage仅写R_CAVE，实践还有task anchoring",
+   "detail": "Sec3.3最后称加正确性/格式/轮数约束，D1重复但无公式/权重/合成顺序；不可把优势公式宣称完整实现或自行补常见GRPO reward。",
+   "locators": [
+    "Sec.3.3 p.5",
+    "App.D.1 p.20"
+   ],
+   "status": "implementation_specification_gap"
+  },
+  {
+   "issue": "Fig4 evidence credit显示负值与非负ea定义",
+   "detail": "视觉检查Fig4a y轴Evidence Credit有负点，3.2.2的ea正部+正权衰减应非负；可能是作图归一化/其它量，但正文未说明，保留未解。Fig4a两个237=474轨迹，Fig4b每quantile93共744，样本选取关系亦未说明。",
+   "locators": [
+    "Sec.3.2.2 p.4",
+    "Fig.4a,b p.8"
+   ],
+   "status": "unresolved_plot_scale_and_cohort"
+  },
+  {
+   "issue": "证据文本与答案的独立性存在样例反例",
+   "detail": "App.B.3称避免直接复述最终答案，但Fig.8 p.16给出answer=6，perception亦直接给出C连接数字6。该字段用于reward而不输入rollout，因此不能据此称测试输入泄漏；却说明ea监督可能在部分任务退化为答案的文字改写，需对complementarity解释分层。",
+   "locators": [
+    "App.B.3 p.18",
+    "Fig.8 p.16"
+   ],
+   "status": "visual_example_vs_general_annotation_claim"
+  },
+  {
+   "issue": "useful zoom率是定义内诊断",
+   "detail": "Table5定义为观测后positive belief OR evidence gain，因此55.4不是人工独立金标、不等于必要调用率；cold-start相关性检查缓解reward后验证但不是因果检验。",
+   "locators": [
+    "Table5 p.9",
+    "Sec.5.4 p.8"
+   ],
+   "status": "measurement_boundary"
+  }
+ ],
+ "visual_verification": {
+  "pages": [
+   3,
+   4,
+   5,
+   7,
+   8,
+   9,
+   13,
+   14,
+   16,
+   17,
+   19,
+   20,
+   21,
+   22
+  ],
+  "scope": "关键公式与Alg1、Tables2–5/7/10/11、Fig2/4/5/6/7–14/15；图中字形噪音使用渲染核对。",
+  "artifacts": [
+   "readings/_evidence/2605.16416/page-03.png",
+   "readings/_evidence/2605.16416/page-04.png",
+   "readings/_evidence/2605.16416/page-05.png",
+   "readings/_evidence/2605.16416/page-07.png",
+   "readings/_evidence/2605.16416/page-08.png",
+   "readings/_evidence/2605.16416/page-09.png",
+   "readings/_evidence/2605.16416/page-13.png",
+   "readings/_evidence/2605.16416/page-14.png",
+   "readings/_evidence/2605.16416/page-16.png",
+   "readings/_evidence/2605.16416/page-17.png",
+   "readings/_evidence/2605.16416/page-19.png",
+   "readings/_evidence/2605.16416/page-20.png",
+   "readings/_evidence/2605.16416/page-21.png",
+   "readings/_evidence/2605.16416/page-22.png"
+  ]
+ },
+ "review_status": "independent_source_audit_complete",
+ "scientific_replication": false
+}

@@ -1,0 +1,519 @@
+{
+ "paper_key": "2510.12801",
+ "title": "DeepMMSearch-R1: Empowering Multimodal LLMs in Multimodal Web Search",
+ "source": "candidates",
+ "decision": "withdrawn",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.12801.pdf",
+  "version": "v1",
+  "version_evidence": "p.1 watermark arXiv:2510.12801v1 [cs.CV] 14 Oct 2025; manuscript date October 15, 2025. Local observed version; latest web version not checked.",
+  "sections_read": [
+   "Abstract and §1 Introduction pp.1–3",
+   "§2 Proposed Data pp.3–4; Figs.1–2",
+   "§3.1 SFT and §3.2 RL pp.5–6",
+   "§4.1 Experimental Setup pp.6–7",
+   "§4.2 Results and Analysis pp.7–9; Tables 1–2; Figs.3–5",
+   "§5 Conclusion p.9",
+   "Acknowledgment, Ethics and Reproducibility statements p.10",
+   "References pp.10–13",
+   "Appendix index p.14",
+   "App.A LLM usage and B.1–B.4 Related Works pp.15–16",
+   "App.C.1–C.7 Datasets pp.16–17",
+   "App.D Implementation Details pp.17–18",
+   "App.E.1–E.7 all prompts pp.18–22",
+   "App.F.1 p.22 and App.G samples pp.23–24"
+  ],
+  "fulltext_path": "2510.12801.txt",
+  "visual_inspection": [
+   "p.4 Fig.2 data pipeline and counts",
+   "p.5 SFT and GRPO unnumbered equations",
+   "p.6 reward, recipe and tool pipeline",
+   "p.7 Table 1",
+   "p.8 Figs.3–4",
+   "p.9 Fig.5 and Table 2",
+   "pp.17–18 App.D conflicting settings and tool constraints",
+   "p.21 reward/summarizer prompts",
+   "pp.22–24 Figs.F.1,G.1,G.2"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把知识密集视觉问答分解为对象识别与事实检索：模型生成指代表达交给 GroundingDINO 裁图检索，再根据检索摘要迭代改写文本查询；用含直答/搜索的教师轨迹冷启动，再做结果 RL。",
+  "key_step": "以问题相关实体的指代表达作为视觉搜索的中间接口，并在检索反馈后重新生成文本查询；SFT 保留 50:50 搜索/不搜索行为，检索文本仅作上下文、不作为预测监督。",
+  "why_non_obvious": "整图检索会被背景实体干扰；固定两次检索对简单题反而有害。裁图后返回的是网页文本摘要，不是新增高分辨率像素，因此与 caption+crop 的信息通道不同。",
+  "trigger_condition": "When external visual identification and factual retrieval require different queries and feedback, delegate localization to a grounding tool and iteratively refine text queries to obtain relevant evidence.",
+  "reviewer_praise": [
+   "历史 review xV7smTral1 肯定裁图工具和多轮自我修正的设计及数据到训练的工作量。",
+   "历史 review u2ozAUwUnH 肯定数据集、表达和消融分析。"
+  ],
+  "reviewer_concern": [
+   "历史 review xV7smTral1 质疑 GroundingDINO 定位和返回检索的验证缺失；mDYsDj6MS8 质疑噪声/空返回稳健性和奖励校准。",
+   "历史 review GcBHHqB4Wh 质疑 RL 较 SFT 仅增加 0.90 点却带来的成本，以及私有搜索 API 的复现性。",
+   "历史 review GcBHHqB4Wh 指出图像搜索只能一次、文本可多次的不对称限制，并要求明确 loss masking。"
+  ],
+  "acceptance_signal": "本地 manifest/reviews 元数据 decision=withdrawn，decision_raw=null，meta_reviews=[]；不能改写为 Reject 或接收。历史评审的提交 PDF 版本未记录，不假定与当前 v1 完全一致。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Delegate localization and information retrieval to different tools, then train a controller on balanced tool-use demonstrations.",
+  "abstract_key_step": "Generate a target description, retrieve focused evidence, and revise subsequent queries from returned feedback.",
+  "abstract_why_non_obvious": "Separate the artifact used to retrieve evidence from the evidence returned to the controller; preserve a no-tool behavior in the demonstration distribution.",
+  "abstract_trigger_condition": "When background information distracts retrieval and fixed calls add noise, condition queries on the task and learned feedback while retaining a direct-response option.",
+  "evidence": [
+   {
+    "quote": "GroundingDINO (Liu et al., 2024b) is then employed to ground this expression, yielding a bounding box that is cropped and used as input for retrieval.",
+    "locator": "§4.1 p.6"
+   },
+   {
+    "quote": "We further ensure that the dataset is evenly divided between search-required and search-free questions.",
+    "locator": "§2 p.4"
+   },
+   {
+    "quote": "the web-retrieved information from the search tools are masked during loss computation, ensuring that training is concentrated on reasoning and structured tool calls, rather than being influenced by raw web-retrieved information.",
+    "locator": "§3.1 p.5"
+   }
+  ]
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.12801#s1",
+   "object": "SFT trajectory construction and behavior distribution",
+   "information": "Gemini-2.5-Pro sees original image/question and live summarized search returns; curator additionally has InfoSeek GT for success filtering and taxonomy labels. Student receives demonstrations; no per-state counterfactual tool-necessity labels.",
+   "operation": "Generate structured multi-turn teacher conversations, retain GT-matching completed trajectories, sample 10k across knowledge categories with 50:50 search-required/search-free, and train masked LoRA causal LM.",
+   "output": "A tool-using cold-start Qwen2.5-VL-7B with direct-answer and query-refinement demonstrations.",
+   "claimed_effect": "Fig.3 right/§4.2 report 50:50 best average vs 70:30/30:70 and uniform-category better than random. Table1 SFT mean56.23 vs Qwen direct43.11; this broad comparison does not isolate balancing.",
+   "conditions": [
+    "InfoSeek initial 200k → about47k correct conversations →10k SFT",
+    "Teacher and web-tool access; only successful trajectories survive",
+    "50:50 balance is a dataset-level choice, not enforced per-prompt RL sampling"
+   ],
+   "evidence": {
+    "quote": "We further ensure that the dataset is evenly divided between search-required and search-free questions.",
+    "locator": "§2 p.4",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "Search-heavy mixture hurts low-search sets; search-light mixture hurts knowledge-intensive sets. Correct-only filtering does not establish abstention/recovery coverage; Fig.2 actual 1–6 assistant turns, overwhelmingly1–3.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2510.12801#s2",
+   "object": "Multimodal retrieval action and iterative text-query generation",
+   "information": "Controller sees original image/question and prior textual summaries, chooses whole-image search/referring expression/text query/answer. GroundingDINO receives expression and original image; search returns top5 webpage metadata summarized by a separate model. No human-verified ROI or necessity labels.",
+   "operation": "Ground a model-generated entity description, crop the localized region for image retrieval, and allow multiple revised text-search queries conditioned on returned information.",
+   "output": "Target-focused web evidence followed by a final answer; at most one visual search per rollout.",
+   "claimed_effect": "Fig.3 left reports +1.45 average from adding multi-turn text search, then +1.75 from adding cropped image search; SimpleVQA crop increment is −0.30. Not a claim that every crop is beneficial.",
+   "conditions": [
+    "Reliable external grounding and search APIs plus summarizer",
+    "Image/cropped-image search once; text search repeatable; total calls≤10",
+    "Question concerns a specific visual entity for cropped retrieval to help"
+   ],
+   "evidence": {
+    "quote": "GroundingDINO (Liu et al., 2024b) is then employed to ground this expression, yielding a bounding box that is cropped and used as input for retrieval.",
+    "locator": "§4.1 p.6",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "No matched crop-vs-whole counterfactual necessity study or API-failure robustness test reported. Visual search cannot be retried, and lost outside-crop context can matter. Returned evidence is text, not direct crop pixels.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2510.12801#s3",
+   "object": "Online tool policy initialized from SFT",
+   "information": "Policy-generated complete trajectories plus ground-truth final answer judged by an external model and output-format score. No per-crop correctness or per-turn usefulness supervision.",
+   "operation": "Sample eight trajectories per prompt, center composite correctness/format reward by group mean, optimize clipped token probability ratios with KL and mask input/tool-return tokens.",
+   "output": "Updated tool-selection and answer policy on FVQA, which is intentionally more image-search-heavy than SFT data.",
+   "claimed_effect": "Table1 average56.23→57.13 (+0.90pp), DynVQA43.08→45.87, A-OKVQA76.94→73.45. Fig.4/§4.2 reports cropped image search −36.81%/−34.86% on DynVQA/OKVQA while image+mixed search increases. These are author-reported associations, not causal proof of necessity or noninferiority.",
+   "conditions": [
+    "Cold-start tool behavior already present",
+    "Eight samples and external answer matching; format coefficient0.1,KL0.001",
+    "SFT→RL also changes training corpus to FVQA"
+   ],
+   "evidence": {
+    "quote": "The model drastically reduces its reliance on cropped image searches (−36.81% on DynVQA and −34.86% on OK-VQA), yet still achieves overall performance gains.",
+    "locator": "§4.2 p.8; Fig.4",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "Recipe inconsistent between main and appendix; no std in printed advantage, code uninspected. Crop reduction does not mean total-search reduction; no seeds/CI or necessity gold.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "MMSearch-R1-7B (same search APIs)",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B/32B direct answer, two-call RAG, prompted agent",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL2.5-8B/InternVL3-8B direct answer",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o and o3 direct answer/RAG",
+   "kind": "method"
+  },
+  {
+   "name": "InfoSeek; Encyclopedic-VQA; SimpleVQA; DynVQA; OKVQA; A-OKVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "GPT-5 semantic answer judgment",
+   "kind": "metric"
+  },
+  {
+   "name": "FVQA (Wu et al.2025 search dataset; not assumed older same-name dataset)",
+   "kind": "dataset"
+  }
+ ],
+ "limitations": [
+  {
+   "quote": "Retrieved content may include biased, outdated, or misleading information, and automatic summarization can amplify misinformation or raise copyright concerns.",
+   "locator": "Ethics Statement p.10",
+   "text": "作者指出外部检索与摘要可能传播误导信息。"
+  },
+  {
+   "quote": "Moreover, the approach depends on external infrastructure, which may limit accessibility for resource-constrained institutions.",
+   "locator": "Ethics Statement p.10",
+   "text": "作者承认外部基础设施限制访问；本文使用 in-house APIs。"
+  },
+  {
+   "quote": "The image search/cropped image search tool can be called once while the text-search tool can be called multiple times, with total tool calls restricted to 10 per rollout.",
+   "locator": "App.D pp.17–18",
+   "text": "协议限制视觉检索至多一次；只能多次重试文本检索。"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table1 Qwen2.5-VL-7B 在固定两次检索 RAG 下平均36.00，低于直答43.11；OKVQA63.10→34.64、A-OKVQA82.79→32.58。Fig.3 仅加多轮/再加裁图平均分别+1.45/+1.75；前者是已报告失败数值，后者是消融增益。",
+  "load_bearing_assumption": "整图与固定调用次数足以获取问题相关证据；额外检索天然有益。本文展示背景噪声和过度检索可破坏这些假设。",
+  "scope": "Qwen2.5-VL-7B在知识密集视觉问答中选择直答、一次整图或裁图检索、可重复文本检索。",
+  "success_criterion": "提高六个知识问答 benchmark 的模型判定正确率并呈现数据集适应的工具行为；论文未预设成本约束或准确率非劣界。",
+  "why_open": "MMSearch-R1 每种工具只能一次、整图检索无问题相关裁图；未训练提示 agent 对 noisy web 返回处理不足。",
+  "evidence": [
+   {
+    "quote": "On datasets such as OK-VQA and A-OKVQA, we observe a substantial drop in RAG workflow performance compared to direct answering.",
+    "locator": "§4.2 p.7; Table 1"
+   },
+   {
+    "quote": "when the percentage of search-required questions is high, the finetuned model exhibits excessive search behavior and performs poorly on OKVQA and A-OKVQA, which require fewer search calls.",
+    "locator": "§4.2 p.8; Fig.3 right"
+   },
+   {
+    "quote": "The image search/cropped image search tool can be called once while the text-search tool can be called multiple times, with total tool calls restricted to 10 per rollout.",
+    "locator": "App.D pp.17–18"
+   }
+  ]
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "quote": "In the first stage, we perform supervised finetuning as a cold-start initialization. This equips the model with grounding, image search and text search tools, and enables it to reason over the web-retrieved content.",
+   "locator": "§3 p.5",
+   "vocab": "M",
+   "id": "M11"
+  },
+  {
+   "quote": "Firstly, we perform ablations with different ratios of search-required and search-free examples in the SFT data to study their impact on performance.",
+   "locator": "§4.2 p.8",
+   "vocab": "M",
+   "id": "M09"
+  },
+  {
+   "quote": "GroundingDINO (Liu et al., 2024b) is then employed to ground this expression, yielding a bounding box that is cropped and used as input for retrieval.",
+   "locator": "§4.1 p.6",
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "role": "primary"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L_{\\rm SFT}=-\\sum_{t=1}^{T}\\log\\pi_\\theta(y_t^*\\mid x,I,y_{<t}^*)",
+    "locator": "§3.1 p.5, unnumbered display; masking specified in prose but omitted from displayed formula"
+   },
+   {
+    "latex": "A^{(i)}=R^{(i)}-\\bar R",
+    "locator": "§3.2 p.5, unnumbered inline equation; no std shown"
+   },
+   {
+    "latex": "\\mathcal L_{\\rm GRPO}=\\mathbb E_{i,t}[\\min(\\rho_t^{(i)}A^{(i)},\\operatorname{clip}(\\rho_t^{(i)},1-\\epsilon,1+\\epsilon)A^{(i)})]-\\beta\\,\\mathrm{KL}(\\pi_\\theta\\Vert\\pi_{\\rm ref})",
+    "locator": "§3.2 p.5, unnumbered display; reproduced as printed, maximization-style surrogate despite L notation"
+   },
+   {
+    "latex": "R_{\\rm total}=(1-\\lambda_{\\rm fmt})s+\\lambda_{\\rm fmt}s_{\\rm fmt},\\quad s\\in\\{0,1\\},\\quad\\lambda_{\\rm fmt}=0.1",
+    "locator": "§3.2 reward p.6; §4.1 coefficient p.6"
+   }
+  ],
+  "signal_routing": "SFT CE covers generated reason, tool tags/query and final answer; retrieved information is masked. RL broadcasts one trajectory advantage to generated-token ratios; input/tool-return tokens masked per App.D. No action-specific crop credit, token-category routing, necessity gate or explicit crop charge. Exact aggregation denominator/implementation mask not specified by E_i,t; do not infer PPO epochs, reuse or clipping activity.",
+  "normalization": "mean-only",
+  "normalization_caveat": "Printed A=R−Rbar, not standard-deviation-normalized. Treat as paper formula, not verified veRL configuration; actual code unavailable/uninspected.",
+  "invariance": "Analytic reading: subtracting group mean removes common reward offsets but not reward scale (the prose scale-independence claim is too broad). No potential shaping/invariance theorem. Nonzero format reward and KL alter objective; finite self-inclusive mean scales on-policy score expectation by (K−1)/K under standard independent-sample fixed-weight assumptions, not necessarily token-weighted implementation.",
+  "baseline_or_potential": "Self-inclusive empirical mean of same-prompt sampled total rewards; no critic or state-value potential. Frozen reference policy for KL; separate answer judge with unresolved GPT-5/GPT-4o identity.",
+  "degenerate_cases": "Analytic consequences, not measured: if all total rewards equal (all-correct/all-wrong with equal format score), centered advantage=0 while KL may still update. Format variation can make otherwise all-correct/all-wrong groups nonzero. K=1 gives zero centered advantage. A single-turn trajectory reduces to ordinary centered sequence-outcome RL. At p(action)≈0/1 natural sampling may lack alternatives; dataset balancing is not forced RL support and no guarantee is given.",
+  "evidence": [
+   {
+    "quote": "the web-retrieved information from the search tools are masked during loss computation, ensuring that training is concentrated on reasoning and structured tool calls, rather than being influenced by raw web-retrieved information.",
+    "locator": "§3.1 p.5"
+   },
+   {
+    "quote": "We again mask the input tokens to ensure that optimization focuses only on the generated outputs.",
+    "locator": "App.D p.18"
+   },
+   {
+    "quote": "We employ gpt-5-chat-latest as the reward model which judges semantic correctness of the predictions against the ground truth.",
+    "locator": "§3.2 p.6"
+   },
+   {
+    "quote": "The reward model is GPT-4o, which evaluates generated responses and provides feedback for optimization,",
+    "locator": "App.D p.17; App.E.6 p.21 heading also says GPT-4o"
+   }
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig.3 left sequentially enables multi-turn text search then cropped image search; right changes search/free data ratio70:30,50:50,30:70 and uniform vs random category sampling. These test components/mixture, but not matched compute or per-call causal usefulness. SFT→RL changes data distribution and optimization together.",
+  "controls": [
+   "Table1 compares same base Qwen7B with direct answer/two-step RAG/prompted agent and SFT/RL; MMSearch-R1 evaluated using same APIs but its own trained prompt.",
+   "Fig.3 SFT base: whole-image search and one text call; add multi-turn then cropped image.",
+   "Fig.3 search-required/free ratios and taxonomy sampling; Table2 compares seven general VQA scores to base.",
+   "Not reported: no-RL additional-SFT on FVQA matched data/compute; reward-judge human calibration; empty/noisy tool stress tests; necessity counterfactual; multiple seeds or noninferiority test."
+  ],
+  "negative_results": [
+   {
+    "quote": "when the percentage of search-required questions is high, the finetuned model exhibits excessive search behavior and performs poorly on OKVQA and A-OKVQA, which require fewer search calls.",
+    "locator": "§4.2 p.8; Fig.3 right",
+    "text": "搜索比例过高损害低需求数据。"
+   },
+   {
+    "quote": "when the proportion of search-\nrequired questions in the SFT data is reduced, the model shows a performance drop on datasets with more challenging information-seeking questions, such as InfoSeek, Enc-VQA, DynVQA, and SimpleVQA.",
+    "locator": "§4.2 p.8; Fig.3 right",
+    "text": "搜索比例过低损害较难知识检索数据。"
+   },
+   {
+    "quote": "On datasets such as OK-VQA and A-OKVQA, we observe a substantial drop in RAG workflow performance compared to direct answering.",
+    "locator": "§4.2 p.7; Table 1",
+    "text": "固定两次检索明显损害 OKVQA/A-OKVQA。"
+   },
+   {
+    "quote": "DeepMMSearch-R1-7B (SFT)          56.23       47.45      50.35         52.02        43.08       67.52        76.94",
+    "locator": "Table1 p.7 SFT row; compare RL row",
+    "text": "Table1 A-OKVQA SFT76.94→RL73.45，−3.49pp；平均+0.90不能证明各集合非劣。",
+    "evidence": {
+     "quote": "DeepMMSearch-R1-7B (RL)           57.13       47.51      52.25         55.87        45.87       67.80        73.45",
+     "locator": "Table1 p.7 RL row"
+    }
+   }
+  ],
+  "seeds": null,
+  "seed_note": "未报告种子数、seed IDs、误差条或置信区间；不能擅称single。",
+  "falsifier": "迁移判别建议，未执行：同一数据/预算/起点下对照平衡SFT与额外训练；若裁图下降仅由改用整图检索导致且必要裁图题受损，则“只去冗余”的解释失败；若RL收益被同数据继续SFT解释，则不能归因结果RL。",
+  "evidence": [
+   {
+    "quote": "We further ensure that the dataset is evenly divided between search-required and search-free questions.",
+    "locator": "§2 p.4"
+   },
+   {
+    "quote": "This choice encourages more frequent image search tool calls, which is essential for achieving better performance in multimodal information-seeking VQA.",
+    "locator": "§4.1 p.6, choice of FVQA for RL"
+   },
+   {
+    "quote": "The SFT base model refers to the setup with whole-image search and a single text search call.",
+    "locator": "§4.2 p.7; Fig.3"
+   }
+  ]
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct; SFT LoRA r8, vision encoder/projector frozen",
+   "framework": "LLaMA-Factory (SFT); veRL (RL)",
+   "group_size": 8,
+   "rollouts": 8,
+   "steps": null,
+   "kl": 0.001,
+   "temperature": null,
+   "max_turns": null,
+   "max_tool_calls": 10,
+   "max_image_search_calls": 1,
+   "max_response_tokens": 8192,
+   "clip_ratio": 0.2,
+   "format_weight": 0.1,
+   "rl_epochs": null,
+   "rl_batch_size": null,
+   "reward_model": null,
+   "sft_epochs": 3,
+   "sft_batch_size": 8,
+   "sft_lr": 0.0001,
+   "rl_initial_lr": 2e-06,
+   "rl_warmup_steps": 45
+  },
+  "cost": "SFT 8H100、3 epochs；RL32H100，epochs及batch正文/附录冲突。生成200k教师对话约47k答对再筛10k。实际总训练token、优化更新数、walltime、GPU·h、API成本和rollout延迟未报告。",
+  "pitfalls": [
+   {
+    "quote": "the web-retrieved information from the search tools are masked during loss computation, ensuring that training is concentrated on reasoning and structured tool calls, rather than being influenced by raw web-retrieved information.",
+    "locator": "§3.1 p.5",
+    "text": "混入检索返回时只监督模型生成部分，防止直接学习原始网页返回。"
+   },
+   {
+    "quote": "This step is essential for keeping the retrieved content concise in order to avoid exceeding the model’s maximum context length.",
+    "locator": "§4.1 p.6",
+    "text": "Top5 检索结果用 GPT-5 压缩，避免上下文溢出；摘要自身有成本与噪声。"
+   }
+  ],
+  "code": null,
+  "lesson": "当教师轨迹过多需要搜索时，SFT会过度搜索；应先对齐直答/工具行为覆盖与测评需求，再将RL后的工具频率变化和准确率逐集合报告。",
+  "reported_conflicts": [
+   {
+    "field": "RL reward model",
+    "main": {
+     "quote": "We employ gpt-5-chat-latest as the reward model which judges semantic correctness of the predictions against the ground truth.",
+     "locator": "§3.2 p.6"
+    },
+    "appendix": {
+     "quote": "The reward model is GPT-4o, which evaluates generated responses and provides feedback for optimization,",
+     "locator": "App.D p.17; App.E.6 p.21 heading also says GPT-4o"
+    },
+    "resolution": null
+   },
+   {
+    "field": "RL epochs and batch size",
+    "main": {
+     "quote": "Training runs for 30 epochs on 4 nodes × 8H100 GPUs with a batch size of 512, and rollout number of 8.",
+     "locator": "§4.1 p.6"
+    },
+    "appendix": {
+     "quote": "Training is performed for 20 epochs on 4 nodes each with 8 Nvidia H100 GPUs. We use a batch size of 256 with a mini-batch size of 64, and set the rollout number to 8 per iteration.",
+     "locator": "App.D p.17"
+    },
+    "resolution": null
+   },
+   {
+    "field": "Search backend description",
+    "text": "§4.1称in-house image API，App.E.7的摘要模板提到Google Lens；模板措辞不能确认实际后端或公开可复现替代。",
+    "evidence": {
+     "quote": "Google Lens search, concisely describe the primary visual content",
+     "locator": "App.E.7 p.21"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "quote": "The image search/cropped image search tool can be called once while the text-search tool can be called multiple times, with total tool calls restricted to 10 per rollout.",
+    "locator": "App.D pp.17–18"
+   },
+   {
+    "quote": "Training runs for 30 epochs on 4 nodes × 8H100 GPUs with a batch size of 512, and rollout number of 8.",
+    "locator": "§4.1 p.6"
+   },
+   {
+    "quote": "Training is performed for 20 epochs on 4 nodes each with 8 Nvidia H100 GPUs. We use a batch size of 256 with a mini-batch size of 64, and set the rollout number to 8 per iteration.",
+    "locator": "App.D p.17"
+   }
+  ]
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "先用含直答、图搜和迭代文本搜的轨迹SFT再RL，支持先覆盖行为再优化；不能保证未示范的recover/弃答出现。",
+   "strength": 2
+  },
+  {
+   "problem": "P26",
+   "how": "搜索/不搜索数据50:50消融表明行为先验重要；无逐题必要性标签。",
+   "strength": 2
+  },
+  {
+   "problem": "P02",
+   "how": "RL裁图频率下降但图像/混合搜索上升，是工具替代而非证明只用结果奖励可解决我们裁图膨胀。",
+   "strength": 1
+  },
+  {
+   "problem": "P11",
+   "how": "只有轨迹结果和格式奖励、无逐次必要性信用；不直接解决细粒度分配。",
+   "strength": 1
+  },
+  {
+   "problem": "P38",
+   "how": "教师多轮查询修正示范可用于行为库构造，本文没有轨迹拼接。",
+   "strength": 2
+  },
+  {
+   "problem": "P61",
+   "how": "SFT→RL A-OKVQA下降3.49pp，平均提升掩盖低需求子集退化。",
+   "strength": 2
+  },
+  {
+   "problem": "P65",
+   "how": "显式选择更偏图搜的FVQA进行RL；说明数据分布会改变工具使用，需与算法效应分离。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": {
+  "locator": "2510.12801.json"
+ },
+ "reviews_evidence": [
+  {
+   "note_id": "xV7smTral1",
+   "quote": "The authors have done extensive work from data curation to the two-stage training method.",
+   "locator": "OpenReview hyyxMD3JZX note xV7smTral1, content.strengths (historical local review JSON)",
+   "interpretation": "praise: data-to-training work"
+  },
+  {
+   "note_id": "u2ozAUwUnH",
+   "quote": "The ablation studies and experimental analyses are thorough and informative.",
+   "locator": "OpenReview hyyxMD3JZX note u2ozAUwUnH, content.strengths (historical local review JSON)",
+   "interpretation": "praise: analysis"
+  },
+  {
+   "note_id": "xV7smTral1",
+   "quote": "First, the method fails to verify whether GroundingDINO accurately locates the target object.",
+   "locator": "OpenReview hyyxMD3JZX note xV7smTral1, content.weaknesses (historical local review JSON)",
+   "interpretation": "concern: grounding validation"
+  },
+  {
+   "note_id": "mDYsDj6MS8",
+   "quote": "the work does not quantify how often image/text search tools fail or return noisy results, and provides no robustness evaluation against adversarial or empty tool responses.",
+   "locator": "OpenReview hyyxMD3JZX note mDYsDj6MS8, content.weaknesses (historical local review JSON)",
+   "interpretation": "concern: robustness"
+  },
+  {
+   "note_id": "mDYsDj6MS8",
+   "quote": "introducing reward-hacking risk without calibration or human-validation analysis",
+   "locator": "OpenReview hyyxMD3JZX note mDYsDj6MS8, content.weaknesses (historical local review JSON)",
+   "interpretation": "concern: reward calibration"
+  },
+  {
+   "note_id": "GcBHHqB4Wh",
+   "quote": "The marginal gain from RL over SFT (56.23 → 57.13, less than 1%) raises questions about whether the computational cost of RL training is justified.",
+   "locator": "OpenReview hyyxMD3JZX note GcBHHqB4Wh, content.weaknesses (historical local review JSON)",
+   "interpretation": "concern: RL value relative to cost; reviewer wording percent preserved"
+  },
+  {
+   "note_id": "GcBHHqB4Wh",
+   "quote": "The paper relies on an \"in-house\" image search API and web search API without describing their characteristics or providing alternatives.",
+   "locator": "OpenReview hyyxMD3JZX note GcBHHqB4Wh, content.weaknesses (historical local review JSON)",
+   "interpretation": "concern: private API reproducibility"
+  },
+  {
+   "note_id": "GcBHHqB4Wh",
+   "quote": "Image search is restricted to a single use while text search allows multiple iterations.",
+   "locator": "OpenReview hyyxMD3JZX note GcBHHqB4Wh, content.weaknesses (historical local review JSON)",
+   "interpretation": "concern: asymmetric tool constraints"
+  },
+  {
+   "note_id": "GcBHHqB4Wh",
+   "quote": "Training objective should include precise annotation for the loss masking",
+   "locator": "OpenReview hyyxMD3JZX note GcBHHqB4Wh, content.weaknesses (historical local review JSON)",
+   "interpretation": "concern: notation"
+  },
+  {
+   "note_id": "xV7smTral1",
+   "quote": "The idea of using grounding tools to crop the relevant image part is novel and reasonable. The design of multi-turn and self-refining is also reasonable, especially in the search field.",
+   "locator": "OpenReview hyyxMD3JZX note xV7smTral1, content.strengths (historical local review JSON)",
+   "interpretation": "Reviewer praise; not reader novelty judgment."
+  }
+ ]
+}

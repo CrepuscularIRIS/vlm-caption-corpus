@@ -1,0 +1,470 @@
+{
+ "paper_key": "2605.15198",
+ "title": "ATLAS: Agentic or Latent Visual Reasoning? One Word is Enough for Both",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.15198.pdf",
+  "version": "v1",
+  "version_evidence": "p.1 margin: arXiv:2605.15198v1 [cs.CV] 14 May 2026; local pinned version only, latest remote version not checked.",
+  "pages": 18,
+  "sections_read": [
+   "pp.1–3 Abstract, §1 Introduction, Figure1",
+   "pp.3–5 §2/§2.1 Model Architecture, Figure2, Table1",
+   "pp.5–6 §2.2 Two-stage Training Recipe",
+   "pp.6–8 §2.3 LA-GRPO, Figure3, Table2",
+   "pp.8–9 §3.1 Implementation Details",
+   "pp.9–10 §3.2 Quantitative Analysis, Table3",
+   "pp.10–13 §3.3 Qualitative Analysis, Figures4–7",
+   "p.12 §3.4 Efficiency Analysis, Table4",
+   "pp.13–14 §3.5 Ablation, Table5",
+   "p.14 §4 Related Work",
+   "p.15 §5 Conclusion",
+   "pp.16–18 References"
+  ],
+  "appendix_status": "No appendix in this 18-page local v1 PDF.",
+  "visual_pages": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   11,
+   12,
+   13,
+   14
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把五类视觉操作压成词表中的离散功能 token，SFT 学习其上下文用法；RL 保留全序列结果目标，额外按功能 token 数归一化同一优势的 clipped surrogate。",
+  "key_step": "在采样轨迹里定位功能 token，复用整条轨迹的优势，仅在这些位置增加 α 加权辅助项；没有再运行图像操作或提供局部视觉监督。",
+  "why_non_obvious": "功能 token 只占生成序列约2.3%，普通序列目标的监督可能被其他 token 稀释；操作表征必须同时保持标准自回归训练，而非新增循环隐状态。该动机是作者解释，未展示梯度范数实测。",
+  "trigger_condition": "When sparse operation symbols are diluted by long ordinary outputs, apply a separately normalized same-advantage surrogate on the operation positions to strengthen their updates while retaining the original sequence objective.",
+  "reviewer_praise": [
+   "low_evidence: manifest 无 reviews_path，本次没有独立 OpenReview 审稿来源。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 无审稿；本记录的证据限制不是 reviewer 意见。"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null、venue=arXiv；作者报告结果不能充当接收或审稿信号。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Replace verbose external operations with a compact symbolic vocabulary and strengthen learning on its sparse occurrences.",
+  "abstract_key_step": "Reuse each sampled output advantage in a clipped auxiliary loss averaged only over selected symbol positions.",
+  "abstract_why_non_obvious": "Recognize that a rare symbol can control a useful intermediate operation yet receive little relative weight in a long output objective.",
+  "abstract_trigger_condition": "When rare operation symbols share an objective with abundant descriptive symbols, preserve the global objective and add a separately normalized auxiliary update on the rare positions."
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.15198#s1",
+   "object": "Qwen2.5-VL 词表及标准自回归推理序列",
+   "information": "输入图像已有编码、题目、生成前缀和五种功能 token 的可学习表示；看不到外部工具输出、新裁图像素、图像构造中间状态或动作必要性真值。",
+   "operation": "扩展词表加入 Manip/Shape/Line/Arrow/Text 五个 token；像普通词一样预测并把它们保留在后续上下文内，代替代码与外部视觉操作的表述。",
+   "output": "文字与离散功能 token 交替的序列，不生成或监督中间图像。",
+   "claimed_effect": "Table4 BLINK-Jigsaw 报告相对 V-Thinker 总生成token 489.57→99.85、latency18.83s→3.80s、peak memory2.55→1.43GB、accuracy42.0→57.7；该ATLAS版本未明确，57.7与Table3 GRPO Jigsaw相符，不应标成LA-GRPO效率。",
+   "conditions": [
+    "原输入已含可用视觉信息",
+    "功能token经178K语料SFT冷启动",
+    "仅验证Qwen2.5-VL-7B",
+    "五类操作语义靠上下文学习，非真实执行端点"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.4 §2.1",
+    "quote": "When a functional token yt ∈ Vf unc is predicted, it is treated as an ordinary sequence token while serving\nas an internal reasoning unit that specifies the type of visual operation needed at the current step."
+   },
+   "failure_boundary": "不能凭token补回输入分辨率丢失的信息；不提供真实crop坐标、端点、像素返回或工具状态更新机制。imagined images仅图示，注意力可视化不是操作因果实现证据。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.15198#s2",
+   "object": "操作式SFT轨迹和基础感知保留数据",
+   "information": "V-Interaction-400K preview原代码/题目/图像、代码操作类别、Gemini-2.5-Pro润色、V-Perception-40K；无必要性反事实标签或当前策略的分支价值。",
+   "operation": "从代码中抽操作映射为五类token，筛138K、插过渡模板、由Gemini润色且保留语义与token顺序，再混40K无功能token感知样本，以全token CE训练。",
+   "output": "ATLAS-178K的功能token轨迹和无功能token感知示范。",
+   "claimed_effect": "Table3 SFT BLINK22.8→46.0、V*70.2→77.5；WeMath36.2→28.9下降，不能称全域无遗忘。",
+   "conditions": [
+    "可用公开preview代码轨迹",
+    "138K筛选质量标准未详细给出",
+    "润色模型和模板操作顺序正确",
+    "需改变词表并SFT，非单纯RL损失补丁"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.6 §2.2 Stage1",
+    "quote": "Since directly\n     templated trajectories can be overly rigid, we further use Gemini-2.5-Pro Team et al. (2024) to polish\n     them into more natural reasoning text while preserving the original semantics and functional-token\n     order."
+   },
+   "failure_boundary": "40K感知混入并未独立消融；无直接答/补看最优标签，无弃答或纠错覆盖统计。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.15198#s3",
+   "object": "RL中的稀疏功能token位置损失",
+   "information": "同题采样序列、最终奖励、功能token索引和旧策略token概率；没有裁前/后价值差、真实区域证据、冻结读者necessity标签。",
+   "operation": "对每个功能token用同一rollout优势计算PPO clipped surrogate，除以功能token位置数，以静态α加到不变的原GRPO项上。",
+   "output": "全序列目标加稀疏位置结果优势锚定目标；不是分离的效率优势。",
+   "claimed_effect": "Table3相对GRPO WeMath40.3→45.0、BLINK50.5→51.3、M-view43.6→53.4；V*77.9→75.4、Jigsaw57.7→51.3、Spatial70.6→62.9下降。",
+   "conditions": [
+    "采样轨迹已有功能token",
+    "存在非零组内优势",
+    "α、clip阈值、奖励配重未报告",
+    "需明确定义空功能token集合和跨轨迹聚合，论文未给"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.7 §2.3",
+    "quote": "This auxiliary\nterm reuses the rollout advantage from GRPO, but concentrates the update on functional tokens such as\n<|Line|>, <|Shape|>, and <|Text|>."
+   },
+   "failure_boundary": "没有逐次必要性信号；采不到的行为不会由该辅助项直接恢复；增强原结果信用可能增强冗余操作；无最优策略不变保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "ATLAS SFT",
+   "kind": "method"
+  },
+  {
+   "name": "ATLAS GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "V-Thinker",
+   "kind": "method"
+  },
+  {
+   "name": "Visual CoT",
+   "kind": "method"
+  },
+  {
+   "name": "VTS-V",
+   "kind": "method"
+  },
+  {
+   "name": "LVR",
+   "kind": "method"
+  },
+  {
+   "name": "MCOT",
+   "kind": "method"
+  },
+  {
+   "name": "CoVT",
+   "kind": "method"
+  },
+  {
+   "name": "Monet",
+   "kind": "method"
+  },
+  {
+   "name": "Bagel",
+   "kind": "method"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "WeMath",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK-Jigsaw",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "五类功能词表非穷尽，仅作为模板；可扩展并非已验证扩展。",
+   "locator": "p.4 §2.1",
+   "quote": "This taxonomy is not intended to be exhaustive. Rather, it provides a simple and\neffective template for internalizing visual operations as discrete tokens."
+  },
+  {
+   "text": "LA-GRPO并非所有指标最好，普通GRPO仍在V*、Jigsaw、Spatial领先。",
+   "locator": "p.10 §3.2",
+   "quote": "Although standard GRPO performs better on a few metrics such\nas V*, Jigsaw, and Spatial Relation, LA-GRPO gives a more balanced result across the benchmark."
+  }
+ ],
+ "question": {
+  "observed_failure": "§2.3平均203.7生成token中功能token4.8个（2.3%）；作者将其解释为gradient dilution。Table5去spam惩罚BLINK51.3→47.0并报告最高18.7功能token/序列。2.3%是频率观测，不是已测梯度比率。",
+  "load_bearing_assumption": "视觉中间操作必须依赖像素/外部代码/连续循环隐状态，以及普通序列目标足以稳定学习稀少操作token。",
+  "scope": "Qwen2.5-VL-7B上五类功能token、178K SFT及结果驱动RL，三个视觉推理benchmark。",
+  "success_criterion": "比较SFT、GRPO、LA-GRPO的准确率并在BLINK-Jigsaw报告生成token、延迟与内存；无预注册准确率非劣界或实际crop数目标。",
+  "why_open": "外部执行有上下文切换，连续latent会破坏并行训练；已有普通GRPO将同一结果优势传播到所有token，稀疏操作相对权重不足。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M01",
+   "locator": "p.4 §2.1",
+   "quote": "We intentionally keep Vf unc compact to avoid excessive perturba-\ntion to the original token distribution of the base model."
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "p.5 §2.2",
+   "quote": "This provide a cold start for functional-token invocation and\nimproved interleaved visual reasoning."
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "p.12 §3.4",
+   "quote": "ATLAS reduces the average latency from 18.83s\nto 3.80s and lowers peak memory usage from 2.55GB to 1.43GB, while maintaining competitive accuracy."
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "p.13 §3.5",
+   "quote": "We ablate the format reward (rfmt ), length penalty (plen ), and token spam penalty (pspam ) to verify the\nnecessity of each reward constraint."
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "role": "primary",
+   "locator": "p.3 §1",
+   "quote": "ATLAS provides a compact and efficient interface that internalizes complex\ncode generation, tool calling, and external execution into a single token."
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "locator": "p.7 §2.3",
+   "quote": "Concretely, for each sampled rollout, we identify the positions where functional\ntokens appear and apply an additional token-level auxiliary objective only to these positions."
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal V=\\mathcal V_{text}\\cup\\mathcal V_{spec}\\cup\\mathcal V_{func}",
+    "locator": "p.4 §2.1 unnumbered vocabulary equation"
+   },
+   {
+    "latex": "\\mathcal L_{func}=-\\sum_{y_t\\in\\mathcal V_{func}}\\log p_\\theta(y_t\\mid x,y_{<t})",
+    "locator": "p.5 §2.1 unnumbered CE equation; §2.2 SFT trains all tokens"
+   },
+   {
+    "latex": "r(o)=\\lambda_{acc}r_{acc}+\\lambda_{func}r_{func}+\\lambda_{fmt}r_{fmt}-\\lambda_{len}p_{len}-\\lambda_{spam}p_{spam}",
+    "locator": "p.6 §2.2 unnumbered reward equation"
+   },
+   {
+    "latex": "\\mathcal L_{GRPO}(\\theta)=-\\frac1G\\sum_{i=1}^G\\left(\\frac{\\pi_\\theta(o_i\\mid q)}{\\pi_{ref}(o_i\\mid q)}\\right)^\\beta\\hat A_i-\\beta D_{KL}(\\pi_\\theta\\Vert\\pi_{ref})",
+    "locator": "p.6 §2.2 unnumbered GRPO equation, as printed; NOT silently corrected",
+    "source_caveat": "PDF visually confirms π_ref denominator, β exponent and negative KL sign despite naming it loss. These differ from usual clipped GRPO; actual implementation unknown."
+   },
+   {
+    "latex": "\\mathcal M_{func}(o_i)=\\{t\\mid y_t\\in\\mathcal V_{func}\\}",
+    "locator": "p.7 §2.3 unnumbered mask equation"
+   },
+   {
+    "latex": "\\mathcal L_{token}^{(t)}=-\\min(\\rho_{i,t}\\hat A_i,\\operatorname{clip}(\\rho_{i,t},1-\\epsilon,1+\\epsilon)\\hat A_i),\\quad\\rho_{i,t}=\\frac{\\pi_\\theta(y_t\\mid q,y_{<t})}{\\pi_{\\theta_{old}}(y_t\\mid q,y_{<t})}",
+    "locator": "p.7 §2.3 unnumbered auxiliary clipped surrogate"
+   },
+   {
+    "latex": "\\mathcal L_{LA-GRPO}=\\mathcal L_{GRPO}+\\alpha\\frac1{|\\mathcal M_{func}|}\\sum_{t\\in\\mathcal M_{func}}\\mathcal L_{token}^{(t)}",
+    "locator": "p.8 §2.3 unnumbered final objective"
+   }
+  ],
+  "signal_routing": "SFT全序列CE（p.5式只展示功能token子项）；RL基础序列结果优势传播全生成token，再将同一A_i只额外施加到已采样功能token位置，正/负优势均参与。非函数token没有直接辅助项但共享参数可受间接影响；不是局部视觉奖励、不是crop前后价值，也不是仅答对子集效率通道。图像encoder冻结，projector/aligner与LM更新。",
+  "normalization": "other: 辅助项显式除|M_func|，静态α；基础优势只说由组奖励得到，未给减均值/除std/ε公式，不能确认mean+std。跨rollout/batch合并与|M|=0处理未知。",
+  "invariance": "保持的是标准自回归数据流和基础GRPO加项的形式，不是总体目标或最优策略不变。复合使用/格式/长度/spam奖励与token选择性加权都可改变学习目标；没有PBRS、无状态势函数或策略不变性定理。",
+  "baseline_or_potential": "无critic/势函数。仅说明A_i来自同题组奖励；π_ref见基础式，π_old见辅助ratio。未给baseline估计/冻结更新时序，不能据常规GRPO填补。",
+  "degenerate_cases": "[redacted: project-internal]",
+  "gradient_analysis": "对p.7辅助式在ratio=1且未clip、|M|>0、A固定条件下，读者推导∇L_aux=−α/|M| Σ_t A_i∇logπ(y_t|h_t)。改变相对梯度权重而非赋予新反事实信用；没有报告实际梯度范数或影响函数。不能从2.3%推出确切增强倍数，因为基础loss token归一化未披露。",
+  "endpoint_mechanism": "功能token本身是下一token预测端点；未提供bbox parser、执行器调用、crop高分辨率图像重编码或工具返回拼接。模型仍以原输入为证据，功能语义来自SFT上下文，Fig2/Table1的imagined images无生成/监督。",
+  "protocol_alignment": "同一离散token同时用于SFT、采样和aux评分，是P23接口可迁移点；但没有自然解码与强制前缀分支概率校准、无caption后统一h测试。单token改协议需重新SFT及工具绑定验证，不能从ATLAS推断我们的WORD/多token分叉已解决。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "已做：Table3同系列SFT/GRPO/LA-GRPO，Table5逐项删format/length/spam。可隔离辅助项/奖励组件但缺α、训练budget等完整匹配披露；无同数据纯文本、功能token置换/删除、假token占位对照，不能分离数据/SFT与功能语义因果贡献。",
+  "controls": [
+   "同一Qwen2.5-VL-7B家族的SFT、GRPO、LA-GRPO（Table3）",
+   "LA-GRPO去rfmt/plen/pspam三个单项消融（Table5）",
+   "BLINK-Jigsaw与V-Thinker效率比较（Table4，非同接口同观测预算控制）"
+  ],
+  "negative_results": [
+   {
+    "text": "去spam惩罚BLINK51.3→47.0，出现18.7功能token/序列；功能使用奖励存在投机风险。",
+    "locator": "p.14 §3.5",
+    "quote": "The largest degradation occurs when removing the token spam\npenalty, where the BLINK average drops from 51.3 to 47.0. In this setting, we observe severe reward hacking:\nthe model generates up to 18.7 functional tokens per sequence merely to accumulate rfunc , rather than using\nthem to support effective reasoning."
+   },
+   {
+    "text": "去长度惩罚序列长度+43.8%，无准确率提升。",
+    "locator": "p.14 §3.5",
+    "quote": "Similarly, removing plen increases the average sequence length by 43.8%,\nresulting in higher compute cost without accuracy gains."
+   },
+   {
+    "text": "LA-GRPO在V*、Jigsaw、Spatial不及普通GRPO；Table3数值分别75.4<77.9、51.3<57.7、62.9<70.6。",
+    "locator": "p.10 §3.2",
+    "quote": "Although standard GRPO performs better on a few metrics such\nas V*, Jigsaw, and Spatial Relation, LA-GRPO gives a more balanced result across the benchmark."
+   }
+  ],
+  "seeds": "unknown: 无训练seed数量、独立重复次数或置信区间；表为单点报告，不能推断确为单seed。",
+  "falsifier": "读者提出、未执行：同数据/训练token/步数/奖励下，匹配数量的无语义占位token或随机功能token获得同样收益，则否定功能操作语义解释；aux在匹配梯度预算的随机位置对照下无差别则否定稀疏操作位置解释。对本项目若只减少真实视觉证据而损害预设非劣界，否定可替代crop。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B; SFT/RL freeze vision encoder, update projector/aligner + LM",
+   "framework": null,
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "rl_epochs": 1,
+   "sft_examples": 178000,
+   "sft_functional_examples": 138000,
+   "sft_perception_examples": 40000,
+   "alpha": null,
+   "reward_lambdas": null,
+   "clip_epsilon": null,
+   "length_and_spam_thresholds": null,
+   "hardware": null
+  },
+  "cost": "§2.3 203.7 generated tokens/response,4.8功能token（2.3%）；Table4仅BLINK-Jigsaw per-query ATLAS99.85 tokens/0.81 func tokens/3.80s/1.43GB vs V-Thinker489.57 tokens/350.35 code tokens/18.83s/2.55GB。不同统计范围，不能混作训练开销。训练总token/更新数/rollout总数/GPU·h/硬件未报告；RL仅称1epoch。",
+  "pitfalls": [
+   {
+    "text": "稀疏功能token的结果信号被普通文字稀释；作者以同优势稀疏辅助项处理。",
+    "locator": "p.7 §2.3",
+    "quote": "an average response contains 203.7 generated tokens, but only 4.8 of them are functional\ntokens, corresponding to a ratio of 2.3%."
+   },
+   {
+    "text": "去spam约束出现过量功能token；需要联合核对usage reward与计数惩罚。",
+    "locator": "p.14 §3.5",
+    "quote": "the model generates up to 18.7 functional tokens per sequence merely to accumulate rfunc , rather than using\nthem to support effective reasoning."
+   }
+  ],
+  "code": null,
+  "project_page": "https://atlas-oneword.github.io",
+  "lesson": "当操作token仅占少量输出且收到整条轨迹同一优势时，应核对稀疏位置的相对权重和功能使用奖励的投机；单独放大结果优势不会自动得到必要性信用，也不能补回真实crop新像素。",
+  "lesson_evidence": [
+   "p.7 §2.3",
+   "p.14 §3.5/Table5"
+  ]
+ },
+ "relevance": [
+  {
+   "problem": "P23",
+   "how": "离散操作token使采样与评分事件可以同名，但ATLAS不处理真实crop端点或我们caption后分叉校准。接口候选，非直接解决。",
+   "strength": 2
+  },
+  {
+   "problem": "P08",
+   "how": "稀疏token独立归一化是直接相关处理，基础随机长度归一化细节仍不明。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "辅助项复用轨迹结果信用，无法区分有用与冗余调用；是限制对照。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "178K冷启动和40K无功能token感知数据说明行为先由SFT铺设，不能只换RL。",
+   "strength": 2
+  },
+  {
+   "problem": "P29",
+   "how": "功能token采样支撑缺失时辅助项无目标位置，未提供防塌缩保证。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "latent符号未补取新像素，不能解决缩放后不可辨细节。",
+   "strength": 1
+  },
+  {
+   "problem": "P40",
+   "how": "Fig6/7展示文字内部不一致，attention聚焦不能证明证据到答案映射正确。",
+   "strength": 1
+  }
+ ],
+ "source_integrity_notes": [
+  "p.6基础GRPO式的π_ref、β幂、负KL符号已视觉确认；未按标准实现修正。",
+  "p.6 r_func仅说明至少一次功能token且答对才授予，未定奖励大小；p.14却称重复生成用于累积r_func，二者关系不明。",
+  "Table1 Manip描述包含crop/zoom，而p.4和Table2将crop/resize归Shape；操作分类不完全一致。",
+  "Fig5/7出现Filter token，而§2.1五token集合没有Filter，不能自行假定其为Manip别名。",
+  "Fig6几何文本先说AD=6cm然后写AD=3cm；Fig7路标例子中说two然后终答3；Fig7题干问car beneath cat而回答cat touching wine glass。仅记录源内文字冲突，不做像素金标判定。",
+  "§3.2称GRPO IQ较SFT下降，但Table3两者都26.0；Table3 SFT WeMath低于base（28.9 vs36.2），限定了正文broad improvement措辞。",
+  "Table4 ATLAS未标训练变体，其Jigsaw57.7与Table3 GRPO一致，不能将效率数字无条件归给LA-GRPO。"
+ ],
+ "validation": {
+  "status": "pending_independent_source_audit",
+  "scientific_replication": false,
+  "quote_method": "recursive walk of every quote key; verify_quotes.normalise exact substring against unmodified pdftotext -layout output; no fuzzy acceptance",
+  "recursive_exact_quotes": 16,
+  "fulltext_reextraction_byte_identical": true
+ },
+ "reported_results": [
+  {
+   "locator": "p.9 Table3",
+   "columns": [
+    "V*",
+    "WeMath",
+    "BLINK Avg",
+    "Jigsaw",
+    "M-view",
+    "Spatial"
+   ],
+   "rows": {
+    "Qwen2.5-VL": [
+     70.2,
+     36.2,
+     22.8,
+     31.3,
+     0.0,
+     20.3
+    ],
+    "ATLAS SFT": [
+     77.5,
+     28.9,
+     46.0,
+     54.7,
+     48.1,
+     57.3
+    ],
+    "ATLAS GRPO": [
+     77.9,
+     40.3,
+     50.5,
+     57.7,
+     43.6,
+     70.6
+    ],
+    "ATLAS LA-GRPO": [
+     75.4,
+     45.0,
+     51.3,
+     51.3,
+     53.4,
+     62.9
+    ]
+   },
+   "evidence_status": "author_reported_not_replicated"
+  },
+  {
+   "locator": "p.14 Table5",
+   "metric": "BLINK Avg",
+   "full": 51.3,
+   "without_format": 50.0,
+   "without_length": 49.2,
+   "without_spam": 47.0,
+   "evidence_status": "author_reported_not_replicated"
+  }
+ ]
+}

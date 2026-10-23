@@ -1,0 +1,164 @@
+{
+ "paper_key": "litscan:71691",
+ "title": "MSRL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_71691.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 Tables2–5",
+   "Appendix B/C/E training/reward",
+   "§5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "先低成本代码结构reward GRPO，再少量72B渲染图对比reward；解析数值/类型/布局/文字，避免只奖励代码可执行。",
+  "why_non_obvious": "正确语法与图表语义/视觉相似不同；昂贵视觉判分可后置减少预算。",
+  "trigger_condition": "当SFT已接近收益平台且结构化输出可解析和渲染时，先规则后视觉反馈。",
+  "contribution_type": "多粒度奖励与成本课程",
+  "abstract_strategy": "按信号成本和可检验粒度分阶段优化。",
+  "abstract_trigger_condition": "低成本局部验证足以先排除大量错误时。",
+  "abstract_key_step": "先结构细节，后整体视觉。",
+  "abstract_why_non_obvious": "表达等价归一和视觉评分校准决定reward有效性。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:71691#s1",
+   "object": "chart-to-code完整代码",
+   "information": "GT代码可抽取结构、原图与生成图，执行结果；72B图像评判器",
+   "operation": "canonical code后五类文本score加execution，先22k训练，再5.5k或11k混合visual reward。",
+   "claimed_effect": "ChartMimic high77.6→83.8，ReachQA80.0→89.9；22kT+5.5kTV 576GPUh vs22kV1344GPUh，high83.83 vs84.01。",
+   "conditions": [
+    "2.8M SFT起点",
+    "Qwen2.5-VL7B"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p8",
+    "quote": "(T, T + V) (22k, 5.5k)"
+   },
+   "failure_boundary": "生成视觉judge偏好不是像素事实金标准；仅当前数据/配置SFT plateau，不是SFT理论上限。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "将结构事实与总体视觉质量分开，可迁移caption证据检查。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "RL-only远低于有SFT基础，验证行为基础作用。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "SFT/RL-only",
+   "kind": "ablation"
+  },
+  {
+   "name": "text-only/visual-only/two-stage",
+   "kind": "ablation"
+  },
+  {
+   "name": "DPO synthetic negative",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "任意添加标题/散点、布局错误仍存在。",
+   "quote": "the layout recognition is not",
+   "locator": "Appendix D p16"
+  }
+ ],
+ "question": {
+  "observed_failure": "SFT扩至2.8M高分约77.6饱和；RL-only62.29低于SFT。",
+  "load_bearing_assumption": "代码关键结构准确与整体视觉相似互补。",
+  "scope": "Matplotlib图表重建",
+  "success_criterion": "执行率、低/高层分数与GPU小时同时报告。",
+  "why_open": "均匀token监督对稀疏关键值的反馈不足。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table5"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=w_tR_{text}+w_vR_{vis}+w_eR_{exec};\\ (w_t,w_v,w_e)=(1,0,0.5)\\to(0.5,0.5,0.5)",
+    "locator": "Eq1/AppB"
+   },
+   {
+    "latex": "R_{text}=0.4r_{data}+0.3r_{type}+0.1r_{layout}+0.1r_{title}+0.1r_{label}",
+    "locator": "AppB"
+   }
+  ],
+  "signal_routing": "结构/图像/可执行性汇成序列reward GRPO；无局部关键数值token独立advantage。visual比较原图和渲染图；渲染失败visual0。",
+  "normalization": "other",
+  "invariance": "代码canonicalization旨在语法变体不变；数值容忍±5%。优势具体std/长度归一未给，非PBRS。",
+  "baseline_or_potential": "GRPO名义组相对，实际公式未见；无KL。",
+  "degenerate_cases": "全不可执行可能文本score仍非零；全相同总分无相对反馈；parser仅支持限定数组/字典，扩格式可能掉分；judge误差不能由相关性排除。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4SFT/RL互补；Table5奖励和成本；AppC200例人核judge。",
+  "negative_results": [
+   {
+    "text": "视觉only high84.01略高两阶段83.83；两阶段主要节省预算并非所有指标更优。",
+    "locator": "Table5"
+   },
+   {
+    "text": "DPO比较用人工扰动负例，不是同采样/同数据单一优化器控制。",
+    "locator": "AppC/TableC"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "固定算力及同输出parser后若单阶段与两阶段等效，则课程必要性不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B；visual judge72B",
+   "framework": "LLaMA-Factory/MM-EUREKA",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "SFT16H800×60h；AppB RL24H800×10/24h；后者合816GPUh与Table5对应11k方案912GPUh不一致，未自行统一。",
+  "pitfalls": [
+   {
+    "text": "正文最终报告5.5k视觉阶段，但AppB写11k；应按具体配置记录。",
+    "locator": "Table5/AppB"
+   }
+  ],
+  "code": "https://github.com/DocTron-hub/MSRL",
+  "lesson": "当视觉judge昂贵时，应报告各阶段样本/硬件/总GPU时并核配置一致，不能将高相关judge当防hacking证明。"
+ }
+}

@@ -1,0 +1,271 @@
+{
+ "paper_key": "2607.21273",
+ "title": "The Dark Room in the Reward Channel: Dense Prediction Rewards Collapse GRPO-Trained LLM Agents -- and The Channel, Not the Content, Decides What Works",
+ "tier": "full",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.21273.txt",
+  "version": "v2",
+  "sections_read": [
+   "Abstract",
+   "§1–7",
+   "Appendix A–N",
+   "Tables1–13",
+   "Figures1–11 captions; critical equations/tables inspected"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "固定信号而改变消费通道，再用内容placebo、计算匹配和噪声干预拆解归因。",
+  "key_step": "按实际step-sample池检查z-score；把mean-only信号臂与mean-only无信号臂对照。",
+  "why_non_obvious": "轨迹回报有界不限制逐step优势；同一aux收益可由随机内容得到。",
+  "trigger_condition": "When shaping variance dominates grouped task variance, isolate normalization and delivery before crediting signal content.",
+  "contribution_type": "empirical",
+  "abstract_strategy": "固定输入信号，交换消费通道，再打乱内容检验归因。",
+  "abstract_trigger_condition": "当新增信号带来收益或塌缩时，分离通道、尺度与信息作用。",
+  "abstract_key_step": "匹配归一化的无信号对照与内容placebo。",
+  "abstract_why_non_obvious": "信号正确不意味着有益，信号随机也不意味着通道无效。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "manifest decision null; no review source"
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.21273#s1",
+   "object": "step-sample advantage",
+   "information": "own prediction score,next observation,group rewards; not taskcausalvalue",
+   "operation": "保留reward仅移除组std并加无signal匹配控制",
+   "claimed_effect": "正式52.9% vs mean-only无signal57.9%，stdPS0.7%",
+   "conditions": [
+    "同预算、同评测口径；只在所测配置内解释"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.3 p9; Table4",
+    "quote": "Net attribution. The control (mean-only normalization, no prediction signal) lands at 52.6%,"
+   },
+   "failure_boundary": "净signal增益未显示，不能推效率",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.21273#s2",
+   "object": "auxiliary CE attribution",
+   "information": "gold predictions/permuted or randomtargets,samemasks/budget",
+   "operation": "置换和随机化target并控制额外update及噪声",
+   "claimed_effect": "seed0placebo mean78.8 vs gold68.6；s42 67.9vs57.9",
+   "conditions": [
+    "同预算、同评测口径；只在所测配置内解释"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Appendix L p33",
+    "quote": "three-placebo s0 mean 78.8 vs. gold 68.6 at seed 0; the single completed s42 placebo endpoint 67.9"
+   },
+   "failure_boundary": "描述classordering，非每seed显著；8B和WebShop有害边界",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.21273#s3",
+   "object": "collapse monitor",
+   "information": "historyentropy,predictionaccuracy,length",
+   "operation": "冻结联合门限并在保留组检查",
+   "claimed_effect": "3/3 rewardchannel collapses提前73/53/13步；≤1/11healthy alarm",
+   "conditions": [
+    "同预算、同评测口径；只在所测配置内解释"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Appendix H p29",
+    "quote": "the calibration set,2 it detects all three held-out reward-channel collapses, 73/53/13 steps ahead of"
+   },
+   "failure_boundary": "不覆盖8Bauxcollapse，健康组部分非独立",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "mean-only",
+   "kind": "method"
+  },
+  {
+   "name": "RLOO",
+   "kind": "method"
+  },
+  {
+   "name": "PPO/GAE",
+   "kind": "method"
+  },
+  {
+   "name": "GiGPO",
+   "kind": "method"
+  },
+  {
+   "name": "REINFORCE++",
+   "kind": "method"
+  },
+  {
+   "name": "content-free auxiliary CE",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "主要机制臂单seed；正式Wilson区间仅episode层，不含训练seed方差。",
+   "quote": "digit by 0.1pt). Intervals are within-arm binomial only; they do not include seed variance, which the",
+   "locator": "Table4 caption p16"
+  },
+  {
+   "text": "奖励分量方差占比未记录，λ扫描不能区分shaping主导与penalty主导。",
+   "quote": "the reward separately; our runs logged only their batch means, so we do not report the share, and the",
+   "locator": "Appendix N p35"
+  }
+ ],
+ "question": {
+  "observed_failure": "ALFWorld4B std PS正式0.7% vs baseline42.9%，mean-only PS52.9%但无signal57.9%。",
+  "load_bearing_assumption": "bounded telescoping shaping should be harmless; auxiliary gain implies content learned.",
+  "scope": "Qwen3 step-independent agent RL in ALFWorld/WebShop/HRG",
+  "success_criterion": "同预算无collapse；matchednormalization/contentplacebo仍有额外收益。",
+  "why_open": "既有signal成功与不稳定报道未分离内容和消费通道。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§3.2 p5: actual step-sample pooling"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§5.3 p9: one-flag rescue and matched no-signal control"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "Appendix H p28–29: frozen warning rule with independent-set caveats"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§5.4; Appendix J placebo ladder"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "locator": "§3.2; Appendix A failed scale/dose predictions"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_t^{pred}=\\lambda(\\Phi_t-\\Phi_{t-1}),\\quad |\\sum_t r_t^{pred}|\\le\\lambda",
+    "locator": "Eq1–2 p5"
+   },
+   {
+    "latex": "A_i={\\lambda(s_i-\\bar s)-(p_i-\\bar p)\\over\\sigma_{\\lambda s-p}+\\epsilon}\\to{s_i-\\bar s\\over\\sigma_s}\\quad(\\lambda\\sigma_s\\gg\\max(\\sigma_p,\\epsilon))",
+    "locator": "Eq3 p5"
+   },
+   {
+    "latex": "A_i^{mean}=R_i-\\bar R,\\qquad L_{aux}=\\beta\\,CE(\\text{target predict tokens})",
+    "locator": "§5.3–5.4; Table6 (aux notation reader summary)"
+   }
+  ],
+  "signal_routing": "PS由当前policy predict块对实际nextobservation规则评分；每step末response token注入reward，然后该step优势广播全部response token。真实normalizer跨同group ID所有step samples，约4×50，不是4条轨迹回报。aux独立teacher-forced CE更新，任务reward不变；确切CE reduction/mask端点未给，不能从论文推断实现。",
+  "normalization": "mean+std over cross-step pool; mean-only intervention; per-channel capped controls",
+  "invariance": "不是严格PBRS：Phi包含policy自身prediction且终端势不保证为常量；telescoping只给return边界。Eq3条件性抵消λ，penalty主导也无λ趋势，混合/epsilon floor不抵消；β在loss外不经std。",
+  "baseline_or_potential": "group empirical mean，Phi当前policy预测正确性，无外部judge；HRG privilegedlatents仅特定控制/探针。",
+  "degenerate_cases": "全错任务梯度无差时shaping/penalty仍提供step差异；饱和shaping方差归零后penalty可能接管；两者恒定则epsilon-floor零优势。全对同终局回报亦可仅剩辅助变化，但跨step终局位置需按实际账本检查。p动作≈0无支持时去std不能恢复；单step池才退化常规trajectory GN。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "samebudget通道矩阵；mean-only有/无PS；同auxmask更新保持、打乱gold/随机词表/去格式/双PPOepoch/符号噪声控制。",
+  "negative_results": [
+   {
+    "text": "4B auxplacebo正式seed0均值78.8 vs gold68.6；不是每placebo都超过每gold，class ordering描述性。",
+    "locator": "Table4; Appendix L"
+   },
+   {
+    "text": "8B gold3seed中2锁死，halfweight和shuffled健康；WebShopaux两seed正式63/46 vs baseline60，增益不稳定。",
+    "locator": "§6.1–6.2 Tables4,9,11"
+   },
+   {
+    "text": "matchedvariance噪声拖到23.4但不锁死；variance+hackability必要于所见lock，非充分。",
+    "locator": "§5.3 Appendix N"
+   }
+  ],
+  "seeds": "4Bbaseline/gold/twoleadingplacebo和8Bgold各3；多数机制single；WebShopaux、decoupled、deltaacc2。正式140seen/134unseen补至140，6题重复；withinarmWilson不含seed；29臂多重比较作者用25pp且CI不交判categorical，非独立确认。",
+  "falsifier": "同预算同normalizer下真内容稳定超过placebo则否定content-inert归因；记录分量spread后无shaping主导却同样collapse则修正局部机制。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-1.7B/4B/8B",
+   "framework": "verl-agent",
+   "group_size": 4,
+   "max_turns": 50,
+   "kl": 0.01,
+   "steps": 150,
+   "rollouts": 32,
+   "temperature": 0.4
+  },
+  "cost": "Table6:18–24h/run，4B/8B 8×96GB；1.7B/HRG 2×32GB；validation every5steps。未执行。",
+  "pitfalls": [
+   {
+    "text": "小32episode验证窗口会改写正式排序；8Bbaseline32.8→45、selfreport49.5→38.6。",
+    "locator": "§6.4 Table4"
+   },
+   {
+    "text": "collapse之后换mean-only，50步11checkpoint仍0；应预防而非假设后期修复。",
+    "locator": "Appendix I"
+   },
+   {
+    "text": "entropy单独对成功锐化/aux突破前误报；冻结联合规则三heldout collapse但部分健康样本参与规则构思。",
+    "locator": "Appendix H footnote2"
+   }
+  ],
+  "code": "https://github.com/RobertWangWang/verl-agent",
+  "lesson": "当辅助信号成为组内主要差异时，先打印实际pool、分量spread和token路由；恢复成功率不等于效率收益，aux增益必须有内容placebo。"
+ },
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "条件性std抵消与实际归一化单位直接解释尺度失控。"
+  },
+  {
+   "problem": "P04",
+   "strength": 3,
+   "how": "mean-only只排除collapse，未证明减少crop。"
+  },
+  {
+   "problem": "P12",
+   "strength": 2,
+   "how": "将打乱dV占位臂用于分离通道与内容效应。"
+  },
+  {
+   "problem": "P42",
+   "strength": 2,
+   "how": "caption质量reward可能支配全错组，须先审计spread。"
+  },
+  {
+   "problem": "P45",
+   "strength": 2,
+   "how": "训练窗口和正式seed/episode不混称。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

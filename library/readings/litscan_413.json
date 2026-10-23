@@ -1,0 +1,48 @@
+{
+ "paper_key": "litscan:413",
+ "title": "ImageCoDe",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_413.txt",
+  "sections_read": [
+   "Abstract/Introduction contributions; §3 dataset; §5.1-5.3 methods; Table5; §9 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "构造10张最小视觉对照图的语境描述检索集，并在同组负样本训练、跨图context transformer和时间embedding中逐步加入上下文。",
+  "key_step": "描述者见全部候选写辨别性细节，另一个检索者选对才保留；训练负例来自同图组。",
+  "why_non_obvious": "普通caption的显著属性在相似候选里不够区分；更多跨图交互也不保证增益。",
+  "trigger_condition": "When similar images share salient attributes, supervise descriptions with contrastive candidate context.",
+  "contribution_type": "benchmark_and_method",
+  "abstract_strategy": "用最小对照逼出上下文中的细节判断。",
+  "abstract_trigger_condition": "When generic descriptions hide failure, hold the scene similar and test discriminating details."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:413#s1",
+   "object": "相似图组及context retrieval",
+   "information": "训练/测试可见全部10候选及描述；目标标签只用于监督",
+   "operation": "同组9负例训练，再加context/temporal模块",
+   "claimed_effect": "Table5 CLIP24.3→28.4(contextbatch)→29.9(temporal)；单contextmodule27.7未优于batch",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/5; Table5",
+    "quote": "from the same image"
+   },
+   "failure_boundary": "检索与多轮crop策略不同；描述依赖候选，不能直接当独立caption gold。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 1,
+   "how": "可启发细粒度证据置换测评，但无工具必要性、信用路由或策略训练机制。"
+  }
+ ]
+}

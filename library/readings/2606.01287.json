@@ -1,0 +1,613 @@
+{
+ "paper_key": "2606.01287",
+ "title": "Beyond Visual Memory: Mechanistic Diagnostics of Latent Visual Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.01287.pdf",
+  "version": "v2",
+  "version_observed": "PDF p.1 arXiv:2606.01287v2 [cs.CV] 26 Aug 2026; latest online version not checked",
+  "pages": 27,
+  "sections_read": [
+   "Abstract; Introduction; Related Work pp.1–3",
+   "3 Diagnostic Setup/MVH; Table1; 4 Slot-Content Memory Tests pp.3–6",
+   "5 Markers/Visual Engagement/Mechanism map; Figs4–6/Table2; Conclusion/Limitations pp.6–9",
+   "References pp.9–11",
+   "App.A.1–A.10 target construction/EMA/shifted SFT/latent RL, Eqs6–25 pp.12–14",
+   "App.B reproduction/TableA1–A3 pp.14–17; C.1–C.4 nine-checkpoint/TextVQA/matched-data/slot-count extensions pp.15–18",
+   "App.D ablations; E structural sanity; F intervention definitions pp.16–20; FigsA1–A2, TablesA6–A12",
+   "App.G.1–G.5 perturbation/blind injection/image quality/swaps/MOC pp.20–24, TablesA13–A18/FigsA3–A4",
+   "App.H forced-prefix markers pp.24–25/FigA5; I geometry/entropy/causal attention pp.25–26/FigA6/TablesA19–A20; J concordance/TableA21 pp.26–27; K AI Assistance p.27"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "把latent接口拆成slot内容、边界marker及格式，先构造有利于视觉记忆假说的MVH，再以分离干预、真实donor交换、样本级覆盖和受控注意力移植检验机制。",
+  "key_step": "保持相同marker、位置、层或图像attention总质量，仅替换待测内容/分布；将整接口删除与保留损坏接口分开，用Normal独有解集而非总准确率定义marker覆盖。",
+  "why_non_obvious": "高准确率、可视化结构和视觉空间对齐均可与内容不承重共存；删除整段同时破坏格式/计算/控制，不能独自识别内容贡献。",
+  "trigger_condition": "When an inserted representation improves accuracy but may confound content, protocol and compute, intervene on these factors separately and test portable content with matched donors and controls.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null and no reviews_path; no review note source inspected.",
+  "contribution_type": "empirical",
+  "abstract_strategy": "Decompose a bundled intervention and test each proposed causal role with matched controls under favorable conditions.",
+  "abstract_key_step": "Preserve the surrounding protocol while replacing content, then compare recovered individual successes and transport across contexts.",
+  "abstract_why_non_obvious": "Aggregate benefit can arise from a protocol or computational opportunity even when the presumed stored information is dispensable.",
+  "abstract_trigger_condition": "When performance is compatible with competing mechanisms, give the claimed mechanism favorable conditions and compare interventions that isolate its predicted effects."
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.01287#s1",
+   "object": "作为视觉记忆假说有利探针的MVH连续latent targets及两阶段训练",
+   "information": "训练时helper image（crop/annotated/simulated state）、冻结视觉编码器post-merger tokens及最后window attention、EMA teacher的前序文本hidden；训练答案/格式标签。推理仅原图+问题、无helper teacher。不是无标签工具价值测量。",
+   "operation": "构造global+3×3区域均值10个coverage targets；incoming-attention×query-softmax选top10 anchors，再用task-free对称encoder attention按.6 self+.4全图neighbor改写。norm对齐后注入20个槽，shifted cosine+text/marker CE训练；RL/eval用8槽，G8 outcome/format reward标准化，同一A分别进入text PPO及detached rollout latent cosine，并加冻结SFT anchor。",
+   "output": "高准确率、有输入/问题变化及双角色组织的模型，供因果诊断；不是已证实的视觉memory。",
+   "claimed_effect": "作者Table1 MVH-SFT/RL四benchmark均值67.8/69.7%，Monet-SFT/RL66.5/67.6%；exact-data Monet-RL67.5。FigA1 MVH-S跨样本cosine .68，BSR1.13，RSR1.12。TableA11同SFT起点RL 68.2→69.7。",
+   "conditions": [
+    "helper-image监督与训练数据可得",
+    "结构诊断独立于准确率，以免用准确率循环证明memory",
+    "原始RL数据pipeline匹配但并非exact matched，另有Monet retrain控制",
+    "核心机制诊断是Qwen2.5-VL7B六设置；Qwen3-VL8B仅CoMT扩展"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.1 p.4; Table1; App.A/B/C/D/E",
+    "quote": "Accuracy alone would be a circular justification for\nthe probe; the structural diagnostics above are independent of accuracy, and they show that MVH’s\nslots respond to the input and to question variation\nin ways the visual-memory account would predict."
+   },
+   "failure_boundary": "有利probe并不穷尽所有memory设计；结构多样性与cosine接近不能证明内容因果。TableA10 rho=.6与.2均值67.8并列，不能声称唯一最佳。训练20而评测8的fixed-checkpoint sweep不能消除训练错配。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.01287#s2",
+   "object": "latent slot内容、marker身份、接口格式对准确率与独有解的贡献",
+   "information": "同一已训模型的实际输入embedding/decoded answers、每题正确性；看不到所有潜在内部计算，不是逐步人工观测必要性金标。",
+   "operation": "保留marker/布局时替换slot为zero、等scale Gaussian、按位置固定向量；比较K=0只留marker、NoLatent整段移除且禁marker、ZeroMarker留位置但置零。57题forced-prefix对照不同marker/等长度slots；计算Normal\\NoLatent独有解被K0覆盖的MOC，并记录loop率。",
+   "output": "slot/marker/format/malformed四类差分、每题MOC、marker身份及损坏生成敏感性。",
+   "claimed_effect": "作者TableA14 benchmark平均slot-sensitivity 0.3–2.7pp；marker敏感性MVH-S58.5、MVH-R37.8、ILVR-S165.1pp而其余≤1.9pp。TableA18 MOC均值依次.94/.97/1/.92/.78/.43；Monet-R例外。Fig4 marker置零MVH自循环100%，ILVR-S197%。",
+   "conditions": [
+    "不把ZeroMarker损坏执行等同NoLatent干净删除",
+    "MOC分母只用Normal正确且NoLatent错误的同题集合，报告小分母",
+    "forced-prefix与free generation分开报告，等长条件控制计算机会",
+    "核心six settings四MC benchmarks；额外3checkpoint只扩展部分测试"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App.G.5 p.24; Eq26 p.22; TableA18",
+    "quote": "High MOC does not imply that latent slots are\nfunctionally irrelevant; it shows that the examples\nuniquely gained by the latent tokens are usually not\ndependent on precise slot contents."
+   },
+   "failure_boundary": "MOC高不表示slots没有计算/时序价值；格式改变可制造OOD损坏，且原图一直可访问。少量分母（Monet-R V*/MME各2题）不可当稳定比例；slot-sens=均值差也不是所有单一扰动的最大差。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.01287#s3",
+   "object": "latent内容作为可恢复、可移植视觉记忆的预测",
+   "information": "同策略image-conditioned真实运行捕获的slot states、blank-image同prompt运行、同层donor和target状态、答案letter。状态是策略本身而非外部冻结reader，但移植可改变相容性。",
+   "operation": "捕获final-layer图像条件states，在blank图运行对应位置注入，按(Ainj-Ablind)/(Afull-Ablind)算gap recovery；为降低zero/random OOD争议，再固定prefix和位置，在L5/L14/L27注入真实donor，selfswap、同答案、异答案、random donor及same-image不同问题作控制；报告accuracy和donor adoption/bootstraps。",
+   "output": "missing-image recovery、跨样本donor内容转移及hook自一致性读数。",
+   "claimed_effect": "MVH-S full .845(n58)、blind .228(n57)、injected .276(n58)，recovery7.8%，CI[-15.2,28.6]百分点。TableA17 pooled adoption5.3–12.7%，全部CI低于四选一25%；same-image FigA4 MVH-S .28接近chance而非全低于chance。",
+   "conditions": [
+    "捕获与注入相同slot位置和decoder layer",
+    "self-swap验证hook近似保真，TableA16仍有两设置−.018",
+    "区分pooled异答案donor与same-image different-question",
+    "注入只在emit valid latent的子集，保留57/58筛选差异"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App.G.3 p.20; TablesA15–A17 pp.22–23",
+    "quote": "Its wide\ninterval includes zero, so this result is directionally\nconsistent with the other tests but is not decisive\non its own."
+   },
+   "failure_boundary": "blind injection宽CI不能独立排除较大收益；真实donor来自分布内运行不保证donor-target联合干预分布内；仍可能依赖匹配问题、残余视觉访问、其它layer或读出。25%是作者四选一参照，异标签donor设计和label偏好须审计，不能当全机制零效应证明。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.01287#s4",
+   "object": "latent-time更集中image attention是否因具体定位帮助回答",
+   "information": "同模型latent/answer逐层image attention、latent-gained V*样本、oracle target patches；后者仅实验控制，不是可部署信息。",
+   "operation": "从NoLatent运行开始，在ΔH峰值层只改answer-token图像attention分布且固定总image mass：移植本模型latent-time分布、同熵随机位置sharp-random、oracle位置；同题paired bootstrap比较恢复率及transplant−random。",
+   "output": "attention分布干预的效应与特定位置超出集中度的增量；将相关性probe推进到受控干预。",
+   "claimed_effect": "TableA19 MVH-S/MVH-R/ILVR-S1 transplant恢复47/39/36%，sharp-random42/33/33%，oracle60/56/49%，n45/18/78；paired差+5[-6,16]/+6[-11,23]/+3[-5,11]pp。",
+   "conditions": [
+    "仅3个attention-signature明显设置、V* latent-gained子集",
+    "No steering为0是选样构造，不是全benchmark精度0",
+    "固定总质量与熵，保证内容位置vs集中度可比较",
+    "B1000样本bootstrap不替代训练seed不确定性"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App.I.1 p.26; TablesA19–A20",
+    "quote": "This does not establish equivalence or rule out localization information at the available sample sizes.\nOracle attention also recovers only 49–60% of the\nlatent-gained sets, so attention is not an exhaustive\naccount of the gain."
+   },
+   "failure_boundary": "未检出定位优于同熵random不等于两者等效或证明定位无用；oracle也只恢复49–60%，attention非完整解释。峰值选择和gain子集是诊断性选择，不能当总体泛化收益。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B / vanilla SFT / vanilla SFT+GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "ILVR-Stage1/Stage2",
+   "kind": "method"
+  },
+  {
+   "name": "Monet-SFT/RL and exact-data VLPO retrain",
+   "kind": "method"
+  },
+  {
+   "name": "Mirage-Stage1/Stage2 / LVR-SFT",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o / DeepEyes / PixelReasoner / LVR (some prior-report rows)",
+   "kind": "method"
+  },
+  {
+   "name": "NoLatent / K0 / ZeroSlot / RandomSlot / FixedSlot / ZeroMarker / ZeroAll / bare slots",
+   "kind": "method"
+  },
+  {
+   "name": "self-swap / label-matched / label-mismatched / random / same-image different-question donor",
+   "kind": "method"
+  },
+  {
+   "name": "learned / unused / BOS-EOS / textual / period-newline forced-prefix controls",
+   "kind": "method"
+  },
+  {
+   "name": "sharp-random / oracle answer attention",
+   "kind": "method"
+  },
+  {
+   "name": "V* / HRBench4K / HRBench8K / MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "TextVQA / CoMT",
+   "kind": "benchmark"
+  },
+  {
+   "name": "marker-only coverage / gap recovery / donor adoption / sensitivity / top5cos / delta-entropy",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "全图在回答阶段可访问的latent-slot接口；强bottleneck/受限图像访问/外部视觉工作区不在结论范围。",
+   "quote": "Our analysis focuses on latent visual reasoning\nmethods that use a full-image VLM interface and\ninsert latent slots into the decoding sequence. Architectures that enforce a stronger visual bottleneck, restrict image access during answer generation, or use explicit external visual workspaces\nmay show different balances between slot contents, boundary markers, and format.",
+   "locator": "Limitations p.9"
+  },
+  {
+   "text": "不排除计算、时序、格式或路由用途，也未覆盖视频/embodied/long-horizon。",
+   "quote": "Finally, our diagnostics are\ndesigned to test whether slot contents act as recoverable visual memory; they do not rule out other\nroles for latent slots, such as providing computation, timing, formatting, or routing capacity during\ndecoding.",
+   "locator": "Limitations p.9"
+  }
+ ],
+ "question": {
+  "observed_failure": "作者在latent方法相近V*约.80–.83时发现slot扰动平均敏感性至多2.7pp，marker扰动可掉65.1pp；全接口提升不能唯一支持slot-memory解释。",
+  "load_bearing_assumption": "插入连续latent token带来的准确率提升主要来自其中可恢复的视觉信息内容。",
+  "scope": "full-image Qwen-family latent interfaces，6 method-stage主要设置×4 perception-heavy MC benchmarks；部分延伸到9checkpoint、TextVQA/CoMT，不是全套跨所有模型。",
+  "success_criterion": "分别检验content causal sensitivity、blind recovery、donor portability及独有解覆盖；用干净删除、损坏接口、等长/同熵控制识别竞争机制。不是准确率提升/省crop的产品成功判据。",
+  "why_open": "既有CapImagine/latent critiques把latent span当整体，删除与dummy替换难以分开slot内容、marker和格式，且可能归因于低质/塌缩latent；MVH有利probe与分项干预针对这两点。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "Latent tokens (Figure 2B) have three components\nthat can be intervened on separately: the slot contents, the boundary markers, and the latent format\n(its presence, position, and length). We exploit\nthis separability throughout the analysis. Each test\nin Sections 4–5 changes one component at a time\nand looks at how accuracy or generation behavior\nresponds.",
+   "locator": "Sec.3.2 p.4",
+   "mapping_note": "实际先定义slot/marker/format再分离测量，后又将MOC定义为样本集合覆盖而非aggregate accuracy。对应计量口径澄清，不是论文出现step一词即匹配。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "The protocol keeps marker positions,\nslot positions, and decoder layer identical across\ndonor and target, so any change observed after\nthe swap is attributable to the slot contents rather\nthan to the layout.",
+   "locator": "App.G.4 p.21",
+   "mapping_note": "实际保持位置/层一致交换内容，并用selfswap确认hook；attention test另固定总mass与熵。"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "before running causal interventions,\nwe verify that MVH latents are nontrivial enough\nfor the slot-content memory hypothesis to be worth\ntesting. They are not intended to prove content\ncausality.",
+   "locator": "App.E p.16",
+   "mapping_note": "先检查latent多样性/角色分离再做因果诊断；MVH本身已训练，因此只对应诊断先行的局部动作，不称全文先测量再训练。"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "primary",
+   "quote": "We therefore decompose latent tokens into three\nindependently testable components: latent slots,\nboundary markers, and format, and intervene on\neach in isolation.",
+   "locator": "Introduction p.2; App.F–I实际执行",
+   "mapping_note": "拆解whole-interface ablation的混杂，以保持格式的content替换、marker identity及attention sharp-random等对照识别真实承重因素。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "The\ncoverage block Gt is question-independent and\npreserves global scene structure (§A.3); the informative block It is question-dependent and\nrewrites high-information-density anchor tokens\nwith question-relevant evidence",
+   "locator": "App.A.2 p.12",
+   "mapping_note": "MVH实际对question-independent coverage做区域平均，对question-dependent anchors做选择/关系重写。是不同资源角色不同操作，不是把诊断列表当异质分解。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\langle lat\\_start\\rangle,s_1,\\ldots,s_K,\\langle lat\\_end\\rangle",
+    "locator": "Eq1 p.1, interface"
+   },
+   {
+    "latex": "T_t=[G_t;I_t],\\quad |G_t|=|I_t|=10,\\ N=20,\\quad g_0=M_t^{-1}\\sum_jv_{t,j},\\quad G_t=\\{g_0,\\ldots,g_9\\}",
+    "locator": "Eqs2/6 pp.3/12; regional cells App.A.3"
+   },
+   {
+    "latex": "r_j^{base}=\\frac1{HM_t}\\sum_h\\sum_i A_t^{(h)}(i,j)\\quad(\\ell_1\\ renormalized),\\quad q_{t,j}=v_{t,j}^{\\top}h_t/\\sqrt{d_h},\\quad u_{t,j}=\\frac{e^{q_{t,j}}}{\\sum_ke^{q_{t,k}}}",
+    "locator": "Eqs7–9 p.12"
+   },
+   {
+    "latex": "p_{t,j}=\\frac{r_j^{base}u_{t,j}}{\\sum_kr_k^{base}u_{t,k}},\\quad I_t^{idx}=\\operatorname{TopK}_{10}(p_t)",
+    "locator": "Eq10 p.12"
+   },
+   {
+    "latex": "s_{j,k}=\\frac1H\\sum_h\\frac{A_t^{(h)}(j,k)+A_t^{(h)}(k,j)}2,\\quad w_{j,j}=0,\\quad w_{j,k}=\\frac{e^{s_{j,k}}}{\\sum_{m\\ne j}e^{s_{j,m}}}\\ (k\\ne j)",
+    "locator": "Eqs11–12 pp.12–13"
+   },
+   {
+    "latex": "\\tilde v_{t,j}=\\rho v_{t,j}+(1-\\rho)\\sum_{k\\ne j}w_{j,k}v_{t,k},\\quad\\rho=.6",
+    "locator": "Eq13 p.13"
+   },
+   {
+    "latex": "\\tau^{aligned}_{t,i}=\\mu_e\\frac{\\tau_{t,i}}{\\|\\tau_{t,i}\\|_2+\\epsilon},\\quad\\mu_e=\\mathbb E_w\\|e_w\\|_2,\\quad\\theta_{tea}\\leftarrow .999\\theta_{tea}+.001\\theta_{stu}",
+    "locator": "Eqs14–15 p.13"
+   },
+   {
+    "latex": "L_{text}=-\\sum_{\\ell\\in S_{text}\\cup S_{marker}}\\log p_\\theta(y_\\ell\\mid y_{<\\ell},x,q),\\quad L_{lat}=|S_{lat}|^{-1}\\sum_{t,i}[1-\\cos(z_{t,i-1},\\tau_{t,i}^{aligned})]",
+    "locator": "Eqs16–17 p.13; Eq4 p.4"
+   },
+   {
+    "latex": "L_{Stage1}=L_{text}+\\lambda_{lat}(s)L_{lat},\\quad\\lambda_{lat}(s)=\\min\\{s/(.1S_{total}),1\\}\\lambda_{lat}^{\\star},\\quad\\lambda_{lat}^{\\star}=1",
+    "locator": "Eqs18–19 pp.13–14; TableA1 p.15"
+   },
+   {
+    "latex": "R_g=.9\\mathbf1[answer_g=gold]+.1\\mathbf1[format_g\\ valid],\\quad\\hat A_g=\\frac{R_g-\\operatorname{mean}(R_{1:G})}{\\operatorname{std}(R_{1:G})+\\epsilon},\\quad G=8",
+    "locator": "Eqs20–21 p.14; TableA1 p.15"
+   },
+   {
+    "latex": "L^{RL}_{text}=-\\mathbb E_{g,\\ell}\\min[r_\\ell^{(g)}\\hat A_g,\\operatorname{clip}(r_\\ell^{(g)},1-\\varepsilon,1+\\varepsilon)\\hat A_g],\\quad r_\\ell^{(g)}=\\frac{\\pi_\\theta(y_\\ell^{(g)}\\mid y_{<\\ell}^{(g)})}{\\pi_{\\theta_{old}}(y_\\ell^{(g)}\\mid y_{<\\ell}^{(g)})},\\quad\\varepsilon=.2",
+    "locator": "Eq22 p.14; conditioning image/question implicit in source"
+   },
+   {
+    "latex": "L^{RL}_{lat}=-\\mathbb E_{g,(t,i)}[\\hat A_g\\cos(z^\\theta_{t,i},\\operatorname{sg}(z^{(g)}_{t,i}))]",
+    "locator": "Eq23 p.14; detached rollout states in prose; Eq5 p.4"
+   },
+   {
+    "latex": "L^{RL}_{anchor}=\\mathbb E_{g,(t,i)}[1-\\cos(z^\\theta_{t,i},z^{SFT}_{t,i})],\\quad L_{Stage2}=L^{RL}_{text}+.5L^{RL}_{lat}+.1L^{RL}_{anchor}",
+    "locator": "Eqs24–25 p.14; TableA1 p.15"
+   },
+   {
+    "latex": "\\mathrm{MOC}=\\frac{|S_{K=0}\\cap(S_{Normal}\\setminus S_{NoLatent})|}{|S_{Normal}\\setminus S_{NoLatent}|}",
+    "locator": "Eq26 p.22"
+   },
+   {
+    "latex": "SlotSens=A_{Normal}-\\operatorname{avg}(A_{ZeroSlot},A_{RandomSlot},A_{FixedSlot});\\quad MarkerSens=A_{Normal}-A_{ZeroMarker};\\quad FormatDep=A_{Normal}-A_{NoLatent};\\quad MI=A_{NoLatent}-A_{ZeroMarker}",
+    "locator": "App.F p.19, unnumbered; extensions average only first two slot controls"
+   },
+   {
+    "latex": "Recovery=(A_{inj}-A_{blind})/(A_{full}-A_{blind})",
+    "locator": "TableA15 p.22"
+   },
+   {
+    "latex": "\\Delta H_l=H_l^{answer}-H_l^{latent}",
+    "locator": "Eq27 p.25; image-token attention entropy difference; full entropy normalization formula unreported"
+   }
+  ],
+  "signal_routing": "Stage1：文本与marker受CE监督，image/latent labels=ignore；latent i目标对应前一个位置z_{i-1}，首slot由lat_start状态预测，不能错成同位置自重建。Teacher helper图仅训练注入，EMA forward产目标。Stage2：同一轨迹标量A_g传到离散text token PPO及所有连续slots cosine；rollout z detached，SFT reference frozen。没有局部步骤独立reward/A，也没有连续slot概率密度/importance ratio。Eq25没有显式text reference-KL项；正文类比PPO reference-KL，不能自行补系数。诊断干预无需policy更新。",
+  "normalization": "mean+std",
+  "normalization_notes": "Eq21组均值/std+epsilon，epsilon值和sample/pop std未给；reward正确性.9/格式.1先混合后标准化。视觉selection先incoming attention L1归一再query softmax再乘积归一；rewriting selfmasked row softmax；target norm约为mean embedding norm。SFT文本式写sum、latent写mean，实际batch/token reduction未完全给。诊断accuracy多为四benchmark无权均值；TextVQA continuous score仅MOC二值化threshold .5。",
+  "invariance": "作者无策略不变性定理。读者推导：对非零向量cosine对正比例scale不变；norm对齐约束注入input尺度，不保证student output norm。组reward共同正比例scale在epsilon忽略时消去，共同常数平移消去；.9/.1相对比例仍影响排序。RL latent anchor是soft方向正则，无硬信赖域半径或KL界证明；干预保持的是控制变量，不是政策最优性。",
+  "baseline_or_potential": "GRPO baseline是同prompt组均reward；SFT reference是方向anchor而非估算动作价值的critic/冻结reader。Teacher encoder frozen、EMA student提供query hidden；无MC fork价值差/势函数塑形。诊断以同模型NoLatent/K0/selfswap、同熵random为各自特定基线。",
+  "degenerate_cases": "读者推导：组全同reward时A=0，text PPO和advantage cosine项为0，但anchor仍可能更新；全对/全错若format不同则A未必0。p(tool)≈0/1没有支撑保障，本方法未设计crop/direct均衡。K0是诊断条件，Llat若无slot不能直接按|S_lat|除0，训练fallback未报。MOC分母空未定义，极小分母不稳；full=blind时recovery未定义。若zθ与detached rollout z完全同向，cosine对zθ梯度为0（负A也一样）；首次on-policy精确回放可能满足，但实际teacher-force/数值/后续text更新会破坏相等，论文未给梯度诊断，不能据此断言训练无效。rho=1退化无neighbor rewrite；one-turn仍有latent/text losses但无跨轮memory保证。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "组件干预+独有解覆盖辨别content与marker/format；真实same-layer donor/selfswap降低简单corruption争议；blank injection检查recoverability；固定image mass、匹配entropy的random attention对照辨别定位与集中度。四测试检验不同假设，一致负结果只约束所测portable memory解释。",
+  "controls": [
+   "TableA1/1 SFT data/backbone/hparams matched；Monet原RL exact data未知，C3 exact-MVH-data VLPO重训67.5 vs67.6，仍混有SFT target/objective差异。",
+   "TableA12 K0、NoLatent与ZeroMarker不同：损坏marker仍能生成并loop，干净去掉协议应单列。",
+   "G4六设置×三层×四donor=72 subjobs，固定57题V* forced-prefix；same-image differentquestion进一步控制图像上下文。",
+   "H9种prefix、with/without length-matched slots，测marker身份和计算容量；未称forced slots为中性自然推理。",
+   "A19同样latent-gained题，No steering=0由选择决定；A20 paired bootstrap所有CI含0。",
+   "C1额外3checkpoint、C2仅MVH TextVQA没有FixedSlot；C4 fixed-checkpoint K4–20 plateau，不能当独立每K重训。"
+  ],
+  "negative_results": [
+   {
+    "text": "probe多样性/视觉对齐并未转成slot-memory因果依赖。",
+    "quote": "Together, slot contents show little perturbation sensitivity, do not substantially recover\nmissing visual input, show little donor-specific\ntransfer across examples, and are not needed for\nmost of the unique latent-token gain. These results\ndo not support the visual-memory account, even\nwhen latent slots are trained with content-favorable\nMVH supervision.",
+    "locator": "Sec.4.2 p.6"
+   },
+   {
+    "text": "把任务偏好重新放进rewrite softmax让所有anchors塌缩到同高分token，作者改为task-free relation。",
+    "quote": "The blend is taken over the whole image rather than\na local neighborhood, and wj,k is deliberately kept\ntask-free: injecting log pt or qt into the softmax\nwas found to collapse all Ki anchors toward the\nsame high-score tokens.",
+    "locator": "App.A.4 p.13"
+   },
+   {
+    "text": "匹配同熵random后不能可靠归因于latent定位，且oracle也不能恢复全部增益。",
+    "quote": "The paired analysis detects no reliable advantage\nfor the model’s own latent-time localization over\n\nan equally concentrated random-location control.",
+    "locator": "App.I.1 p.26"
+   },
+   {
+    "text": "训练20/评测8错配仍存在，即使K4–20结果平坦。",
+    "quote": "The sweep does not retrain a separate\nmodel at each slot count and therefore does not\nremove the Stage-1 train/inference mismatch.",
+    "locator": "App.C.4 p.16"
+   }
+  ],
+  "seeds": null,
+  "seeds_notes": "App.B称原six-setting accuracy averaged over multiple independent runs，但未给次数、seed值或明确训练/解码随机源，故不填single也不编造3。扩展B1000 sample-level bootstrap不等于训练seed区间。",
+  "statistics_reported": {
+   "blind_recovery_percent": 7.8,
+   "blind_recovery_ci95_percentage_points": [
+    -15.2,
+    28.6
+   ],
+   "blind_n": [
+    58,
+    57,
+    58
+   ],
+   "pooled_donor_adoption_percent": {
+    "MVH-SFT": [
+     7.7,
+     4.9,
+     10.8
+    ],
+    "MVH-RL": [
+     9.2,
+     6.1,
+     12.7
+    ],
+    "ILVR-S1": [
+     5.7,
+     3.1,
+     8.8
+    ],
+    "ILVR-S2": [
+     5.3,
+     2.8,
+     8.3
+    ],
+    "Monet-SFT": [
+     11,
+     7.4,
+     14.9
+    ],
+    "Monet-RL": [
+     12.7,
+     8.8,
+     16.7
+    ]
+   },
+   "attention_transplant_minus_random_pp": {
+    "MVH-SFT": [
+     5,
+     -6,
+     16
+    ],
+    "MVH-RL": [
+     6,
+     -11,
+     23
+    ],
+    "ILVR-S1": [
+     3,
+     -5,
+     11
+    ]
+   },
+   "MOC_unweighted_means": [
+    0.94,
+    0.97,
+    1,
+    0.92,
+    0.78,
+    0.43
+   ]
+  },
+  "falsifier": "读者提出未执行：在selfswap无损、上下文/位置/计算预算匹配下，若真实target slots相对条件匹配donor/固定slots稳定提高，并在answer不可再次访问原图的受控bottleneck恢复视觉精度，则会限制本文negative generalization；若attention transplant−same-entropy random在预设足够功效样本上正下界>0，才支持具体定位。对本课题仅迁移控制原则，真实crop相对同尺寸同token-budget无新信息响应须有增量且通过selfsplice。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "main six settings Qwen2.5-VL-7B; CoMT additionally Qwen3-VL-8B",
+   "framework": null,
+   "evaluation_framework": "VLMEvalKit",
+   "group_size": 8,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "hardware": null,
+   "learning_rate": null,
+   "batch_size": null,
+   "sft_epochs_main": 3,
+   "rl_epochs_main": 2,
+   "ppo_epochs_per_rollout": 2,
+   "ppo_clip": 0.2,
+   "reward_weights": {
+    "outcome": 0.9,
+    "format": 0.1
+   },
+   "lambda_sft_latent": 1,
+   "lambda_rl_latent": 0.5,
+   "beta_latent_anchor": 0.1,
+   "teacher_ema": 0.999,
+   "sft_slots": 20,
+   "rl_eval_slots": 8,
+   "rho": 0.6,
+   "bootstrap_resamples": 1000
+  },
+  "setup_notes": "ILVR Stage1/2主表各3epoch；CoMT MVH-S/ILVR1各15epoch、MVH-R/ILVR2各2epoch。训练框架/LR/batch/总updates/GPU配置/采样温度未报。表A1的E2是每rollout PPO epoch，不能与完整RL2epoch混同。",
+  "cost": "未报告训练总token、优化step、wallclock或GPU·h。每SFT step额外EMA teacher forward，RL需detached rollout reinjection和frozen SFT reference forward；量化开销未给。G4明确72子任务×57题原V*网格。I中full-sequence HRBench8K attention replay因memory cost未做，不能把V*注意力结果说成四benchmark全面复现。",
+  "pitfalls": [
+   {
+    "text": "输入向量同维度不等于同尺度，注入前按初始embedding平均L2 norm校准，避免单纯scale异常。",
+    "quote": "Teacher targets τt,i ∈ Tt live in the vision-encoder\npost-merger space, which shares dimensionality\nwith the LLM input embedding space but not its\nscale.",
+    "locator": "App.A.7 p.13"
+   },
+   {
+    "text": "结构目标前移一位对齐，latent/image labels忽略而marker保留CE。",
+    "quote": "with labels at latent and image positions set to the\nignore index; the boundary markers remain supervised so that the model learns when to open and\nclose the latent tokens.",
+    "locator": "App.A.9 p.13"
+   },
+   {
+    "text": "负advantage cosine方向无约束，作者用frozen SFT cosine anchor软约束。",
+    "quote": "Equation (23) alone is\ndirection-unconstrained for negative advantages.\nWe anchor the policy to the frozen Stage-1 checkpoint θSFT",
+    "locator": "App.A.10 p.14"
+   },
+   {
+    "text": "blind实验有效样本过滤不完全相同；必须保留n58/n57差异而非假装全配对同样本。",
+    "quote": "with the image replaced by zeros, both with the\ncaptured slot states injected at the corresponding\npositions (n = 58) and without any injection (n =\n57 after a prompt-formatting filter).",
+    "locator": "App.G.3 p.20"
+   },
+   {
+    "text": "受内存限制的attention replay不可声称全suite覆盖。",
+    "quote": "All\nlayer-wise attention analyses use the V∗ subset\nused for attention replay; full-sequence HRBench8K replay was omitted due to memory cost (persetting values in Table A21).",
+    "locator": "App.I p.25"
+   }
+  ],
+  "code": null,
+  "lesson": "当结构化中间表征提升准确率时，先保留协议/长度与已有信息访问、只替换内容，再用selfswap确认干预管线；同时测损坏接口与干净删除，并以同熵random区分注意力集中与定位。高MOC/低可迁移性只能否定相应内容解释，不能省略slot计算容量和信息访问条件。"
+ },
+ "relevance": [
+  {
+   "problem": "P67",
+   "how": "直接提供对两分支测量竞争解释的诊断原则：格式/长度/内容分开且self-intervention作管线验证；未直接测crop必要性。",
+   "strength": 2
+  },
+  {
+   "problem": "P41",
+   "how": "内容替换可因协议损坏/相容性改变而失真；NoLatent、ZeroMarker、selfswap不同基线提供可迁移对照。",
+   "strength": 2
+  },
+  {
+   "problem": "P51",
+   "how": "attention差CI含0明确不当等效，blind injection不精确仅supporting，适合纠正本课题持平判断。",
+   "strength": 2
+  },
+  {
+   "problem": "P17",
+   "how": "forced-prefix 57题结果与自然生成分开，相关于prefill改变策略行为的诊断风险。",
+   "strength": 1
+  },
+  {
+   "problem": "P45",
+   "how": "sample bootstrap vs independent runs区分，但未给训练seed具体方差。",
+   "strength": 1
+  }
+ ],
+ "unknowns": [
+  "训练框架、硬件、wallclock、token/updates、LR/batch、rollout温度、maxturn、训练/解码独立run的次数seed及各run结果",
+  "std实现/epsilon，text reference-KL是否另有实现及系数，实际loss reduction，negative cosine首次回放gradient是否非零",
+  "blind 57/58过滤后paired bootstrap具体对齐，pooled donor总样本数/label匹配概率，same-image多问题原始对照记录",
+  "image attention entropy在image内renormalization及oracle region具体构造细节、峰层选择独立性",
+  "完整诊断源代码/原始逐题输出未核验；没有独立科学复现"
+ ],
+ "source_ambiguities": [
+  {
+   "issue": "slot perturbation小影响的指标口径",
+   "detail": "主文称accuracy moves at most.027；A14给Normal−avg(Zero,Random,Fixed)最大2.7pp而单benchmark范围可达4.1pp。应限制为benchmark-averaged sensitivity，不能称每题/每扰动/每benchmark最大2.7。FigA2图例未显示FixedSlot，无法仅凭图重构三扰动平均。",
+   "locators": [
+    "Sec4.1 p.5",
+    "TableA14 p.22",
+    "FigA2 p.21"
+   ],
+   "status": "measurement_scope"
+  },
+  {
+   "issue": "结构probe不能偷换内容因果",
+   "detail": "FigA1 baselines位置分半BSR1.12/1.11亦高于1；MVH RSR1.12/1.11 vs1/.98才是同图跨问题角色证据。FigA1 ILVR行未明确stage，而App.E将Stage1描述为多样，避免泛化所有ILVR都collapse。",
+   "locators": [
+    "App.E pp.16–18",
+    "FigA1 p.19"
+   ],
+   "status": "scope_and_stage_label_gap"
+  },
+  {
+   "issue": "soft cosine anchor不是严格trust-region边界",
+   "detail": "作者称bounded direction-only neighborhood，但Eq24是soft penalty且无半径/步长界；Eq25不含显式text KL。record按soft正则保留原式，不补常见GRPO实现。",
+   "locators": [
+    "Eqs22–25 p.14",
+    "TableA1 p.15"
+   ],
+   "status": "claim_vs_formal_guarantee"
+  },
+  {
+   "issue": "global干预实现语句与特殊layer-swap协议",
+   "detail": "App.F称all interventions input embedding level，App.G.4明确L5/14/27 hidden-state swap；按F的基础条件与G特殊干预分别记录，不把所有干预统一写成embedding操作。",
+   "locators": [
+    "App.F pp.18–19",
+    "App.G.4 pp.21–22"
+   ],
+   "status": "protocol_scope"
+  },
+  {
+   "issue": "57/58 paired cohort与small-set不确定性",
+   "detail": "blind baseline过滤1例，图像/注入n58；作者称paired uncertainty但未交代被过滤例如何配对。Monet-R MOC两benchmark分母各2；Monet-R attention表n2，不能作强generalization。",
+   "locators": [
+    "TableA15 p.22",
+    "TableA18 p.24",
+    "TableA21 p.27"
+   ],
+   "status": "sampling_and_uncertainty_boundary"
+  }
+ ],
+ "visual_verification": {
+  "pages": [
+   4,
+   6,
+   12,
+   13,
+   14,
+   15,
+   18,
+   19,
+   20,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27
+  ],
+  "scope": "Table1/Eq4–5；Eq6–25/TableA1；A6–A12/A14–A21；Fig4/A1/A3–A6逐页原PDF渲染核对。",
+  "artifacts": [
+   "readings/_evidence/2606.01287/page-04.png",
+   "readings/_evidence/2606.01287/page-06.png",
+   "readings/_evidence/2606.01287/page-12.png",
+   "readings/_evidence/2606.01287/page-13.png",
+   "readings/_evidence/2606.01287/page-14.png",
+   "readings/_evidence/2606.01287/page-15.png",
+   "readings/_evidence/2606.01287/page-18.png",
+   "readings/_evidence/2606.01287/page-19.png",
+   "readings/_evidence/2606.01287/page-20.png",
+   "readings/_evidence/2606.01287/page-22.png",
+   "readings/_evidence/2606.01287/page-23.png",
+   "readings/_evidence/2606.01287/page-24.png",
+   "readings/_evidence/2606.01287/page-25.png",
+   "readings/_evidence/2606.01287/page-26.png",
+   "readings/_evidence/2606.01287/page-27.png"
+  ]
+ },
+ "review_status": "independent_source_audit_complete",
+ "scientific_replication": false
+}

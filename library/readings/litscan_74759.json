@@ -1,0 +1,158 @@
+{
+ "paper_key": "litscan:74759",
+ "title": "RLSF-V: Mitigating Hallucinations in MLLMs via Fuzzy Semantic Self-Feedback",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74759.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3",
+   "Tables 1–4",
+   "4.3–4.4",
+   "B.1",
+   "E"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "候选logits做min–max模糊隶属度，内容词top-R不确定性排序构造DPO偏好",
+  "why_non_obvious": "局部logit相对间隔与内容词选择分开控制，避免全词平均稀释风险",
+  "trigger_condition": "When unlabeled captions have cached logits, rank local content-token uncertainty to form preference pairs",
+  "contribution_type": "self-feedback preference training",
+  "abstract_strategy": "从内部相对竞争信号提取局部可靠性代理",
+  "abstract_trigger_condition": "候选答案具有可比较内部logits但缺少标注",
+  "abstract_key_step": "先过滤内容词再平均最不确定R位，低分chosen高分rejected",
+  "abstract_why_non_obvious": "正仿射logit不变性不等于事实正确性校准",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74759#s1",
+   "object": "caption preference pair",
+   "information": "同一reference policy每prompt10个候选及logits/POS",
+   "operation": "minmax→binary fuzzy entropy→POS top-R→DPO",
+   "claimed_effect": "LLaVA7B AMBER HalRate 35.9→5.1；移除top-R升至50.3",
+   "conditions": [
+    "10k prompts",
+    "N=10",
+    "R=30 LLaVA"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 3",
+    "quote": "W/O Top-R token pooling"
+   },
+   "failure_boundary": "自信幻觉可成为chosen；Qwen3 HalRate仍48.1",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "将caption事实性弱信号用于偏好训练，不直接估crop动作价值",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "尺度不变不确定性可作待校准特征",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Shannon entropy / evidence / energy with same POS+top-R",
+   "kind": "controlled signal ablation"
+  },
+  {
+   "name": "OPA-DPO",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者：内部自反馈何时充分尚待明确。",
+   "quote": "sufficient versus when it is best used as a complementary signal.",
+   "locator": "Appendix E"
+  },
+  {
+   "text": "读者：Prop3.2 Shannon极限为0隐含唯一最大logit；k个并列最大时极限log k。",
+   "locator": "Prop3.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "无top-R的7B HalRate50.3高于base35.9",
+  "load_bearing_assumption": "不确定内容词能识别事实错误而非仅难词",
+  "scope": "caption factuality preference",
+  "success_criterion": "固定采样与长度比较top-R/POS、entropy，独立人工事实率改善",
+  "why_open": "内部信号对自信错误和关系词失灵"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "3.2–3.4"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table 4 fixed POS/top-R evaluator replacement"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mu_{tv}=(z_{tv}-z_{t,min})/(z_{t,max}-z_{t,min}+\\epsilon); H_t=-\\sum_{v\\in S_t}[\\mu\\ln\\mu+(1-\\mu)\\ln(1-\\mu)]/(|S_t|\\ln2)",
+    "locator": "Eq4–5"
+   },
+   {
+    "latex": "U=\\frac1{\\min(R,|T|)}\\sum_{r=1}^{\\min(R,|T|)}H_{(r)};\\quad L=-E\\log\\sigma[\\beta(\\log\\pi_\\theta(y^+)/\\pi_{ref}(y^+)-\\log\\pi_\\theta(y^-)/\\pi_{ref}(y^-))]",
+    "locator": "Eq13,16"
+   }
+  ],
+  "signal_routing": "POS/top-R仅影响整答案偏好标签；DPO整chosen/rejected序列概率，非仅内容token loss。",
+  "normalization": "logits minmax；fuzzy entropy除|S|ln2；top-R内容位平均；无GRPO组std。",
+  "invariance": "固定候选集、epsilon=0且非零range时正仿射logits严格不变；epsilon>0非严格尺度不变；非PBRS。",
+  "baseline_or_potential": "冻结reference policy DPO likelihood ratio。",
+  "degenerate_cases": "|T|=0分母未规定；range=0 epsilon使全mu0可产生假确定；N=1/同分chosen=rejected无偏好；p≈0不会产生正确候选。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3移除top-R/POS；Table4仅换uncertainty metric，13B evidence HalRate3.2反优fuzzy4.4。",
+  "negative_results": [
+   {
+    "text": "13B evidence HalRate3.2优于fuzzy4.4；Qwen3 OCRBench83.0→82.4。",
+    "locator": "Tables2,4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：盲评自信错误子集，若低U优先选错或收益仅由答案长度变化，则事实性代理解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA7B/13B; Qwen2.5VL3B/Qwen3VL8B/InternVL3.5",
+   "framework": "LoRA DPO",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "10k×10 generations；β=.1；2epochs",
+  "pitfalls": [],
+  "code": "https://github.com/XLearning-SCU/RLSF-V",
+  "lesson": "当缓存logits做自反馈时，pool范围会支配标签质量，应独立测top-R和POS消融。"
+ }
+}

@@ -1,0 +1,172 @@
+{
+ "paper_key": "litscan:75333",
+ "title": "MIRL: See First, Reason Later: Mutual Information-Guided Reinforcement Learning for Vision-Language Models",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75333.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "2–3",
+   "Table1–3",
+   "4.1–4.4",
+   "6",
+   "A.1–A.4",
+   "C.1–C.4"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "先采样caption按视觉依赖proxy选topK再fork reasoning，caption与reasoning分开奖励/优势",
+  "why_non_obvious": "廉价前缀筛选与分段监督可独立消融，但视觉依赖未必正确",
+  "trigger_condition": "When early descriptions bottleneck reasoning, screen prefixes before spending full rollout budget",
+  "contribution_type": "sampling and stage-specific reward",
+  "abstract_strategy": "把信息获取质量与终局推理成功分开优化",
+  "abstract_trigger_condition": "可识别短描述前缀且其质量预测终局",
+  "abstract_key_step": "所有描述保留辅助更新，高分描述分叉更多后续",
+  "abstract_why_non_obvious": "独立正反馈可改进描述但不能取代正确性，本文也见MI-only弱于组合",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75333#s1",
+   "object": "description roots and reasoning branches",
+   "information": "same-policy with/without-image logprob difference, final GT answer",
+   "operation": "N10→topK6→每根2后续；分阶段reward",
+   "claimed_effect": "平均70.22 vs DAPO16 69.76；同fork random68.74；MI-only68.81",
+   "conditions": [
+    "Qwen2.5VL7B",
+    "ViRL39K",
+    "12 full trajectories"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "68.74       68.02           70.22"
+   },
+   "failure_boundary": "视觉依赖proxy非真正MI保证；路由/辅助reward正文附录冲突",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "明确caption/推理两通道优势，但精确训练定义有冲突",
+   "strength": 3
+  },
+  {
+   "problem": "P42",
+   "how": "caption视觉依赖信号与事实性相关但非等价",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "无图比较仍不证明crop当前policy价值",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DAPO8/12/16",
+   "kind": "method"
+  },
+  {
+   "name": "random/bottom selection, task-only/MI-only",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "全流程仅一个模型架构；模型外MI相关性不是完整训练迁移证据。",
+   "quote": "on a single model architecture.",
+   "locator": "6 Model Generalization"
+  },
+  {
+   "text": "读者：Eq3数据处理界要求I→D→a马尔可夫，但Eq1和fork仍把I提供给reasoner，不能无条件用该界。",
+   "locator": "Eq1,3;3.2"
+  },
+  {
+   "text": "读者：Table5含前缀与MI开销为86.3%而非总算力省25%；25%只计完整轨迹12/16。",
+   "locator": "Table5"
+  }
+ ],
+ "question": {
+  "observed_failure": "same-fork random68.74 vs topMI70.22；MI-only68.81",
+  "load_bearing_assumption": "视觉依赖的caption是高成功率前缀而非自信视觉偏差",
+  "scope": "caption筛选及分段credit",
+  "success_criterion": "同总token/forward预算下超过random前缀，caption事实性和终局均改善",
+  "why_open": "proxy与真实必要性/事实性不同且实现定义不一致"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "3.2–3.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2–3 same fork/reward ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "s(D)={1\\over|D|}\\sum_t[\\log p_\\theta(y_t|I,q,y_{<t})-\\log p_\\theta(y_t|q,y_{<t})];\\ r_{MI}=\\operatorname{clip}(s,0,.5)/.5",
+    "locator": "Eq5;A.2 Eq9–11 (sample surprisal proxy, not full entropy)"
+   },
+   {
+    "latex": "A_i=(r_i-\\mu_G)/\\sigma_G;\\quad r_{reason}=.9r_{acc}+.1r_{format};\\ r_{desc}=.9r_{acc}+.1r_{MI}",
+    "locator": "Eq2;C.3 Eq18–19"
+   }
+  ],
+  "signal_routing": "正文3.3称all N描述独立MI优势、task优势full trajectories；Table3却称task only reasoning；C.3描述reward混accuracy，和独立MI-only叙述冲突。未选描述无最终answer的r_acc如何赋值、fork共享前缀重复计权、mask/聚合分母均未知。",
+  "normalization": "正文Eq2明确group mean+population std，无epsilon；称MI/task分别归一化。C3混合reward是否先混再std不明确。MI先clip到[0,.5]再除.5。",
+  "invariance": "非PBRS；单独MI通道若乘λ后再std则共同尺度抵消，若loss外乘则保留；混合accuracy+MI不能简单当共同尺度。无代码证据不能确定λ实现。",
+  "baseline_or_potential": "group relative；同policy无图forward是proxy对照，不是可用证据的因果价值。",
+  "degenerate_cases": "相同MI/全正确/全错误通道std=0未示处理；clipping饱和致同分；p≈0无正确后续；高MI可强化视觉相关幻觉；单caption组无优势。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2同10→6×2只换top/random/bottom；Table3同fork换reward。",
+  "negative_results": [
+   {
+    "text": "Table3 VL task-only65.23优于decoupled63.46。",
+    "locator": "Table3"
+   },
+   {
+    "text": "AppendixA.3自动description定位GPT4一致率74%，非人工金标。",
+    "locator": "A.3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：控制长度/视觉依赖而仅扰动事实正确性；若MI优先错caption或同预算random追平，则核心筛选解释受否。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B",
+   "framework": "verl DAPO",
+   "group_size": 10,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8×A10080GB；Table5 MIRL12等效13.8 vs16；正文2epochs与附录2–3、KL0与.01冲突",
+  "pitfalls": [],
+  "code": "https://github.com/youwyouw/mirl-main",
+  "lesson": "当缓存前缀fork时，应单独核共享前缀loss计权、未选分支的accuracy缺失以及总forward成本。"
+ }
+}

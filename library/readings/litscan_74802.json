@@ -1,0 +1,163 @@
+{
+ "paper_key": "litscan:74802",
+ "title": "SAGE: Strategy-Aware Optimization Modeling with Reasoning LLMs",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74802.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "2",
+   "Tables1–5",
+   "6",
+   "A.3",
+   "B.1",
+   "C.1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "显式strategy/modeling/check轨迹SFT，再固定分段权重GRPO及正确条件效率奖励",
+  "why_non_obvious": "将早期建模范式区别于后续实现token，但并未估计因果动作贡献",
+  "trigger_condition": "When high-level formulation choices govern solver success, expose and upweight strategy segments",
+  "contribution_type": "trajectory construction and credit weighting",
+  "abstract_strategy": "结构化决策先验与可执行终局反馈结合",
+  "abstract_trigger_condition": "同轨迹不同阶段作用不同且有可验证终局",
+  "abstract_key_step": "先让SFT覆盖多策略，再按段乘优势",
+  "abstract_why_non_obvious": "固定权重能增强策略更新但不区分必要与冗余动作",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74802#s1",
+   "object": "strategy/modeling/check and solver code",
+   "information": "teacher multi-strategy traces, GT objective, solver iterations/gap/nodes",
+   "operation": "100K SFT后8K RL；权重2/1.5/1与条件效率reward",
+   "claimed_effect": "Table4 full80.3，去weight76.7，去eff77.4，SFT74.0",
+   "conditions": [
+    "Gurobi",
+    "DeepSeek14B",
+    "rollout8"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "RL w/o weighted"
+   },
+   "failure_boundary": "非视觉任务；策略权重手设；输出正确不保证完整建模语义正确",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "在组优势之后乘token段权重，可迁移caption/decision/action段但不构成因果credit",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "先提供多种正确策略SFT再RL",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SIRL / StepORLM",
+   "kind": "method"
+  },
+  {
+   "name": "without weighted / efficiency / template / RL",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "OR结构和反馈迁移需重设计；依赖强teacher。",
+   "quote": "teacher model to generate strategy-explicit reasoning traces.",
+   "locator": "6"
+  },
+  {
+   "text": "读者：求解器返回一致目标不能证明模型忠实表达自然语言全部约束。",
+   "locator": "6"
+  }
+ ],
+ "question": {
+  "observed_failure": "去分段权重平均80.3降76.7",
+  "load_bearing_assumption": "早期策略token比后续token更值得增大更新",
+  "scope": "固定reward下的caption/动作决策段",
+  "success_criterion": "同算力与有效梯度规模下准确率不降，冗余crop下降",
+  "why_open": "固定段权重并未证明哪些crop必要"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "2.1–2.3 SFT→RL"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "2.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L=-\\sum_{i=1}^G\\sum_{t=1}^{T_i}\\alpha_t\\min(\\rho_{it}A_i,\\operatorname{clip}(\\rho_{it},1-\\eta,1+\\eta)A_i)",
+    "locator": "Eq5 (literal sum, no denominator)"
+   },
+   {
+    "latex": "R=.2N_{seg}+R_o+\\mathbf1[R_o=1](1-\\tanh(M/\\alpha_{eff}));\\quad R_o\\in\\{0,.2,.4,1\\}",
+    "locator": "Eq6–11"
+   },
+   {
+    "latex": "M_{LP}=\\mathrm{Iterations};\\ M_{MILP}=\\beta_g\\mathrm{Gap}+\\beta_n\\mathrm{Nodes}",
+    "locator": "Eq9–10; C.1"
+   }
+  ],
+  "signal_routing": "单一轨迹A_i广播全部生成token，strategy2/modeling1.5/others1（含check/code）；权重在优势外；无局部反事实奖励。",
+  "normalization": "A_i仅称group-relative，精确std/epsilon未知；Eq5直接求和；C.1说Gap/Nodes先solver-scale归一化但具体除法式未展示；Table15 alpha_iter15,alpha_gap1/3,alpha_nodes5,beta_gap=beta_nodes=.5；alpha_eff MILP数值映射未明。",
+  "invariance": "效率加分是任务偏好改变，非严格PBRS；若采用组std共同正比例reward会抵消，post-A段相对权重不会。",
+  "baseline_or_potential": "组相对baseline，未给显式公式；KL系数.001另列Table7。",
+  "degenerate_cases": "全同reward组可能无A信号（取决于未公开精确定义）；全正确组仍可有solver效率差；全错仍有format/execution分差；无正确候选不产生效率奖励。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4分拆weight/efficiency/template；Table5 hard组full50 vs noRL25；效率仅7个各法都能稳定答对问题。",
+  "negative_results": [
+   {
+    "text": "去template IndustryOR Easy81.8高于full77.3。",
+    "locator": "Table5"
+   }
+  ],
+  "seeds": "B.1五次不同decoding seeds；不是五个训练种子",
+  "falsifier": "读者：将段权重打乱/调整总梯度尺度仍同等获益，则战略credit解释不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeek-R1-distill-Qwen14B; Qwen3-8B",
+   "framework": "VeRL",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "8×H10080GB；SFT100K/RL8K；各2epochs",
+  "pitfalls": [],
+  "code": "https://github.com/rachhhhing/SAGE",
+  "lesson": "当分段加权时应记录各段有效梯度与token数，避免把总步长变化当作信用改善。"
+ }
+}

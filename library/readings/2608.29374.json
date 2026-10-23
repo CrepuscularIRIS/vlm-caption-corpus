@@ -1,0 +1,132 @@
+{
+ "paper_key": "2608.29374",
+ "title": "Think, Look, and Revise: Inconsistency-Aware Visual Self-Correction in MLLMs",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2608.29374.txt",
+  "sections_read": [
+   "Abstract; contributions; §3 Method; §4 Data; §5 Tables1-2; Limitations",
+   "AppA settings; AppD Eqs4-5; AppE Tables4-6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "五类核验/重试/回退SFT轨迹+结果条件化反思和定位奖励。",
+  "key_step": "以re-examine正则cue和终答正确性定义反思奖；以最终IoU及正向改善定义定位奖。",
+  "why_non_obvious": "会调用工具不等于会质疑其输出；cue也不等于语义核验。",
+  "trigger_condition": "When tool evidence is unreliable, teach verification before rewarding successful correction.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先示范失败恢复，再奖励结果与可测修正。",
+  "abstract_trigger_condition": "When intermediates fail, seed recovery before optimizing outcomes.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "组合成功条件化标记与结构改进。",
+  "abstract_why_non_obvious": "行为支撑与结果优化是不同瓶颈。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.29374#s1",
+   "object": "多轮工具轨迹和目标框",
+   "information": "策略见图/题/工具回执；teacher生成轨迹和参考框，reward见GT",
+   "operation": "SFT五类工具/无工具验证轨迹，再GRPO训练总奖励",
+   "claimed_effect": "3B CVBench83.83 vs无两新奖励79.24；RL-only75.34；7B总均分73.15",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3; Tables1-2; AppE Table6",
+    "quote": "predefined self-correction token re-examine."
+   },
+   "failure_boundary": "词面cue不验证真实纠错或必要性；未证明减少裁图。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P27",
+   "strength": 2,
+   "how": "显式纠错轨迹+RL可迁移，需改caption/crop协议。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "同cold-start移除反思/grounding、RL-only、ReVPT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "专有teacher框/轨迹依赖；空间训练损害知识任务；外部工具错误仍可阻止恢复。",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "RL-only CVBench75.34 vs完整83.83；3B MathVista61.20→55.37。",
+  "load_bearing_assumption": "工具SFT和终答奖励足以教会核验纠错。",
+  "scope": "3B/7B视觉多工具感知任务",
+  "success_criterion": "计数/空间准确率及工具失败恢复提升",
+  "why_open": "既有数据缺乏失败核验行为，奖励不直接鼓励恢复。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4/AppE.3 Table6"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=r_{acc}+r_{format}+r_{correction}+r_{IoU}+r_{IoU++};\\quad r_{IoU++}=|\\hat B|^{-1}\\sum_j\\max(0,\\max_kIoU(\\hat B_j^T,B_k)-\\max_kIoU(\\hat B_j^0,B_k))",
+    "locator": "§3.3 Eq3"
+   },
+   {
+    "latex": "A_k=(r_k-mean(r_{1:C}))/std(r_{1:C})",
+    "locator": "AppD Eq4"
+   }
+  ],
+  "signal_routing": "轨迹总reward/advantage，没有逐crop路由；Eq5轨迹比率，细节token mask未报。",
+  "normalization": "mean+std GRPO G8；预测框平均，每框与GT取max。",
+  "invariance": "正部截断IoU改善+终态IoU改变目标，非严格PBRS。",
+  "baseline_or_potential": "组均奖、teacher参考框。",
+  "degenerate_cases": "无框更新IoU++=0；有cue答对+1答错-1，无cue0；等reward组std保护未在公式给出。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同cold-start奖励拆分、RL-only、5/10%teacher框jitter。",
+  "negative_results": [
+   {
+    "text": "5%jitter均分-.63，10% -3.69；知识任务退化，混域数据部分恢复。",
+    "locator": "AppE Tables4-5"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "若无语义核验但输出cue即可获得相同提升，则真实核验机制未被证实。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B/7B",
+   "framework": "LLaMA-Factory/VeRL",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "4/8 A10080GB；SFT2epoch；RL1epoch470updates；GPUh未知。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当要学工具错误恢复时，先SFT种核验/回退，再对cue hack和定位噪声设对照。"
+ }
+}

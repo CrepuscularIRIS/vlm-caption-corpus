@@ -1,0 +1,411 @@
+{
+ "paper_key": "2606.08719",
+ "title": "Thinking Without Images: Internalizing Visual Manipulation with On-Policy Self-Distillation",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.08719.pdf",
+  "version": "v1",
+  "pages": 12,
+  "version_observed": "PDF p.1: arXiv:2606.08719v1 [cs.CV] 7 Jun 2026; latest remote revision not checked.",
+  "sections_read": [
+   "Abstract; 1 Introduction; Figure1",
+   "2 Related Work",
+   "3.1 From Thinking with Images to Thinking with Imagination; Figure2",
+   "3.2 Imagine-OPD; Eq1",
+   "4.1 Experimental Setup; 4.2 Main Results; Table1",
+   "5.1 Efficiency Analysis; Figure4",
+   "5.2 Attention Analysis; Table2; Figure3",
+   "5.3 Ablation Study; Tables3–4",
+   "6 Conclusion; Limitations; References pp.8–10",
+   "Appendix A Relative Attention Map Computation p.11",
+   "Appendix B Teacher/Student/Self-Bbox Proposal Prompts pp.11–12"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "在学生自己的纯文本想象轨迹上，用冻结同初始化教师提供逐token分布；教师额外看GT区域裁图与答案，学生只看原图问题，通过reverse KL转移特权视觉上下文。",
+  "key_step": "对同一学生前缀y<t比较q_t=πθ(I,Q,y<t)与p_t=πθ̄(I,Q,crops,A,y<t)，最小化平均KL(q_t||p_t)；θ̄固定，学生不断重采自身轨迹。",
+  "why_non_obvious": "无需更大外部教师或预先正确的想象示范；相同初始模型通过更丰富输入生成教学分布。但同初始化并不等于当前策略，GT答案与区域标注是实质监督，不能称无标注。",
+  "trigger_condition": "When reliable annotated local evidence is available during training but deployment should avoid crop tools, distill a frozen privileged-input teacher on the student’s own textual reasoning prefixes.",
+  "reviewer_praise": [
+   "low_evidence: no reviews_path or independent review artifact supplied."
+  ],
+  "reviewer_concern": [
+   "low_evidence: reviewer concerns unavailable; reader observations are separated below."
+  ],
+  "acceptance_signal": "low_evidence; manifest decision=null copied without inferring acceptance.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Move privileged observations into training and teach an inexpensive deployment path on its own generated prefixes.",
+  "abstract_key_step": "Hold a teacher fixed, enrich its context with annotated evidence and an answer, then match its next-step distribution at each student-generated prefix.",
+  "abstract_why_non_obvious": "A teacher can gain instructional power from information rather than larger parameters, but its privileged outputs are not proof the student possesses the same observable evidence.",
+  "abstract_trigger_condition": "When rich evidence exists for training and external operations are costly at deployment, transfer conditional distributions into a path that uses only the original input."
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.08719#s1",
+   "object": "On-policy student textual trajectory and token distributions",
+   "information": "Student sees original imageI,questionQ and own prior tokensy<t. Frozen teacher initialized from the same base checkpoint seesI,Q,allGT evidence crops,GTanswerA and exactlyy<t. It does not see future studenttokens in the formal conditional, but has oracle regional evidence and answer from the start. It is not the updated current policy.",
+   "operation": "Sample one student response perprompt; score both distributions at each sampled prefix; minimize mean reverse KL(q_t||p_t) while keeping privileged teacher fixed.",
+   "output": "Evidence-and-answer-conditioned dense distillation loss for every response token, without group advantage or action-necessity labels.",
+   "claimed_effect": "Table4 Qwen3-VL-4B base/GRPO/frozenOPD:V*80.1/83.8/88.0;HR4K78.3/79.5/83.3;HR8K72.9/74.3/78.6. Online-teacher ablation0.0 onallthree. Table1 mean70.4→76.7 at4B and72.6→77.1 at8B. These are author-reported model results, not isolated proof of complete rationale fidelity.",
+   "conditions": [
+    "GTanswer and one ormore annotated evidence boxes available attraining",
+    "Stable teacher with privileged view is usefully different from student",
+    "Data selected by base4B answeringcorrectly≥2of4 before training",
+    "Student can already generate usable text-imagination structure under prompt"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.2 p.5 Eq1",
+    "quote": "We train the student on its own generated trajectories, following the on-policy distillation principle (Gu et al., 2026; Agarwal et al., 2024; Zhao\net al., 2026). Let y = (z1:K , Â) ∼ πθ (· | I, Q)\ndenote a student-generated output. At each token position t, the student distribution is qt (·) =\nπθ (· | I, Q, y<t ), while the teacher distribution is\n′\npt (·) = πθ̄ (· | I, Q, I1:M\n, A, y<t ). We minimize\nthe averaged token-level reverse KL along the student rollout:\n\n\n|y|\nX\n1\nLdistill (θ) = E \nDKL (qt ∥pt ) , (1)\n|y|\nt=1\n\nwhere the expectation is over training examples\nand student-generated trajectories. Because both\ndistributions are evaluated on the student’s own\nprefixes, the teacher supervises the decisions the\nmodel actually makes, including partially correct\nor drifting imagination steps."
+   },
+   "failure_boundary": "No all-wrong-group experiment; pool prefilter excludes hardest base failures. Fixed teacher can be wrong or answer-biased; full KL/gradient estimator and token masks are not given in implementation detail. Online-teachercollapse source cause is not independently diagnosed.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.08719#s2",
+   "object": "Inference interface replacing explicit local image manipulation",
+   "information": "At inference the trained student receives only original image and question, not GTanswer,boxes,crops or externaltool returns. Textual region selection and imagined observation contain no newly acquired pixels.",
+   "operation": "Represent each inspection as textualz_k=(regionℓ_k, imaginedobservationo_k) interleaved with reasoning; describe mentalcrop/zoom instead of invokingtool and terminate withanswer.",
+   "output": "Single-original-image autoregressive text reasoning; no intermediate image re-encoding or crop operation.",
+   "claimed_effect": "Table1 allfour overall scores improve vsownbackbones; reported1.5–2.7×throughput over toolbaselines (Fig4/§5.1). 8B V*87.4 remains belowDeepEyes90.1/TreeVGR91.1, so bestaverage is not universal superiority.",
+   "conditions": [
+    "Original student input retains enough task information to generalize",
+    "Prompted textual imagination is followed",
+    "Deployment values removing alltoolcalls rather than selective necessaryuse"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.2 p.5; §5.1 pp.6–7",
+    "quote": "At inference time, the model receives only\nthe original image and question and performs visual reasoning through Thinking with Imagination,\nwithout explicit image manipulation."
+   },
+   "failure_boundary": "Cannot recreate information destroyed by studentimage resizing from firstprinciples; no resolution-stratified readability proof. Eliminates crop capability structurally, so it does not solve when-to-crop or preserving recover behavior. No causal test that verbal imagined evidence is actually used.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-4B",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-8B",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "Answer-only privileged teacher",
+   "kind": "method"
+  },
+  {
+   "name": "GT-crops teacher without answer",
+   "kind": "method"
+  },
+  {
+   "name": "Self-proposed crop teacher with answer",
+   "kind": "method"
+  },
+  {
+   "name": "Frozen vs online teacher",
+   "kind": "method"
+  },
+  {
+   "name": "PixelReasoner",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "TreeVGR-7B",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o",
+   "kind": "method"
+  },
+  {
+   "name": "Gemini-2.5-Flash",
+   "kind": "method"
+  },
+  {
+   "name": "Gemini-2.5-Pro",
+   "kind": "method"
+  },
+  {
+   "name": "Gemini-3-Flash",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL3-8B",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B/32B",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-30B-Thinking",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-235B-A22B",
+   "kind": "method"
+  },
+  {
+   "name": "Kimi-K2.5",
+   "kind": "method"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HR-Bench-4K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HR-Bench-8K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "TreeBench",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Only zoom-based intermediateviews fromannotatedevidence tested; broader manipulations may needother supervision.",
+   "kind": "author_claim",
+   "locator": "Limitations p.8",
+   "quote": "Our current study focuses on zooming-based intermediate views derived from annotated evidence\nregions. This keeps the supervision signal clear\nand stable, but also limits the scope of the current conclusions. More diverse and complex image\nmanipulations may require different supervision\nmechanisms and may not transfer equally well into\nThinking with Imagination."
+  },
+  {
+   "text": "Training requires region annotations; weaker/noisier supervision remains future work despite selfbox ablation.",
+   "kind": "author_claim",
+   "locator": "Limitations p.8",
+   "quote": "In addition, our current\nexperiments require region annotations available\nduring training, extending the framework to weaker\nor noisier region supervision is an important direction for future work."
+  }
+ ],
+ "question": {
+  "observed_failure": "Authors motivate redundant toolcalls/longtraces and noisy outcome-trained visualcues, but do not give a baseline redundant-callrate or human cue-errorrate. Table1 base4B mean70.4 andtoolbaseline means67.6–74.1 establish taskperformance, not measured necessity/fidelity failure.",
+  "load_bearing_assumption": "Access to explicit crop returns during inference is required to obtain the learned visualreasoning gains; high-quality fixed imagination demonstrations or a larger externalteacher are required to train a no-tool alternative.",
+  "scope": "Zoom/crop evidence transferred to text-imagination at4B/8B; one originalimage atdeployment, not broad manipulation or adaptive toolpolicy.",
+  "success_criterion": "Reported: fourbenchmark averageaccuracy improves and throughput exceeds explicittool baselines, with evidence-regionattentioncoverage higher. No predeclared noninferiority, causalgrounding or uncertainty test.",
+  "why_open": "SFTfixedtraces have on/offpolicy mismatch, outcomeRL lacksdense imagined-content supervision; richer teachercontext atstudent prefixes is offered as alternative. ConcurrentVision-OPD shares privilegedcrop/fullimagestudent principle; paper describes textualimagination as its differentiation, not independently verified here."
+ },
+ "question_quality": {
+  "numeric_failure": 0,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "In Table 3, removing evidence views and keeping only answer conditioning drops V* from 88.0\nto 82.2, HR-4K from 83.3 to 78.5, and HR-8K\nfrom 78.6 to 73.3. Removing the answer hint is\nless harmful, indicating that local visual evidence\nis more important than answer awareness for supervising imagination.",
+   "locator": "§5.3 p.7 Table3",
+   "note": "Executed teacherinformation ablations separate crops from answerhint, with selfboxes and teacherupdate ablations. Other compute/seed equivalence not fully disclosed."
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "role": "primary",
+   "quote": "each explicit inspection step (ak , Ik′ ) with a textual\nimagination step zk = (ℓk , ok ), where ℓk specifies\nthe region to mentally inspect and ok imagines what\ncloser inspection of that region would reveal. In\nthis formulation, ℓk plays the role of the inspection\ndecision ak , while ok plays the role of the local\nobservation obtained from Ik′ . Figure 1 summarizes this shift from explicit image manipulation to\ninternal textual imagination.",
+   "locator": "§3.1 p.4",
+   "note": "Replace explicit tool+returned image with textual region/observation pair; essentialtaskperformance preservation is empirical andlimited, not a guarantee that lostpixelinformation is recoverable."
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "role": "supporting",
+   "quote": "We train the student on its own generated trajectories, following the on-policy distillation principle (Gu et al., 2026; Agarwal et al., 2024; Zhao\net al., 2026). Let y = (z1:K , Â) ∼ πθ (· | I, Q)\ndenote a student-generated output. At each token position t, the student distribution is qt (·) =\nπθ (· | I, Q, y<t ), while the teacher distribution is\n′\npt (·) = πθ̄ (· | I, Q, I1:M\n, A, y<t ). We minimize\nthe averaged token-level reverse KL along the student rollout:\n\n\n|y|\nX\n1\nLdistill (θ) = E \nDKL (qt ∥pt ) , (1)\n|y|\nt=1\n\nwhere the expectation is over training examples\nand student-generated trajectories. Because both\ndistributions are evaluated on the student’s own\nprefixes, the teacher supervises the decisions the\nmodel actually makes, including partially correct\nor drifting imagination steps.",
+   "locator": "§3.2 p.5",
+   "note": "Generatedstudentprefixes and modelsofttargets supply missingdense process labels; label-free is not claimed becauseGTanswer andregionannotations remain required."
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "quote": "In Table 3, removing evidence views and keeping only answer conditioning drops V* from 88.0\nto 82.2, HR-4K from 83.3 to 78.5, and HR-8K\nfrom 78.6 to 73.3. Removing the answer hint is\nless harmful, indicating that local visual evidence\nis more important than answer awareness for supervising imagination.",
+   "locator": "§5.3 p.7 Table3",
+   "note": "Separates privilegedanswer fromprivilegedvisualview as potentialexplanations; no random/shuffledcrop negativecontrol."
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "I_m^{\\prime}=\\operatorname{crop}(I,B_m),\\quad z_k=(\\ell_k,o_k),\\quad y=(z_{1:K},\\hat A)\\sim\\pi_\\theta(\\cdot\\mid I,Q)",
+    "locator": "§3.1–3.2 pp.4–5, unnumbered"
+   },
+   {
+    "latex": "q_t(\\cdot)=\\pi_\\theta(\\cdot\\mid I,Q,y_{<t}),\\quad p_t(\\cdot)=\\pi_{\\bar\\theta}(\\cdot\\mid I,Q,I_{1:M}^{\\prime},A,y_{<t})",
+    "locator": "§3.2 p.5, unnumbered; θ̄ fixed"
+   },
+   {
+    "latex": "\\mathcal L_{distill}(\\theta)=\\mathbb E\\left[\\frac1{|y|}\\sum_{t=1}^{|y|}D_{KL}(q_t\\Vert p_t)\\right]",
+    "locator": "Eq1 p.5",
+    "note": "Reverse KL student||teacher; expectation includesstudent-generatedtrajectories. Actualfullvocabularyvs sampledtoken estimator, gradientthrough trajectorydistribution, truncation and detachedprefixhandling are unspecified. Do not silently substitute PPO or forwardKL."
+   },
+   {
+    "latex": "A^{task}=\\operatorname{Attn}(I,Q),\\quad A^{ref}=\\operatorname{Attn}(I,Q^{ref}),\\quad A^{rel}=\\operatorname{Norm}(A^{task}-A^{ref})",
+    "locator": "Appendix A p.11, unnumbered; analysis only"
+   },
+   {
+    "latex": "\\widetilde A^{rel}=\\max(A^{task}-A^{ref},0),\\quad\\operatorname{Coverage}=100\\frac{\\sum_{j\\in\\Omega}\\widetilde A_j^{rel}}{\\sum_j\\widetilde A_j^{rel}}",
+    "locator": "Appendix A p.11, unnumbered; Table2 metric only"
+   }
+  ],
+  "signal_routing": "Dense teacherdistribution at everygeneratedresponseposition, including imaginedregion, imaginedobservation andfinalanswer, averaged1/|y|. No peraction advantage, cropcost, factualitymask, or outcomeconditioned routing. Teacher gradients frozen; originalimage student alone updated. Exact assistant/padding/specialtokenmask details unreported. AppendixA attention is analysis, never a trainingreward.",
+  "normalization": "Mean overresponsepositions only inEq1; no groupmean,std,RLOO or rewardnormalization inImagine-OPD. One rollout perprompt. FullKL internally sums vocabularyprobabilities; its implementation/temperature are unreported. Relativeattention analysis subtracts genericdescription map, clipspositivepart forcoverage, rescales[0,1] forvisualization only.",
+  "invariance": "Changes studentdistribution to a privileged teacher; not PBRS, controlvariate or invariantpolicygradient. No theorem guarantees factuality or preservation oftool/answerpolicy. ReverseKLweights studentprobability atfixedprefix; it can favor modes already supported. Uniform extra reward cannot cancel throughgroupstd because no suchnormalization exists.",
+  "baseline_or_potential": "Fixed same-base-checkpoint teacher withGTanswer+evidencecrops is target, not currentpolicy valuefunction. No statepotential, learnedcritic orMCbaseline. Aref genericdescription is only a diagnosticattentionreference, not anRLbaseline.",
+  "degenerate_cases": "Studentallwrong still can receiveKLsignal whenq≠p; this is objective-level capability, nottestedhardgroupbenefit. Ifq=p everywhere losszero regardlessfactualcorrectness; incorrect oranswer-biased teacher transfers its errors. Ifstudentview discards decisivepixels,privilegedteacherconditional may be unidentifiable fromstudentinput. NoGTboxes preventsfullrecipe; selfboxes are weaker. ReverseKL nearzero studentmass may give weaksignal to missingbehaviors; onpolicy prefixes cannot visit anunsamplednewmode. Singleturn orsingle rollout is valid; noG≥2requirement. Zero total positive relativeattention makescoverage denominatorzero; conventionunreported."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3 factorialpartialinformationcontrols:answeronly82.2/78.5/73.3,GTcropswithoutanswer87.4/79.8/75.4,selfcrops+answer86.4/79.8/75.1,full88.0/83.3/78.6 (V*/HR4K/HR8K). This demonstratesadditionalcrops andanswerbothhelp underreportedsetting; no shuffledorirrelevantcropcontrol ormatchedfullimageextraresolutionarm.",
+  "controls": [
+   "Same4B base ablated privilegedteacherinputs",
+   "Frozen vs currentstudent online teacher underOPD",
+   "GRPObaseline lr1e-6,temp1.0,8rollouts,prompt andrulebasedanswerreward; OPDuses1rollout so not provencompute-equivalent",
+   "TreeBench annotatedregions and genericimagepromptreference forrelativeattention",
+   "Selfboxprompt usesoriginalimage+question only, forcesonebestbbox and forbidsanswering; fullteacher stillseesGTanswer inselfboxarm"
+  ],
+  "negative_results": [
+   {
+    "text": "Online teacher currentstudentcheckpoint at eachupdate yields0.0accuracy onthreeablatedbenchmarks. Authors attribute stable-teacher necessity; noerrortraces distinguishoptimizationcollapse,formatfailure orimplementationissues.",
+    "kind": "reported_experiment",
+    "locator": "§5.3 p.8 Table4",
+    "quote": "When the privileged teacher instead uses the\ncurrent student checkpoint at each update, performance collapses to 0.0 accuracy on all benchmarks."
+   },
+   {
+    "text": "Selfboxes do notmatchGTboxes; full88.0/83.3/78.6 vs self86.4/79.8/75.1.",
+    "kind": "reported_experiment",
+    "locator": "§5.3 p.7 Table3",
+    "quote": "Replacing GT boxes with\nself-proposed boxes recovers part of the gain but remains weaker than using annotated evidence, showing that region quality matters when constructing\nthe teacher’s privileged views."
+   }
+  ],
+  "seeds": "Not reported; no seed count,confidenceintervals orstatisticaltests. Do not infer single seed.",
+  "falsifier": "Proposed,notexecuted: compareGTcropswithmatchedsize/locationirrelevantorshuffledcrops,answerhintonly andequalpixelbudgetglobalviews underidenticaltrainingcompute; inspectcaptionfactsandstudentreadabilityblinded. If irrelevantcropsoranswerhintmatchfullmethod, orbenefitvanishes whencorrectanswerhintremovedandtaskinformationretained, visualinternalizationclaimweakens. ForP07 specificallytestunsolvedheldoutstratumwithout2/4successselection.",
+  "causal_limits": "Relativeattentioncoverage is association withannotatedregions, not causalnecessity orfaithfulimaginedfacts. Selectedlayers/heads,genericprompt exacttext,mapaggregation andzero-positivecoveragehandling notfullyspecified. TeacherGTanswer permits answer-conditioned rationalization; removinganswer reducesbutdoesnoteliminateperformancegain. Nohumanfactchecking,captionintervention,tokenlevelerrorgold orresolution-stratifiedpixelsaudit."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-4B andQwen3-VL-8B; frozen samebase teacher",
+   "framework": null,
+   "group_size": null,
+   "rollouts": 1,
+   "steps": null,
+   "kl": "Eq1 reverse KL distillation is objective, not a KL penalty coefficient; coefficient/temperature not specified",
+   "temperature": 1.0,
+   "max_turns": null,
+   "max_response_tokens": 256,
+   "epochs": 1,
+   "global_batch_size": 32,
+   "learning_rate": 1e-06,
+   "hardware": "4×A800",
+   "training_samples": "19K aftercorrect≥2of4base4Bfilter",
+   "grpo_baseline": "lr1e-6;8rollouts;temperature1.0;rulebasedanswer-matchreward; otheroptimizationdetailsunknown"
+  },
+  "cost": "Noactualtrainingtokens,walltime,GPUhours,peakmemory,visualpixelbudget orteacherforwardcost. Nominal19K/32≈594batches isreaderarithmetic,notreportedsteps;19K×256≈4.864Mmaxsampledresponse tokens isupperbound,notactualtokens andexcludesteacher/scoring/prefix/crops. Fig4 reports samples/second and1.5–2.7×speedup, buthardware,engine,batchsize,rawnumericalthroughputtable andperbenchmarkprotocol absent. Structuraloneimageencoding doesnotmeanoneTransformerforward:autoregressivetext remains.",
+  "pitfalls": [
+   {
+    "text": "Updatingteacherwithstudentcollapsed inreportedablation; keepfixedreferencewhenreproducing thisrecipe until failurecausesareverified.",
+    "kind": "reported_experiment",
+    "locator": "§5.3 p.8 Table4",
+    "quote": "When the privileged teacher instead uses the\ncurrent student checkpoint at each update, performance collapses to 0.0 accuracy on all benchmarks.\nThis indicates that the teacher’s distribution must\nremain a stable reference when transferring privileged zoomed evidence into the student’s textual\nimagination process."
+   },
+   {
+    "text": "Noisyselfproposedregionsweaken teachercontext; qualityofregionselection matters.",
+    "kind": "reported_experiment",
+    "locator": "§5.3 p.7 Table3",
+    "quote": "Replacing GT boxes with\nself-proposed boxes recovers part of the gain but remains weaker than using annotated evidence, showing that region quality matters when constructing\nthe teacher’s privileged views."
+   }
+  ],
+  "code": "https://github.com/walkeralan123/Imagine-OPD",
+  "code_status": "Linkreadfrompaper; repositorynotexecutedorreviewed.",
+  "lesson": "当用特权输入做自蒸馏时，应把“相同初始化”与“实时共享策略”分开：本篇固定教师有效而在线教师报告归零；先钉住教师、显式记录GT答案/区域与学生可见像素，并用信息消融排除仅靠答案提示的解释。"
+ },
+ "relevance": [
+  {
+   "problem": "P07",
+   "how": "逐tokenKL不依赖组内结果差，理论上能为错轨迹给非零信号；但本文只训练base≥2/4正确的题，没有全错难题验证，不能声称解决P07。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "教师crop+答案与学生全图的特权差正对应可读性错配；实验证明平均收益，不证明缩放后不可辨细节被恢复。需学生视图可读性审计。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "可对学生自己caption式轨迹提供dense evidence-conditioned target，但答案条件化教师和文本格式不等于事实金标。",
+   "strength": 1
+  },
+  {
+   "problem": "P42",
+   "how": "针对想象文本每token训练，邻近caption监督；无事实率/忠实性评测，不能直接升级caption质量保证。",
+   "strength": 1
+  },
+  {
+   "problem": "P44",
+   "how": "完整方法依赖GTboxes，selfboxarm更弱且prompt强制猜框，不适用多数无框题的直接照搬。",
+   "strength": 2
+  },
+  {
+   "problem": "P58",
+   "how": "去除推理crop降低外部视觉编码开销，但额外训练teacher/crop成本未计清；不等价于既有多轮分叉降成本。",
+   "strength": 1
+  }
+ ],
+ "information_boundary": {
+  "teacher": "Initial frozen same-base checkpoint; observes original image, question, all annotated evidence crops, GT answer and student prefix. Appendix B explicitly includes Ground truth {answer}.",
+  "student": "Original image, question and prior generated tokens only; no GT answer, boxes, crop images or tools at inference. Training uses GT indirectly through the teacher distribution.",
+  "future_information": "The formal teacher conditional ends at y<t and does not expose future student tokens. However, oracle answer and all GT regions are privileged task-solution information available from the start.",
+  "prompt_boundary": "Teacher must hide additional images and describe crop operations as mental manipulations. Such wording does not demonstrate that the student observed new pixels. Self-box proposal sees I,Q without GT answer but must always guess one box, even when uncertain.",
+  "judge": "GRPO control uses rule-based answer matching. The teacher provides distributions, not binary factuality labels. Evaluation judge details are unspecified. Data filtering uses four Qwen3-VL-4B responses; exact correctness matching is not stated."
+ },
+ "source_discrepancies": [
+  {
+   "locator": "§3.2 p.5 vsConclusion p.8",
+   "text": "Conclusion phrase training a teacher could implyteacherupdates, butmethod andTable4 specifyfixedinitialteacher. Useexplicitmethoddescription."
+  },
+  {
+   "locator": "Figure4 p.7; §5.1 pp.6–7",
+   "text": "Reported1.5–2.7×speedup isnot accompaniedbyrawthroughputmeasurements/protocol; plottedpointsroughly.43–.96samples/s do notaloneverify2.7×. Keepauthorclaim withoutsilentnumericreconstruction."
+  },
+  {
+   "locator": "Table1 p.6",
+   "text": "Bestaverage andimprovementoverownbackbones do notmeanbestonallbenchmarks:8B V*87.4<4B88.0<TreeVGR91.1;HR4K83.5<Gemini2.5Pro83.9;HR8K79.5<Gemini81.5;MME58.1<Gemini3Flash61.2. No uncertainty toassesssmallgaps."
+  }
+ ],
+ "information_boundary_evidence": [
+  {
+   "kind": "author_claim",
+   "locator": "§3.2 p.5",
+   "quote": "The teacher is initialized from the same base model as the student\nand kept fixed during training."
+  },
+  {
+   "kind": "author_claim",
+   "locator": "Appendix B p.12 teacher input template",
+   "quote": "Ground truth.\n{answer}"
+  }
+ ]
+}

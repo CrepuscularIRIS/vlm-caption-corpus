@@ -1,0 +1,148 @@
+{
+ "paper_key": "2609.03493",
+ "title": "Making Every Tool Call Count: Necessary Tool-Evidence Path Rewards for Agentic Vision-Language Models",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2609.03493.txt",
+  "sections_read": [
+   "Abstract/contributions; §3.1-3.5 Eqs3-11",
+   "§4 Table1/Figs3,6,7 and judge audit",
+   "AppA.1-A.6 accounting/settings/propositions; Table5; AppC.9/D limitations/audit"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "从目标agent暖启动轨迹蒸馏必要证据路径，分别奖励调用目标对齐和返回证据提取，惩罚off-path及重复目标。",
+  "key_step": "冻结(g,t,e)路径与judge，在GRPO采样中计算覆盖/遗漏/重复计数并归一化。",
+  "why_non_obvious": "调用对齐目标但未真正提取证据会奖励投机；路径比整条teacher轨迹更松。",
+  "trigger_condition": "When outcome rewards credit redundant tool calls, supervise evidence goals and their acquisition separately.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把目标、取证和重复拆开计分。",
+  "abstract_trigger_condition": "When successful trajectories hide waste, reward distinct fulfilled milestones and price redundant attempts.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "构造固定里程碑后对当前轨迹分项计数。",
+  "abstract_why_non_obvious": "正确意图不等于返回信息被利用。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.03493#s1",
+   "object": "每样本参考NTEP及当前policy轨迹",
+   "information": "teacher Gemini3.1Pro见target warmup轨迹并补失败缺失证据；judge Qwen3-VL-Plus见路径/局部状态，policy不见标签",
+   "operation": "语义Align/Acquire计数，按路径长度归一化并加终答/格式reward，再组mean+std",
+   "claimed_effect": "主表70.34 vs同接口MARS68.31；搜索ATC2.54→1.89，视觉1.86→1.08；单训练run/固定seed",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eqs4-11; Table1; §4.1",
+    "quote": "Only the first call aligned with a goal receives alignment"
+   },
+   "failure_boundary": "teacher路径是固定必要性代理，非当前策略反事实需要；信息命中依赖judge。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "过程证据监督可迁移，但需参考路径和judge。"
+  },
+  {
+   "problem": "P45",
+   "strength": 2,
+   "how": "明确单seed，不能据小幅增益做非劣结论。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SenseNova-MARS统一三工具；去information/duplicate；answer-only历史池",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "固定teacher路径、额外judge服务开销、三工具英文范围；answer-only较小历史池非单变量对照。",
+   "locator": "§4.5/AppC.9"
+  }
+ ],
+ "question": {
+  "observed_failure": "goal-only search34.58且调用增加；去重复正则redundant13.5% vs完整1.0%。",
+  "load_bearing_assumption": "答对或意图对齐足以代表工具证据被使用。",
+  "scope": "8B crop/image/text search；冻结参考路径监督",
+  "success_criterion": "准确率与调用数同时改善，并做匹配reward消融",
+  "why_open": "结果监督混淆取证、利用和冗余。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§4.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Fig3"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3.4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_{NTEP}=((1-\\lambda_g)H_{info}+\\lambda_g H_{goal}-\\lambda_g M_{goal}-\\lambda_d D_{dup})/N;\\ R=R_{ans}+R_{fmt}+.5R_{NTEP}",
+    "locator": "Eqs9-10/Table5"
+   },
+   {
+    "latex": "\\hat A_g=(R_g-\\bar R_x)/(s_x+\\epsilon);\\ \\lambda_g=.3,\\lambda_d=.1",
+    "locator": "Eq11/Table5"
+   }
+  ],
+  "signal_routing": "语义判断按调用发生，但Eq11只产生每trajectory标量优势，进入标准clipped GRPO，Table4 token-mean聚合；未给不同token局部信用路由。正文称token-level修改须按公式限定。",
+  "normalization": "先除N，再scale.5，后组mean+std G8；不是RLOO。",
+  "invariance": "非PBRS，改变目标；停止证明要求证据单调、全部完成后额外调用不能改善答案，不能无条件推广。",
+  "baseline_or_potential": "组平均；固定teacher路径而非learned critic。",
+  "degenerate_cases": "全等reward组epsilon防零，但A仍0；N=0 tool-free paths存在，Eq9未给除零fallback；重复失败但pending的retry仍扣.1，成功概率须>.1/.7=1/7才有正期望过程增益。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "去acquisition/duplicate及search-only训练后启用未见zoom；预算5/10/15/20。",
+  "negative_results": [
+   {
+    "text": "goal-only塌缩；answer-only用历史较小池，不能全部差异归因reward；外部模型统一adapter非native性能。",
+    "locator": "§4.1/4.5"
+   }
+  ],
+  "seeds": "§4.1单训练run+一次固定seed评估；没有跨seed非劣CI。",
+  "falsifier": "若相同池同预算随机路径/错误judge对照同等改善，证据语义贡献不成立；teacher必要性须当前policy校准。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL8B frozen vision",
+   "framework": "sglang异步+GRPO",
+   "group_size": 8,
+   "max_turns": 10,
+   "kl": 0
+  },
+  "cost": "batch128 prompts/1024rollouts，20epochs，16K生成+16Kprompt；judge8K/300s timeout；GPUh未读到。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当以证据路径监督时，先明确pending/duplicate/failed-retry计账，保留终答奖，并隔离参考路径及judge与policy。"
+ }
+}

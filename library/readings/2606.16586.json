@@ -1,0 +1,413 @@
+{
+ "paper_key": "2606.16586",
+ "title": "LOCUS: Local Visual Cue Search for Enhancing Fine-Grained Perception in Multimodal Large Language Models",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.16586.pdf",
+  "version": "v3",
+  "version_evidence": "p.1 arXiv:2606.16586v3 [cs.CV] 29 Jul 2026; online latest not checked",
+  "page_count": 17,
+  "fulltext_path": "2606.16586.txt",
+  "sections_read": [
+   "Abstract/introduction pp.1–2; Fig1",
+   "Related Work p.2",
+   "3.1 diagnostic analysis p.3; Table1/Fig2",
+   "3.2–3.3 cue search/reward pp.3–4; Eqs1–6/Fig3",
+   "4.1–4.4 setup/results/ablations/analysis pp.4–7; Tables2–7/Figs4–5",
+   "5 Conclusion pp.7–8",
+   "References pp.8–10",
+   "Appendix A manuscript LLM use p.10",
+   "Appendix B.1–B.3 training/prompt/evaluation pp.10–11; Tables8–10",
+   "Appendix C.1–C.4 data/SFT/text-cue/attention pp.11–12; Eq7",
+   "Appendix D.1–D.7 all additional results/failures pp.12–13; Tables11–12",
+   "Figures6–11 pp.14–17: examples, correlation, attention, training dynamics, successes and failures"
+  ],
+  "visual_pages_inspected": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把细粒度视觉失败收窄到全图中的局部证据检索，用训练期的“给定局部裁图→在原图中找回坐标”代理任务及 IoU 规则奖励增强能力；部署仍只输入原图和问题。",
+  "key_step": "局部裁图直接指定实例外观，学生不看目标坐标；奖励检查器用 COCO 目标框计算空间重合，而不是用生成文字与教师理由的相似度代替空间准确性。",
+  "why_non_obvious": "分辨率足够不保证模型使用正确细节；保持画布和目标尺度、遮黑非目标区域仍提升表现。仅文字指代或同数据 SFT 的收益较弱，tiny-only 又伤害普通 grounding，代理任务及难度均有边界。",
+  "trigger_condition": "When local evidence remains in a cluttered full input but is poorly selected, train local-to-global exemplar localization with verifiable spatial feedback and a controlled size mixture, then evaluate ordinary full-input inference.",
+  "reviewer_praise": [
+   "low_evidence: manifest 无 reviews_path，未获得独立审稿原文。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 无审稿来源；读者发现的限定写在 source audit，不伪装成 reviewer 意见。"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null；arXiv 版本及作者结果不构成接收证据。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Train a locator with an exact local exemplar and verifiable spatial outcomes, then remove the exemplar during downstream inference.",
+  "abstract_key_step": "Use a directly checkable correspondence task to train selection of small evidence without requiring downstream answer annotations.",
+  "abstract_why_non_obvious": "Retaining information is different from selecting it, and correctly selecting evidence is different from interpreting it.",
+  "abstract_trigger_condition": "When available evidence is hard to retrieve amid irrelevant context, use a matched local exemplar as a training-only query and constrain task difficulty to retain broader coverage."
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.16586#s1",
+   "object": "Full-image fine-grained VQA diagnostic inputs",
+   "information": "诊断器知道 benchmark 的 ground-truth 证据框；模型看原图问题或保留目标像素、遮黑其余区域的图。不是部署可用的定位策略。",
+   "operation": "固定图像画布及目标尺度，只把非目标像素替为黑色，比较同模型原图与去上下文的准确率；另按目标定位 IoU 分层统计 VQA。",
+   "output": "尺度不变的上下文干预对照与定位/回答相关性。",
+   "claimed_effect": "Table1 overall 79.58→85.86 (+6.28pp)，direct attributes 80.00→84.35，relative position 78.95→88.16。Figure2 VQA-correct/wrong mean IoU .50/.23，IoU≥.5 rate .57/.19；按 IoU=0/(0,.5)/[.5,1] VQA 为48.1/78.1/91.1%。",
+   "conditions": [
+    "GT 框可靠；相同画布、目标原始尺度及模型。",
+    "遮黑干预同时显式突出目标，比较不能排除定位提示的帮助。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p.3 caption",
+    "quote": "with black pixels while preserving the original target scale"
+   },
+   "failure_boundary": "不是 crop 必要性估计；不是每题反事实动作收益。定位和答对的相关性不等于定位因果中介，Fig2与Fig7跨模型图值完全相同待源核对。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.16586#s2",
+   "object": "Training-only visual-exemplar localization policy and rule reward",
+   "information": "学生输入完整 I、同图裁图 c、locate 指令 q；GT 框 b*只用于构造 c 和打分，不直接进入学生提示。检查器看到解析坐标和 GT，格式检查看到 think/answer 结构；没有 learned necessity judge。",
+   "operation": "从 COCO 标注框裁出局部图；生成推理及坐标；合法框按 IoU 奖励、非法框定位奖励0，结合0.1格式奖励，以GRPO+KL更新；下游只用原图问题。",
+   "output": "能在全图内恢复局部实例空间位置的模型，不新增推理期工具接口。",
+   "claimed_effect": "Qwen2.5 Table2 V*79.6→87.4，HR8K63.8→68.4，MME-RW58.8→62.7；Table11 held-out meanIoU16.4→43.0、ACC@.5 16.4→48.8；同100K数据SFT V*80.1、HR8K65.8低于RL87.4/68.4。",
+   "conditions": [
+    "COCO对象框和多图匹配/坐标输出基础能力可用。",
+    "证据仍在下游预处理后的视觉输入中；能力迁移到单图问题。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Fig3 p.4",
+    "quote": "and group-relative advantages are used to optimize the policy while regularizing it against a reference model."
+   },
+   "failure_boundary": "IoU提高不证明答案正确或裁图必要；具体 GRPO advantage、token mask、KL estimator、loss reduction 未给出。附录失败展示关注正确区域仍认错颜色。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.16586#s3",
+   "object": "Object-aware training-cue source and size distribution",
+   "information": "数据构造器使用 COCO 对象框、区域面积与原图面积；不是模型自主选择工具框，也不是基于每题工具收益选择训练数据。",
+   "operation": "构建99500训练+500验证；默认70% tiny(<1%面积)和30% small(1–5%)，比较大框、不同混合比例、tiny-only及任意位置random crop。",
+   "output": "兼顾微小证据检索及普通grounding的代理任务难度分布。",
+   "claimed_effect": "Table6 70/30 V*87.4、HR8K68.4、RefCOCO86.5；tiny-only86.9/67.0/74.4，而base RefCOCO84.4；Table7 object-crop V*87.4 vsrandom81.2。",
+   "conditions": [
+    "对象标注覆盖目标；cue和原图保有可辨视觉对应。",
+    "尺寸分布匹配下游困难区域，仍保留small样本。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec4.3 p.6/Table6",
+    "quote": "The 70%:30% mixture achieves the best HR-8K result and"
+   },
+   "failure_boundary": "tiny-only产生尺度偏置；随机背景纹理可能有多个合理匹配。对象框依赖已有人工标注；不能称完全无标注。70/30是本文评测选出的经验配置，无跨数据最优保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B-Instruct;Qwen3-VL-4B-Thinking;MiMo-VL-RL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-R1;Visual Jigsaw;PixelReasoner† (visual tools disabled)",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-5.1;Gemini-3-Flash reference rows",
+   "kind": "method"
+  },
+  {
+   "name": "Same-data SFT with Qwen2.5-VL-72B rationales; generated text cue; large/tiny/mixed cues; random crops",
+   "kind": "method"
+  },
+  {
+   "name": "COCO train2014 object annotations",
+   "kind": "dataset"
+  },
+  {
+   "name": "V*Bench;HR-Bench4K/8K;CV-Bench;MME-RealWorld-EN;POPE;HallusionBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar;RealWorldQA;OCRBench;ScienceQA-IMG;BabyVision;MathVision;MathVerse;WeMath;LogicVista;RefCOCO/+ /g",
+   "kind": "benchmark"
+  },
+  {
+   "name": "IoU;ACC@.5/.75;benchmark-specific accuracy;Attention-in-Box",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "主要解决检索而非所有细粒度解释；注意区域正确也会错误。",
+   "quote": "fail to infer the correct fine-grained attribute.",
+   "locator": "AppD.7 p.13/Fig11 p.17"
+  },
+  {
+   "text": "tiny-only在普通grounding下降10pp，不能只加大代理任务难度。",
+   "quote": "suggests a scale bias toward small boxes.",
+   "locator": "Sec4.3 p.6/Table6"
+  },
+  {
+   "text": "推理时没有额外局部观察，不能补回预处理丢失的像素。",
+   "quote": "At inference time, LOCUS operates on standard full-image",
+   "locator": "Sec3.2 p.4; reader inference about lost pixels"
+  }
+ ],
+ "question": {
+  "observed_failure": "同一 Qwen2.5 模型仅遮黑非目标区域且不放大目标，V*79.58→85.86；base在显式给定裁图的500样本定位meanIoU仅16.4、ACC@.5仅16.4。",
+  "load_bearing_assumption": "高分辨率保留细节，模型就能在全图中可靠选择并使用它；用文字指代或token imitation能等价训练细粒度空间匹配。",
+  "scope": "训练期已知局部cue的原图定位，迁移到单次full-image细粒度VQA；不学习何时调用crop。",
+  "success_criterion": "代理定位IoU/ACC上升，普通全图VQA提升，并测普通grounding、hallucination与通用/推理能力保留。无预注册非劣界、显著性或调用成本目标。",
+  "why_open": "高分辨率输入增加冗余上下文；工具式放大增加运行操作，文字grounding可能不能唯一描述小实例；代理空间奖励需验证其单图迁移而非仅定位训练集。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "Before detailing LOCUS, we diagnose whether fine-grained",
+   "locator": "Sec3.1 p.3; actual same-scale black-mask Table1 diagnostic"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "under identical target regions.",
+   "locator": "Table5 p.6; same-object-regions modality intervention, remaining representation-quality confound acknowledged"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "Table 10: Training cost of LOCUS for each backbone.",
+   "locator": "Table10 p.10; wallclock and GPU-hours, not training-token disclosure"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "quote": "with black pixels while preserving the original target scale",
+   "locator": "Table1 p.3; controls target magnification while varying non-target context, not full causal isolation"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "c=\\operatorname{Crop}(I,b^*),\\quad \\hat y\\sim\\pi_\\theta(\\cdot\\mid I,c,q),\\quad\\hat b=\\operatorname{Parse}(\\hat y)",
+    "locator": "Eqs1–3 p.3"
+   },
+   {
+    "latex": "r_{loc}=\\begin{cases}\\operatorname{IoU}(\\hat b,b^*)&\\hat b\\text{ valid}\\\\0&\\text{otherwise}\\end{cases}",
+    "locator": "Eq4 p.4"
+   },
+   {
+    "latex": "r(\\hat y,b^*)=(1-\\alpha)r_{loc}+\\alpha r_{format},\\quad \\alpha=0.1",
+    "locator": "Eq5 p.4; Table9/AppB.1 p.10"
+   },
+   {
+    "latex": "\\max_\\theta\\;\\mathbb E_{(I,c,q,b^*)\\sim\\mathcal D,\\hat y\\sim\\pi_\\theta(\\cdot\\mid I,c,q)}[r(\\hat y,b^*)]",
+    "locator": "Eq6 p.4; generic reward objective, not complete implemented GRPO loss"
+   },
+   {
+    "latex": "\\operatorname{AIB}_l=\\frac{\\sum_{i,j}A_l(i,j)M(i,j)}{\\sum_{i,j}A_l(i,j)}",
+    "locator": "Eq7 p.12; diagnostic only, not reward"
+   }
+  ],
+  "signal_routing": "每条生成回答的坐标IoU与格式汇成单个标量，G=8组相对优势训练policy并KL约束reference。论文未明确推理token/坐标token的分别mask或不同优势；不能称逐空间token信用。学生不看b*坐标，打分器看b*；SFT教师看full+crop+GT框生成事后理由，SFT学生不看提示中的GT框。AIB分析另用benchmark标注框，未进入RL奖励。",
+  "normalization": "仅说明group-relative advantages/GRPO，没有展开mean/std、epsilon、unbiased std、token/sequence reduction、clipping、zero-variance处理；不据EasyR1名称补配方。IoU是交并比；AIB按同层所有image-patch注意力质量归一，head先平均，图4(a)由layer-averaged map算比值，不能直接当各层比值平均。",
+  "invariance": "不是PBRS，无最优策略不变定理；定位+格式定义新的代理任务目标，cue尺寸混合改变训练分布。IoU对坐标与GT共同等比例缩放/平移在无裁截时不变，但pixel坐标parser、resize和取整会破坏实现等价。若实现采用mean/std，则组共同常数抵消、整体正比例缩放在忽略epsilon时抵消；format全同的组中0.9IoU缩放也可能被约去。该结论是条件推导，不是已核实现。AIB对同层注意力图统一正缩放不变。",
+  "baseline_or_potential": "文字说明组相对比较，没有训练critic、MC动作价值差或势函数。reference policy用于KL，非冻结reader必要性估计。定位GT只确定cue位置，不能确定在下游问题上是否必须crop。",
+  "degenerate_cases": "全组同IoU和同format时无相对奖励区分，零方差数值处理未知。全不相交合法框均IoU0，稠密IoU此时仍无区分；format差异可提供格式梯度，但不保证空间探索。全组精确定位且合法则饱和。单次定位没有call/skip p≈0/1问题，也不解决我们极端动作概率支撑；若 cue为全图，则位置恢复可成为平凡任务；重复纹理/同形物体可能产生多个视觉合理答案但GT只奖一个。attention总质量为0的数值处理未报告。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1去非目标context且保持尺度检验纯放大解释；Table4同数据RL/SFT，Table5同对象区域visual/text，Table6尺寸混合和Table7对象/random区分代理任务设计；Table11验证代理任务学会，Tables2–3检查跨任务迁移；Fig11限定检索与解释。",
+  "controls": [
+   "RL/SFT同100K数据及骨干，但SFT教师已看GT框，训练计算匹配未报告；不能只归因于一个损失项。",
+   "text cue教师Qwen3-VL-235B-A22B看full+crop生成<25词描述；学生full+text，对照保持目标框/拆分/GRPO，但信息表示精度与文字描述质量未校准。",
+   "工具基线PixelReasoner†禁用视觉工具、只生成一次，比较checkpoint的单图能力，不是其原完整agent能力。",
+   "AIB用同评价输入、首答案token前位置→image-patch attention，HF eager language attention，head平均，patch grid按spatial merge还原，区域只要与任一GT框相交即入mask。attention是观察指标而非因果使用证据。",
+   "Table2含三骨干但无各自同量训练时长；closed-source仅reference。COCO源与RefCOCO类数据的image-level排除/去重未披露，未独立查重，不断言实际泄漏。"
+  ],
+  "negative_results": [
+   {
+    "text": "tiny-only RefCOCO74.4 vsbase84.4、default86.5；大框RefCOCO87.2高于default但V*81.2较低。",
+    "quote": "Tiny-only cues    100%:0% 86.9           67.0      74.4",
+    "locator": "Table6 p.6"
+   },
+   {
+    "text": "Text cue提升VQA但AIB低于base，AIB不能作通用必要的收益代理。",
+    "quote": "variant improves downstream accuracy but yields lower AIB",
+    "locator": "Sec4.4 p.6/Fig4"
+   },
+   {
+    "text": "Qwen3 OCRBench78.4→77.7；MathVerse61.4→61.2，保留能力不是逐项不下降或统计非劣。",
+    "quote": "OCRBench, and improves 11 benchmarks",
+    "locator": "Sec4.2 p.5; Tables2–3"
+   },
+   {
+    "text": "Apple logo两模型关注logo却错判单一色，tablecloth定位附近但误判白色。",
+    "quote": "fail to infer the correct fine-grained attribute.",
+    "locator": "AppD.7 p.13; Fig11 p.17"
+   }
+  ],
+  "seeds": "未披露种子数量/ID、多次均值方差或置信区间。Table10明确每骨干one training run的费用；不能据此断言所有表全部只有一seed。Fig9训练曲线非独立复现，图中横轴约0–400步，不用估读终点填正式steps。",
+  "falsifier": "读者提出、未执行：同图同像素/分辨率，用GT框遮黑与等面积随机遮黑或显式框提示作配对对照，分辨去干扰与显式定位提示；审计resize后cue/GT坐标一致、COCO图像级拆分与RefCOCO重叠，再以等计算SFT/RL和准确率配对区间复测。若定位提高不带来下游改进，或只增加注意力不改善已定位样本的属性准确率，应收窄为代理定位能力，不能宣称已解决证据使用或crop必要性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Primary Qwen2.5-VL-7B-Instruct; Qwen3-VL-4B-Thinking; MiMo-VL-RL-7B",
+   "framework": "EasyR1",
+   "group_size": 8,
+   "rollouts": null,
+   "steps": null,
+   "kl": 0.01,
+   "temperature": 1.0,
+   "max_turns": null,
+   "rollouts_per_prompt": 8,
+   "batch_size": 128,
+   "lr": 1e-06,
+   "weight_decay": 0.01,
+   "optimizer": "AdamW",
+   "grad_clip": 1.0,
+   "warmup_ratio": 0.05,
+   "top_p": 1.0,
+   "validation_override": "T=.6,p=.95,n=1",
+   "eval": "vLLM greedy T=0, max8192tokens; same adapters and answer parsing; native or appended think/answer template",
+   "data": "COCOtrain2014 99500train500validation; minimumcrop16px; tiny padding0–10%,scale.8–2.0x; exact augmentation/remapping algorithm not disclosed"
+  },
+  "cost": "Table10: one node8×A10080GB; Qwen2.5 31.3h/250.4GPUh，MiMo33h/264GPUh，Qwen3 40h/320GPUh。仅RL posttraining，不含evaluation；未给训练token/确切更新总数/全rollout量。标准推理接口无额外工具，但未报告实测每题walltime、回答token或相对延迟。",
+  "pitfalls": [
+   {
+    "text": "tiny-only泛化尺度偏差，用70/30混合取得任务间折中。",
+    "quote": "suggests a scale bias toward small boxes.",
+    "locator": "Sec4.3 p.6"
+   },
+   {
+    "text": "random背景纹理有歧义；对象区域比任意crop更强，但这是作者解释，未报告重复纹理分层验证。",
+    "quote": "random crops often contain repeated background textures",
+    "locator": "Sec4.3 p.6"
+   },
+   {
+    "text": "长推理输出需要先保存完整原文再解析，防止测量被截断。",
+    "quote": "are saved without truncation before answer parsing, which",
+    "locator": "AppB.3 p.11"
+   }
+  ],
+  "code": null,
+  "code_verified": false,
+  "lesson": "当用局部定位代理训练改善全图VQA时，应先锁定resize后的坐标系、cue尺寸分布和答案parser；tiny-only可能提高微小目标指标却损害常规grounding。把attention可视化当诊断，另测已正确定位但属性仍错误的样本，不把热图集中当作内容正确或调用必要。"
+ },
+ "relevance": [
+  {
+   "problem": "P39",
+   "how": "保持目标尺度的遮黑对照有助区分可见像素与上下文检索；仍需我们学生真实pixel budget下检查。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "失败案例表明取到证据不保证属性解释正确；与答案映射错误同属后段利用，但机制不同。",
+   "strength": 1
+  },
+  {
+   "problem": "P42",
+   "how": "训练用定位规则而非caption约束，没有防止我们的caption幻觉。",
+   "strength": 1
+  },
+  {
+   "problem": "P43",
+   "how": "IoU是可验证视觉反馈，但它奖励训练期cue恢复，不是下游每次crop的证据价值。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "GT对象框降低纯格式hack，仍依赖标注/唯一目标，且不提供大部分实际问答的GT框。",
+   "strength": 2
+  },
+  {
+   "problem": "P45",
+   "how": "成本有报告，种子和CI缺失，不能把多benchmark当独立复现。",
+   "strength": 1
+  },
+  {
+   "problem": "P49",
+   "how": "COCO图像级拆分及与RefCOCO排除未报告，应保留重叠未知。",
+   "strength": 1
+  },
+  {
+   "problem": "P63",
+   "how": "主动测通用/推理多benchmark可借鉴，但小幅下降存在且无统计非劣。",
+   "strength": 2
+  },
+  {
+   "problem": "P68",
+   "how": "视觉代理任务与因果crop信用不是同一核心，不登记核心卡撞车。",
+   "strength": 1
+  },
+  {
+   "problem": "P69",
+   "how": "不优化必要时才crop；推理不调用crop是固定接口，不能算学会效率选择。",
+   "strength": 1
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "measurement_and_source_audit": {
+  "source_ambiguities": [
+   "视觉核对Fig2 p.3(Qwen2.5)与Fig7 p.15(标Qwen3)所有数值相同：.50/.23、.57/.19、48.1/78.1/91.1；图文称跨模型复证但没有原始结果可核。保留待核对，不据图升级独立复证，也不擅自更正数据。",
+   "Fig9横轴显示约400步范围；表格未明确实际总步数/停止checkpoint，steps=null。",
+   "Table8 mincrop16px、tiny padding0–10%、scale.8–2x；目标框坐标如何随padding/resize保持一致未写清，不能用猜测填实现。",
+   "Qwen2.5用absolute pixel坐标；其他骨干坐标规范、maxpixels数值与随机crop尺寸匹配细节未全部披露。",
+   "Table2 Qwen3 OCRBench下降0.7pp、Table3 MathVerse下降0.2pp；wide capability preservation不等同全指标提升或统计非劣。VisualJigsaw的CV-B77.6/Baby13.1高于LOCUS76.7/12.9。",
+   "Fig4 textcue AIB低于base但答题更好；仅观察attention不能证明必要或充分的视觉证据使用。选首答案token位置也不覆盖所有推理过程。",
+   "COCO对象标注构造训练cue，自动可验reward不等同无人工数据。RefCOCO源图重叠排除未报告，仅记未知不指控泄漏。",
+   "摘要称无inference开销是接口意义，无实测walltime/生成长度数据；不把零工具次数等同整体推理零新增成本。"
+  ],
+  "source_evidence": [
+   {
+    "kind": "author_claim",
+    "locator": "Sec3.2 p.4",
+    "quote": "Importantly, the visual cue is used only during training."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Sec4.1 p.4",
+    "quote": "the GRPO objective"
+   },
+   {
+    "kind": "reported_experiment",
+    "locator": "Table11 p.12",
+    "quote": "Local visual cue search performance"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "AppB.1 p.10",
+    "quote": "These costs cover reinforcement post-training and exclude"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "AppC.4 p.12",
+    "quote": "with output_attentions=True; the language-model"
+   }
+  ],
+  "information_boundary": "政策训练见原图+cue，奖励器另见GT；SFT教师额外见GT坐标，student不见；textcue教师见full+crop但student仅见full+生成文字；AIB诊断GTmask不进入模型。下游仅原图问题；没有在线搜索judge或动作必要性信息。"
+ }
+}

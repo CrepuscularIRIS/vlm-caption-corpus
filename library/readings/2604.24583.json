@@ -1,0 +1,403 @@
+{
+ "paper_key": "2604.24583",
+ "title": "Improving Vision-language Models with Perception-centric Process Reward Models",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2604.24583.pdf",
+  "version": "v1",
+  "version_observed": "PDF p.1 arXiv:2604.24583v1 [cs.CV] 27 Apr 2026; latest remote version not checked",
+  "pages": 11,
+  "sections_read": [
+   "Abstract",
+   "1 Introduction",
+   "2 Preliminary, Eqs.1–2",
+   "3.1 Perception-Centric Process Reward Model; Figure 1",
+   "3.2 RLVR with Process-level Supervision; Eq.3",
+   "3.3 Test-Time Scaling with PRM Guidance",
+   "4.1 Experimental Setup",
+   "4.2 Main Results; Tables 1–2",
+   "4.3 Further Analysis; Figures 2–3 and Table 3",
+   "5 Related Work",
+   "6 Conclusion",
+   "7 Acknowledge; References (pp.9–11)"
+  ],
+  "appendix_status": "No appendix present in this 11-page local PDF; no complete teacher/judge prompt or training hyperparameter appendix."
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "把外部视觉事实检查器训练成返回错误原文片段的生成式 PRM，在已有 GRPO 优势之后只缩减这些片段的正信用或放大负信用；同一 PRM 另用于推理时截断重生成。",
+  "key_step": "将 Perceval 输出的 exact substrings 映射为 token 掩码 m，令 A′=A−αm|A|；仅 perception-related RL 数据使用该修正，其他数据保持 GRPO。",
+  "why_non_obvious": "终答正确不保证中间视觉事实正确；把外部批注定位到字串，使标记 token 与同轨其他 token 接收不同幅度的信用。但它依赖已有非零 A，不能凭 PRM 在零优势组制造信号。",
+  "trigger_condition": "When outcome rewards cannot localize visual hallucinations and an external verifier can return reliable exact error spans, apply post-normalization token-specific advantage attenuation to suppress those spans.",
+  "reviewer_praise": [
+   "low_evidence: manifest has no reviews_path and no independent review artifact was supplied."
+  ],
+  "reviewer_concern": [
+   "low_evidence: reviewer concerns unavailable; reader-identified limitations are separated below."
+  ],
+  "acceptance_signal": "low_evidence: decision=null copied from manifest; arXiv v1 is not an acceptance decision.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Localize externally verifiable errors before applying differentiated learning pressure.",
+  "abstract_key_step": "Return exact faulty substrings, map them to a binary mask, and reduce their signed update by a nonnegative fraction of its magnitude.",
+  "abstract_why_non_obvious": "A global success signal conflates local correctness; a localized multiplier changes credit without supplying a new nonzero signal when the global update vanishes.",
+  "abstract_trigger_condition": "When a global outcome cannot identify local faults but an external checker can ground them, restrict additional penalties to aligned faulty segments."
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.24583#s1",
+   "object": "PRM training data and structured visual-factuality verifier",
+   "information": "Schema is image v, query q and complete model response o. Teacher example is Gemini-2.5-Pro; responses example Qwen2.5-VL-7B. No gold-answer argument appears in the stated schema; complete teacher prompt, hidden annotations, resolution and actual GT access are unreported. Complete o includes later claims/answer, so not a prefix-only causal judge.",
+   "operation": "Generate three responses per source query, obtain hallucination-focused teacher annotations, SFT Qwen2.5-VL 3B/7B to emit think analysis plus exact erroneous source strings.",
+   "output": "A Python list of erroneous response substrings or The response is correct.",
+   "claimed_effect": "Structured PRM is the enabling component; no standalone precision/recall, held-out human agreement or isolated PRM-size ablation is reported. Downstream Table 1 reports 3B V* 80.10→83.25 when combined with token reweighting.",
+   "conditions": [
+    "Reliable visual grounding by teacher and distilled PRM",
+    "Exact substring correspondence and correct text-token alignment",
+    "Perception data sourced from DeepEyes and SophiaVL-R1; counts and splits unknown"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.1 p.3",
+    "quote": "If no perceptual errors are\nfound, the final answer is simply \"The response is\ncorrect.\"; otherwise, the answer is formatted as a\nPython list containing the exact strings from o that are identified as errors."
+   },
+   "failure_boundary": "Visual factuality is neither caption sufficiency for solving the task nor current-policy crop necessity. No human-calibrated reliability guarantee; no complete prompts/GT-exclusion audit.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2604.24583#s2",
+   "object": "Token advantages within perception-related GRPO responses",
+   "information": "Full response, input image/query and external PRM span mask; sequence reward and group mean/std. Does not observe same-state answer-vs-crop counterfactuals or per-call causal benefit.",
+   "operation": "Exact-match flagged substrings to token spans; after group standardization use A′_it=A_i−αm_it|A_i| with α=.1; unflagged tokens and non-perception training samples remain baseline.",
+   "output": "Sign-preserving (or zero at α=1) token advantage, not an independently grounded action value.",
+   "claimed_effect": "Table1: 3B V*all80.10→83.25 (+3.15pp), MathVision23.36→26.32 (+2.96pp); 7B V*all84.29→86.39 (+2.10pp). Not universal: 3B BLINK49.13→48.75 and 7B ChartQA85.16→84.44. Results are reported combined-method effects, not scientific replication.",
+   "conditions": [
+    "Nonzero finite baseline advantages",
+    "α∈[0,1] and reliable span masks",
+    "Perception-related training sample gate; gate implementation not given"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.2 p.4; Eq.3; Table1 p.6",
+    "quote": "Given a response oi of length Li and the P ERCEVAL verification, we parse the <answer> content and select the\nidentified problematic substrings."
+   },
+   "failure_boundary": "A=0 implies A′=0. High α=.3 hurts several benchmarks; irrelevant words inside erroneous substrings receive penalty too. No matched random-mask control or independent judge validation.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2604.24583#s3",
+   "object": "Inference-time response suffix",
+   "information": "External PRM sees image, question and the completed candidate; policy regeneration sees the original image/question and retained prefix, optionally PRM correction text. No answer GT is stated for this loop; evaluation GT judge is a separate stage.",
+   "operation": "Find first flagged span, truncate before it, regenerate suffix; optionally append correction/reflection prompt; repeat until no flags or cap k∈{4,8,16}.",
+   "output": "Revised response after verifier-guided sequential search.",
+   "claimed_effect": "Table2 at k=16: Truncate V*all89.53 versus majority85.86 (+3.67pp), BLINK49.45 versus48.41 (+1.04pp); Truncate-Thinking88.48/49.38.",
+   "conditions": [
+    "Correct earliest-error localization",
+    "Useful prefix survival and regeneration support",
+    "External PRM available at inference; iteration count does not equal compute"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.3 pp.4; Table2 p.6",
+    "quote": "We truncate the hypothesis before the\nfirst token of that span, preserving only the verified prefix"
+   },
+   "failure_boundary": "PRM misses leave false prefix; false flags discard good continuations. Reflection variant weaker at k=16, attributed by authors to missing reflective data. No measured latency/token/GPU cost or equal-total-compute comparison.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL 3B/7B",
+   "kind": "method"
+  },
+  {
+   "name": "VLM-R1",
+   "kind": "method"
+  },
+  {
+   "name": "LMM-R1",
+   "kind": "method"
+  },
+  {
+   "name": "R1-VL",
+   "kind": "method"
+  },
+  {
+   "name": "Perception-R1",
+   "kind": "method"
+  },
+  {
+   "name": "Jigsaw-R1",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "PixelReasoner",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-R1",
+   "kind": "method"
+  },
+  {
+   "name": "VL-Rethinker",
+   "kind": "method"
+  },
+  {
+   "name": "VLAA-Thinker",
+   "kind": "method"
+  },
+  {
+   "name": "OpenVLThinker",
+   "kind": "method"
+  },
+  {
+   "name": "MM-Eureka",
+   "kind": "method"
+  },
+  {
+   "name": "Major voting",
+   "kind": "method"
+  },
+  {
+   "name": "Truncate",
+   "kind": "method"
+  },
+  {
+   "name": "Truncate-Thinking",
+   "kind": "method"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar",
+   "kind": "benchmark"
+  },
+  {
+   "name": "RealWorldQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVista",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MATH-Vision",
+   "kind": "benchmark"
+  },
+  {
+   "name": "ChartQA",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Authors attribute degradation at large α to punishing factually benign tokens inside whole spans; this is an explanation, not a separate controlled causal experiment.",
+   "kind": "reported_experiment",
+   "locator": "§4.3 p.7",
+   "quote": "Conversely, an excessively large α of 0.3 proves counterproductive. We attribute this to collateral “penalization”: since\nthe P ERCEVAL flags entire substrings, a high penalty indiscriminately punishes all tokens within that span, including syntactically necessary but factually benign words (e.g.,\narticles, prepositions). This introduces significant training noise and degrades overall performance."
+  },
+  {
+   "text": "Authors hypothesize insufficient reflection data causes worse instruction following for inserted feedback; no supporting training-data ablation.",
+   "kind": "author_claim",
+   "locator": "§4.2 p.6",
+   "quote": "We hypothesize\nthat the model’s training data does not contain sufficient reflective data, which results in poorer instruction-following\nquality when the reflective prompts are inserted in the Feedback strategy."
+  }
+ ],
+ "question": {
+  "observed_failure": "No controlled pre-method hallucination benchmark rate is provided. Fig2 shows the method training PRM-flag rate roughly .53 initially, .37 around step40 then returning near .49 late (visual approximate reading), not independent error gold. Baseline 3B V*80.10 and MathVision23.36 supply task metrics, not measured credit-assignment failure rate.",
+  "load_bearing_assumption": "Outcome correctness gives adequate uniform credit to every intermediate token; authors challenge this because visual claims can be erroneous within the chain.",
+  "scope": "Local visual-fact errors in text reasoning of Qwen2.5-VL 3B/7B; intrinsic perception improvement and separate inference refinement. No multi-turn crop-necessity learning study.",
+  "success_criterion": "Improve downstream benchmark accuracy versus GRPO; local factuality improvement should additionally require a held-out independent/human factuality measure (reader requirement, absent).",
+  "why_open": "Outcome rewards cannot identify local errors; traditional step supervision is costly and some reasoning claims require future derivations, whereas visual claims may be checked against input evidence."
+ },
+ "question_quality": {
+  "numeric_failure": 0,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "To quantitatively determine this optimal value, we conduct a series of experiments, varying α\nacross {0.03, 0.1, 0.3} and benchmarking against a standard GRPO baseline (α = 0).",
+   "locator": "§4.3 p.7 Table3",
+   "note": "Executed α sweep isolates one stated intervention variable; unknown remaining hyperparameters/seeds limit actual controlled-comparison verification."
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "Given a response oi of length Li and the P ERCEVAL verification, we parse the <answer> content and select the\nidentified problematic substrings.",
+   "locator": "§3.2 p.4",
+   "note": "Partition response tokens by external visual-error labels; assign a tailored attenuation only to flagged subset. No claim that the broad pattern problem is resolved."
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\hat A_i=(R_i-\\operatorname{mean}(\\{R_j\\}_{j=1}^{G}))/\\operatorname{std}(\\{R_j\\}_{j=1}^{G})",
+    "locator": "Eq.1 p.2"
+   },
+   {
+    "latex": "J(\\theta)=\\mathbb E_{(q,\\{o_i\\})\\sim\\pi_\\theta}[\\frac1G\\sum_{i=1}^{G}\\sum_{t=1}^{|o_i|}\\min(r_{i,t}(\\theta)\\hat A_i,\\operatorname{clip}(r_{i,t}(\\theta),1-\\epsilon,1+\\epsilon)\\hat A^{\\prime}_{i,t})-\\beta D_{KL}(\\pi_\\theta\\Vert\\pi_{ref})]",
+    "locator": "Eq.2 p.2, faithfully transcribed as printed",
+    "note": "Printed min uses unprimed A_i in first branch and primed A′_it in clipped branch, although §3.2 says substitute A′ into GRPO. No silent correction: likely typesetting inconsistency; actual implementation unverified. No 1/|o_i| shown."
+   },
+   {
+    "latex": "U_i=\\bigcup_{k=1}^{K}[j_k,l_k],\\quad m_{i,t}=\\mathbf 1[t\\in U_i]",
+    "locator": "§3.2 p.4, unnumbered"
+   },
+   {
+    "latex": "\\hat A^{\\prime}_{i,t}:=\\hat A_i-\\alpha m_{i,t}|\\hat A_i|,\\quad\\alpha\\in[0,1]",
+    "locator": "Eq.3 p.4"
+   }
+  ],
+  "signal_routing": "Outcome reward is standardized once per response group and broadcast to response tokens; only exact-matched perceptual-error tokens get −α|A_i|. No caption/crop/answer semantic partition is specified. Mask could cover any flagged substring in full response. Non-perception training samples use ordinary GRPO; inference truncation is not a training-token routing rule.",
+  "normalization": "mean+std in Eq1; α is applied after normalization in Eq3, no second normalization reported. Eq2 token sum has no explicit length divisor. Zero-std epsilon, group size and reward decomposition are unreported.",
+  "invariance": "Reader algebra: α∈[0,1] preserves sign of each baseline token advantage (positive can become zero at α=1), not relative response ranking or expected policy gradient. α=.1 gives .9A on positive flagged tokens,1.1A on negative flagged tokens. This is biased credit reweighting, not PBRS, action-independent baseline or proof of unchanged optimal policy. Authors phrase preserve sequence-level preferences overstates what sign preservation alone proves.",
+  "baseline_or_potential": "Group empirical outcome mean and std, no learned value baseline or potential. SFT-trained external Perceval supplies factuality mask; co-training updates not reported, treated as a fixed critic by method description, not repository verification.",
+  "degenerate_cases": "α=0 or empty mask returns baseline. A_i=0 leaves all flagged tokens at zero. All-equal rewards give 0/0 in printed Eq1: numerical convention unreported; if epsilon-stabilized, all-correct/all-wrong groups yield zero and no process correction. G=1 likewise undefined/zero under common stabilization. Positive flagged tokens remain positively reinforced for α<1; hallucinations in successful responses are not automatically punished with negative credit. No resampling/balanced first actions, so p(action)≈0 has no support rescue; single-turn responses still permit span reweighting but cannot establish crop credit."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Reported: GRPO vs PRM-assisted training at 3B/7B, α∈{0,.03,.1,.3}, and separate k∈{4,8,16} inference comparison against majority vote. These test combined effect and dosage, but no shuffled/matched-span mask isolates semantic information from generic token suppression; no exact compute match established.",
+  "controls": [
+   "α=0 GRPO training control",
+   "Two model sizes (same Qwen family), multiple benchmarks",
+   "Non-perception RL examples receive standard GRPO; math gains are cross-task transfer under mixed-data training, not no-math-training generalization",
+   "Inference majority voting at same nominal k, not equal total verifier+policy compute"
+  ],
+  "negative_results": [
+   {
+    "text": "Large α=.3: V*78.53 vs α=0 80.10; RWQA61.78 vs62.17; MathVision22.04 vs23.36. ChartQA84.56 exceeds baseline83.32 but is below α=.1 85.04 in Table3.",
+    "kind": "reported_experiment",
+    "locator": "§4.3 p.7 Table3",
+    "quote": "Conversely, an excessively large α of 0.3 proves counterproductive."
+   },
+   {
+    "text": "Truncate-Thinking loses to Truncate at k=16 V*all88.48 vs89.53 and BLINK49.38 vs49.45; authors offer reflection-support hypothesis.",
+    "kind": "author_claim",
+    "locator": "§4.2 p.6 Table2",
+    "quote": "We hypothesize\nthat the model’s training data does not contain sufficient reflective data, which results in poorer instruction-following\nquality when the reflective prompts are inserted in the Feedback strategy."
+   }
+  ],
+  "seeds": "Not reported. No seed count, confidence intervals or statistical test; do not assume single seed or interpret significant as a statistical result.",
+  "falsifier": "Proposed, not executed: equal-length/equal-count shuffled masks matching penalty mass should fail to match true-mask gains on blinded human factuality and held-out accuracy; equal-total-token/GPU-budget inference should retain benefits. If shuffled masks match, or independent factuality worsens while PRM rate improves, semantic grounding claim is unsupported.",
+  "independent_verifier_limit": "Fig2 uses the same PRM to assess its trained policy. Curve stabilization or nonmonotonicity cannot establish absence of reward hacking; no independent human/other-judge holdout or perturbation control.",
+  "raw_negative_table_findings": [
+   {
+    "locator": "Table1 p.6",
+    "finding": "3B BLINK49.13→48.75 (−.38pp); 7B ChartQA85.16→84.44 (−.72pp). These contradict a literal universal improvement reading."
+   }
+  ]
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL 3B/7B policy and corresponding 3B/7B Perceval; teacher example Gemini-2.5-Pro",
+   "framework": null,
+   "group_size": null,
+   "rollouts": "PRM-data source queries rolled out 3 times; RL rollout count unreported",
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "alpha": 0.1,
+   "inference_k": [
+    4,
+    8,
+    16
+   ],
+   "evaluation_decoding": "greedy per §4.1; Table2 repeated-generation sampling details unresolved"
+  },
+  "cost": "No dataset counts, training tokens, updates, hardware, GPU-hours, PRM inference latency or total serving compute. Fig2 x axis reaches ~340 steps but is not an explicit reproducible update budget. Equal k is not equal cost: PRM calls plus variable retained prefix and early stopping matter.",
+  "pitfalls": [
+   {
+    "text": "Whole-substring penalties affect grammar/benign words, degrading performance at larger α; smaller α=.1 is selected.",
+    "kind": "reported_experiment",
+    "locator": "§4.3 p.7",
+    "quote": "Conversely, an excessively large α of 0.3 proves counterproductive. We attribute this to collateral “penalization”: since\nthe P ERCEVAL flags entire substrings, a high penalty indiscriminately punishes all tokens within that span, including syntactically necessary but factually benign words (e.g.,\narticles, prepositions). This introduces significant training noise and degrades overall performance."
+   },
+   {
+    "text": "Reflection feedback may mismatch behavioral support in the policy training data.",
+    "kind": "author_claim",
+    "locator": "§4.2 p.6",
+    "quote": "We hypothesize\nthat the model’s training data does not contain sufficient reflective data, which results in poorer instruction-following\nquality when the reflective prompts are inserted in the Feedback strategy."
+   }
+  ],
+  "code": "https://github.com/RUCAIBox/Perceval",
+  "code_status": "Paper announces future public release; repository not opened or executed.",
+  "lesson": "当外部 PRM 返回整句错误 span 时，过强 token 加罚会连带压低无错语法词；应核对 span/token 对齐、保留未标记 token 的结果信用，并用独立事实标注与等掩码负对照验证，不把 PRM 曲线稳定当作无 hacking 的证明。",
+  "alignment_unknowns": "Exact string matching is specified, but repeated substrings, failed matches, Unicode normalization and character-to-token boundary policy are not; unknown masks must not silently become correct."
+ },
+ "relevance": [
+  {
+   "problem": "P36",
+   "how": "可迁移其视觉事实字串核验到 SFT caption 审核；论文实际训练的是 PRM 和 RL policy，未验证修复/屏蔽 SFT loss 的效果。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "直接提供对视觉幻觉 token 的 RL 优势修正，但不保证 caption充分性/因果忠实性；需要独立事实性评估。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "只能作为裁图后 caption 事实检查器的邻近设计；没有逐次crop取证/必要性标签，也未训练工具策略。",
+   "strength": 1
+  },
+  {
+   "problem": "P40",
+   "how": "仅惩罚错误视觉事实，不保护事实正确但终答错误的caption，不能直接解决读出映射失败。",
+   "strength": 1
+  },
+  {
+   "problem": "P44",
+   "how": "同一PRM训练与评分的reward-hacking自证风险；无独立可靠性证据。",
+   "strength": 1
+  },
+  {
+   "problem": "P58",
+   "how": "额外视觉PRM调用开销未测，推理的相同k不构成等算力比较。",
+   "strength": 1
+  }
+ ],
+ "source_discrepancies": [
+  {
+   "locator": "Eq2 p.2; §3.2 p.4",
+   "text": "Printed Eq2 min branches A_i vs A′_it inconsistent with replacing advantages throughout; actual code not verified."
+  },
+  {
+   "locator": "§4.2 p.5; Table1 p.6",
+   "text": "Prose attributes86.95→90.43 to V*pos; Table1 places those in V*attr. Actual 3B pos69.73→72.37."
+  },
+  {
+   "locator": "Table1 p.6; Table3 p.7",
+   "text": "3B canonical α=.1 ChartQA is86.48 in Table1,85.04 in Table3. No reconciliation/changed protocol reported. Preserve both."
+  },
+  {
+   "locator": "Table2 p.6",
+   "text": "At k=4 Truncate attr93.04/pos77.63 gives86.91 under V*115 attribute/76 position weighting, whereas all87.96 is printed; at k=4 Truncate-Thinking attr94.78/pos76.32 gives87.43 whereas86.91 is printed. Weighting assumptions are inferred from V*191 and Table1 percentages, not explicitly confirmed here; flag possible aggregation inconsistency without correcting source."
+  }
+ ]
+}

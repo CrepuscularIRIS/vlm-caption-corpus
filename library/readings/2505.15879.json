@@ -1,0 +1,441 @@
+{
+ "paper_key": "2505.15879",
+ "title": "GRIT: Teaching MLLMs to Think with Images",
+ "source": "candidates",
+ "decision": "poster",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.15879.pdf",
+  "version": "v2",
+  "version_note": "首页水印 arXiv:2505.15879v2 [cs.CV] 9 May 2026；钉住本地稿，不宣称是联网核实的最新版。",
+  "sections_read": [
+   "Abstract and Figure 1 (p1)",
+   "§1 Introduction (pp2–3)",
+   "§2.1–2.2 Related Work (pp3–4)",
+   "§3.1 Grounded Reasoning Paradigm (p4)",
+   "§3.2 GRPO-GR, Eqs1–3, Figure2 (pp4–5)",
+   "§4.1–4.2 setup, metrics, baselines, Table1 (pp5–7)",
+   "§4.3 qualitative examples, cross-modal correlation, attention intervention, Figures3–5 (pp7–9)",
+   "§4.4 scaling and Figure6; §5 Conclusion (p9)",
+   "References (pp10–12; bibliographic context only)",
+   "Appendix A test-data definitions (p13), Table2 (p14)",
+   "Appendix B training data and joint data/reward ablation (pp13–14), Table3 (p14); Appendix C heading only (p14)",
+   "Appendix D prompts, Figures7–9 (pp14–15)",
+   "Appendix E more examples (p15)"
+  ],
+  "visual_pages_inspected": [
+   4,
+   5,
+   6,
+   8,
+   9,
+   14
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把自然语言思考与框坐标放在同一自回归序列，利用已有 grounding 能力，以格式/计数/终答复合奖励进行 GRPO；框生成后不回填裁图像素。",
+  "key_step": "奖励可由 QA 真值和框语法计算：有效 think/rethink 标签、至少一个整数四元组，以及计数题框数与答案数量相符；不要求逐框真值。",
+  "why_non_obvious": "直接提示同一底座同时输出框和推理显著掉分，单独拥有两种能力并不保证联合输出；作者用少量 QA 奖励训练其衔接，但未隔离格式奖励各项。",
+  "trigger_condition": "When a pretrained model can localize and answer separately but fails under an interleaved-output prompt, optimize the shared output sequence with answer and checkable-format rewards to elicit joint behavior.",
+  "reviewer_praise": [
+   "l64eQv0LAs: 肯定显式框带来的解释性及多个测试来源的覆盖。",
+   "gpMX3J73zH: 认为方法经验上可靠，并肯定实验覆盖。",
+   "bfj1tf5L3i: 肯定仅20样本训练的数据效率。"
+  ],
+  "reviewer_concern": [
+   "l64eQv0LAs: 认为GRPO-GR主要是新增奖励项，且质疑GPT答案评审的独立性；这属于评审意见，不是本记录新颖性判断。",
+   "gpMX3J73zH: 当时认为缺少Visual Grounding任务实验；本地v2已有OVDEval，不能把旧评审当作v2现状。",
+   "bfj1tf5L3i: 质疑小模型结论的规模外推，并追问20样本仍消耗约96 A100小时的计算成本。"
+  ],
+  "acceptance_signal": "manifest.decision原样为poster；reviews JSON decision_raw=Accept (poster)，NeurIPS2025，三份official reviews的final_justification均称回复处理了多数/全部问题。未获得回复正文或meta-review；接受标签不证明机制或独立复现。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Interleave symbolic references with explanations in one output stream and optimize that stream using task outcomes and mechanically checkable structural rewards.",
+  "abstract_key_step": "Reward valid reference syntax and, for count-labeled instances, agreement between reference multiplicity and the target count without requiring reference-location annotations.",
+  "abstract_why_non_obvious": "Having separate capabilities does not guarantee their coordinated use under a joint output constraint; outcome and structure signals can select among already available behaviors.",
+  "abstract_trigger_condition": "When separately available capabilities interfere under a joint format, train their combined output using inexpensive outcome and syntax checks."
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.15879#s1",
+   "object": "单次图文输入下的 think→rethink→answer 输出序列",
+   "information": "策略看原图、问题和自身已生成文本/坐标；奖励器看标签和框语法、最终答案/真值。GPT答案judge输入为(q,预测答案,真值)，没有图像；没有框位置真值或新裁图像素。",
+   "operation": "在现有MLLM上直接RL，采样4条完成，把think/rethink各0.5分、至少1个合法框0.5分和GPT答案+0.1 BLEU信号组合成序列奖励，组内减均值除std后用clip/KL目标更新。",
+   "output": "同一序列中交错文本与框坐标的策略；没有工具返回回路。",
+   "claimed_effect": "Table1 Qwen2.5-VL3B GRIT vs Direct query：VSR ACC 72.9 vs49.5，TallyQA47.8 vs40.8；GRIT GIoU分别0.325/0.447。系完整配方效果（含计数奖励），不能归因于格式项单独作用。",
+   "conditions": [
+    "底座已有定位和推理能力",
+    "20条QA由10 VSR+10 TallyQA组成",
+    "GPT-4o和真值答案可用于训练评分；按同一prompt进行推理"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "PDF p6 Table1 Qwen2.5-VL3B GRIT row; pp4–5 §3.1–3.2",
+    "quote": "GRIT                   72.9   0.325   47.8   0.447    62.8   0.485      59.8      89.3      0.398"
+   },
+   "failure_boundary": "框合法不保证语义正确；至少一框奖励不支持按必要性少裁；未给token级mask/长度归一化实现、β/ε设置或训练种子。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.15879#s2",
+   "object": "计数任务的框输出数量与训练样本组合",
+   "information": "计数题答案提供目标数量；只知道输出框个数和答案数量，不知道每个框是否对准目标，也不排除重复框。",
+   "operation": "仅在计数来源样本上，生成框数等于真值计数时加0.5；选择10个计数样本覆盖0–4并与10个空间关系样本混合。",
+   "output": "可生成不同数量框的优化压力与混合训练分布。",
+   "claimed_effect": "App.B/Table3整套计数数据+奖励相对20 VSR无计数奖励：GIoU域内0.387 vs0.349、域外0.437 vs0.378，域外ACC64.4 vs60.0；域内ACC却51.8 vs53.8。作者称计数成分重要，实验不能分别识别数据和奖励贡献。",
+   "conditions": [
+    "答案能解析为计数",
+    "数据含计数与空间关系两种来源",
+    "比较的是InternVL3-2B的联合消融"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "PDF p14 Table3; p13 Appendix B",
+    "quote": "GRIT w/o counting data & reward              0.349            0.378               53.8            60.0"
+   },
+   "failure_boundary": "计数真值不是框语义监督；0个对象与至少一框格式奖存在目标张力。联合消融不能说明计数奖励单独有效。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.15879#s3",
+   "object": "已生成的推理文本与框集合的一致性评测",
+   "information": "GPT-4o看同一图像上模型框/随机框两种标注及移除坐标的推理文字；不看模型内部状态、实际crop收益或配对终答反事实。",
+   "operation": "抽取推理框，随机采样等量框作对照，分别绘图；遮掉文本中的坐标，让GPT-4o从两图中选与文字更吻合者，重复3次报告均值和std。",
+   "output": "Vision-Language Reasoning Cross-Modal Correlation二选一偏好分；含20条人工推理链基线。",
+   "claimed_effect": "Figure4报告GRIT高于基线、低于人工；正文未给精确柱高，故不把目测值写作精确数字。该分数测区域-文本相符，非因果必要性或独立人工gold。",
+   "conditions": [
+    "必须有可提取的生成框和可遮掉的坐标",
+    "随机框数量与模型框匹配",
+    "固定GPT-4o视觉judge可做Set-of-Mark比较"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "PDF p7 §4.3 Cross-modal Correlation; p8 Figure4; p15 Figure9",
+    "quote": "We repeat this process three times for robustness and report the average correlation score with standard deviation."
+   },
+   "failure_boundary": "随机框尺寸/位置分布和左右顺序随机化未说明；图4图例CoT，正文却写Zero-shot ICL（前文基线为One-shot ICL），基线身份不一致；模型judge偏好不保证框被策略实际利用。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Direct query (same Qwen2.5-VL3B / InternVL3-2B)",
+   "kind": "method"
+  },
+  {
+   "name": "Chain-of-Thought with the same grounded-reasoning suffix",
+   "kind": "method"
+  },
+  {
+   "name": "One-shot ICL with a fixed exemplar",
+   "kind": "method"
+  },
+  {
+   "name": "Few-shot supervised fine-tuning",
+   "kind": "method"
+  },
+  {
+   "name": "GRIT without counting data and counting reward",
+   "kind": "method"
+  },
+  {
+   "name": "VSR curated subset",
+   "kind": "benchmark"
+  },
+  {
+   "name": "TallyQA counts0–9 subset",
+   "kind": "benchmark"
+  },
+  {
+   "name": "GQA curated subset",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVista TestMini",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME counting/position/existence subsets",
+   "kind": "benchmark"
+  },
+  {
+   "name": "OVDEval position subset simplified to single-target detection",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者限定为小模型与资源受限；不证明大模型扩展。",
+   "quote": "While limited resources focus our study on smaller MLLMs to validate the GRIT method and efficiency, rather than exploring peak performance with full-scale scaling,",
+   "locator": "PDF p9 §5 Conclusion"
+  },
+  {
+   "text": "作者报告扩数据时域外增益比域内更弱，收益递减；数据多样性解释属于作者推断。",
+   "quote": "the improvements in answer accuracy are more subtle for out-of-domain testing data compared to the growth observed on in-domain testing data,",
+   "locator": "PDF p9 §4.4"
+  },
+  {
+   "text": "格式奖励不约束语义正确的框。",
+   "quote": "without constraining the textual content or semantic accuracy of the grounded regions themselves.",
+   "locator": "PDF p5 §3.2 bounding-box format reward"
+  },
+  {
+   "text": "坐标生成不增加视觉观测，无法验证新像素的工具收益。",
+   "quote": "Crucially, the generation of subsequent tokens does not receive additional pixel inputs based on the generated bounding boxes.",
+   "locator": "PDF p4 §3.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table1 Qwen2.5-VL3B在联合grounding/推理prompt下，VSR ACC由Direct query49.5降为CoT37.5，GQA55.4→39.5，MME88.9→41.3；原始模型的分别能力不足以保证联合格式输出。",
+  "load_bearing_assumption": "会定位且会回答的预训练模型，只靠提示就能稳定交错定位与推理；作者以联合prompt基线反驳这一直觉。",
+  "scope": "小型Qwen2.5-VL3B/InternVL3-2B、单次原图输入、无框标注的QA奖励训练，评价六个数据来源的子集。",
+  "success_criterion": "GPT答案准确率及框集合union IoU提升；模型框比等量随机框更符合去坐标后的文字；不包含准确率非劣下的工具次数优化。",
+  "why_open": "作者指出先前纯文本RL将grounding与reasoning分开，dense grounded-CoT依赖逐步文本/框标注；其方案利用已有能力与任务级奖励，未证明新能力创造。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "grounding IoU focuses on whether the collection of grounded regions in each grounded reasoning output from the model together aligns with the annotated question-critical image regions.",
+   "locator": "PDF p6 §4.2 Metrics; 定义集合union IoU，与逐对象检测IoU不同"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "All training is conducted on 8 NVIDIA A100 (80GB) GPUs with Deepspeed Zero2 and the time for training each model is approximately 12 hours.",
+   "locator": "PDF p6 §4.1 Training Implementation; 仅训练GPU时间，未报token和judge成本"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "role": "primary",
+   "quote": "The reasoning chain c freely mixes natural-language text T and optional bounding-box coordinates B.",
+   "locator": "PDF p4 §3.1; 在同一生成序列中混合符号引用与文本"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "This optional reward component is used specifically for training examples drawn from visual counting-related datasets",
+   "locator": "PDF p5 §3.2 Grounded-target-counting reward; 按任务来源差异化给奖励"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=\\frac{r_i-\\operatorname{mean}\\{r_1,\\ldots,r_N\\}}{\\operatorname{std}\\{r_1,\\ldots,r_N\\}+\\delta}",
+    "locator": "PDF p4 §3.2 Eq1; δ example=10^-8"
+   },
+   {
+    "latex": "r_{\\mathrm{format}}=s_{st}+s_{bf}",
+    "locator": "PDF p4 §3.2 Eq2"
+   },
+   {
+    "latex": "s_{st}=0.5\\,\\mathbb{I}(\\text{correct think token pair})+0.5\\,\\mathbb{I}(\\text{correct rethink token pair}),\\quad s_{bf}=0.5\\,\\mathbb{I}(\\mathrm{num\\_bboxes}\\geq1)",
+    "locator": "PDF pp4–5 §3.2 unnumbered inline definitions"
+   },
+   {
+    "latex": "r_{\\mathrm{ans}}=s_{GPT}+0.1s_{BLEU}",
+    "locator": "PDF p5 §3.2 unnumbered inline definition"
+   },
+   {
+    "latex": "J_{\\mathrm{GRPO}}(\\theta)=\\frac{1}{N}\\sum_{i=1}^{N}\\left[\\min\\left(s_iA_i,\\operatorname{clip}(s_i,1-\\epsilon,1+\\epsilon)A_i\\right)-\\beta D_{KL}\\left(\\pi_\\theta(\\cdot\\mid q)\\Vert\\pi_{ref}(\\cdot\\mid q)\\right)\\right],\\quad s_i=\\frac{\\pi_\\theta(o_i\\mid q)}{\\pi_{\\theta_{old}}(o_i\\mid q)}",
+    "locator": "PDF p5 Eq3 and inline ratio; transcribed printed sequence objective, image I omitted in printed conditioning"
+   }
+  ],
+  "signal_routing": "格式标签/框语法/计数一致性和终答评分来自不同片段，但都组成completion级r_i、A_i；Eq3仅写序列概率比。没有独立caption/框token优势或多轮mask公式，不能从图2评分来源箭头推断token梯度路由。论文未给三奖励的单独总和公式，只称composite combination；计数项正文规定匹配时0.5，未明确所有else分支。",
+  "normalization": "mean+std",
+  "invariance": "增加格式与计数奖励改变偏好的输出目标，没有势函数或最优策略不变定理。读者推导：若忽略δ，统一正缩放全部组奖励不改变Ai；只缩放一个分量通常会改变相对权重，但该分量独占组内变化时尺度近似抵消。",
+  "baseline_or_potential": "同题4个完成的组均值；无critic/MC分叉/势函数。πref正文写通常为初始预训练策略，KL具体β未报告。",
+  "degenerate_cases": "读者由Eq1推导：所有总奖励相同则Ai=0（KL若β>0仍可更新）；答案全对/全错不必总奖相同，格式、BLEU、框数仍可变；p≈0/1无平衡采样保证。单次图输入本来就是本文设定，没有多轮退化式。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "已做：相同底座的direct/grounded-prompt/ICL/SFT/GRIT对比；删除pre-rethink框并续写，比较100个GQA样本前50个rethink token的视觉attention（Fig5）；随机等量框作一致性对照（Fig4）。后两者是诊断，attention增加不等于终答收益或真实图像依赖。",
+  "controls": [
+   "CoT与GRIT使用同一prompt suffix，隔离有无post-training但不能隔离每个奖励项。",
+   "Few-shot SFT使用相同demonstrations；文本没有明确RL无推理标注下SFT target的详细构造。",
+   "Table3把10 VSR+10 TallyQA+count reward一并换成20 VSR且去count reward；样本数相同，内容和奖励同时变。",
+   "Fig5删框同时改变前缀长度/位置/文本分布；没有同长度无语义坐标或置换框控制，未报终答差。",
+   "Fig4三次重复是judge/随机对照评估重复，不是三个独立训练种子。"
+  ],
+  "negative_results": [
+   {
+    "text": "完整GRIT在Qwen GQA ACC62.8低于Few-shot SFT64.6，不能说所有任务胜过所有基线。",
+    "quote": "Few-shot fine-tuning   59.7   0.216   44.5   0.284    64.6   0.475      45.0      68.3      0.391",
+    "locator": "PDF p6 Table1 Qwen rows"
+   },
+   {
+    "text": "Table3去计数数据/奖励后域内ACC53.8高于完整51.8，域外下降；caption笼统称性能下降不完整。",
+    "quote": "GRIT w/o counting data & reward              0.349            0.378               53.8            60.0",
+    "locator": "PDF p14 Table3"
+   },
+   {
+    "text": "相关性仍低于人工推理链。",
+    "quote": "while still exhibiting a gap when compared to the human-written reasoning chains, indicating room for future improvement.",
+    "locator": "PDF p8 §4.3"
+   }
+  ],
+  "seeds": "训练seed数未报告，不能标成已知single；Fig4随机框/judge流程重复3次并报告std。Fig6画了误差条但来源/样本数/定义未说明。Table1/3无置信区间。",
+  "falsifier": "读者提出、未执行：在相同数据/预算下分离count reward与数据、加入长度匹配的框置换/删除控制，并用独立标注与终答变化衡量；若只有格式成功和attention变化而真实框定位/独立终答无改善，则不支持框语义帮助推理的较强解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-3B; InternVL3-2B",
+   "framework": "other: DeepSpeed ZeRO2; RL training library not specified",
+   "group_size": 4,
+   "rollouts": null,
+   "steps": 200,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "batch_size": 128,
+   "optimizer": "AdamW",
+   "scheduler": "Cosine",
+   "learning_rate": null,
+   "learning_rate_note": "正文p6印为2×10 e-6，写法有歧义，不擅自归一为2e-6；需代码核实。"
+  },
+  "cost": "作者：每模型8×A100 80GB约12h，即读者算术换算约96 GPU·h；20是unique QA数，不是20次训练。总生成token、实际rollout总数、GPT-4o调用费与延迟未报告；batch128是否含候选展开未明，不乘算总rollouts。",
+  "pitfalls": [
+   {
+    "text": "prompt要求JSON，但策略未必遵守；奖励用整数四元组regex，降低输出格式约束；这不校验框语义。",
+    "quote": "This is intentional, as the reward in GRPO-GR uses regex to identify valid bounding boxes, rather than relying on the JSON format,",
+    "locator": "PDF p14 Appendix D"
+   },
+   {
+    "text": "BLEU对答案长度差敏感，作者将其权重降为0.1。",
+    "quote": "We down-weight sBLEU due to its sensitivity to length mismatch,",
+    "locator": "PDF p5 §3.2"
+   }
+  ],
+  "code": null,
+  "project_url": "https://grounded-reasoning.github.io",
+  "lesson": "当要把已有定位能力写进推理输出时，QA真值与语法检查可减少dense标注需求；应分开核验格式、框语义和实际终答贡献，不能把框输出等同于获得新像素或必要crop。"
+ },
+ "relevance": [
+  {
+   "problem": "P44",
+   "how": "直接展示无GT框时的语法/框数奖励，并明确不约束位置语义；可作为语法奖励与语义验证必须分开的反例。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "随机框对照可改造成caption/区域一致性的离线监测；它没有约束caption事实性或提供真实过程gold。",
+   "strength": 2
+  },
+  {
+   "problem": "P41",
+   "how": "删框续写attention诊断与前缀替换的分布/长度混杂直接相关，应加中性匹配对照。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "作者直接对已有两种能力的底座做20样本RL；不能外推为RL能创造缺失crop/弃答/纠偏行为。",
+   "strength": 1
+  },
+  {
+   "problem": "P11",
+   "how": "全文使用completion级复合奖励，没有逐次工具必要性信用或token路由。",
+   "strength": 1
+  },
+  {
+   "problem": "P01",
+   "how": "Eq1明确除std，若移入小幅crop代价仍需核对尺度抵消。",
+   "strength": 1
+  }
+ ],
+ "reviews_evidence": [
+  {
+   "source": "reviews",
+   "kind": "praise",
+   "note_id": "l64eQv0LAs",
+   "locator": "strengths_and_weaknesses; https://openreview.net/forum?id=RW3cHh3HgY&noteId=l64eQv0LAs",
+   "quote": "The integration of textual explanations with explicit bounding box references enhances the interpretability and expandability of MLLMs, providing more transparent and grounded reasoning."
+  },
+  {
+   "source": "reviews",
+   "kind": "praise",
+   "note_id": "l64eQv0LAs",
+   "locator": "strengths_and_weaknesses; https://openreview.net/forum?id=RW3cHh3HgY&noteId=l64eQv0LAs",
+   "quote": "The evaluation is conducted on test sets sampled from seven different datasets, showcasing the model’s generality across diverse vision-language tasks."
+  },
+  {
+   "source": "reviews",
+   "kind": "concern",
+   "note_id": "l64eQv0LAs",
+   "locator": "strengths_and_weaknesses; https://openreview.net/forum?id=RW3cHh3HgY&noteId=l64eQv0LAs",
+   "quote": "The proposed GRPO-GR method is more of an incremental modification—adding new reward terms to the existing GRPO algorithm—rather than a fundamentally novel algorithmic contribution."
+  },
+  {
+   "source": "reviews",
+   "kind": "concern",
+   "note_id": "l64eQv0LAs",
+   "locator": "limitations; https://openreview.net/forum?id=RW3cHh3HgY&noteId=l64eQv0LAs",
+   "quote": "This dependency may introduce bias or circular evaluation, and raises questions about the method’s independence and generalizability."
+  },
+  {
+   "source": "reviews",
+   "kind": "praise",
+   "note_id": "gpMX3J73zH",
+   "locator": "strengths_and_weaknesses; https://openreview.net/forum?id=RW3cHh3HgY&noteId=gpMX3J73zH",
+   "quote": "An empirically reliable method to improve the performance of VLMs, and in the meantime to incorporate reasoning evidence during output."
+  },
+  {
+   "source": "reviews",
+   "kind": "concern",
+   "note_id": "gpMX3J73zH",
+   "locator": "strengths_and_weaknesses; https://openreview.net/forum?id=RW3cHh3HgY&noteId=gpMX3J73zH",
+   "quote": "However, no experiments are conducted to show if this method can also facilitate the improvements on Visual Grounding task."
+  },
+  {
+   "source": "reviews",
+   "kind": "praise",
+   "note_id": "bfj1tf5L3i",
+   "locator": "strengths_and_weaknesses; https://openreview.net/forum?id=RW3cHh3HgY&noteId=bfj1tf5L3i",
+   "quote": "The method requires only 20 training samples, showcasing exceptional efficiency compared to existing approaches that often rely on large annotated datasets."
+  },
+  {
+   "source": "reviews",
+   "kind": "concern",
+   "note_id": "bfj1tf5L3i",
+   "locator": "strengths_and_weaknesses; https://openreview.net/forum?id=RW3cHh3HgY&noteId=bfj1tf5L3i",
+   "quote": "the paper does not evaluate its scalability to larger models or more complex architectures, leaving questions about its applicability to state-of-the-art systems."
+  },
+  {
+   "source": "reviews",
+   "kind": "concern",
+   "note_id": "bfj1tf5L3i",
+   "locator": "questions; https://openreview.net/forum?id=RW3cHh3HgY&noteId=bfj1tf5L3i",
+   "quote": "The training was conducted using only 20 samples, but it involved 200 training steps with a total batch size of 128, resulting in a computational cost of approximately 96 A100 hours."
+  },
+  {
+   "source": "reviews",
+   "kind": "acceptance_signal",
+   "note_id": "l64eQv0LAs",
+   "locator": "final_justification",
+   "quote": "The author's response resolved most of the issues and the scores were appropriately adjusted."
+  },
+  {
+   "source": "reviews",
+   "kind": "acceptance_signal",
+   "note_id": "gpMX3J73zH",
+   "locator": "final_justification",
+   "quote": "Most of my concerns have been addressed. I will keep my positive score."
+  },
+  {
+   "source": "reviews",
+   "kind": "acceptance_signal",
+   "note_id": "bfj1tf5L3i",
+   "locator": "final_justification",
+   "quote": "The rebuttal has addressed all of my concerns. As a result, I decide to raise my rating and recommend acceptance of this paper."
+  }
+ ],
+ "reviews_source": {
+  "locator": "2505.15879.json"
+ }
+}

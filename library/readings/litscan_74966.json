@@ -1,0 +1,57 @@
+{
+ "paper_key": "litscan:74966",
+ "title": "MNEMO: Interactive Person Retrieval via Multi-Turn Multimodal Conversation",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74966.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3.1–3.3",
+   "4",
+   "Table2–3",
+   "5.3",
+   "Conclusion",
+   "AppendixF"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "每次视觉反馈独立编码，以共享静态query和递归动态query聚合，逐轮与目标图对齐",
+  "why_non_obvious": "独立编码节省成本却丢跨轮依赖；小memory模块恢复依赖",
+  "trigger_condition": "When multimodal dialogue grows, encode turns separately and recurrently aggregate memory",
+  "contribution_type": "retrieval architecture and synthetic feedback dataset",
+  "abstract_strategy": "将昂贵轮内编码与轻量跨轮状态更新拆开",
+  "abstract_trigger_condition": "多轮视觉对话上下文开销增长"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74966#s1",
+   "object": "dialogue retrieval representation",
+   "information": "参考图与用户纠错反馈，训练目标图identity",
+   "operation": "ATE独立编码，DMA动态memory传递，每轮contrastive/SDM监督",
+   "claimed_effect": "Table3 R1 91.51→92.26，推理63.76→24.07ms；仅ATE为88.90",
+   "conditions": [
+    "InternVL2.5-1B",
+    "static/dynamic各16queries",
+    "synthetic feedback"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "92.26      80.31      189.24      24.07"
+   },
+   "failure_boundary": "人类反馈Turn2 R1 90.14低于合成92.26；不是agent主动获取证据/停止优化",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P30",
+   "how": "多轮状态压缩相近，但检索目标/人工纠错信息条件与自主crop不同",
+   "strength": 1
+  }
+ ]
+}

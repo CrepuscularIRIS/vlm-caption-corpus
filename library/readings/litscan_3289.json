@@ -1,0 +1,157 @@
+{
+ "paper_key": "litscan:3289",
+ "title": "MMBoundary: Advancing MLLM Knowledge Boundary Awareness through Reasoning Step Confidence Calibration",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3289.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "2–3",
+   "Table1",
+   "5.1–5.3",
+   "Limitations",
+   "Appendix B setup"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "每句配自然语言置信声明，先用内部不确定性伪标签SFT，再以知识正确性、外部校准、内部一致性三个奖励PPO。",
+  "key_step": "把整答置信拆成逐句知识与置信对，并分别比较参考知识、表达置信和内部读数。",
+  "why_non_obvious": "整答正确率无法定位早期错误知识造成的高置信连锁错误；自一致本身也不是正确性。",
+  "trigger_condition": "When confidence hides local reasoning failures, calibrate each statement against both verified content and internal uncertainty.",
+  "contribution_type": "method",
+  "abstract_strategy": "Train local confidence expressions using independent content and uncertainty checks.",
+  "abstract_trigger_condition": "When coarse confidence masks local errors, align confidence at the error-producing unit.",
+  "abstract_key_step": "Attach and score confidence per intermediate statement.",
+  "abstract_why_non_obvious": "Faithfulness to internal belief and correctness require different signals.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3289#s1",
+   "object": "句子级置信表达策略",
+   "information": "模型token概率/熵/tokenSAR、CLIP图句相似度、GPT4o参考推理链；不是当前动作的真实分叉收益。",
+   "operation": "min-max归一化四读数等权平均，按均值/std分五档插入置信声明SFT；PPO加权三个句均奖励。",
+   "claimed_effect": "Table1 AOKVQA Acc.835/MECE.304，对比无RL .768/.427；CulturalVQA OOD Acc.448。",
+   "conditions": [
+    "参考知识可靠",
+    "声明到分数映射有效"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "MMBoundary         0.316       0.304      0.835"
+   },
+   "failure_boundary": "内部读数真实性尚未保证；去RCS的AOKVQA准确率.857高于完整.835。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SaySelf / Conf-CSR / RCE / DRL / remove each reward",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "不确定性读数是否真实反映模型信心仍待研究。",
+   "quote": "needed to determine whether uncertainty",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "无RL的AOKVQA句级校准误差.427，完整.304；单项奖励存在准确率/校准取舍。",
+  "load_bearing_assumption": "整答置信足以管理多步骤知识错误。",
+  "scope": "LLaVA-NeXT逐句知识/置信，非工具轨迹",
+  "success_criterion": "MECE下降并提高任务正确率",
+  "why_open": "现有整答校准没有定位感知与推理各步"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "3.1 SFT warmup→3.2 PPO"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "3.1内部读数造置信伪标签"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "U=sum_j w_j minmax(U_j); w_j=.25",
+    "locator": "Eq7/AppendixB"
+   },
+   {
+    "latex": "R_KA=mean_t I(z_t); R_EC=mean_t[1-2(I(z_t)-EV(c_t))^2]; R_CS=mean_t[1-2(IV(z_t)-EV(c_t))^2]; R=alpha R_KA+beta R_EC+gamma R_CS",
+    "locator": "Eq10–13"
+   },
+   {
+    "latex": "L_PPO=-E[min(ratio_t A_t,clip(ratio_t,1-epsilon,1+epsilon)A_t)]",
+    "locator": "Eq14"
+   }
+  ],
+  "signal_routing": "论文以句子及置信声明(z_t,c_t)为动作；三个奖励先按全回答句数平均，PPO优势相对value基线；实现的token mask/逐句reward分配未给清。",
+  "normalization": "other: 内部读数dataset min-max；三reward句均，alpha/beta/gamma相等；advantage是否额外标准化未知。",
+  "invariance": "非PBRS，校准平方误差和知识奖励改变目标；Eq6正CLIP相似度与Eq7越小越确定的方向冲突未解释，不能自行改符号。",
+  "baseline_or_potential": "PPO value/baseline，具体实现未知；参考链GPT4o生成过滤。",
+  "degenerate_cases": "全对知识奖励饱和但校准仍有信号；全错也可学低置信而非变正确；p动作饱和/裁图支持不解决。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1去掉每种内部读数、各奖励、RL、分数声明映射；跨域CulturalVQA。",
+  "negative_results": [
+   {
+    "text": "去RCS提高AOKVQA Acc .835→.857但MECE变差；去REC ScienceVQA Acc .703→.712。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：若校准只匹配teacher/internal读数而不预测真实crop收益，则不能用其触发工具。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA-NeXT",
+   "framework": "PPO;具体框架未核",
+   "group_size": 3,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "55K带置信句；SFT batch16/lr1e-4，RL每题N3、batch16/lr1e-5；总GPU成本未知。",
+  "pitfalls": [
+   {
+    "text": "CLIP项方向与不确定性总分解释不一致；五档阈值越界裁限细节未说明。",
+    "locator": "Eq6–7/3.1"
+   }
+  ],
+  "code": "https://github.com/Zhitao-He/MMBoundary",
+  "lesson": "当内部置信与正确性分别受奖励时，模型可能更诚实却不更准，应分别测校准、准确率与真实动作收益。"
+ },
+ "relevance": [
+  {
+   "problem": "P34",
+   "how": "逐句置信可作为待校准的补看触发输入。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "对caption事实/信心的过程监督候选。",
+   "strength": 2
+  }
+ ]
+}

@@ -1,0 +1,154 @@
+{
+ "paper_key": "litscan:3765",
+ "title": "VisuoThink: Empowering LVLM Reasoning with Multimodal Tree Search",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3765.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3–4",
+   "Tables1–2",
+   "6",
+   "Limitations",
+   "AppendixD–E settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "交替Thought/工具Action/视觉Observation，每步采候选并分别完整模拟到终点，以模型投票选择下一步。",
+  "key_step": "用执行后的完整未来视觉/结果评估中间节点，而非只看当前推理。",
+  "why_non_obvious": "搜索质量取决于模拟反馈能否显露成功；几何最终数字不如导航终态可验证。",
+  "trigger_condition": "When intermediate visual reasoning is ambiguous, simulate candidate continuations and select using observable outcomes.",
+  "contribution_type": "test-time search",
+  "abstract_strategy": "Compare prospective continuations using executable feedback before committing.",
+  "abstract_trigger_condition": "When local scores miss delayed consequences, inspect simulated outcomes.",
+  "abstract_key_step": "Expand several actions, finish each trajectory, then select a branch.",
+  "abstract_why_non_obvious": "More branches can burden a fallible evaluator instead of improving decisions.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3765#s1",
+   "object": "视觉文本交错树搜索",
+   "information": "历史、执行器生成的画图或环境状态、模拟路径终态；无在线GT答案oracle，模型self-vote。",
+   "operation": "每步采k3个候选，各单路径模拟到终止，再argmax Vote(history,candidate,result)，深度默认10。",
+   "claimed_effect": "GPT4o Geomverse24.4→28.9（无搜索→搜索）；导航L4 32.3→61.3。",
+   "conditions": [
+    "可执行工具反馈",
+    "模型能评估终态",
+    "额外搜索预算"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "VisuoThink (ours)                       28.9                 25.6                       27.8"
+   },
+   "failure_boundary": "图像可能是构造线而非新观测像素；几何弱反馈、搜索计算和基础模型限制。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "CoT / VoT / VoT+executor / VisualSketchpad+solver / no search",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "完整候选模拟产生显著计算开销。",
+   "quote": "process introduces significant computational",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "GPT4o导航L4 CoT3.2、VoT+executor9.7、无搜索32.3、完整61.3。",
+  "load_bearing_assumption": "一次性视觉辅助或当前节点评价足以处理延迟效果。",
+  "scope": "几何与小规模格点导航/拼图",
+  "success_criterion": "相同主路径步数下准确率提高，额外模拟成本须记录",
+  "why_open": "已有文字搜索不更新视觉状态"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "6 width/depth/no-search comparisons"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "3.2 predictive rollout selection"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Select(S_t)=argmax_{s in S_t} Vote(A_{t-1},s,r_s)",
+    "locator": "Eq1"
+   },
+   {
+    "latex": "sum_t ||a_t|| <= tau",
+    "locator": "Eq2"
+   }
+  ],
+  "signal_routing": "无训练；选择分数只控制下一节点，非PG reward或token优势。工具结果包括画图与代码求解/环境反馈。",
+  "normalization": "other: heuristic single self-vote，无组内std",
+  "invariance": "无PBRS；增加搜索改变推理分布和成本，不能当无偏动作价值。",
+  "baseline_or_potential": "无学习critic；当前LVLM启发式评估完整模拟。",
+  "degenerate_cases": "k1无分支竞争；失败评估器可选错；p候选接近0仍难采到；all-correct/all-wrong训练组不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "逐步视觉/工具与无搜索对照，固定树深比较宽度；强终态反馈vs几何数字反馈。",
+  "negative_results": [
+   {
+    "text": "宽度增加呈倒U，更多候选不必更好；Claude几何无搜索37.5低于Sketchpad+solver41.7。",
+    "locator": "6.2/Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：匹配总模型token/工具次数，与随机分支及无预测搜索比较；若增益由额外预算解释则收窄。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "GPT4o/Claude3.5/Qwen2VL72B",
+   "framework": "工具执行+启发式树搜索",
+   "group_size": 3,
+   "max_turns": 10,
+   "kl": null
+  },
+  "cost": "每步3候选并各完整模拟；未报告总GPU时；子节点温度.8，其他调用/vote温度0。",
+  "pitfalls": [
+   {
+    "text": "Geomverse-109名称含109但附录过滤后90题；Geometry3K仅48题，小集不支持宽泛泛化。",
+    "locator": "AppendixE"
+   }
+  ],
+  "code": "https://github.com/ekonwang/VisuoThink",
+  "lesson": "当模拟终态不能可靠判断成功时，增加树宽会放大选择错误，应先校准评估器并匹配总搜索成本。"
+ },
+ "relevance": [
+  {
+   "problem": "P18",
+   "how": "完整后续结果可辅助区分失败探索，但评估噪声需单测。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "显式深度预算仅上限，未学必要性停止。",
+   "strength": 1
+  }
+ ]
+}

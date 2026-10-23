@@ -1,0 +1,153 @@
+{
+ "paper_key": "litscan:70504",
+ "title": "Thyme",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70504.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.1 SFT categories",
+   "§4.1–4.4",
+   "Table1",
+   "C.1",
+   "C.5 Tables6–7",
+   "§6 Limitations",
+   "PDF p8 reward括号视觉核对（仅因抽取歧义）"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "按输出类型切换采样温度：code0、text1；SFT教代码/直答，RL按终局正确与一致性训练。",
+  "why_non_obvious": "统一高温会毁坏代码执行并让策略放弃代码，探索与执行精度不能只用一个温度。",
+  "trigger_condition": "当动作代码比自然语言更怕随机扰动时，按类型控制采样并分别衡量执行率与探索。",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当动作代码比自然语言更怕随机扰动时，按类型控制采样并分别衡量执行率与探索。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "按输出类型切换采样温度：code0、text1；SFT教代码/直答，RL按终局正确与一致性训练。",
+  "abstract_why_non_obvious": "统一高温会毁坏代码执行并让策略放弃代码，探索与执行精度不能只用一个温度。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70504#s1",
+   "object": "文本+代码多轮rollout",
+   "information": "原图/真实代码执行与沙箱返回；训练答案GT及72B一致性judge",
+   "operation": "code block温度0，其余1；沙箱token不计RL损失，正确答案门控一致性bonus",
+   "claimed_effect": "MME-Realworld perception60.94→67.10/reasoning38.59→48.38；reward对照平均63.59→65.68。",
+   "conditions": [
+    "500K SFT含直答/视觉代码/数学代码；高分辨率RL题"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.3–4.4; Tables1,7",
+    "quote": "+ Consistency          56.66         58.25      49.06           81.76           72.25             69.70           72.06           65.68"
+   },
+   "failure_boundary": "没有独立温度消融数值被本次读取确认；确定性code降低代码探索；不是成本最小化。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "SFT屏蔽沙箱和数学代码退火建立真实工具能力。",
+   "strength": 3
+  },
+  {
+   "problem": "P29",
+   "how": "减少执行失败以避免工具模式消失，但非显式双动作支持。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "RL全生成thought/code/answer共享终局A，沙箱观察mask。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5VL7B",
+   "kind": "model"
+  },
+  {
+   "name": "Outcome+Format",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "naiveSFT会伪造沙箱；高温代码失败使策略避代码；process reward平均62.91低于63.59 baseline。",
+  "load_bearing_assumption": "确定性code不妨碍必要代码搜索，同时可维持工具支持。",
+  "scope": "视觉/计算代码工具的多轮SFT→RL",
+  "success_criterion": "同数据比较text/code温度组合，测真实执行、答案、直答与必要调用。",
+  "why_open": "ATS独立量化消融未读到；最终收益包括数据/训练/奖励多项。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3; C.5.1"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_{i,j}=(r_i-\\mathrm{mean}(r))/\\mathrm{std}(r);\\quad |\\tau_i|=\\sum_k|T_{ik}|+\\sum_k|C_{ik}|+|a_i|",
+    "locator": "§4.2"
+   },
+   {
+    "latex": "r=R_{result}(1+0.5R_{consistency})+0.5R_{format}",
+    "locator": "§4.4 PDF p8（视觉核）"
+   }
+  ],
+  "signal_routing": "RL所有生成thought/code/answer享同轨迹A，沙箱内容/长度排除；SFT最终采用mask sandbox和only last round，防学先错再修；一致性judge只看最后500字符+答案。 PDF p8核实：consistency由result门控，format项独立相加，错误答案仍可能得format .5。",
+  "normalization": "mean+std",
+  "invariance": "组std统一缩放近似消去；训练token按全组总生成token数归一。非PBRS。§4.2打印J仅A与KL没有logprob/ratio，不补成PPO公式，梯度实现未知。",
+  "baseline_or_potential": "组均值；KL .001。",
+  "degenerate_cases": "全同reward std0未给；code温度0导致该上下文代码样本相同；RabinKarp重复子串覆盖>50%提前截断；max iterations值未读到。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table6 sandbox/last-round/comment/math-annealing；Table7 outcome+format vs consistency/process/code。",
+  "negative_results": [
+   {
+    "text": "Process62.91<baseline63.59；code64.54>baseline但低于consistency65.68，与正文概括code无正收益不完全一致。",
+    "locator": "Table7; C.5.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若code0执行率提高但可用动作支持缩窄且答案下降，则采样分解并非普遍更好。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B; reward judge72B",
+   "framework": "GRPO-ATS",
+   "group_size": 4,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "32 H800约224GPU小时总计（论文）；SFT3epochs/RL1epoch，RL lr5e-7。",
+  "pitfalls": [
+   {
+    "text": "正确答案只门控一致性，format仍可独立给分；不能写成全部reward以正确性门控。",
+    "locator": "§4.4 PDF p8"
+   }
+  ],
+  "code": null,
+  "lesson": "当沙箱观察混入监督时，模型可能模拟工具结果；应mask观察并按输出类型检查采样失败。"
+ }
+}

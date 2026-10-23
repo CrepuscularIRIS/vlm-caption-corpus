@@ -1,0 +1,164 @@
+{
+ "paper_key": "litscan:75626",
+ "title": "DLMR: Dual-Latent Memory Routing for Vision-Language Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75626.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "4",
+   "Tables1–4",
+   "5.2–5.3",
+   "Conclusion",
+   "B.1–B.5",
+   "C.5–C.7",
+   "TableA5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "分离视觉/推理latent banks，injector上下文化后router在delimiter选memory类型和token预算",
+  "why_non_obvious": "把已经看到的视觉证据再利用与推理状态分开，router控制内部memory而非调用外部图像",
+  "trigger_condition": "When long contexts dilute evidence, route distinct latent memories with state-dependent token budgets",
+  "contribution_type": "memory architecture and budget policy",
+  "abstract_strategy": "解耦持久证据与演化状态，再学习有限动作控制器",
+  "abstract_trigger_condition": "原始观测已在上下文中且backbone可接受latent tokens",
+  "abstract_key_step": "预热memory→训练injector→冻结二者仅RL router",
+  "abstract_why_non_obvious": "减少文本token不必减少总计算，injector副本与cache重置需计成本",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75626#s1",
+   "object": "memory source and injected-token budget",
+   "information": "current prefix hidden state; same existing image/text embeddings",
+   "operation": "delimiter处选{visual,reasoning}×{4,8,16}，正确条件奖励小平均预算",
+   "claimed_effect": "Qwen Table4 adaptive53.84/677tokens vs fixed8 52.71/732；RL reasoning avg56.45 vs vanilla46.61",
+   "conditions": [
+    "frozen backbone",
+    "max5 routed injections",
+    "initial visual injection"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "Full DLMR (adaptive kt )        53.84            677"
+   },
+   "failure_boundary": "eligible步没有no-inject动作；重访已有证据≠新pixels；reward惩罚平均k而非总成本",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "状态条件预算控制可迁移，但本文不学习是否停止/跳过",
+   "strength": 2
+  },
+  {
+   "problem": "P30",
+   "how": "控制内部重复注入而非外部crop重复",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO/Visual-RFT/RCTS-RAG",
+   "kind": "method"
+  },
+  {
+   "name": "fixed k4/8/16, frozen injector, shared memory",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "有资格step强制选正预算；null只发生非eligible或cap后，不是学到何时无需注入。",
+   "quote": "6 (Visual/Reasoning × {4,8,16})",
+   "locator": "TableA5"
+  },
+  {
+   "text": "视觉latent长度8与动作预算16/取前k描述的衔接未说明。",
+   "locator": "Eq4–5;TableA5"
+  }
+ ],
+ "question": {
+  "observed_failure": "fixed16 52.04/765tokens劣于fixed8 52.71/732",
+  "load_bearing_assumption": "不同状态需要不同memory容量且可学",
+  "scope": "加显式skip的工具预算router",
+  "success_criterion": "同总体计算预算下准确率不降且无用动作减少",
+  "why_open": "本文只有positive budgets，平均k奖励不能排除多次小额注入"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "4.1–4.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "4.3 staged initialization/injector/router learning"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "M_t=g_\\phi(E_t,Z^{s_t}_{1:k_t},k_t),\\quad a_t\\in\\{v,r\\}\\times\\{4,8,16\\}",
+    "locator": "Eq5,8–9"
+   },
+   {
+    "latex": "L_1=\\sum_s(1-\\cos(z_s,t_s))+\\lambda_{neg}\\sum_{s\\ne s^\\prime}[\\cos(z_s,t_{s^\\prime})-m]_++\\lambda_{sep}\\cos(z_v,z_r)",
+    "locator": "Eq10"
+   },
+   {
+    "latex": "\\max_\\psi E[R_{task}+\\lambda_{eff}\\mathbf1(R_{task}=1)(1-\\bar{k}/k_{max})-\\beta KL(\\pi_\\psi\\|\\pi_{ref})]",
+    "locator": "Eq12,18"
+   }
+  ],
+  "signal_routing": "stage1只更新latent；stage2更新injector+latent，SFT completion-token loss或GRPO；stage3冻结这些与backbone，仅router选择memory type/budget的action logprob获终局reward。",
+  "normalization": "stage1 masked mean pooling+cosine；stage3 group-relative优势具体mean/std/epsilon未给；TableA5 loss_type BNPO但无公式，不补常见实现；eff按trajectory平均k/kmax。",
+  "invariance": "非PBRS；正确条件成本改变最优偏好。若groupstd且全组同k，R=c·correct会使成本系数失效；不同k才改变组排序/相对尺度（读者条件推导）。",
+  "baseline_or_potential": "reference router；表A5 KL beta0，正文泛述KL非实际非零保证。",
+  "degenerate_cases": "全错Reff0；全对同k无reward差；平均k不惩罚注入次数，加入低k可降低均值；no eligible时均值空集如何定未知；delimiter文本生成固定backbone但注入会间接影响后续eligibility。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 adaptive vs fixed budgets；Table2 trainable injector53.84 vs frozen50.44；shared/no-separation分析。",
+  "negative_results": [
+   {
+    "text": "fixed16更长但准确率低于fixed8；RL general avg71.07低于SFT71.45。",
+    "locator": "Tables1,4"
+   }
+  ],
+  "seeds": "global42；无多训练种子区间",
+  "falsifier": "读者：matched total injected tokens/forward FLOPs下固定策略追平，或加skip仍几乎全注入，则状态必要性解释不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B; InternVL3-8B",
+   "framework": "injector backbone copy+LoRA; accelerate/DeepSpeedZeRO2",
+   "group_size": 8,
+   "max_turns": 5,
+   "kl": 0
+  },
+  "cost": "LoRA16alpha32；injector完整前缀forward且每次注入重置KV；max5",
+  "pitfalls": [],
+  "code": "https://github.com/Hunter-Wrynn/DLMR",
+  "lesson": "当注入latent改prefix时应重置KV，并将prompt-end token放assistant标记之前避免早停；算成本必须计injector。"
+ }
+}

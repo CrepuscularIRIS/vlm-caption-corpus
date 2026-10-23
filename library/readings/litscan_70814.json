@@ -1,0 +1,155 @@
+{
+ "paper_key": "litscan:70814",
+ "title": "DaVinci",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70814.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.1–3.3 Eq1–5",
+   "§4.1 Table1",
+   "§4.5 Table5",
+   "Appendix B",
+   "E.3 Tables11–12"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把生成/GT矢量图形的同类型几何原语对应关系转为二分图匹配，用Hungarian计算最优一一对应再奖励。",
+  "why_non_obvious": "像素相似不能区分结构错误；矢量元数据可避免OCR抽取噪声，但依赖GT可渲染代码。",
+  "trigger_condition": "当图表生成有矢量GT且像素奖励不敏感时，构造原语匹配对象并用现成匹配solver评分。",
+  "contribution_type": "method",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "当图表生成有矢量GT且像素奖励不敏感时，构造原语匹配对象并用现成匹配solver评分。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "把生成/GT矢量图形的同类型几何原语对应关系转为二分图匹配，用Hungarian计算最优一一对应再奖励。",
+  "abstract_why_non_obvious": "像素相似不能区分结构错误；矢量元数据可避免OCR抽取噪声，但依赖GT可渲染代码。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70814#s1",
+   "object": "diagram→TikZ生成",
+   "information": "输入图像；训练GT代码/PDF矢量文本与几何原语；生成代码真实compile/render",
+   "operation": "SFT语法/绘图顺序规范化，GRPO用文本匹配+Hungarian几何匹配+图像一致，编译失败给最低分",
+   "claimed_effect": "Pass@1 SFT84.50→97.60；增加text+geom使text37.23→42.28、geometry41.44→44.10。",
+   "conditions": [
+    "Qwen2.5VL7B，训练有GT矢量表示"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1; Table5",
+    "quote": "Base + Rtext + Rgeom 84.75 93.93 74.01 62.30 22.32         42.28     44.10"
+   },
+   "failure_boundary": "不是无需标注视觉reward；编译成功不等于图形正确；scorer各项可冲突。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "过程视觉证据奖励需可验证元数据，提供比语言judge更明确的条件。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "定位/几何奖励依赖GT对象匹配与归一，迁移必须声明GT获取。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "规范化代码顺序/注释SFT打底后RL结构优化。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "DaVinci-SFT",
+   "kind": "model"
+  },
+  {
+   "name": "image-only reward",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "单image reward text37.23/geom41.44，全reward42.28/44.10；DSIM85.00→84.75。",
+  "load_bearing_assumption": "匹配代价与真实结构正确一致且GT矢量可用。",
+  "scope": "科学图到TikZ代码",
+  "success_criterion": "分开编译率、文字/几何保真和像素，控制GT信息与奖励组件。",
+  "why_open": "应用crop轨迹通常无矢量GT，奖励不可直接拿来。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§3.3 Geometric Similarity"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=R_{text}+R_{geom}+R_{img}+R_{pass};\\quad A_i=(R_i-\\bar R)/std(R)",
+    "locator": "Eq1–2"
+   },
+   {
+    "latex": "R_{text}=\\frac{\\sum_{matched}(dIoU+1)/2}{\\max(|B_{pred}|,|B_{gt}|)};\\quad R_{geom}=\\frac{\\sum_{matched}e^{-kC(e_p,e_g)}}{\\max(|E_{pred}|,|E_{gt}|)}",
+    "locator": "Eq3–4"
+   }
+  ],
+  "signal_routing": "生成代码整个序列得单标量组优势；Appendix B序列likelihood ratio，未给token mask/聚合细节。SFT只LLM，RL视觉/projector/LLM均解冻。Rpass实际非额外编译bonus，而失败时其他项最低。",
+  "normalization": "mean+std",
+  "invariance": "text/geom各除最大元素数到[0,1]；图像项含DreamSim和标准化MSE[-1,1]；总reward组std，非PBRS。",
+  "baseline_or_potential": "组均值；reference KL .01。",
+  "degenerate_cases": "全失败/同奖励std0未给；无元素集合分母0未给；可编译但错图仍由结构/image判；错误GT提取会污染奖励。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table5固定SFT基础逐加SSIM/text/geom；代码数据顺序消融；Table1 SFT→RL。",
+  "negative_results": [
+   {
+    "text": "结构奖励提升结构但DSIM略降85→84.75；最终cBLEU6.57低于SFT7.52。",
+    "locator": "Tables1,5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若正确结构但不同绘制表示被匹配惩罚，则reward未正确刻画等价结构。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "GRPO",
+   "group_size": null,
+   "max_turns": 1,
+   "kl": 0.01
+  },
+  "cost": "8H100；E.3报SFT2GPUh/RL60GPUh，但正文RL500steps/G10/global512，表12为300/G8/global128，实际配置未知。",
+  "pitfalls": [
+   {
+    "text": "主文与表12 rollout数量/steps/batch冲突；不选一套伪装确定。",
+    "locator": "§4.1; E.3"
+   },
+   {
+    "text": "Rimg公式的DreamSim方向/标准化尺度未代码核验。",
+    "locator": "Eq5"
+   }
+  ],
+  "code": null,
+  "lesson": "当视觉reward依赖结构标注时，用可解析GT与一一匹配减少识别噪声，同时核空集与编译失败退化。"
+ }
+}

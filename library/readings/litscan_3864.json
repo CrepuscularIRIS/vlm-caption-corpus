@@ -1,0 +1,167 @@
+{
+ "paper_key": "litscan:3864",
+ "title": "Finding Needles in Images: Can Multimodal LLMs Locate Fine Details? (Spot-IT)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3864.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "4/Eq4–11",
+   "5.1–5.4",
+   "6/Table1–2",
+   "Limitations",
+   "Appendix Table5–6/A.5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "SigLIP检索问题相关网格patch，按最高匹配的归一化相似度调高斯高亮，再把整张高亮图交VLM解题。",
+  "key_step": "把定位与作答分开，以外部图像编辑保留上下文同时突出候选区域。",
+  "why_non_obvious": "直接crop会丢上下文；高亮可保留全局，但相似度不等于区域充分性。",
+  "trigger_condition": "When small evidence is buried in a document, localize a patch and highlight its neighborhood before answering.",
+  "contribution_type": "visual input preprocessing and benchmark",
+  "abstract_strategy": "Use a specialized locator to modify the representation consumed by a general solver.",
+  "abstract_trigger_condition": "When a general solver misses localized evidence in a cluttered input.",
+  "abstract_key_step": "Retrieve a candidate region, adapt emphasis, preserve surrounding context.",
+  "abstract_why_non_obvious": "A confidently matched region need not contain sufficient answer evidence.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3864#s1",
+   "object": "query-conditioned图像高亮",
+   "information": "问题清洗+原图6×6patch的SigLIP cosine；开放域另依赖检索到的文档，非答案oracle。",
+   "operation": "argmax patch；softmax相似度p；sigmoid映射sigma；低于.2不画，否则alpha.5蓝色高亮整图。",
+   "claimed_effect": "GPT4o ArxiVQA准确率.52→.60；NiM EM.38→.46，为8pp约21.05%相对增益。",
+   "conditions": [
+    "候选patch含证据",
+    "清洗保留语义",
+    "原模型能读高亮图"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "GPT-4o+Ours             0.60       0.45      0.60    0.60"
+   },
+   "failure_boundary": "检索/网格切割/patch匹配错误占主要误差；不是新增像素也不学习何时crop。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "same MLLM original images / OCR / CoT / CLIP vs SigLIP / grid N3–8",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "词袋式query-patch相似度限制结构语义，长文仍困难。",
+   "quote": "which limits contextual understanding of document",
+   "locator": "Limitations"
+  },
+  {
+   "text": "4.2称高置信对应小sigma，Eq9及4.4反而p越高sigma越大；两处冲突未消解。",
+   "locator": "4.2/4.4",
+   "quote": "high similarity scores result in a broader"
+  }
+ ],
+ "question": {
+  "observed_failure": "NiM GPT4o EM.38，而人工100题EM.63。",
+  "load_bearing_assumption": "整图输入可自动将关注集中到细节。",
+  "scope": "密集文档细粒度问答",
+  "success_criterion": "同模型同图像来源的准确率与延迟比较",
+  "why_open": "局部读取与全局上下文难兼顾"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Appendix Table5–6 similarity encoder/grid ablations"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "4.2 patch locator vs final MLLM answerer"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "p=exp(Sim(v_selected,v_q))/sum_patches exp(Sim(v_patch,v_q))",
+    "locator": "Eq7"
+   },
+   {
+    "latex": "sigma=0.8/(1+exp(-10*(p-0.2)))",
+    "locator": "Eq9"
+   },
+   {
+    "latex": "I_prime=(1-alpha*M)*I+alpha*M*H; alpha=0.5",
+    "locator": "Eq11"
+   }
+  ],
+  "signal_routing": "无训练：相似度只控制高亮中心和宽度，编辑图给answerer；不是reward/advantage，未对token分配信用。",
+  "normalization": "other: softmax over all patch cosine similarities, no specified temperature; not reward std",
+  "invariance": "非PBRS；视觉输入重表示会改变输出分布，无答案不变保证。",
+  "baseline_or_potential": "SigLIP cosine为定位启发式，非critic/正确性置信度。",
+  "degenerate_cases": "uniform cosine使p=1/36，代Eq9 sigma约.121<.2，不画；读者代数推断，非作者实验。无group all-correct/std问题。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "原图/OCR/CoT与高亮；CLIP/SigLIP和N3–8；occlusion敏感性（只读主文概述）。",
+  "negative_results": [
+   {
+    "text": "N7在Table6 .61高于默认N6 .59，不能称6普适最优；Table1 Qwen ArxiVQA .44→.44；NiM Qwen杂志EM.05→.03。",
+    "locator": "Table1–2/AppendixTable6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：匹配延迟和模型调用，与随机位置/固定sigma/只裁图比较；若正确定位不改善则拒绝定位即收益假设。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "GPT4o/GPT4omini/Gemini1.5Flash/Qwen2VL7B/Llama3.2Vision11B; SigLIP",
+   "framework": "query-cleaning/patch scoring/image blending",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2×A30 24GB与API；作者称额外约4秒。50题调参；ArxiVQA500题测试取训练集、DUDE开发集。",
+  "pitfalls": [
+   {
+    "text": "Eq10抽取的平方根/指数布局不够明确，未转录该mask形状；像素坐标与0–.8 sigma的单位归一化在所读文本不明。",
+    "locator": "Eq8–10"
+   },
+   {
+    "text": "主文/附录基线ArxiVQA .52/.53不同，误差百分比为抽100个失败样本，非全部测试比例。",
+    "locator": "Table1/Table5–6/A.5"
+   }
+  ],
+  "code": null,
+  "lesson": "当定位分数用于高亮范围时，应测试分数方向、patch数导致的softmax尺度与坐标单位；先核无编辑退化分支，再解释精度提升。"
+ },
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "可作为crop前区域定位/证据利用对照，但相似度不能直接当动作价值。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "高亮/遮挡输入干预检验视觉依赖。",
+   "strength": 2
+  }
+ ]
+}

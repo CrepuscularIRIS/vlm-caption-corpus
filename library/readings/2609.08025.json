@@ -1,0 +1,152 @@
+{
+ "paper_key": "2609.08025",
+ "title": "Eliciting Self-Verification in Multimodal Reasoning Agents with Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2609.08025.txt",
+  "sections_read": [
+   "Abstract/contributions; §3.1-3.4/Algorithm1/Eqs3-5",
+   "§4-5/Tables1-2/Fig4; AppD settings/TableS2; AppH limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以正确答案门控搜索校准、查询多样性与证据自验证的乘积奖励，训练时由见GT的teacher标注。",
+  "key_step": "policy生成5查询随机执行1个及snippet二值mask；GTteacher提供query/snippet对齐，最终用Dr.GRPO。",
+  "why_non_obvious": "加性过程奖会奖励错误答案，单独query对齐也会诱发近乎总是搜索。",
+  "trigger_condition": "When search outputs are noisy, train explicit evidence verification with correctness-gated rewards.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将结果正确性作为过程奖励入口，再抑制过程投机。",
+  "abstract_trigger_condition": "When intermediate scores can be gamed, gate them on task success and audit behavior shifts.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "把证据判断写成可评分结构，teacher只用于训练。",
+  "abstract_why_non_obvious": "更多验证奖励可能反而刺激多余检索。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.08025#s1",
+   "object": "查询、snippet verify mask及整条搜索轨迹",
+   "information": "训练GPT5见GT及retrieved snippets；推理无teacher/GT；search_free来自预训练policy单次无工具答对",
+   "operation": "正确性门控四因子乘积，Dr.GRPO优化整trajectory；5候选随机执行1",
+   "claimed_effect": "Table2 FVQA65.3/SR61.4 vs56.4/80.3；InfoSeek64.7/52.3 vs55.1/59.7",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Eqs3-5/Table2",
+    "quote": "We use Dr. GRPO for all SVRL variants reported in Table 1 and Table 2."
+   },
+   "failure_boundary": "teacher标签非策略必要性；静态单次答对标签有噪声并会随策略过时。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "静态无工具答对标签可作为是否取证先验，但需改成caption/crop并校准漂移。"
+  },
+  {
+   "problem": "P27",
+   "strength": 2,
+   "how": "显式验证工具证据可迁移为纠偏训练。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "MMSearch-R1/R1++；query-align/search-aware/LLM-judge/外部test-time verifier",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "GTteacher偏差、GPT5评估不可完全复现、动态web噪声；Table1和Table2完整模型数值不同，未把差额解释为某单组件贡献。",
+   "locator": "AppH; Tables1-2"
+  }
+ ],
+ "question": {
+  "observed_failure": "query-align FVQA搜索97.6%、InfoSeek98%，完整验证Table1分别61.2/59.2%。",
+  "load_bearing_assumption": "正确性门控后过程奖励不会诱发多余搜索。",
+  "scope": "Qwen2.5VL7B文本/图像搜索知识VQA",
+  "success_criterion": "准确率升且搜索率降，同时验证过滤错误",
+  "why_open": "工具返回污染和query奖励投机均不能仅靠outcome解决。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table1"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table2"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "Eq3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=(1-\\alpha)r_{acc}r_{aware}r_{count}r_{qalign}r_{salign}+\\alpha r_{fmt},\\ \\alpha=.1",
+    "locator": "Eqs3-4/TableS2"
+   },
+   {
+    "latex": "r_{aware}=.1\\;\\text{if search-free and search, else }1;\\ r_{count}=1\\;\\text{if no text search, else }\\max(\\epsilon,\\hat k/5)",
+    "locator": "§3.2"
+   }
+  ],
+  "signal_routing": "query/snippet判断是局部标签，但合为trajectory reward，未给不同token专属优势或直接监督free-form critique的loss。训练exact-match correctness，评估GPT5judge；test-time verification诊断不见GT，训练teacher见GT。",
+  "normalization": "mean-only: 最终Dr.GRPO明确移除std与长度归一化；不能照§3.1/3.4标准GRPO介绍写mean+std。完整更新公式细节未在所读范围展开。",
+  "invariance": "不是PBRS；乘积和search-free固定先验改变目标。",
+  "baseline_or_potential": "组相对baseline G4，无critic；search-free是离线单次能力先验。",
+  "degenerate_cases": "全错组只剩format差异，无法训练内容verify；全对仍可按过程因子区分；全同总reward无adv；无textcall rcount=1，q/salign无适用项如何精确取值所读范围未给。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "外部无GTtest-time verifier固定answerer隔离证据噪声；query-align与search-aware消融揭示工具投机。",
+  "negative_results": [
+   {
+    "text": "加性奖励部分信用可被错答利用；LLMjudge训练出现冗长/多答案投机；query-align导致近全搜。",
+    "locator": "§3.4/Table1"
+   }
+  ],
+  "seeds": "Fig4三seed均值±1SD，400step；未把主表当跨seed非劣CI。",
+  "falsifier": "同预算随机mask/无GTteacher对照若等效，则证据验证语义价值未证；随policy更新重测search-free可查标签老化。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B-Instruct",
+   "framework": "veRL/PyTorch/Ray; Dr.GRPO",
+   "group_size": 4,
+   "max_turns": 3,
+   "kl": 0.001
+  },
+  "cost": "FVQA5000；400steps/batch32/8×A100；maxcontext8124，image≤1/text≤2，搜索DynamoDB缓存；teacher调用费用未报告。",
+  "pitfalls": [
+   {
+    "text": "R1++正文去KL，SVRL AppD/TableS2保留KL.001；不要混记baseline与最终配置。",
+    "locator": "§5/AppD"
+   }
+  ],
+  "code": "https://vishwassathish.github.io/projects/svrl/",
+  "lesson": "当过程奖鼓励验证时，先检查是否被转化成更多工具调用；正确性门控仍不能代替调用校准，且训练应去除std放大。"
+ }
+}

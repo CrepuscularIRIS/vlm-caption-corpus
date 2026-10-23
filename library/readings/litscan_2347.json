@@ -1,0 +1,52 @@
+{
+ "paper_key": "litscan:2347",
+ "title": "PolCLIP",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2347.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3.1–3.3 pp3–6",
+   "Table2 p7/Table3 p8",
+   "§4.5/Limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "CLIP双流以sense→image和image→sense隐表示补模态，动量伪目标及词义/图像检索四项对比loss训练；推理额外D-GPT解释消歧。",
+  "key_step": "用目标歧义词token作anchor，融合原表示与生成的另一模态。",
+  "why_non_obvious": "两类消歧数据缺另一模态，推理不能依赖模态齐全。",
+  "trigger_condition": "When a modality is missing, infer complementary latent features and anchor retrieval on the ambiguous token.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Infer missing complementary views for unified retrieval.",
+  "abstract_trigger_condition": "When tasks share semantics but omit different inputs, learn reciprocal latent completion."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2347#s1",
+   "object": "统一文本/视觉词义消歧检索",
+   "information": "配对Image-EnhancedSemCor+VWSD-KB；D-GPT微调SemCor50K。",
+   "operation": "SIG/ISG生成隐表示，crossattention融合，四项对比loss；测试加入GPT3.5解释。",
+   "claimed_effect": "large无D-GPT ALL F1 82.60、视觉HR@1 82.28；加D-GPT83.62/83.59。去ISG视觉降5.82pp。",
+   "conditions": [
+    "匹配领域数据与专用模块可用"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p8",
+    "quote": "w/o-ISG      81.17 (-1.43)    76.46 (-5.82)"
+   },
+   "failure_boundary": "没有可独立检验的真实补全图像；增量含额外GPT3.5，不研究工具必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "仅模态对齐/消歧检索，无轨迹信用机制。",
+   "strength": 0
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,435 @@
+{
+ "paper_key": "2506.20670",
+ "title": "MMSearch-R1: Incentivizing LMMs to Search",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2506.20670.pdf",
+  "version": "v1",
+  "version_evidence": "p.1 margin: arXiv:2506.20670v1 [cs.CV] 25 Jun 2025. Observed local version; latest online version not checked.",
+  "sections_read": [
+   "pp.1–3 Abstract, Introduction and §2.1–2.2",
+   "pp.3–4 §2.3 Multi-turn rollout and §2.4 Reward Modeling, Figure2 and Eq.1",
+   "pp.5–6 §3.1–3.2 Dataset collection, search balancing and test annotation, Figure3",
+   "pp.6–9 §4.1–4.2 Setups and Findings1–5, Table1 and Figures4–5; §5 Conclusion",
+   "pp.10–14 References",
+   "pp.15–16 Appendix A.1–A.3 Related Work",
+   "p.17 Appendix B GRPO, Eq.2 and advantage; Appendix C Search Tools and caching",
+   "pp.18–22 Appendix D.1–D.6 all prompts, Tables2–7; Appendix E all benchmark descriptions",
+   "p.23 Appendix F.1–F.3 RL/SFT/evaluation settings; G.1 and Table8 general VQA",
+   "pp.24–25 Appendix G.2 and Table9 reward ablation; H Limitations; I Broader Impacts",
+   "pp.25–28 Appendix J examples Figures7–8 and K case studies Figures9–10"
+  ],
+  "pages_read": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   28
+  ],
+  "visual_pages_inspected": [
+   4,
+   7,
+   8,
+   9,
+   17,
+   23,
+   24,
+   26,
+   27,
+   28
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以模型实际采样到的成功搜索路径离线划分 search-free / search-required 题目，组成混合训练集，再用带搜索折扣与格式分的最终奖励训练多轮图文搜索策略。",
+  "key_step": "先训练一个可搜索的 Qwen2.5-VL-7B，每题采样8条：8条全错删除；至少一条无搜索答对即归为 search-free；只能搜索答对的按图/文/混合搜索分类。训练5k题约1.6k无搜索、3.4k需搜索，配合成功轨迹的搜索折扣。",
+  "why_non_obvious": "提高训练奖励不必然降低调用：去掉数据平衡或搜索惩罚，作者报告奖励略高但搜索率接近100%。数据组成与最终奖励共同影响调用倾向，不能把所有增益解释为搜索路由更准。",
+  "trigger_condition": "When successful answers can be obtained both with and without external tools and tool use has a cost, balance training items by sampled search need and discount successful searched answers to learn selective invocation.",
+  "reviewer_praise": [
+   "low_evidence: manifest provides no review source; no reviewer praise inferred from author claims."
+  ],
+  "reviewer_concern": [
+   "low_evidence: manifest provides no review source; no reviewer concerns invented."
+  ],
+  "acceptance_signal": "low_evidence: manifest venue is arXiv and decision is null; the local PDF is marked Preprint. No conference decision or reviews verified.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Balance examples by the paths that already yield success, then penalize optional resource use inside the terminal task reward.",
+  "abstract_key_step": "Sample several attempts per item; retain solvable items, separate those with any successful cheap path from those successful only with external resources, and train on a mixture.",
+  "abstract_why_non_obvious": "Optimizing terminal correctness alone can favor pervasive resource use; an aggregate cost also needs examples that support cheap successful behavior.",
+  "abstract_trigger_condition": "When an optional external resource improves some inputs but is redundant for others, infer path-dependent training strata and combine their coverage with a success-gated resource penalty."
+ },
+ "signatures": [
+  {
+   "sig_id": "2506.20670#s1",
+   "object": "RL训练题池的搜索需求分层和抽样组成。",
+   "information": "离线分类器是先在完整收集数据上训练过的Qwen2.5-VL-Instruct-7B；可见每题8条自然rollout的最终正确性与工具类型。看不到未采样动作的反事实收益；标签不是人工必要性金标，也不随后续策略逐步在线更新。",
+   "operation": "删除8条全错题；若任意无搜索rollout答对则归为search-free，否则按仅有成功路径的图/文/混合搜索需求分类；组成5k题、约1600 search-free与3400 search-required的训练集。",
+   "output": "带经验搜索需求类别的离线平衡训练集FVQA-train。",
+   "claimed_effect": "在完整方法对照中，去掉数据平衡或搜索惩罚会使搜索率快速接近100%（Fig.5b）。这是数据平衡与奖励联合配方的消融证据，不是独立因果必要性标签准确率。",
+   "conditions": [
+    "先训练分类模型，且每题8次采样至少一次答对。",
+    "训练集要包含可无搜索成功题与需搜索成功题；所谓balanced并非50/50，而是约32%/68%。",
+    "分类相对该模型、该搜索工具与有限采样预算成立。"
+   ],
+   "evidence": {
+    "quote": "If any rollout produced a correct answer without invoking search, the question was labeled as search-free.",
+    "locator": "p.6 §3.1 Search Balancing",
+    "kind": "author_claim"
+   },
+   "supporting_evidence": [
+    {
+     "quote": "If all 8 rollouts failed, the question was discarded due to insufficient training signal.",
+     "locator": "p.6 §3.1 Search Balancing"
+    },
+    {
+     "quote": "Although both ablated variants achieve slightly higher rewards, they do so at the cost of overusing the search tool, with search ratios rapidly converging to nearly 100%.",
+     "locator": "p.9 §4.2 Finding5; Figure5b",
+     "kind": "reported_experiment"
+    }
+   ],
+   "failure_boundary": "8条采样中未见无搜索成功不能证明必须搜索；一次猜中又会归入search-free。丢弃全错题排除了最难题；未报告分类置信区间或训练中支撑保证。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2506.20670#s2",
+   "object": "多轮图文搜索轨迹的终端奖励与GRPO更新。",
+   "information": "训练奖励读取GT短答案、整条轨迹是否曾搜索及所有回合格式；策略决策时读取原图、问题、已生成推理及搜索返回。无逐次调用边际价值、无正确前后对比、无裁图位置金标。",
+   "operation": "在精确匹配正确性上乘搜索折扣，再加格式奖励；对同题8条轨迹计算减均值除std优势，广播给模型生成token，掩掉搜索返回内容的损失；训练模型在直答、图搜和文搜之间选择。",
+   "output": "能直接回答或按需调用图/文搜索的Qwen2.5-VL-7B策略。",
+   "claimed_effect": "Table1五基准宏平均准确率54.6%、SR67.1%，同尺寸固定两次搜索RAG为51.6%、100%；32B RAG为55.1%、100%。作者报告相对7B RAG准确率+3.0个百分点、搜索率降32.9%，不能据此判定统计非劣或独立复现。",
+   "conditions": [
+    "最终答案短且可用exact match判定；α=0.1，搜索惩罚参数报告为0.1，但实际乘数的数值语义未在正文分段定义。",
+    "主文协议最多3轮对话、2次搜索；图搜仅首轮允许。附录F.1的3次工具调用与此不一致。",
+    "搜索工具有最多5个图文网页结果，网页摘要由Qwen3-32B服务给出；并使用经验平衡题集。"
+   ],
+   "evidence": {
+    "quote": "A penalty factor (ranging from 0 to 1) is applied to the accuracy score when any search was performed.",
+    "locator": "p.4 §2.4 Accuracy Score with Search Penalty; Eq.1",
+    "kind": "author_claim"
+   },
+   "supporting_evidence": [
+    {
+     "quote": "To prevent training bias from environment feedback, retrieved content from search tools is masked during loss computation and does not contribute to gradient updates.",
+     "locator": "p.4 §2.3"
+    },
+    {
+     "quote": "MMSearch-R1-7B       54.6 67.1    58.4   66.8   55.1   61.6   53.8   88.5    57.4   42.5   48.4   76.2",
+     "locator": "p.7 Table1, MMSearch-R1-7B row",
+     "kind": "reported_experiment"
+    }
+   ],
+   "failure_boundary": "[redacted: project-internal]",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B/32B/72B: Direct Answer and fixed image-then-text RAG",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o and Gemini 2.5 Pro: Direct Answer and fixed RAG",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B SFT on 8k correct GPT-4o trajectories",
+   "kind": "method"
+  },
+  {
+   "name": "MMSearch-R1 w/o Data Balancing; w/o Search Penalty",
+   "kind": "method"
+  },
+  {
+   "name": "MMSearch-R1 *EM vs *4o reward on a FVQA-train subset",
+   "kind": "method"
+  },
+  {
+   "name": "FVQA-test, InfoSeek, MMSearch, SimpleVQA, LiveVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "AI2D, ChartQA, LLaVA-Wilder, MathVista, MME, OCRBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "GPT-4o-20241120 correctness judging; search ratio (call count / maximum allowed calls)",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "图搜提交完整图像，不支持按局部视觉目标检索；不能直接当作crop机制。",
+   "quote": "image search currently requires submitting the full image, which may not be optimal for retrieving localized visual content.",
+   "locator": "p.24 Appendix H"
+  },
+  {
+   "text": "搜索排序随时间变化，网页抓取可能失败，摘要器可能幻觉；作者报告图搜约0.2%、文搜约1%无有效结果，局部失败更多。",
+   "quote": "our monitoring during training revealed an end-to-end failure rate of approximately 0.2% for image search and 1% for text search, where failure is defined as receiving no valid results.",
+   "locator": "p.24 Appendix H"
+  },
+  {
+   "text": "Exact match会惩罚语义正确但表面不同的答案，适用范围为简短明确事实问答。",
+   "quote": "However, it may penalize answers that are semantically correct but differ slightly in phrasing.",
+   "locator": "p.25 Appendix H"
+  },
+  {
+   "text": "GPT-4o奖励替代有偏见、成本及能力边界；同模型家族作训练奖励与测试judge不构成独立验证。",
+   "quote": "However, it may introduce bias, higher training cost and struggles with questions beyond its knowledge scope.",
+   "locator": "p.24 Appendix G.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "去掉search penalty或data balancing的两种训练变体，搜索率均迅速接近100%（p.9 Fig.5b/Finding5）。固定两次检索的7B RAG五基准平均准确率51.6%、SR100%，完整方法54.6%、67.1%（Table1）；不是所有输入都需要固定检索。",
+  "load_bearing_assumption": "固定retrieve-then-generate能够高效处理所有输入，以及只奖励答对即可自然学会何时不搜索；作者以按需策略及去惩罚/去平衡消融挑战这两点。",
+  "scope": "Qwen2.5-VL-7B在事实性图文VQA中决定直答、整图web image search或text search；主文最多两次工具调用，不是高分辨率crop定位。",
+  "success_criterion": "同时报告五个VQA集的答案正确率和最大调用预算归一化的搜索率；相对同尺寸固定RAG提高准确率并减少调用。论文没有预设非劣界、显著性或逐次必要性金标。",
+  "why_open": "固定RAG每题检索；提示式搜索agents不更新参数；已有RL搜索主要是文本，缺少兼顾视觉/文本知识与无搜索样本的数据和训练接口。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "This removes variability in search triggering and allows us to focus on evaluating how well the model interacts with external information.",
+   "locator": "p.8 §4.2 Finding2"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "we record the search ratio, the proportion of responses that invoke a search, for each method across different benchmarks, allowing us to jointly evaluate answer correctness and search efficiency.",
+   "locator": "p.7 §4.1 Metric"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "role": "primary",
+   "quote": "This model was then used to classify the original questions: for each question, 8 rollouts were generated.",
+   "locator": "p.6 §3.1 Search Balancing"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "quote": "In this setup, the search process is fixed, and the model is responsible only for generating effective text queries and reasoning over the retrieved content.",
+   "locator": "p.8 §4.2 Finding2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathrm{reward}=(1-\\alpha)\\cdot\\mathrm{Acc\\_Score}\\cdot\\mathrm{Search\\_Penalty}+\\alpha\\cdot\\mathrm{Format\\_Score}.",
+    "locator": "p.4 Eq.1",
+    "source_note": "Transcribed from visually inspected PDF. No per-call count appears; Search_Penalty is not explicitly piecewise defined.",
+    "quote": "reward = (1 − α) · Acc_Score · Search_P enalty + α · F ormat_Score."
+   },
+   {
+    "latex": "\\hat A_{i,t}=\\tilde r_i=\\frac{r_i-\\operatorname{mean}(\\mathbf r)}{\\operatorname{std}(\\mathbf r)}",
+    "locator": "p.17 Appendix B, unnumbered advantage definition below Eq.2",
+    "source_note": "Visual transcription; no epsilon or zero-std handling printed."
+   },
+   {
+    "latex": "J_{\\mathrm{GRPO}}(\\theta)=\\mathbb E_{q\\sim D,\\{o_i\\}_{i=1}^G\\sim\\pi_{\\theta_{\\mathrm{old}}}(O\\mid q)}\\!\\left[\\frac1G\\sum_{i=1}^G\\frac1{|o_i|}\\sum_{t=1}^{|o_i|}\\left\\{\\min\\!\\left[R_{i,t}\\hat A_{i,t},\\operatorname{clip}(R_{i,t},1-\\epsilon,1+\\epsilon)\\hat A_{i,t}\\right]-\\beta D_{\\mathrm{KL}}[\\pi_\\theta\\Vert\\pi_{\\mathrm{ref}}]\\right\\}\\right]",
+    "locator": "p.17 Eq.2",
+    "source_note": "Readable LaTeX transcription of printed GRPO objective. PDF omits a visible separator between the two min arguments; comma supplied for readability. This is not a code-level verification."
+   },
+   {
+    "latex": "R_{i,t}=\\frac{\\pi_\\theta(o_{i,t}\\mid q,o_{i,<t})}{\\pi_{\\theta_{\\mathrm{old}}}(o_{i,t}\\mid q,o_{i,<t})}",
+    "locator": "p.17 Appendix B below Eq.2",
+    "source_note": "Visual transcription of policy ratio; PPO epochs and actual ratio/clip activity not reported."
+   }
+  ],
+  "signal_routing": "终端正确性×搜索折扣与整轨迹格式分先合成一个标量；同题组标准化后同一优势用于该轨迹各生成token，包含reason、search/query动作及最终answer。§2.3明确屏蔽工具返回内容，不对环境返回反传；具体mask代码和|o_i|是否计入屏蔽token未核验。无按调用/推理/终答拆分的独立信用或前后因果估计。Eq.2逐序列平均再组平均，不可据此声称实现是固定分母或token-mean。",
+  "normalization": "mean+std: per-question group rewards, G=8; printed objective uses 1/G then 1/|o_i|. Not RLOO, not separate accuracy/cost channels. Zero-std stabilizer not stated.",
+  "invariance": "搜索折扣和格式分直接改变任务奖励偏好，不是potential-based shaping，没有保持最优策略不变的定理。减均值除std对整个组的正仿射奖励变换不变；不能据此说搜索系数在所有组都无效。全对、相同格式、仅搜索标记有差时折扣尺度会约掉（读者推导）。",
+  "baseline_or_potential": "同题旧策略8条rollout奖励的组均值作为baseline，不用critic；π_ref是KL参考策略。正文未给参考权重的更细加载说明，也没有状态值/势函数或冻结answer-now读者。数据分类用先训练过的策略作离线标签，与baseline不同。",
+  "degenerate_cases": "读者按Eq.1和App.B推导，非作者实验：令m=1[any search]，折扣乘数写作1−d m且d>0，则全对且格式相同组有A=−(m−mean(m))/std(m)，d与(1−α)抵消。全错且格式相同，或全对且搜索标记/格式相同，reward全同，裸公式std=0；实际epsilon/跳过规则未报。全错但格式不同仍可有格式学习信号，不能写全错必无任何梯度。所有轨迹都搜时，any-search项不区分1次与2次。p(直答)≈0时离线题目平衡不保证自然rollout含直答；未报告强制动作。单轮无搜索时退化为EM正确性+格式奖励。",
+  "evidence": [
+   {
+    "quote": "Unlike PPO, GRPO estimates the baseline directly from a group of rewards, without relying on a value function, which significantly reduces the computational burden during training.",
+    "locator": "p.3 §2.1"
+   },
+   {
+    "quote": "The format score is assigned a value of 1 only if all responses fully adhere to these formatting requirements; otherwise, it is set to 0.",
+    "locator": "p.4 §2.4"
+   },
+   {
+    "quote": "The search penalty factor is set to 0.1.",
+    "locator": "p.6 §4.1"
+   }
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig.5b分别去数据平衡和去搜索惩罚，看奖励与SR是否分离；Fig.4a把base与RL都放入同一固定image→text RAG流程，消除搜索触发差异，观察仍有ID +6.51、OOD +6.18个百分点提升。因此主表改进包含查询/信息利用能力，不能全归于when-to-search。没有等token/GPU-hour预算对照或统一直答logit偏置负对照。",
+  "controls": [
+   "Table1同尺寸7B固定RAG（准确率51.6、SR100）对完整模型（54.6、67.1）；另外32B固定RAG为55.1、100。",
+   "Fig.5b同框架删掉data balancing或search penalty；作者报告两者均接近100%搜索，但未给消融最终基准表或种子误差。",
+   "Fig.4a固定检索过程，仅比较query生成与检索结果推理；这两项没有进一步单独隔离。",
+   "Fig.5a为8k正确GPT-4o轨迹SFT与5k问答RL，数据条数不等于总计算预算；初始分类器训练成本未列。",
+   "Table8标准VQA保留能力：AI2D 93.0→92.8、ChartQA86.6→86.1、LLaVA-Wilder73.5→74.8、MathVista68.2→68.8、MME623/1705→622/1707、OCRBench84.7→84.5。",
+   "Table9在search-free不足的FVQA-train子集比较EM与GPT-4o奖励：准确率55.7→59.5，SR77.3→82.6；不可拿EM55.7替换主表54.6，也不能声称4o奖励同时减少搜索。"
+  ],
+  "negative_results": [
+   {
+    "text": "删除任一关键部件，奖励略升但搜索近100%，说明奖励曲线本身不够作为效率证据。",
+    "quote": "Although both ablated variants achieve slightly higher rewards, they do so at the cost of overusing the search tool, with search ratios rapidly converging to nearly 100%.",
+    "locator": "p.9 §4.2 Finding5; Figure5b"
+   },
+   {
+    "text": "奖励消融子集search-free不足，收敛时SR高于完整主表；表9中的4o奖励还比EM增加5.3个百分点SR（82.6 vs77.3）。",
+    "quote": "Notably, this experiment is conducted on a subset of the FVQA-train dataset, in which search-free examples are relatively underrepresented. As a result, the model exhibits a higher average search rate at convergence compared to Table 1.",
+    "locator": "p.24 Appendix G.2; Table9"
+   }
+  ],
+  "seeds": "not reported: no independent training seed count or confidence intervals identified; do not convert absence into a confirmed single-seed count. F.3 reports one deterministic response per test item (temperature0), which is not a training-seed count.",
+  "falsifier": "迁移判别建议而非论文已做：固定数据量、工具预算、训练token和种子，平衡/未平衡×有/无惩罚，分层测自然直答与必要调用保留率；若效率收益只来自统一直答偏置、伤害needs-look准确率超过预设界，或标签置换同样有效，就不能支持按需求学习的解释。",
+  "evidence": [
+   {
+    "quote": "This removes variability in search triggering and allows us to focus on evaluating how well the model interacts with external information.",
+    "locator": "p.8 Finding2"
+   },
+   {
+    "quote": "A single response is generated for each sample in the test set.",
+    "locator": "p.23 Appendix F.3"
+   },
+   {
+    "quote": "The ∗ 4o version achieves an average accuracy of 59.5%, which is 3.8 points higher than the ∗ EM version.",
+    "locator": "p.24 Appendix G.2"
+   }
+  ]
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct (main policy); Qwen3-32B webpage summarizer; GPT-4o data generation and GPT-4o-20241120 evaluation judge",
+   "framework": "verl",
+   "group_size": 8,
+   "rollouts": 4096,
+   "steps": null,
+   "kl": 0.001,
+   "temperature": null,
+   "max_turns": 3,
+   "batch_size": 512,
+   "mini_batch_size": 128,
+   "learning_rate": 2e-06,
+   "clip_ratio": 0.2,
+   "evaluation_checkpoint_step": 50,
+   "evaluation_temperature": 0,
+   "evaluation_top_p": 1.0,
+   "ppo_epochs": null,
+   "max_tool_calls": null,
+   "rollouts_semantics": "512 prompts ×8 rollouts =4096 nominal trajectories per step (reader arithmetic); not an observed run count.",
+   "steps_semantics": "F.1 selects step50 as converged evaluation checkpoint; Figure5b displays through roughly100 steps, total training steps not unambiguously specified.",
+   "max_tool_calls_note": "§4.1 says at most2 search actions across3 dialogue rounds; F.1 says up to3 tool calls; Table3 after-text prompt asks answer or inability warning. Preserve this internal discrepancy."
+  },
+  "cost": "Reported hardware: RL4 nodes×8 H100=32 H100; summarizer deployed on8×8 H100=64 H100 (App.C wording); SFT comparison1×8 H100 for1 epoch. Wall time, GPU-hours, training tokens, search API dollars, initial classification-model training cost and actual rollout totals not reported. 4096 rollouts/step is arithmetic from the setup, not runtime verification.",
+  "pitfalls": [
+   {
+    "text": "工具无有效返回和网页失败会影响训练；对失败URL补后续结果、离线重试，使用多层缓存和分布式限流。",
+    "quote": "If some URLs fail to be processed, additional URLs from the SerpAPI result list are used to retry, until 5 successful summarizations are obtained or the list is exhausted.",
+    "locator": "p.17 Appendix C"
+   },
+   {
+    "text": "并发限制会造成队列积压和延迟；作者用Redis限流平滑负载。",
+    "quote": "Limited parallelism may cause request backlogs or latency spikes, ultimately affecting throughput and stability.",
+    "locator": "p.17 Appendix C Distributed Rate Limiting"
+   },
+   {
+    "text": "Exact-match奖励会漏判同义正确答案；探索GPT-4o奖励但付出偏差与成本代价。",
+    "quote": "GPT-4o helps avoid false negatives caused by exact match and leads to improved robustness.",
+    "locator": "p.24 Appendix G.2"
+   }
+  ],
+  "code": "https://github.com/EvolvingLMMs-Lab/multimodal-search-r1",
+  "lesson": "当可不调用工具答对的题在训练中不足时，单靠最终正确性或孤立的代价项可能仍学成普遍搜索；应先保留可验证的无搜索成功样本并联合监测准确率与调用率，同时单独检查归一化尺度和动作采样支撑。",
+  "evidence": [
+   {
+    "quote": "Training is conducted on 4 nodes with 8 Nvidia H100 GPUs each.",
+    "locator": "p.23 Appendix F.1"
+   },
+   {
+    "quote": "The learning rate is 2e-6, and we fix the KL divergence coefficient β to 0.001 and the clip ratio ϵ to 0.2.",
+    "locator": "p.23 Appendix F.1"
+   },
+   {
+    "quote": "For MMSearch-R1-7B, we use the checkpoint from step 50 (when training converges) for downstream evaluation.",
+    "locator": "p.23 Appendix F.1"
+   }
+  ]
+ },
+ "relevance": [
+  {
+   "problem": "P02",
+   "how": "按需工具使用目标高度相似；平衡可直答成功题并加入成功门控搜索折扣的消融可作机制参照，但搜索外部知识不同于获取局部视觉证据。",
+   "strength": 2
+  },
+  {
+   "problem": "P03",
+   "how": "any-search折扣直接乘正确性，因此失败搜索免费；未解决必要失败探索与无效搜索的区分。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "App.B明确除组std；全对同格式条件下折扣尺度可抵消，未提供RLOO/尺度消融。",
+   "strength": 2
+  },
+  {
+   "problem": "P05",
+   "how": "提供有限自然rollout导出的经验search-free标签及准确率/SR报告，但不是逐次必要性真值或非劣检验。",
+   "strength": 2
+  },
+  {
+   "problem": "P07",
+   "how": "数据构造直接丢弃8次全错题，避开无正确性信号而不提升该类题；格式差异仍可能提供信号。",
+   "strength": 1
+  },
+  {
+   "problem": "P29",
+   "how": "去数据平衡/惩罚的搜索率近100%与动作塌缩相关；离线平衡并不保证每组直答支撑，也无救已塌策略实验。",
+   "strength": 2
+  },
+  {
+   "problem": "P65",
+   "how": "直接实例化按模型采样得到的工具需求划分训练题池并混合抽样；需改成crop需求并验证标签可靠性。",
+   "strength": 2
+  },
+  {
+   "problem": "P63",
+   "how": "Table8对六种通用VQA任务做训练前后对照，提供保留能力评估范式；无误差区间、没有同checkpoint多预算测试。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "作者在Instruct底座上无需额外cold-start直接RL，与SFT为必需条件的绝对说法有关；不能证明从概率为零处创造缺失行为。",
+   "strength": 1
+  }
+ ]
+}

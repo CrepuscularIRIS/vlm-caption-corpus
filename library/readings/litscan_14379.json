@@ -1,0 +1,167 @@
+{
+ "paper_key": "litscan:14379",
+ "title": "ViUniT: Visual Unit Tests for More Robust Visual Programming",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_14379.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.1–3.4 Eq5–10",
+   "§4",
+   "§5",
+   "§6 Tables1–4",
+   "§7 Human Evaluation",
+   "§8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "对同一问题生成具有不同答案/视觉内容的测试图，检查程序跨实例逻辑一致性，避免单图偶然答对。",
+  "why_non_obvious": "一次答对不足以证明程序逻辑正确；测试生成也必须独立于候选程序并覆盖不同答案。",
+  "trigger_condition": "When a program can answer correctly for the wrong reason, test it on diverse counterinstances before rewarding or selecting it.",
+  "contribution_type": "method",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "When a program can answer correctly for the wrong reason, test it on diverse counterinstances before rewarding or selecting it.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "对同一问题生成具有不同答案/视觉内容的测试图，检查程序跨实例逻辑一致性，避免单图偶然答对。",
+  "abstract_why_non_obvious": "一次答对不足以证明程序逻辑正确；测试生成也必须独立于候选程序并覆盖不同答案。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:14379#s1",
+   "object": "visual-program selection and reward",
+   "information": "问题→LLM生成caption+expected answer→覆盖采样→扩散模型造图；候选程序在每图执行",
+   "operation": "按测试均分选择程序，低于阈值退回端到端模型或re-prompt；训练用阈值化测试均分加权整段程序NLL",
+   "claimed_effect": "5program×5tests: CodeLlama avg48.67 vs单程序35.12/多数投票43.34；CodeGemma50.59 vs41.33/45.53",
+   "conditions": [
+    "测试图与预期答案一致；视觉工具本身可靠；训练阈值0.8"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1; §3.4",
+    "quote": "CodeLlama-7B           5            5    49.27±1.33   49.73±0.73     47.02±1.19    48.67±1.08"
+   },
+   "failure_boundary": "测试合成会缺对象，人工判仅75%测试正确；代理奖励不等于真实逻辑或当前VLM需求。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P66",
+   "strength": 2,
+   "how": "用同问题的受控变体筛掉偶然正确；合成图须先人工核标签。"
+  },
+  {
+   "problem": "P36",
+   "strength": 2,
+   "how": "正确终答不能保证轨迹/程序正确，适合轨迹审核的反例设计。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Most common answer 5 programs",
+   "kind": "compute-matched candidates"
+  },
+  {
+   "name": "Correctness reward",
+   "kind": "reward"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "自动测试错误不可忽视。",
+   "quote": "response, 75% of unit tests per sample were correct. Anno-\n                                                                                                    tators could optionally comment on errors, with “Missing",
+   "locator": "§7"
+  }
+ ],
+ "question": {
+  "observed_failure": "人工程序评估中base正确逻辑77%，测试选择86%；合成测试本身仅75%正确。",
+  "load_bearing_assumption": "正确答案足以作为程序质量监督。",
+  "scope": "GQA/Winoground/SugarCREPE视觉程序",
+  "success_criterion": "原任务准确率、人工程序逻辑正确率与生成测试准确率共同提升。",
+  "why_open": "单图奖励混入侥幸正确，且自动反例标签也有误差。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§7 human evaluation"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§3.2; §5 input/answer coverage"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S(p)=|T|^{-1}\\sum_i h(\\hat y_i,y_i)",
+    "locator": "Eq5–6"
+   },
+   {
+    "latex": "J(w)=E_D[R(v,p,y)L_{NLL}(p,q;w)],\\quad L_{NLL}=-\\sum_{l=1}^{L}\\log\\pi_w(p_l|p_{1:l-1},x(q))",
+    "locator": "Eq8, PDF p5 visual check"
+   },
+   {
+    "latex": "R_{ViUniT}=1\\text{ if }S(p)\\ge\\theta;\\ S(p)\\text{ otherwise}",
+    "locator": "Eq10, PDF p5 visual check"
+   }
+  ],
+  "signal_routing": "整段生成程序的每个token同乘测试奖励；论文称RL，具体是前轮生成样本的reward-weighted NLL / LoRA SFT-Trainer。无逐工具信用或PPO ratio。编译/运行异常分为−0.1，其余答案匹配0/1。",
+  "normalization": "other",
+  "invariance": "测试分跨tests平均；无组内std，正比例缩放不被std约去；阈值饱和仍会压掉高分之间区别。非PBRS。",
+  "baseline_or_potential": "无advantage baseline；真实正确性reward是比较臂。",
+  "degenerate_cases": "所有测试答案相同可让常数程序通过；全测试错误可反奖坏逻辑；S>=theta全同权；负S带负NLL权重的实现稳定性未核源码。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同5程序多数投票vs测试选择；query-only vs带程序生成测试；Table4正确性reward vs测试reward；§7人工核测试与程序。",
+  "negative_results": [
+   {
+    "text": "只有75%合成unit tests被多数人工判正确，missing object最常见。",
+    "locator": "§7"
+   },
+   {
+    "text": "部分答对程序会不过测试；人工40例中65%原先不可靠，仍非100%。",
+    "locator": "§6"
+   }
+  ],
+  "seeds": "3 runs mean±std",
+  "falsifier": "在人工有效测试子集和无效测试子集分开评估；若收益仅来自生成器/工具共有偏差则不支持逻辑可靠性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "CodeLlama-7B / CodeGemma-7B; test Llama3-8B; diffusion; GroundingDINO/BLIP2/CLIP",
+   "framework": "vLLM inference; HuggingFace SFT-Trainer LoRA",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2×A10040GB；推理5候选×5测试工具执行，单程序执行上限120秒；总成本未给。",
+  "pitfalls": [
+   {
+    "text": "摘要称33%程序错误，引言却称仅33%正确；不据此矛盾数字推导失败率，使用§7单独审查。",
+    "locator": "Abstract; Introduction; §7"
+   }
+  ],
+  "code": "https://artemisp.github.io/viunit/",
+  "lesson": "当终答可被猜中时，应对同一推理规则设计不同答案的反例；自动生成的图和答案必须另行核验，避免把模型自评当金标。"
+ }
+}

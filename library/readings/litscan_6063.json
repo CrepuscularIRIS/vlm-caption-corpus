@@ -1,0 +1,58 @@
+{
+ "paper_key": "litscan:6063",
+ "title": "VizWiz-Answer-Grounding",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_6063.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 dataset construction/analysis",
+   "§4 Table3 and stratified analyses",
+   "§5 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "从真实视障VQA筛单区域可回答样本，人工polygon grounding；比较阈值化attention与人工区域，并按答案是否正确、区域大小、质量与技能分层。",
+  "why_non_obvious": "答案准确率掩盖证据定位失败；更高图像质量的样本反而因目标更小表现差。",
+  "trigger_condition": "当答案指标不能判断模型是否看对证据时，另收人工区域并做correct-answer条件下grounding评测。",
+  "contribution_type": "grounding数据集与诊断基准",
+  "abstract_strategy": "把任务成功和证据定位作为两条独立测量轴。",
+  "abstract_trigger_condition": "输出正确可能由偏差或捷径产生时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:6063#s1",
+   "object": "答案相关区域与VQA注意力",
+   "information": "图像、问题、众数答案和两名标注者polygon；去除不可答/多区域/低一致性样本",
+   "operation": "9,998样本取两标注中较大区域；按0.5阈值化attention，测全test及答对子集IoU并分层。",
+   "claimed_effect": "最优MAC-Caps全2,373例IoU27.43%，352条答对样本IoU32.8%；LXMERT906条答对但IoU26.96%。",
+   "conditions": [
+    "未以grounding训练这些模型",
+    "单连通区域定义；非最小充分区域"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7",
+    "quote": "MAC-Caps       VizWiz-VQA         27.43          32.8 (352)"
+   },
+   "failure_boundary": "attention阈值区域不等于因果使用证据；排除不可答/多区域，不能外推到拒答或多跳crop。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "提供答案/grounding分离的外部诊断，模型与训练机制相距较远。",
+   "strength": 1
+  },
+  {
+   "problem": "P52",
+   "how": "人工polygon可作为视觉审计参考，不能直接作必要crop标签。",
+   "strength": 1
+  }
+ ],
+ "scientific_replication": false
+}

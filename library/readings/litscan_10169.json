@@ -1,0 +1,157 @@
+{
+ "paper_key": "litscan:10169",
+ "title": "When Visual Grounding Meets Gigapixel-level Large-scale Scenes: Benchmark and Approach",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_10169.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.1–3.2",
+   "§4.1–4.3",
+   "§5.1–5.4 Tables 2–5",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "用缩略图和语言先预测粗框，再从高分辨率源图取自适应区域交给坐标回归器。",
+  "why_non_obvious": "直接降采样丢小目标，而单独切块丢跨区域关系；两阶段分别保留上下文和细节。",
+  "trigger_condition": "When tiny targets require global relational context, localize globally then reacquire a detailed crop.",
+  "contribution_type": "benchmark+method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When tiny targets require global relational context, localize globally then reacquire a detailed crop.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "用缩略图和语言先预测粗框，再从高分辨率源图取自适应区域交给坐标回归器。",
+  "abstract_why_non_obvious": "直接降采样丢小目标，而单独切块丢跨区域关系；两阶段分别保留上下文和细节。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:10169#s1",
+   "object": "gigapixel referring-expression grounding",
+   "information": "缩略图、语言；训练额外有 GT 框，测试仅预测框",
+   "operation": "GGM=ReSC 粗定位；ACM 取中心固定补丁与预测框的最小包围矩形；训练再包 GT；ZGM=TransVG 精定位",
+   "claimed_effect": "Table 2 test P@0.5=63.9%，ReSC 1536²=49.7%；110.2ms、172.1 GFLOPs",
+   "conditions": [
+    "主比较 GGM 640²，ACM 从 1536² 图取像素，再缩放 640²"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2; Table 2",
+    "quote": "GlaZing (Ours)                          65.0%      65.3%        64.3%        63.9%        64.1%        63.7%        110.2ms       172.1         280.8M"
+   },
+   "failure_boundary": "固定两阶段且训练 GT 包含规则产生曝光差；未学习 stop/direct。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P39",
+   "strength": 3,
+   "how": "明确分辨率缩放如何损失细节；局部重新取像素是信息增加而非仅 token 重排。"
+  },
+  {
+   "problem": "P30",
+   "strength": 2,
+   "how": "自适应裁框兼顾预测范围和最低上下文，避免小框丢上下文。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "ReSC",
+   "kind": "method"
+  },
+  {
+   "name": "TransVG",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "主文提出端到端和多次 zoom 为未解决方向。",
+   "locator": "§4.3",
+   "quote": "and ZGM can be seamlessly integrated with a wide array of                                                      multiple iterations of glance and zoom adjustments."
+  }
+ ],
+ "question": {
+  "observed_failure": "最强单阶段 ReSC 在 1536² 上 P@0.5 49.7%，小框最低四分位 29.4%。",
+  "load_bearing_assumption": "全图压缩到固定输入后仍保留可定位细节。",
+  "scope": "GigaGrounding 表达式定位",
+  "success_criterion": "P@0.5 提升同时报告 GFLOPs/延迟。",
+  "why_open": "单次全图编码不能同时保留关系和微小目标细节。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "locator": "§3 benchmark definition"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L=L_{GGM}+L_{ZGM}",
+    "locator": "§4.2"
+   }
+  ],
+  "signal_routing": "GGM 接 YOLOv3 anchor/confidence/offset 与 query diversity loss；ZGM 对局部相对坐标接 smooth L1+GIoU；非语言 token RL。",
+  "normalization": "other",
+  "invariance": "非 PBRS；监督定位目标，不宣称策略不变。",
+  "baseline_or_potential": "无 advantage baseline；内部 loss 权重未在已读主文给全。",
+  "degenerate_cases": "粗框完全错位且测试 crop 不含目标则 ZGM 无恢复保证；全对/全错组不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table 2 固定 1536² 源图比较；§5.4 提升可用源分辨率到原图八倍降采样后 test 66.5%；Table 5 按框尺度分层。",
+  "negative_results": [
+   {
+    "text": "主文明确多次 glance/zoom 与端到端训练仍是未来方向。",
+    "locator": "§4.3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若在同一实际像素预算下局部读取不改善微小目标，不能将增益归于自适应取证。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "ReSC GGM + TransVG ZGM",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 2,
+   "kl": null
+  },
+  "cost": "8×RTX3090 训练设备；Table 2 推理110.2ms、172.1GFLOPs；训练总时未知。",
+  "pitfalls": [
+   {
+    "text": "训练 ACM 强制包含 GT 框，推理无此信息；不可当作在线策略自主选框标签。",
+    "locator": "§4.2"
+   },
+   {
+    "text": "按 distinct expression 随机70/10/20切分，未宣称原图来源隔离。",
+    "locator": "§5.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当学生输入预算不足时，应核实际送入的 crop 像素与框覆盖率，并分开记录训练时 GT 辅助和测试自主裁图。"
+ }
+}

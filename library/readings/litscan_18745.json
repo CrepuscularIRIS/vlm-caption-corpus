@@ -1,0 +1,171 @@
+{
+ "paper_key": "litscan:18745",
+ "title": "LeastMost",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_18745.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3 pp3–6",
+   "§4 Tables2–3 pp7–8",
+   "§5/局限 pp9–10",
+   "Appendix A–C 设置 pp13–14；案例未读"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "从可执行实体节点自底向上构造工具链和子问题，再递归合成主问题，SFT独立视觉reasoner。",
+  "key_step": "用节点属性和工具约束先造路径，最后组合问题；避免先给问题再猜整条过程。",
+  "why_non_obvious": "数据合成可拆为文本属性任务，但最终推理仍见图像与工具返回。",
+  "trigger_condition": "When executable visual reasoning traces are scarce, synthesize paths from grounded nodes before composing questions.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Construct verifiable local transitions before synthesizing a global task.",
+  "abstract_trigger_condition": "When global demonstrations are hard to produce, compose tasks from feasible local operations.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null；未提供reviews",
+  "abstract_key_step": "Build a path then reverse-compose its task.",
+  "abstract_why_non_obvious": "Local feasibility constrains global supervision."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:18745#s1",
+   "object": "工具行为SFT样本",
+   "information": "COCO2014检测实体/属性、BLIP与LLaVA captions，GPT4生成Questioner/Combiner训练例。",
+   "operation": "采节点链长度2–4，工具连接节点，LLM生成子问和参数，再合成主问；50K样本LoRA训练LLaVA1.5-7B。",
+   "claimed_effect": "LLaVA13B GQA57.02→60.65、TallyQA-C29.69→68.65；移除Highlight后Tally-C25.14。",
+   "conditions": [
+    "实体检测与工具输出可靠",
+    "外接reasoner及工具可用"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p8",
+    "quote": "+ Reasoner       -     60.65 (+3.63)   59.22 (+2.18)"
+   },
+   "failure_boundary": "非当前策略价值标签；依赖额外OCR/grounding模块，不测少用工具非劣。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "实际SFT工具链构造可迁移行为覆盖。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "合成质量按子问/参数/主问分别人工检查。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "工具执行正确后仍有终答错误。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "原VLM；同规模LLaMA3-8B fewshot Tools；去OCR/Highlight/Grounding",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "COCO覆盖有限，不能保证所有模型任务改善。",
+   "locator": "Limitations p10",
+   "quote": "we do not guarantee that its data"
+  }
+ ],
+ "question": {
+  "observed_failure": "LLaVA13B TallyQA-C29.69，fewshot Tools61.67，SFT reasoner68.65。",
+  "load_bearing_assumption": "仅文本CoT或顶层问题蒸馏就能形成可靠视觉工具链。",
+  "scope": "图像VQA、工具路由与50K合成数据。",
+  "success_criterion": "不同回答VLM和VQA数据集上可复用增益。",
+  "why_open": "多步视觉操作训练轨迹稀少且专有模型整链生成不可靠。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.2/AppendixB：实际SFT造工具行为"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§5.5：100错例按reasoning/execution/inference拆分"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "§3.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "(q_k,t_k)=M_R(I_k,Q,q_{<k}); I_{k+1}=r_k\\text{ if image, else }I_k",
+    "locator": "Eqs1–2 p4"
+   },
+   {
+    "latex": "\\tilde q_1=q_1;\\ \\tilde q_m=Combiner(\\tilde q_{m-1},q_m)",
+    "locator": "Eq5 p5"
+   }
+  ],
+  "signal_routing": "SFT标签为当前subquestion+tool；外部执行返回不是RL信用。确切token mask/reduction未报告。Answer工具产生终答即停止；小框OCR/Answer前自动裁放大，alpha阈值未找到。",
+  "normalization": "other：SFT；loss长度归一化未知",
+  "invariance": "无PBRS/策略不变性主张。",
+  "baseline_or_potential": "没有价值baseline；检测器/描述器产生合成属性。",
+  "degenerate_cases": "只含2–4步链，缺无工具/失败纠偏示范；错误实体属性会沿链传播。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3逐项移除工具；Table4跨任务；§5.5错误类型拆分；200例3人合成质量核验全部通过为作者报告非保证。",
+  "negative_results": [
+   {
+    "text": "MMMU13B18.75→18.23；POPE不变。",
+    "locator": "Table4 p9"
+   },
+   {
+    "text": "100错例Inference42%，Reasoning39%（参数28%），工具正确不等于终答正确。",
+    "locator": "§5.5 p9"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：相同工具预算比较链合成与直接教师蒸馏，检查无工具、纠偏覆盖；若增益只来自新增OCR或答案包含匹配则不能归因推理改善。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "reasoner LLaVA1.5-7B;Questioner/Combiner LLaMA3-8B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 4,
+   "kl": null,
+   "lora_rank": 8,
+   "lora_alpha": 8,
+   "batch_size": 8,
+   "epochs": 3
+  },
+  "cost": "reasoner单A100约9h；Table6 LLaVA每例.57→2.08s。Questioner与Combiner各10K GPT4种子扩充，不是零专有模型调用。",
+  "pitfalls": [
+   {
+    "text": "GQA/TextVQA用答案包含recall而非EM；LLaVA ST-VQA未报。",
+    "locator": "§4.2/Table2"
+   }
+  ],
+  "code": "https://github.com/steven-ccq/VisualReasoner",
+  "lesson": "当工具链由实体属性拼成时，应另查直答、失败与纠偏行为覆盖，正确链不自动提供停止价值。"
+ }
+}

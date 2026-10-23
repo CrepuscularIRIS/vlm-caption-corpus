@@ -1,0 +1,153 @@
+{
+ "paper_key": "litscan:78907",
+ "title": "VisionPulse: Dynamic Visual Sparsity for Efficient Multimodal Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78907.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "4",
+   "Tables1–2",
+   "5.4,5.7",
+   "Conclusion",
+   "B.1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "assumption_audit_and_pivot",
+  "key_step": "由prefill固定剪枝改为每步重估视觉重要性，再由visual attention mass决定保留数量",
+  "why_non_obvious": "早期删除的视觉token可能在后续才相关；动态选择需保留重访能力",
+  "trigger_condition": "When visual evidence demand changes during decoding, recompute a sparse view at each step",
+  "contribution_type": "inference-time visual budget",
+  "abstract_strategy": "把静态压缩决策改成状态依赖重选择",
+  "abstract_trigger_condition": "完整视觉证据可被后续重新访问",
+  "abstract_key_step": "anchor层算注意力，head-max质量给预算，head平均分数选topK",
+  "abstract_why_non_obvious": "总注意力质量预测覆盖范围只是经验相关而非必要性证明",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78907#s1",
+   "object": "per-step visual KV subset",
+   "information": "current query-to-visual attention at layer17",
+   "operation": "temperature-scaled head-max mass sets K, head-mean attention selects topK",
+   "claimed_effect": "Table2动态平均保留1.9%，准确75.54 vs full75.74，长度1264.8 vs1517.1",
+   "conditions": [
+    "Qwen3VLThinking4B",
+    "three-benchmark ablation",
+    "retain<=5%"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "1264.8              75.54"
+   },
+   "failure_boundary": "保留原证据不获取新像素；平均准确接近不等于每任务不降",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "按状态分配视觉预算机制可迁移但不是stop/crop必要性",
+   "strength": 2
+  },
+  {
+   "problem": "P30",
+   "how": "过量视觉context可能延长推理，可作预算控制实验",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "FastV/VisionZip/LOOK-M",
+   "kind": "method"
+  },
+  {
+   "name": "fixed1%,fixed5%,random3%,dynamic1.9%",
+   "kind": "budget ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "比较预算不完全匹配：随机3%与动态1.9%；还不能隔离动态规则与预算差。",
+   "locator": "Table2"
+  },
+  {
+   "text": "Table1 5%设置平均准确有1.8%相对下降，“almost unchanged”非严格不降。",
+   "locator": "Table1"
+  }
+ ],
+ "question": {
+  "observed_failure": "fixed1% AvgA71.03且AvgL1940.4，dynamic75.54/1264.8",
+  "load_bearing_assumption": "前缀视觉需要随生成变化",
+  "scope": "固定像素/视觉token预算的动态保留",
+  "success_criterion": "同预算随机/静态比较准确率非劣且decode成本下降",
+  "why_open": "attention不是因果必要性，成本还取决KV保留和评分开销"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "locator": "3–4"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S_i^t=H^{-1}\\sum_h A_{t,h}^{l_a}(q_t,v_i);\\ M^t_{max}=\\max_h\\sum_{i\\in visual}\\operatorname{softmax}(Z_{t,h}/\\tau)_i;\\ K_t=N_vM^t_{max}",
+    "locator": "Eq2,5–7"
+   }
+  ],
+  "signal_routing": "推理时anchor层17评分，之后动态保留topK视觉token；无训练loss或reward；重新访问要求原视觉KV可用，物理cache管理未展开。",
+  "normalization": "attention softmax分母包含全context；head平均用于ranking，head-max用于budget；tau.4/10%或.1/5%；Kclamp分别5–10%及1–5%。",
+  "invariance": "非PBRS；attention平移logits不变、温度改变预算；长文本分母变化可能影响visual mass。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "低mass仍至少1%或5%，无零视觉/停止动作；集中少数token高mass不必宽覆盖；整数rounding未给。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2固定与动态；Table4替换importance estimator；Fig5 latency最多1.30x。",
+  "negative_results": [
+   {
+    "text": "Table2 MMVet full60.96→dynamic59.00，MIA93.44→95.09，均值掩盖tradeoff。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：预算完全匹配下random仍同样好，或attention-shuffle不降，则mass引导解释不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VLThinking4B/8B;InternVL3.5Thinking4B",
+   "framework": "inference attention pruning",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8×A80080GB；max16384；decode temp.7",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当动态剪枝允许重访时，要区分稀疏计算与物理删除KV，计入全层评分和cache保留成本。"
+ }
+}

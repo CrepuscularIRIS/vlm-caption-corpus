@@ -1,0 +1,194 @@
+{
+ "paper_key": "litscan:73853",
+ "title": "VisualSwap",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_73853.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§2–5 pp3–9 Tables1–9",
+   "AppendixF pp15–16 protocol; H p17 intervention controls"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在旧图生成推理后换成答案不同但相似的新图，完整re-prefill保留旧文字，比较assistant续写与新user指令的证据更新。",
+  "key_step": "800配对题保持问题/分辨率，干预图像事实与turn边界；同图直接答作为能力基线，另做2×visual attention干预。",
+  "why_non_obvious": "口头自检不等于实际更新视觉事实；协议差异足以决定能否利用新证据。",
+  "trigger_condition": "模型说重新看图但沿用旧事实，需区分能力不足与上下文惯性。",
+  "contribution_type": "diagnostic",
+  "abstract_strategy": "保留文本历史并替换感知证据，使用格式/语义对照定位信息更新失败。",
+  "abstract_trigger_condition": "模型说重新看图但沿用旧事实，需区分能力不足与上下文惯性。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "800配对题保持问题/分辨率，干预图像事实与turn边界；同图直接答作为能力基线，另做2×visual attention干预。",
+  "abstract_why_non_obvious": "口头自检不等于实际更新视觉事实；协议差异足以决定能否利用新证据。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:73853#s1",
+   "object": "visual re-examination under stale reasoning",
+   "information": "Ia生成Ra；换Ib，Q有效但正确答案不同；重新编码全上下文",
+   "operation": "同assistant前缀Ra+反思P续写；对照闭合assistant后新user U，所有图像都用Ib",
+   "claimed_effect": "Qwen235BThinking probe34.1、multi85.4；8BThinking36.6→67.5",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2 p3; Table4 p7; AppF pp15–16",
+    "quote": "Thinking 88.8 34.1 85.4"
+   },
+   "failure_boundary": "非在线KV-cache替图，主probe是prefill干预；新turn恢复不证明自主recover。base表格图像标签不一致。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:73853#s2",
+   "object": "visual attention causal intervention",
+   "information": "新图token位置与各层各head attention；无训练标签",
+   "operation": "Rb生成时所有layer/head的image attention乘2",
+   "claimed_effect": "8BThinking36.6→54.8，Instruct46.6→54.5",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.7/Table9 p9",
+    "quote": "Qwen3-VL-8B-Thinking 36.6 54.8 +18.2"
+   },
+   "failure_boundary": "部分恢复；softmax后是否重归一化未说明，attention幅度干预并不等于已证明唯一机制。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P50",
+   "strength": 3,
+   "how": "recover评估必须检验答案关键视觉事实改变，不能用再crop动作次数代替。"
+  },
+  {
+   "problem": "P41",
+   "strength": 3,
+   "how": "重prefill和turn边界本身改变模型行为，提供直接对照。"
+  },
+  {
+   "problem": "P27",
+   "strength": 2,
+   "how": "区分说反思与真正修改受新图影响的推理事实。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "direct inference Ia/Ib",
+   "kind": "method"
+  },
+  {
+   "name": "same-assistant reflective prefix",
+   "kind": "method"
+  },
+  {
+   "name": "multi-turn user instruction",
+   "kind": "method"
+  },
+  {
+   "name": "structural tokens only",
+   "kind": "method"
+  },
+  {
+   "name": "high-PPL meaningful/meaningless",
+   "kind": "method"
+  },
+  {
+   "name": "2x visual attention",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Reader limitation: attention关联和干预部分恢复不足以唯一证明自主attention control机制；人工改图/旧Ra构造不是自然环境更新全部情况。",
+   "quote": null,
+   "locator": "§5 pp5–9; AppF p16"
+  }
+ ],
+ "question": {
+  "observed_failure": "8BThinking新图probe36.6，multi67.5；235BThinking34.1→85.4。",
+  "load_bearing_assumption": "同问题、同分辨率、答案不同图像能隔离旧文字对新视觉证据的抑制。",
+  "scope": "800改图题与可assistant prefill开源VLM。",
+  "success_criterion": "新视觉事实在推理与答案同步更新，对照新图独立性能和无变更图不误改。",
+  "why_open": "存在prefill协议干预与base标签不一致；自主tool返回是否同效尚未验证。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "先无训练图像替换诊断，再讨论训练修复"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "AppH隔离turn标记、语义、异常token等变量"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§2–3同分辨率/问题不变/答案变的配对probe"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Ra=M(Ia,Q); Rb=M(Ib,Q,Ra⊕P); Δ=Acc_base-Acc_probe",
+    "locator": "Eq1–3 p3"
+   },
+   {
+    "latex": "Svis_l(t)=(1/H)Σ_hΣ_{v∈V}A_l,h[t,v]",
+    "locator": "Eq6 p6"
+   }
+  ],
+  "signal_routing": "无梯度训练；全context新视觉编码，旧文字Ra保持。multi在Ra后新user请求；attention干预作用继续生成Rb的全部layers/heads。",
+  "normalization": "accuracy按800题；attention对heads平均、视觉tokens求和；保持图像resolution控制token数。2x后归一化未说明。",
+  "invariance": "问句及resolution固定，视觉答案特征改变；turn边界不保持policy分布，正是被测变量；非PBRS。",
+  "baseline_or_potential": "新图直接答为能力对照，但Table2/3 baseline Ia/Ib内部标记冲突。",
+  "degenerate_cases": "无旧context接近base；Ia=Ib不能检验事实修订；无自然trigger回退standard probe；random字符串0分说明异常token破坏生成。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：在caption+crop同前缀现有样本，对真实新crop/旧crop/no-change做matched tool-return更新，分别自然continuation与显式user提示，记录改口事实与终答而非仅工具率。",
+  "negative_results": [
+   {
+    "text": "attention2x后Thinking54.8仍低于multi67.5；裸turn tokens只33.3而meaningful multi67.5。",
+    "locator": "Table9 p9; Table15 p17"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若no-change也频繁改答案或自然工具返回不呈旧文字惯性，不能将probe结果外推到本项目recover。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "15 open VLM variants incl Qwen3VL8B/235B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 2,
+   "kl": null
+  },
+  "cost": "H200，temperature .1基础；800题；attention100case；总GPU时间未知。",
+  "pitfalls": [
+   {
+    "text": "必须重新prefill新图并保持相同resolution；禁止把旧KV带新图结果当同一实验。",
+    "locator": "AppF pp15–16"
+   }
+  ],
+  "code": "https://visualswap.github.io/",
+  "lesson": "当用视觉替换测试recover时，先记录实际图像绑定、prefill和turn结构；提示恢复属于外部辅助能力而非策略自主恢复。"
+ }
+}

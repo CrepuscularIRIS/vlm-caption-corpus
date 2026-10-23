@@ -1,0 +1,166 @@
+{
+ "paper_key": "litscan:51030",
+ "title": "Pixel Reasoner",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_51030.txt",
+  "sections_read": [
+   "Abstract/contributions; §2-4/Eqs1-5; Table1/§5.2; Fig5-7",
+   "AppA limitations; AppB derivation; AppC.2-C.3/Table2; AppD.1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先合成错误工具→正确工具的纠偏轨迹并mask错误动作，再以低工具使用率缺口bonus鼓励探索，惩罚超过1次调用。",
+  "key_step": "保持2000text-only样本和5500tool traces；低RaPR时只给实际用了工具的response bonus，GRPO+SSR维持非零优势。",
+  "why_non_obvious": "不会工具时outcome RL会绕开；只奖励尝试又会产生执行错误但凭语言答对的投机。",
+  "trigger_condition": "When nascent tools are outcompeted by text reasoning, seed recovery behavior and temporarily reward supported tool exploration.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先补行为支持，再用状态依赖探索奖维持练习。",
+  "abstract_trigger_condition": "When a new action has low initial success, provide demonstrations and bounded exploration incentives.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "错误行动仅作上下文，正确恢复行动作监督目标。",
+  "abstract_why_non_obvious": "高工具率不等于有效工具使用；必须观察执行错误与恢复。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:51030#s1",
+   "object": "warmstart纠偏轨迹与RL整response",
+   "information": "GPT4o数据合成见全图/GT参考cue；policy轨迹依次见执行返回；RL正确性见GT，RaPR来自policy使用率",
+   "operation": "插入错box/frame后正确cue，SFT mask错工具及executionoutput；后按使用率缺口+超额调用构造总reward",
+   "claimed_effect": "V*84.3 vs无curiosity81.1/无纠偏80.1；无curiosity工具率约.55→0于240步",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3-5/Table1/AppC",
+    "quote": "Masking\nthe erroneous operations prevents the policy from learning to execute the incorrect actions."
+   },
+   "failure_boundary": "工具率与证据使用不同；不解决已达标时0vs1次效率偏好，采不到工具时bonus无支持。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "直接给错误工具结果后纠偏SFT与行为支持证据。"
+  },
+  {
+   "problem": "P30",
+   "strength": 3,
+   "how": "明确新工具学习陷阱及curiosity探索退化。"
+  },
+  {
+   "problem": "P06",
+   "strength": 3,
+   "how": "N1惩罚只压>1，不区分0vs1，直接限定效率目标。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "warmstartonly；RL无curiosity/无warmstart/无correction；noSSR dynamics",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "数据/任务覆盖有限，仅zoom-in/select-frame；固定bonus不是约束满足保证，关键估计/实现未完整给出。",
+   "locator": "AppA/B/C.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "no-curiosity RaPR.55→0；no-correction执行错误上升却仍答对拿bonus；zero-shot工具触发20.2%其中40.6%执行错误。",
+  "load_bearing_assumption": "有工具提示和outcome RL就能学会弱初始能力并自纠错。",
+  "scope": "Qwen2.5VL7B图像crop+视频选帧，SFT→RL",
+  "success_criterion": "工具使用提升同时执行错误低、视觉任务更准；需额外测必要性/成本",
+  "why_open": "能力差导致模式竞争，奖励调用可诱发形式主义。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Fig7"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table1"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3-4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_{new}=r+\\alpha\\max(H-RaPR(x),0)1_{PR}(y)+\\beta\\min(N-n_{vo}(y),0)",
+    "locator": "Eqs3-5"
+   },
+   {
+    "latex": "\\alpha=.5,\\ \\beta=.05,\\ H=.3,\\ N=1,\\ G=8",
+    "locator": "AppC.3"
+   }
+  ],
+  "signal_routing": "RL修改整response reward，不是对crop token独立门控；SFT明确屏蔽execution输出和人为错误tool动作，正确恢复与文字保留。GRPO/SSR只以名称描述，未给RL图像/output token mask或RaPR stop-gradient/历史估计完整实现。",
+  "normalization": "other/unknown implementation: 论文称GRPO，标准算法通常组mean+std，但本文未列优势公式，不能认定实现细节。RaPR按同query期望定义，AppC示例1/8支持组内估计线索，不构成完整估计说明。",
+  "invariance": "非PBRS；固定αβ、clipped deficit及1PR修改并非标准Lagrangian等价推导；没有dual更新/可行性证明，不接受自动约束满足。",
+  "baseline_or_potential": "GRPO named baseline；SSR处理reward统一样本，具体优势归一化未知。",
+  "degenerate_cases": "RaPR≥H时bonus0，N1下0次与1次同正确性reward，无降到0次推力；RaPR=0组无PR样本也无bonus；全同reward仍zeroadv（作者报告90%）；低RaPR全错若有PR仍有探索差异，但不等于知道正确动作。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "去warmstart/curiosity/correction并同时测调用率和工具错误率；无SSR显示rewarduniformity导致恶化。",
+  "negative_results": [
+   {
+    "text": "无correction会错误调用拿bonus且绕过工具答对；warmstart InfoVQA74.3低于base80.7，不能单独宣称SFT提升。",
+    "locator": "Table1/§5.2"
+   },
+   {
+    "text": "无SSR rewarduniformity达90%；更多复合reward未消除全等组。",
+    "locator": "AppC.3/Fig9"
+   }
+  ],
+  "seeds": "所读未给主表多seed/CI；不把曲线当统计非劣证据。",
+  "falsifier": "同调用率无内容工具若同效，则视觉必要性解释失败；匹配SFT及SSR后比较bonus，避免把支持/采样改善全归奖励。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "Open-R1 SFT/OpenRLHF GRPO+SSR",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "SFT7500(5500pixel+2000text)；§5 RL15000queries（引言另称7500，保留不一致）；同步每512query，batch256pairs，SSR每episode清空；AppC 4×8 A80080G20h，正文8卡口径不同。",
+  "pitfalls": [
+   {
+    "text": "再裁bbox与错误cue插入必须保持实际image binding；合成teacher见全图/参考cue，不能用其描述证明policy真实取证。",
+    "locator": "§3/AppC.2"
+   }
+  ],
+  "code": "https://tiger-ai-lab.github.io/Pixel-Reasoner/",
+  "lesson": "当新工具早期弱时，先给正确恢复示范并屏蔽错误动作loss，再观察是否错误调用拿探索奖；使用率达标后另行定义0vs1次成本。"
+ }
+}

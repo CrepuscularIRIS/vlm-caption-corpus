@@ -1,0 +1,150 @@
+{
+ "paper_key": "litscan:56056",
+ "title": "SimpleVGC",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_56056.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 preliminary analysis",
+   "§4.1–4.3",
+   "Tables1,4,6,8–12",
+   "§5.3",
+   "Limitations",
+   "A.1; A.4.1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "把视觉遗忘、分辨率不足、区域干扰分解为reuse、zoom_in、focus_area三工具并蒸馏146K轨迹。",
+  "why_non_obvious": "三个工具改变信息的方式不同：reuse重新编码同图，zoom仅插值，crop重新读取原图区域；不能统称新证据。",
+  "trigger_condition": "当视觉失败来自不同原因时，区分工具类型并用任务及定位消融检验。",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当视觉失败来自不同原因时，区分工具类型并用任务及定位消融检验。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "把视觉遗忘、分辨率不足、区域干扰分解为reuse、zoom_in、focus_area三工具并蒸馏146K轨迹。",
+  "abstract_why_non_obvious": "三个工具改变信息的方式不同：reuse重新编码同图，zoom仅插值，crop重新读取原图区域；不能统称新证据。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:56056#s1",
+   "object": "工具交错SFT轨迹",
+   "information": "teacher动态图像/问题/答案校验；focus训练红框全图、推理真实crop",
+   "operation": "生成reasoning→JSONtool→图像返回循环，正确性+工具语义过滤；只对文本做maskedCE",
+   "claimed_effect": "V*77.5→90.4，HR4K68.8→76.2；加入focus较reuse+zoom在V*83.5→90.4。",
+   "conditions": [
+    "Qwen2.5VL7B，146K工具数据及部分通用推理SFT"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1; Table6; §4",
+    "quote": "Simple-VGC*               702.1             41.8            29.3       76.2      90.4       18.1       87.6     44.4"
+   },
+   "failure_boundary": "跨任务调用频率不证明每次调用必要；crop并非所有指标最优；没有GRPO或成本目标。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "SFT工具轨迹而非纯原始QA带来主要增益，训练/推理视觉形式不同。",
+   "strength": 3
+  },
+  {
+   "problem": "P42",
+   "how": "reuse针对长文本视觉漂移，可作为保留图像输入的对照。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "200条轨迹中IoU正确与答案近零相关，实体覆盖比紧框更相关。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL7B",
+   "kind": "model"
+  },
+  {
+   "name": "SFT original same-query data",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "Table11–12 IoU@.5的bbox/答案相关φ=-.02，而Recall@.9为.44。",
+  "load_bearing_assumption": "紧框定位指标能代表最终答案需要的视觉证据。",
+  "scope": "caption+crop的工具SFT和评测",
+  "success_criterion": "分别测实体覆盖、紧框IoU、答案正确与无工具结果，不以IoU单指标奖励。",
+  "why_open": "200条仅调用focus样本，不能外推所有动作或因果。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_{SFT}=-\\sum_{t=0}^{T}M_t\\log P(z_t\\mid Q,I,H_{t-1};\\theta),\\quad M_t=1[z_t\\in\\mathcal T]",
+    "locator": "A.1 Eq4–5"
+   }
+  ],
+  "signal_routing": "thought、命令与答案文本监督；visual token损失mask，vision encoder/projector冻结。无奖励/advantage；按答案正确+工具语义过滤teacher轨迹。",
+  "normalization": "other",
+  "invariance": "论文Eq5 token求和，无长度归一化明示；非PBRS。reuse/插值保留同源图信息，crop可暴露原始高分辨率细节但丢外部上下文。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "最大轮数M后返回已有输出，M数值未读到；缺少无工具数据占比，不能假定直答支持平衡。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4同问题原始数据SFT vs工具轨迹；Table6逐工具；Table10 crop/draw/reuse相同bbox；Table11定位/答案相关。",
+  "negative_results": [
+   {
+    "text": "Table10 crop V*90.4低于draw90.6，MME702.1低于reuse704.3，因此不是所有指标最优。",
+    "locator": "Table10"
+   },
+   {
+    "text": "FSRCNN引入虚假纹理，插值优于超分辨率方案。",
+    "locator": "§5.3.1 Table9"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若固定编码像素与返回频次后reuse同样有效，不能将全部增益归因crop定位。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8 V100约54h；SFT1epoch,batch8,lr1e-5,8192tokens；论文报告。",
+  "pitfalls": [
+   {
+    "text": "focus训练红框全图、推理裁剪存在输入分布差异。",
+    "locator": "§4.3"
+   },
+   {
+    "text": "Table13 V*84.3与Table1 90.4不同，属于重新评测表，不合并为同一设置。",
+    "locator": "Tables1,13"
+   }
+  ],
+  "code": null,
+  "lesson": "当训练高亮而推理裁剪时，要直接比较draw/crop/reuse并保留上下文；不要从定位IoU直接推出答案收益。"
+ }
+}

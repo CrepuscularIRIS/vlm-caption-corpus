@@ -1,0 +1,138 @@
+{
+ "paper_key": "2609.03206",
+ "title": "Learning to Zoom Efficiently with a Contrastive Curriculum",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2609.03206.txt",
+  "sections_read": [
+   "Abstract/contributions; §3.1-3.3 reward; §4 M&C; §5-6 Tables1-2",
+   "§8 Limitations; AppB runtime/curriculum; AppD defaults; AppF Table10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在无需warm-start SFT的工具探索中，用正确轨迹的真实crop作silver正例，逐渐增加反例框IoU。",
+  "key_step": "固定后续生成M2不重采样，对真实和反例工具前缀teacher-force重打分；token对数比裁剪求和tanh后加正确性门控奖励。",
+  "why_non_obvious": "学习how-to-use先于学when-to-use；单纯终答奖早期压制尚不熟练工具。",
+  "trigger_condition": "When tool exploration initially underperforms, contrast successful calls with progressively harder alternatives.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以成功样本作银标，用递增难度反例塑造技能。",
+  "abstract_trigger_condition": "When exploratory actions are initially poor, add outcome-gated contrastive feedback.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "固定后果文本，改变产生它的观测前缀并重评分。",
+  "abstract_why_non_obvious": "可区分性也能由后果文本投机产生，不独属于动作质量。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.03206#s1",
+   "object": "成功轨迹工具框及其后续文本M2",
+   "information": "GT用于终答正确性门控；不需GT框；正框假设来自答对轨迹；反例由原框生成",
+   "operation": "以目标IoU课程生成反例框，保留M2并重算token条件概率，加入GRPO奖励",
+   "claimed_effect": "Ours+四基准77.06 vsMini本地75.92；主阶段75.40，easy negatives71.96，τmax=.2仅65.53",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3; Tables1/10.App",
+    "quote": "we only rescore"
+   },
+   "failure_boundary": "框本身不一定因答对而好；M2同时是action和probe，词面/长度可hack。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P30",
+   "strength": 2,
+   "how": "反例框可教空间技能，但不负责停止。"
+  },
+  {
+   "problem": "P65",
+   "strength": 2,
+   "how": "M&C可作可控RoI诊断。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "no-tool/Curiosity/Conditional/easy negatives/two negatives/per-sequence",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只促进工具探索，不显式prune；M2长度/词汇重叠/整坐标可hack，跨家族不稳。",
+   "locator": "§1/§8"
+  }
+ ],
+ "question": {
+  "observed_failure": "基础7B tool overall13.15 vs tool-free57.57；额外任务RL可解释大部分增益。",
+  "load_bearing_assumption": "学会zoom必需昂贵SFT；或最终答对就证明框对。",
+  "scope": "初始zoom技能探索、Qwen2.5-VL7B及M&C",
+  "success_criterion": "benchmark性能与工具定位质量，而非按需停止",
+  "why_open": "前置whether动作阻止模型探索how。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§6.1 no-tool"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§4 M&C"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\tilde r_i=\\log\\frac{2P(M_{2,i}|S,M_{2,<i})}{P(M_{2,i}|S,M_{2,<i})+P(M_{2,i}|S^\\prime,M_{2,<i})};\\ r=r_{acc}+\\alpha1[correct]\\tanh\\sum_i clip(\\tilde r_i,\\pm\\gamma)",
+    "locator": "§3.3 Eq2"
+   }
+  ],
+  "signal_routing": "额外奖仍发给整轨迹，包括被重评分的M2；作者说不给M2 token奖励留待未来，不可误写已路由。",
+  "normalization": "GRPO；本地token clipγ1.5、tanh有界，α.1；不是长度平均。实际组std公式在所读设置未展开，按标准GRPO不可声称mean-only。",
+  "invariance": "改变目标，非PBRS；实际hard negatives不是数据边缘分布，MI下界解释有条件；token surrogate非序列Eq1精确相等。",
+  "baseline_or_potential": "反例同时改变tool坐标与回执，故不是VEG固定Ti的像素单因素对照。",
+  "degenerate_cases": "答错附加项0；两支同概率则附加0；长M2可能tanh饱和；不能区分失败必要探索，缺动作采样仍无法学。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "无工具任务RL、conditional常数tool奖、反例难度/数目/sequence打分消融；M&C有RoI。",
+  "negative_results": [
+   {
+    "text": "M&C Ours+67.38低于Conditional+74.38；τmax从.175改.2主基准75.40→65.53。",
+    "locator": "Tables2/10.App"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "若只改变M2长度/词重叠即可提高奖励而框质量不升，则信号不能代表取证质量。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B",
+   "framework": "GRPO+selective sample replay",
+   "group_size": null,
+   "max_turns": 6,
+   "kl": null
+  },
+  "cost": "PR去video6698题，382updates约35h×8A100；后续VisualProbe554updates78h；280轨迹buffer每2update刷新。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用后续文本重评分工具时，必须检查文本自我奖励循环；课程难度要独立留出验证。"
+ }
+}

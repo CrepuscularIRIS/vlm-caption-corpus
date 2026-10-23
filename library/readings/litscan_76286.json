@@ -1,0 +1,140 @@
+{
+ "paper_key": "litscan:76286",
+ "title": "RTWI",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_76286.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs3–8",
+   "§4 Tables1–6",
+   "AppB Algorithms1–2",
+   "§5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把取证和答题的高熵token分别评分，双阶段过滤后用可靠性及跃升加权投票。",
+  "key_step": "每题warmup8条估两阶段40%分位阈值；后续低于阈值提前停，最多32条。",
+  "why_non_obvious": "只有答案共识忽略了取证失败；不过低熵只是代理，非视觉事实检验。",
+  "trigger_condition": "When multi-sample TWI contains unreliable mining and reasoning, filter both stages and weight retained answers.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "分阶段风险筛查与资源提前终止。",
+  "abstract_trigger_condition": "When a shared confidence hides distinct failures, estimate separate stage scores.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "阶段阈值+轨迹跃升投票。",
+  "abstract_why_non_obvious": "探索时低信心、取得图后高信心的轨迹仍可能有价值。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76286#s1",
+   "object": "test-time多轨迹选择",
+   "information": "只用当前model token分布，不看GT；GTbox仅分析mIoU",
+   "operation": "阶段top-k熵负均值，分位筛选；C=exp(跃升/(绝对总可靠性τ))加权答案",
+   "claimed_effect": "Qwen3Thinking Vstar总体SC78.8→83.4，TSR61.2%；去DF80.8",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eqs3–8/Table4",
+    "quote": "Ct = exp (∆t / (|wt | · τ ))"
+   },
+   "failure_boundary": "token置信不是取证必要性或事实；省token相对32条SC而非单轨迹。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P21",
+   "strength": 2,
+   "how": "可迁移为取证失败分层及test-time预算对照。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SC/ASC/ESC/CISC/DeepConf/SelfCertainty/noDF/noRV",
+   "kind": "inference"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "依赖logits，需先采warmup；过度自信错误/低置信正确可能被误判，所读未见独立Limitations。",
+   "locator": "§3/4"
+  }
+ ],
+ "question": {
+  "observed_failure": "TreeBenchThinking SC30.9低于base32.8；RTWI37.1。",
+  "load_bearing_assumption": "增加样本多数投票能抵消视觉/推理错误。",
+  "scope": "Qwen3VL8BThinking/Instruct多采样TWI",
+  "success_criterion": "同预算对比答案准确与总生成token、去过滤/权重",
+  "why_open": "多条轨迹可能共享错误取证，投票放大错误。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Fig3按mining/reasoning分组"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Tables1–4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "w_s=-k^{-1}\\sum_{i\\in TopK(H_s)}H_i;\\ T_{rel}=\\{t:w_m\\ge\\eta_m,w_r\\ge\\eta_r\\};\\eta_s=Percentile_{.4}(w_s)",
+    "locator": "Eqs3–5"
+   },
+   {
+    "latex": "w_t=w_m+w_r;\\Delta_t=\\max(w_r-w_m,0);\\ C_t=exp(\\Delta_t/(|w_t|\\tau));\\hat a=argmax_a\\sum_{t\\in Trel}C_t1[a_t=a]",
+    "locator": "Eqs6–8"
+   }
+  ],
+  "signal_routing": "纯inference earlystop/filter/vote，无reward/advantage或token训练mask；online途中更新entropy，offline完整生成后筛选。",
+  "normalization": "other: top-k均熵/分位，投票非组std。",
+  "invariance": "非PBRS；改变答案选择。",
+  "baseline_or_potential": "置信跃升不是因果value/potential。",
+  "degenerate_cases": "所有轨迹过滤后空集合fallback未读到；wt0分母未知；跃升0时权重1；自信错会保留，低置信恢复可能在mining被提前停。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 noDF/noRV/no跃升/总可靠性；Table6 GTmIoU一致性仅分析非训练。",
+  "negative_results": [
+   {
+    "text": "Thinking SC在TreeBench reasoning从base32.8降30.9，更多采样并非保证改进；Instruct本法仅34.0→34.8。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "人工核验发现entropy筛选主要保留语言捷径，或相同总compute随机筛选相当，则可靠取证解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VL8BThinking/Instruct",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "onlinewarmup8/总32；offline32全生成；τ=.1Thinking/1Instruct；训练开销无。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用token置信筛查工具轨迹时，保留误筛正确轨迹和过度自信错误的审计，明确效率对照预算。"
+ }
+}

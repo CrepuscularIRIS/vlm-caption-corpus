@@ -1,0 +1,238 @@
+{
+ "paper_key": "litscan:74552",
+ "title": "The Art of Interrogation: Consistency Amplifies Factuality in Spatial Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74552.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2 (embedded latexit metadata ignored in display)",
+   "§3–4 pp3–5",
+   "§5 pp5–9 Figures2–8",
+   "Limitations p9",
+   "A.1–A.2 pp13–16"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用已知几何/文字变换的答案不变性或等变性构造无答案标签reward，并最小一致性配对两组rollout。",
+  "key_step": "原prompt和变换prompt各采K条，形成K² verifier矩阵；线性分配选总一致性最小排列；相同pair reward经组标准化后更新两边所有生成token。",
+  "why_non_obvious": "随机配对有1/2猜中一致性，最坏配对随机期望随K约1/sqrt(πK)下降；但错误且确定的等变映射仍能一致。",
+  "trigger_condition": "When valid input transformations have known answer mappings but answer labels are unavailable, train on worst-matched cross-prompt consistency.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "利用已知对称结构把不可验证答案变为可验证关系，再用对抗配对提高信号区分度。",
+  "abstract_trigger_condition": "When valid input transformations have known answer mappings but answer labels are unavailable, train on worst-matched cross-prompt consistency.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "原prompt和变换prompt各采K条，形成K² verifier矩阵；线性分配选总一致性最小排列；相同pair reward经组标准化后更新两边所有生成token。",
+  "abstract_why_non_obvious": "随机配对有1/2猜中一致性，最坏配对随机期望随K约1/sqrt(πK)下降；但错误且确定的等变映射仍能一致。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74552#s1",
+   "object": "两组生成轨迹的credit",
+   "information": "变换关系ϕT；无答案GT进入reward，数据构造仍用Omni3D对象/几何标注",
+   "operation": "最小总一致性一对一匹配，pair共享reward/advantage，两prompt轨迹均训练",
+   "claimed_effect": "self-task76.8% vs随机74.7%、one-to-all75.8%；step23.2s vs22.9/23.1",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.3 Algorithm1 Eq10; §5.6/Fig8 p9",
+    "quote": "self-task accuracy of 76.8% vs. 74.7% (random)"
+   },
+   "failure_boundary": "减少随机偶合，不识别一致错误；Σreward最小不是每行可独立选最坏项。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74552#s2",
+   "object": "一致性替代正确性监督",
+   "information": "四个空间二分类任务及已知对象保留变换",
+   "operation": "在相同数据/增强下用一致性+格式reward训练，对比答案GT reward",
+   "claimed_effect": "四任务联合7B83.8% vs accuracy86.5%；标签随机翻转20%时accuracy82.6低于83.8；numeric count68.3 vs68.8",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.3–5.5/Figs5–7 pp7–9",
+    "quote": "Clean accuracy reaches 86.5% and consistency 83.8%."
+   },
+   "failure_boundary": "外部selfsupervised基线直接用公开checkpoint未在相同数据继续训练；不构成同预算全控制。数字任务只用不变变换可被恒定输出满足。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74552#s3",
+   "object": "OT等价解释",
+   "information": "W_c定义为coupling最小期望cost",
+   "operation": "作者把−W_verif换成W_−verif并称minimization等价",
+   "claimed_effect": "读者检查发现负号交换min应变max，故该等价一般不成立；不否定最小配对算法结果。",
+   "conditions": [],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "A.2 PropositionA.3 p16",
+    "quote": "Finally, absorbing the negative into the cost gives"
+   },
+   "failure_boundary": "读者代数反例：两边均匀二值且verifier相等时min一致性0、max1，−min=0而min负代价=−1。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 3,
+   "how": "不靠外部reader/GT答案，用几何可验证关系训练视觉推理；仍是序列reward而非视觉step定位。"
+  },
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "pair一致性A广播整条生成轨迹，不隔离caption/crop必要性。"
+  },
+  {
+   "problem": "P01",
+   "strength": 2,
+   "how": "组mean/std会抵消reward整体正缩放；低期望一致性不直接保证高质量梯度。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO with accuracy verifier",
+   "kind": "method"
+  },
+  {
+   "name": "random pairing",
+   "kind": "method"
+  },
+  {
+   "name": "one-to-all pairing",
+   "kind": "method"
+  },
+  {
+   "name": "Visual Jigsaw",
+   "kind": "method"
+  },
+  {
+   "name": "SSL4RL",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者局限：仅两预测关系，未拓展三步以上组合关系。",
+   "quote": "",
+   "locator": "Limitations p9"
+  },
+  {
+   "text": "Reader：一致性允许语义整体取反的错误解；数字不变性允许常数输出。",
+   "quote": "",
+   "locator": "§3/5.5"
+  },
+  {
+   "text": "Reader：Eq5写A·min(ratio,clip)，对负A不等同标准min(A·ratio,A·clip)；实现未知。",
+   "quote": "",
+   "locator": "Eq5 p4"
+  }
+ ],
+ "question": {
+  "observed_failure": "随机配对74.7%、最坏配对76.8%，但联合一致性83.8仍低于GT86.5。",
+  "load_bearing_assumption": "模型已有正确空间能力，满足变换关系的解与正确语义解相关。",
+  "scope": "已标对象、已知变换的空间问题",
+  "success_criterion": "同预算比较最坏/随机配对，单独报告一致错误率、正确率、caption事实性与direct支持。",
+  "why_open": "一致性不能破除整体标签翻转；奖励std和确定输出形成退化。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§3能力/几何前提"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Fig8配对策略"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "§3"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "ϕT known geometry"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Vᵢⱼ=1[y′ⱼ=ϕ_T(yᵢ)]; σ*=argminσΣᵢVᵢσ(i); rᵢ=r′σ*(i)=Vᵢσ*(i)",
+    "locator": "Algorithm1/§4.3"
+   },
+   {
+    "latex": "Aᵢ=(rᵢ−mean(r))/std(r); J=(1/K)Σᵢ[(1/Tᵢ)Σₜℓᵢₜ(Aᵢ)+(1/T′σ(i))Σₜℓ′σ(i),t(Aᵢ)]",
+    "locator": "Eq2/10"
+   },
+   {
+    "latex": "paper ℓᵢₜ=Aᵢ min(ρᵢₜ,clip(ρᵢₜ)); this differs for A<0 from min(ρA,clip(ρ)A)",
+    "locator": "Eq5"
+   },
+   {
+    "latex": "numeric consistency=max(0,1−|y−y′|/max(y,y′))",
+    "locator": "§5.5 p9"
+   }
+  ],
+  "signal_routing": "pair的同一一致性r及共享A送原/变换两条completion的全部生成token，包括think/answer；各轨迹1/T后组均值，两个branch相加非再除2。σ*停止梯度。format和consistency权重均1，但format逐边不同时如何与pair共享A结合未明确。",
+  "normalization": "mean+std；Eq2无ε；两边pair reward是排列故相同均值/std；格式奖励混合细节未知。",
+  "invariance": "一致性对正确的ϕT变换不变；非PBRS。reward正仿射变换在非零std下消除。mincoupling取负变max，A.2 −W_v=W_−v一般错误。",
+  "baseline_or_potential": "组均值而非状态potential；两prompt不同信息，不是同后继状态crop反事实。",
+  "degenerate_cases": "K1或全同reward标准差0未定义；加ε实现未知。确定且一致错误可满分，确定不一致可全0；numeric y=y′=0分母0未定义，负数域未说明。random期望下降不能推出std后梯度质量。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig8最坏/随机/one-to-all配对；Fig6逐样本独立随机翻转10–40%GT标签。同数据增强的GT对照较有辨别力，外部checkpoint比较非同训练预算。",
+  "negative_results": [
+   {
+    "text": "一致性联合83.8低于GT86.5；10%标签噪声GT84.1仍稍高。",
+    "locator": "Figs5–6"
+   },
+   {
+    "text": "方程与OT等价的问题为读者数学检查，不是作者负结果或运行发现。",
+    "locator": "Eq5/A.2"
+   }
+  ],
+  "seeds": "80/20 split fixed seed shared; seed number and multi-run variance null",
+  "falsifier": "构造语义整体翻转但完美等变策略，若满分则反驳一致性充分保证事实性；实际迁移若一致性升而答案/视觉事实不升则停止。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B/7B; LoRA r32 α64 attention+MLP; vision frozen",
+   "framework": "POT network-simplex; training framework null",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "8H100，device每步4prompt pairs，500steps共256Kcompletions；joint2000steps/~40K shuffle。lr1e-6 T=1；配对O(K³)，23.2s/step，低于1.5%额外耗时。",
+  "pitfalls": [
+   {
+    "text": "label-free指reward不读答案；对象选择/可见性/度量gap过滤仍依赖Omni3D标注。",
+    "locator": "§5.1"
+   },
+   {
+    "text": "对象保留crop须保持判断所需参照；不保证任意crop都是真不变变换。",
+    "locator": "§3/5.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当可构造可靠等变关系时，最坏配对可减少随机一致奖励；必须另测一致错误并保留原任务正确性约束。"
+ }
+}

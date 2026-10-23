@@ -1,0 +1,176 @@
+{
+ "paper_key": "litscan:72866",
+ "title": "TreeVGR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_72866.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 pp5–9",
+   "Appendix D Tables5–6 pp17–18",
+   "E.1–2 pp18–19",
+   "F.2 Table8 pp19–20",
+   "G p20"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "只在文本CoT输出box而不回放crop，GTbox双向max-IoU同时监督覆盖和精确率。",
+  "why_non_obvious": "只给召回IoU使模型枚举框直到不回答；双向平均抑制不匹配框但不等于防重复或证明证据被使用。",
+  "trigger_condition": "答案奖励不约束grounding且有多目标GT框时。",
+  "contribution_type": "traceable benchmark+SFT/RL grounding reward",
+  "abstract_strategy": "显式中间证据监督，并通过precision约束修正coverage代理hacking。",
+  "abstract_trigger_condition": "可量化证据与终答案可分别验证，单边集合匹配可被枚举利用。",
+  "abstract_key_step": "recall每GT取最佳prediction，precision每prediction取最佳GT，二者均值加入终答案/格式。",
+  "abstract_why_non_obvious": "mIoU高也可能完全不作答，证据分数与任务效用必须同时看。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:72866#s1",
+   "object": "CoT文本框集合",
+   "information": "图像/QA、GT目标框；open-ended答案用Qwen2.5-72B文本judge看问题/GT答案/预测",
+   "operation": "35k多box SFT(4.7k注入假框+纠正提示)后37k RL；Racc+Rformat+.5(recall maxIoU+precision maxIoU)，没有crop观察回放。",
+   "claimed_effect": "Table8同coldstart无IoU TreeBench38.0/mIoU27.2，dual50.4/44.0；recall-only答案0但mIoU78.3。",
+   "conditions": [
+    "Qwen2.5-VL7B",
+    "30k V*train hardQA+7k VisDrone counting，有GT框"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table8 p19",
+    "quote": "0.0    78.3   0.0     0.0"
+   },
+   "failure_boundary": "直接GT框监督不等于无标注必要性；框文本对齐不能单独证明causal faithfulness。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "局部GTgrounding奖励与单边覆盖hacking直接证据。",
+   "strength": 3
+  },
+  {
+   "problem": "P48",
+   "how": "TreeBench405QA含目标框、10类perception/reasoning并做mask/提示诊断。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "coldSFT教多框及显式修正格式，节约RL探索。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "same SFT + accuracy/format only",
+   "kind": "ablation"
+  },
+  {
+   "name": "recall-only/precision-only/dual IoU",
+   "kind": "ablation"
+  },
+  {
+   "name": "target masked/GT box textual hints",
+   "kind": "diagnostic"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅Qwen7B，非数理代码长推理通才；perspective transform仍弱。",
+   "locator": "G p20",
+   "quote": "TreeVGR is not a general multimodal reasoner"
+  }
+ ],
+ "question": {
+  "observed_failure": "只recall训练后mIoU78.3但所有答案acc0，枚举框不输出finalanswer。",
+  "load_bearing_assumption": "GT框准确且充分；双向框匹配能提供答案之外有用约束。",
+  "scope": "文本box-first视觉QA",
+  "success_criterion": "共同报告答案、框IoU、response长度和不作答率。",
+  "why_open": "只终答案可能ground错；只coverage又有枚举hacking。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "D Tables5–6"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table8"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "E.1"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=R_{acc}+R_{format}+R_{IoU};\\quad R_{IoU}=\\frac12\\left[\\frac1M\\sum_{k=1}^M\\max_i IoU(\\hat b_i,b_k)+\\frac1N\\sum_{i=1}^N\\max_k IoU(\\hat b_i,b_k)\\right]",
+    "locator": "Eq1–4 p7"
+   }
+  ],
+  "signal_routing": "整个输出序列reward，非逐框token专属adv。文字框产生于原图context，不调用crop重观测。宣称original GRPO但未列adv/std/length/mask和G，不补全。",
+  "normalization": null,
+  "invariance": "非PBRS。读者推导：均匀复制所有预测框不改两项，重复高IoU框还可提高precision均值；因此不是严格重复惩罚。所有GT匹配good也未证明答案确实使用这些框。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "N=0/M=0公式未定义fallback；全对答案仍可凭IoU差训练，全部reward相同时GRPO无相对信号；只precision可能漏目标，只recall鼓励枚举。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table8双向奖励同SFT对照；Table5遮挡目标使Qwen37.0→31.8/o354.8→33.8；Table6box提示Qwen43.7/o358.3。",
+  "negative_results": [
+   {
+    "text": "DAPO尝试比GRPO不稳；AI2D84.9→84.8。Table8基座V*71.2与主表74.3不一致，增量应按对应表。",
+    "locator": "E.2/Table7/Table3/Table8"
+   },
+   {
+    "text": "高mIoU非任务成功；无法获取o3 reasoning故没有其traceability评估。",
+    "locator": "Table2/Table8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：随机/错配/重复框对照、固定答案和输入的干预测试，区分监督格式帮助与真正使用局部证据；dual无严格重复抑制应做duplicatebox实验。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B Instruct+Qwen2.5-72B textrewardjudge",
+   "framework": "LLaMAFactory/ EasyR1 GRPO",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "SFT8GPU LR5e-6 batch256；RL8GPU+judge8GPU 37k×5epochs，未给可核walltime/具体GPU型号；与DeepEyes的跨论文epoch成本主张不作统一预算比较。",
+  "pitfalls": [
+   {
+    "text": "SFT normalized→absolute坐标要按实际H/W转换；4.7k注入假框是人工固定纠正话术不证明检测能力。",
+    "locator": "E.1"
+   },
+   {
+    "text": "RL用VisDrone train+val造count5–10，公开eval/task分布需分清；bench目标平均面积3.05%，非一般图像任务代表。",
+    "locator": "E.2/§1"
+   }
+  ],
+  "code": "https://github.com/Haochen-Wang409/TreeVGR",
+  "lesson": "集合coverage奖励必须同时控制precision，并独立看不作答率；不要将可见框文本当作可追溯因果推理的充分证据。"
+ }
+}

@@ -1,0 +1,165 @@
+{
+ "paper_key": "litscan:52460",
+ "title": "VRAG-RL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_52460.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§2.1–2.4",
+   "§3.1–3.2 Tables1–2",
+   "Appendix A–D selected training; G Tables5–6; I"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "区分检索缺文档与已有页细节不足，分别用search和region crop；用相关文档排序reward辅助终答。",
+  "why_non_obvious": "一味再检索不解决已经获得页面的低分辨率问题。",
+  "trigger_condition": "When retrieved pages contain unreadable detail, crop raw pixels rather than repeat retrieval, and reward early relevant retrieval.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When retrieved pages contain unreadable detail, crop raw pixels rather than repeat retrieval, and reward early relevant retrieval.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "区分检索缺文档与已有页细节不足，分别用search和region crop；用相关文档排序reward辅助终答。",
+  "abstract_why_non_obvious": "一味再检索不解决已经获得页面的低分辨率问题。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:52460#s1",
+   "object": "visual RAG GRPO",
+   "information": "query、检索图和历史；训练gold相关文档集及gold答案；模型裁图真实原始页",
+   "operation": "search/region/answer统一协议；region按编码尺寸映射回raw图；NDCG检索+模型终答+格式reward训练",
+   "claimed_effect": "7B整体57.1，search-R1-VL表中37.4；2×2消融47.2→49.3加crop，54.9→57.1加crop",
+   "conditions": [
+    "有相关文档标注；region返回user observation；SFT先教协议"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1–2; Eq2,7–13",
+    "quote": "VRAG-RL (Ours)        69.3        43.1       60.6         74.8   26.1   26.3   24.8   25.9    21.2      57.1"
+   },
+   "failure_boundary": "NDCG不是crop必要性，终答模型判分也非像素金标；不保证减少不必要调用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P39",
+   "strength": 3,
+   "how": "显式raw/encoder坐标映射确保取到新像素。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "多分量轨迹奖励仍非逐次工具credit。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "强模型推理+grounding专家修框造SFT行为。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Search-R1-VL",
+   "kind": "RL"
+  },
+  {
+   "name": "2x2 reward/action ablation",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "实时性受多轮限制。",
+   "locator": "Appendix I",
+   "quote": "requirements of high real-time applications."
+  }
+ ],
+ "question": {
+  "observed_failure": "纯search同奖励54.9，加入视觉动作57.1；无RAG-specific reward仅49.3。",
+  "load_bearing_assumption": "检索更多页面就能弥补当前图低分辨率。",
+  "scope": "视觉文档RAG搜索和局部读取",
+  "success_criterion": "检索与视觉动作两因素消融，回答质量提升且记录调用开销。",
+  "why_open": "查询表达和局部感知是不同瓶颈。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§2.2 trajectory scaling"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§2.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=alpha*r_Ret+beta*r_Ans+gamma*r_Pat, alpha+beta+gamma=1",
+    "locator": "Eq12"
+   },
+   {
+    "latex": "r_Ret=DCG(D_trj,D_rel)/IDCG(D_rel)",
+    "locator": "Eq7–9"
+   }
+  ],
+  "signal_routing": "Appendix C以I(y_t)选policy生成token并按每条轨迹有效token数平均；user图像观察非生成目标。序列reward给组相对advantage；未给显式A公式，不臆补std。",
+  "normalization": "other",
+  "invariance": "检索NDCG归一，GRPO advantage是否除std在已读公式未明示；非PBRS，添加检索reward可改变目标。",
+  "baseline_or_potential": "group平均reward baseline；模型判终答取query/gold/pred。",
+  "degenerate_cases": "全相同reward组无相对信号；Drel空时IDCG需处理但未说明；重复检索去重未核；已塌缩直答不受保护。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 reward×action 2×2；SFT专家轨迹替换坐标降低grounding错误。",
+  "negative_results": [
+   {
+    "text": "多轮交互可能无法满足实时应用。",
+    "locator": "Appendix I"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若固定检索集合与token预算后crop无增益，则不能归因于新视觉证据；需分别量化search/crop成本。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B/7B; reward Qwen2.5-7B; ColPali retriever",
+   "framework": "LLaMA-Factory SFT; verl GRPO",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "8A10080G实验；reward4A100/retriever1A100部署，是否并行重叠未说明；总时unknown。",
+  "pitfalls": [
+   {
+    "text": "cold-start KL=0/格式0.1；SFT后通常格式0；不可混配方。",
+    "locator": "Eq12; §3.1"
+   },
+   {
+    "text": "正文称baseline34.7但Table1列37.4，采用表值。",
+    "locator": "Table1; §3.2"
+   }
+  ],
+  "code": "https://github.com/Alibaba-NLP/VRAG",
+  "lesson": "当crop来源是编码缩放图时，应先映射回原图再裁，并将search顺序奖励与视觉动作代价分开命名。"
+ }
+}

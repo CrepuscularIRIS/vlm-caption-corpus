@@ -1,0 +1,155 @@
+{
+ "paper_key": "litscan:70844",
+ "title": "VGR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70844.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 Eq1–6",
+   "§4.2–4.3",
+   "§5.1 Tables2,4,6–8",
+   "§6 Discussion",
+   "Appendix B.2 and inference-cost analysis"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "先高分辨率编码缓存细粒度feature，再压缩初始输入；模型输出区域信号时从缓存取局部feature回放。",
+  "why_non_obvious": "节省的是进入LLM的token；高分辨率细节预先编码存储，回放不是重新从原图获取像素。",
+  "trigger_condition": "当长推理需要局部高精度视觉且全量token昂贵时，分开视觉缓存分辨率与LLM当前输入分辨率。",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当长推理需要局部高精度视觉且全量token昂贵时，分开视觉缓存分辨率与LLM当前输入分辨率。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "先高分辨率编码缓存细粒度feature，再压缩初始输入；模型输出区域信号时从缓存取局部feature回放。",
+  "abstract_why_non_obvious": "节省的是进入LLM的token；高分辨率细节预先编码存储，回放不是重新从原图获取像素。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70844#s1",
+   "object": "推理中的视觉缓存回放",
+   "information": "AnyRes预编码统一feature map S；文本区域坐标触发；训练GT/teacher区域语义校验",
+   "operation": "全图粗pool，命中<eot>解析bbox并取S局部2×2pool后插入，文本/信号CE+aux bbox regression",
+   "claimed_effect": "同pool基线ChartQA58.7→67.7/MMStar37.2→41.7；仅去回放66.2/39.7；初始864tokens另加约100回放。",
+   "conditions": [
+    "LLaVA-NeXT Vicuna7B；558K预训+770K/158K SFT"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables2,6–7; §3",
+    "quote": "VGR-7B                                2×2 | 4×4    864     Vicuna-7B    41.7   67.7 73.7 63.9 39.8 73.7       59.8   88.2"
+   },
+   "failure_boundary": "细节必须已在缓存；新增回放token和输出使实际延迟增，30%仅初始token比较；无RL。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P39",
+   "how": "直接区分预编码pixel预算与LLM token预算，不能把feature回放称真实新crop。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "grounding文本信号+辅助坐标损失+精简轨迹SFT共同建立行为。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "回放区域特征补视觉注意，文本描述不能代替。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "LLaVA-NeXT same pooling",
+   "kind": "method"
+  },
+  {
+   "name": "without replay",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "当前主要LLaVA架构，RL尚为未来方向。",
+   "quote": "Discussion. Our method has limitations that warrant future research. First, VGR is currently\nimplemented on LLaVA Liu et al. (2023b) architecture, exploring stronger visual encoders and LLMs\ncould further enhance performance. Another avenue is integrating reinforcement learning (RL), a\nmore generalized and diverse reasoning process may be achievable with RL.",
+   "locator": "§6"
+  }
+ ],
+ "question": {
+  "observed_failure": "只输出bbox不回放ChartQA66.2 vs67.7；粗压缩仅4crop时ChartQA53.4低于原baseline58.7。",
+  "load_bearing_assumption": "缓存保留所需细节且选择性回放可补足初始压缩损失。",
+  "scope": "AnyRes cached-feature的视觉推理",
+  "success_criterion": "同预编码像素比较无回放/缓存回放/实际crop重编码，计LLM token和端到端时间。",
+  "why_open": "不能只用864/2880推算总成本；缓存与新编码可见细节不同。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_{det}=\\ell_1+2\\ell_{GIoU}",
+    "locator": "Eq3"
+   },
+   {
+    "latex": "R_{bbox}=\\operatorname{Pool}_{2\\times2}(S[x_1:x_2,y_1:y_2])",
+    "locator": "§3（机制简写，非论文原式）"
+   }
+  ],
+  "signal_routing": "所有文本/控制token CE；原始/回放图token排除loss；<eot> hidden→MLP4维框辅助L1/GIoU，推理仍解析文本坐标从缓存S取feature。视觉encoder也训练，lr为主lr1/10。",
+  "normalization": "other",
+  "invariance": "bbox归一[0,1]与pool策略影响定位；无GRPO/std/PBRS；辅助回归不改变缓存可见信息边界。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "无效bbox不触发有效取回；缓存原先丢失细节无法恢复；不保证0回放/stop支持；较多回放可增延迟。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table6拆detection/replay/rewrite；Table7缓存 vs crop重编码/不同pool；Appendix B.2随机视觉feature负对照。",
+  "negative_results": [
+   {
+    "text": "去memory RWQA60.6高于完整59.8，非全任务提升。",
+    "locator": "Table4"
+   },
+   {
+    "text": "30%token说法不包括回放：Table7为864+100；H20 ChartQA155生成token/2.4回放/11.57s。",
+    "locator": "Tables7,15"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若与同像素同LLM token的重编码无差别，收益来自压缩预算而非特殊memory机制。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "CLIP ViT-L14@336 + Vicuna7/13B",
+   "framework": "LLaVA-NeXT",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "SFT1epoch，lr2e-5，ViT2e-6；训练GPU时未知。H20测runtime，非免费回放。",
+  "pitfalls": [
+   {
+    "text": "Table12随机框实验列名/数值顺序疑似不一致，未抄具体数值，仅保留定性。",
+    "locator": "Appendix B.2 Table12"
+   }
+  ],
+  "code": null,
+  "lesson": "当工具只取缓存feature时，记录编码像素、缓存分辨率和插入token三种预算，并用实际crop重编码作对照。"
+ }
+}

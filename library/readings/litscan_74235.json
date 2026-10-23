@@ -1,0 +1,186 @@
+{
+ "paper_key": "litscan:74235",
+ "title": "SPARC",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74235.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3–6 pp4–8 Tables1–3",
+   "Conclusion limitations p9",
+   "AppendixA8–10 p18 training/latency"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "定位与回答分两次prompt；定位低分辨率找隐式问题相关区域，原像素crop给回答；只在定位启用SFT LoRA，多采样只扩定位。",
+  "key_step": "N4/8 coordinate rollouts以IoU≥.5 WBF融合，非重叠框保留；一次reasoner吃global image+crops。",
+  "why_non_obvious": "短坐标推理可共享视觉KV，增加候选探索不用N次长答案；独立adapter避免定位梯度污染reasoner。",
+  "trigger_condition": "小目标perception瓶颈、长交错上下文无益，已有native grounding能力。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "按功能拆上下文和参数，在便宜前端集中训练与test-time compute。",
+  "abstract_trigger_condition": "小目标perception瓶颈、长交错上下文无益，已有native grounding能力。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "N4/8 coordinate rollouts以IoU≥.5 WBF融合，非重叠框保留；一次reasoner吃global image+crops。",
+  "abstract_why_non_obvious": "短坐标推理可共享视觉KV，增加候选探索不用N次长答案；独立adapter避免定位梯度污染reasoner。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74235#s1",
+   "object": "perceptual test-time budget",
+   "information": "image+question；nativebbox/point生成，crop取原始分辨率像素后受目标resolution上限约束",
+   "operation": "只对IRD多采样并WBF，随后一次新prompt回答，不传长定位CoT",
+   "claimed_effect": "Qwen4B ID full74.8→82.0，N8后平均crop1.88；256时51.0→55.7、crop3.30",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5/Table2 p7",
+    "quote": "SPARC WBF 8 55.7 67.0 82.0 3.30 2.54 1.88"
+   },
+   "failure_boundary": "不是按需不裁决策；N8不保证单调，Molmo8B full59.1→58.3。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74235#s2",
+   "object": "perception-only adaptation",
+   "information": "teacher正确答案轨迹里的crop/point作为SFT标签；回答仍base",
+   "operation": "LoRA仅定位激活，回答停用；低res训练迫使从coarse image定位",
+   "claimed_effect": "Qwen8B SFT256 full ID82.4 vs79.5，512测试64.3 vs54.8",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6 pp7–8 Table3; A9 p18",
+    "quote": "SPARC SFT 256 53.1 64.3 82.4"
+   },
+   "failure_boundary": "teacher终答正确不证明crop必要；分阶段参数不变保证reasoner权重保留，不保证改变输入后所有任务准确率不降。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P24",
+   "strength": 3,
+   "how": "定位专用LoRA与回答adapter-off显式隔离参数更新，直接回应共享梯度泄漏。"
+  },
+  {
+   "problem": "P39",
+   "strength": 2,
+   "how": "低resglobal与原图crop分配，需检查teacher/student实际像素和可读性。"
+  },
+  {
+   "problem": "P58",
+   "strength": 2,
+   "how": "只扩短坐标采样而不是多轮完整续跑降低评估预算。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "native Qwen3VL/Molmo2",
+   "kind": "method"
+  },
+  {
+   "name": "thinking with images",
+   "kind": "method"
+  },
+  {
+   "name": "SPARC single rollout",
+   "kind": "method"
+  },
+  {
+   "name": "WBF4/8",
+   "kind": "method"
+  },
+  {
+   "name": "distillation SFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "依赖native spatial grounding，否则需外接detector。",
+   "quote": "VLMs with native spatial grounding ability",
+   "locator": "§7 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen4B TwI OODfull48.3低于native53.5，SPARC54.8；低res定位是瓶颈。",
+  "load_bearing_assumption": "问题相关区域能由短坐标前端充分找到，后端保留global避免tunnel vision。",
+  "scope": "高分辨率V*/HRBench与XLRS，nativegrounding VLM。",
+  "success_criterion": "同实际latency提高答案，定位adapter关闭时原reasoner能力保留。",
+  "why_open": "固定两阶段未学什么时候无需crop；训练标签由teacher成功筛选。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table1/2与A8同时报告精度、crop/token、latency"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "§4两个功能stage，§6只定位LoRA"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "B={IRD(I_low,Q)_n}_{n=1..N}; B*=WBF_{IoU≥.5}(B); answer=VLM_base(I_low,crop(I_original,B*),Q)",
+    "locator": "§4–5 pp5–7, reader notation"
+   },
+   {
+    "latex": "L_SFT=-Σ_t log π_LoRA(b_t|I_low,Q,b_<t)",
+    "locator": "§6.1 p8 standard next-token objective, reader notation"
+   }
+  ],
+  "signal_routing": "SFT训练定位输出；adapter只在IRD激活，回答base无更新；不把两prompt当独立物理神经circuit证明。",
+  "normalization": "WBF框weighted平均，置信权重具体来源正文未给；SFT token reduction未知；无RL std。",
+  "invariance": "关闭adapter保持base权重，但输入crops变化故非输出不变；非PBRS。",
+  "baseline_or_potential": "无advantage/value/potential。",
+  "degenerate_cases": "N1退单框流程；全不重叠框全部保留，成本可随N增长；错误一致候选WBF不会恢复GT；原图已足够时固定定位额外开销。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：本项目冻结reasoner，对比共享LoRA/仅定位LoRA/无adapter；同crop输入评估答题泄漏，再以相同end-to-end延迟比较N短坐标与N完整推理。",
+  "negative_results": [
+   {
+    "text": "Molmo8B full WBF8 58.3低于single59.1；Molmo4B fullres SFT61.4低于62.9。",
+    "locator": "Tables2–3 pp7–8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同crop下adapter-off不能保留答题性能或等latency收益消失，则模块隔离/效率主张迁移失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VL4B/8B; Molmo2 4B/8B",
+   "framework": "Unsloth/HuggingFace",
+   "group_size": null,
+   "max_turns": 2,
+   "kl": null
+  },
+  "cost": "8B单A10080GB约12h；LoRAr16α32，lr2e-4，batch32acc4；V*256 E2E.66s vsTwI1.86s。",
+  "pitfalls": [
+   {
+    "text": "新prompt与KV复用必须确保不同adapter状态缓存合法，论文未详述跨adapter复用规则；crop原像素坐标尺度需映射。",
+    "locator": "§4–6 pp5–7; A9 p18"
+   }
+  ],
+  "code": null,
+  "lesson": "当只想修定位时，用定位专用adapter与冻结答题模型隔离梯度；分别核查参数保持与输入改变后的实际准确率。"
+ }
+}

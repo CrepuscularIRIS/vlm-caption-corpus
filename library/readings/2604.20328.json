@@ -1,0 +1,409 @@
+{
+ "paper_key": "2604.20328",
+ "title": "HyLaR: Hybrid Latent Reasoning with Decoupled Policy Optimization",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2604.20328.pdf",
+  "version": "v2",
+  "version_observed": "PDF p1 arXiv:2604.20328v2 [cs.CV] 26 Jun 2026; remote latest not checked",
+  "pages": 29,
+  "sections_read": [
+   "Abstract; §1 Introduction; Fig1",
+   "§2.1 Explicit Reasoning; §2.2 Latent Space Reasoning; Fig2",
+   "§3.1 Hybrid generation and inference",
+   "§3.2 Canvas compression/injection and joint SFT; Eq1",
+   "§3.3 DePO, vMF, decoupled clipping and KL; Eqs2–8; Fig3",
+   "§4.1 Setup; §4.2 Main results; Tables1–4",
+   "§4.3 Latent-step, RL-algorithm, loss-weight, clipping and distribution ablations; Fig4; Tables5–8; Eq9",
+   "§5 Conclusion; References pp15–19",
+   "Supplement §1.1 Mode-referenced density ratio; EqsS1–S6",
+   "Supplement §1.2 Closed-form KL; EqsS7–S14",
+   "Supplement §1.3 Practical relaxation; EqS15; TableS1",
+   "Supplement §2.1 Data; TableS2; §2.2 Training; TablesS3–S4; EqS16",
+   "Supplement §3 Cases FigsS1–S6; §4 Attention FigS7"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "HyLaR以中间图像压缩表示冷启动连续latent递归，再把文本位置与latent位置拆成不同权重、裁剪和正则。主文vMF球面理论与附录实际未归一化内积surrogate必须分开。",
+  "key_step": "按动作表示分成Z/S；文本clip(0.20,0.28)、latent clip±0.05，L_tok+0.5L_lat；latent回放保存旧策略确定性mode而非vMF采样，实际使用未归一化内积评分。",
+  "why_non_obvious": "latent递归改变后续状态，分类token概率与连续表示密度的变化尺度不同；但数学上有效的单位球面KL不代表实际保留模长的实现仍有该保证。",
+  "trigger_condition": "When a sequence mixes categorical choices and recurrent continuous representations with different update sensitivity, apply partition-specific clipping and weights while checking the actual replay distribution and score geometry.",
+  "reviewer_praise": [
+   "low_evidence: manifest has no reviews_path or OpenReview reviews"
+  ],
+  "reviewer_concern": [
+   "low_evidence: no reviewer evidence; reader concerns are separately recorded"
+  ],
+  "acceptance_signal": "low_evidence; decision copied as null from manifest; arXiv venue is not an acceptance decision",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Partition heterogeneous decisions by their representation and optimize each partition with a separately calibrated update constraint.",
+  "abstract_key_step": "Retain a reference trajectory, compare current outputs against its stored representations, and weight the partitions independently.",
+  "abstract_why_non_obvious": "Equal clipping intervals need not imply equal update sensitivity, and relaxing a normalized derivation can remove its probabilistic interpretation.",
+  "abstract_trigger_condition": "When mixed representations react differently to parameter changes, separate their update controls and verify that the implemented scores satisfy the derivation assumptions."
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.20328#s1",
+   "object": "中间图像监督与推理时连续canvas递归",
+   "information": "SFT可见Zebra-CoT中间真图、冻结SigLIP2特征和文本；推理仅见原始图像编码、问题与已有hidden/KV，不取得crop新像素、不渲染中间图。",
+   "operation": "把729 patch经2层cross-attention compressor压为N=16目标embeddings，注入canvas占位；CE+MSE联合训练且目标不detach；推理丢compressor，以前步hidden作为下步embedding直到end或预算。",
+   "output": "text–latent–text轨迹；空间工作记忆是内部表示，不是工具观测回执。",
+   "claimed_effect": "Table5 Text-only SFT→HyLaR-SFT V*69.11→80.63，四项均分66.55→72.58；§4.3同SFT-latent16 Ktest0→16 V*74.87→80.63。Table3 latency0.96×/memory0.98×是作者对long-CoT baseline报告，不能解释为无额外计算。",
+   "conditions": [
+    "需要中间图像轨迹冷启动；最终筛选96,193条",
+    "正文N=16与TableS3 latent size8、Table5 SFT8并存，配置必须按实验标注",
+    "预算长度和停止token的生成细节未完整展开"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.2 p6 Eq1",
+    "quote": "we do not detach the target embeddings"
+   },
+   "failure_boundary": "SFT超训练长度退化；latent不能恢复输入编码已丢失的像素；没有无latent格式合规率、停止校准或真实工具需求测试。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2604.20328#s2",
+   "object": "文本/连续latent两类位置的策略surrogate及clip",
+   "information": "同题G=8终答正确性/格式奖励、组内标准化优势、旧latent mode、当前hidden；无每latent步骤真值或同状态工具反事实。",
+   "operation": "把文本Z与latent S分开，采用L_tok+αL_lat和不同clip范围；文本sample-KL到reference，latent用方向相似度导出的旧mode约束；默认α=.5、clip_tok(.2,.28)、clip_lat(.05,.05)。",
+   "output": "两个位置通道共享backbone参数；不是两个独立policy、正交梯度、分动作因果信用或答对子集效率优势。",
+   "claimed_effect": "Table5同HyLaR-SFT8起点DePO V*83.77/HR4K75.00/HR8K70.50/MMVP73.67，Avg75.74；GRPO Avg72.23、DAPO72.25、VLPO72.65。Table7 clip_lat .2→.05 V*80.10→83.77。",
+   "conditions": [
+    "latent旧mode需按实际轨迹保存，current/old在同状态下比较",
+    "样本是动态过滤后的mixed正确组",
+    "Table6/7 evaluation latent32；完整loss聚合分母和dual-clip额外参数未报告"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.3 p8 Eq6",
+    "quote": "apply the dual-clip PPO surrogate independently to\neach set with separate clipping ranges"
+   },
+   "failure_boundary": "分位置不等于分参数；α=2效果下降；PPO ratio若在本项目更新中恒1，改clip不生效。HyLaR没有保护direct采样支撑。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2604.20328#s3",
+   "object": "latent回放方向的vMF理论模型及实际评分替代",
+   "information": "归一化推导看到当前单位方向、旧策略mode和共享κ；实现还保留模长，不是从vMF抽样的latent动作。",
+   "operation": "理论上用exp[κ(cos−1)]评估存储旧mode并以κA_D(κ)(1−cos)正则；实际将cos项替换为未归一化inner product，保留κ=.01全局尺度，承认丢失严格密度/KL解释。",
+   "output": "理论闭式KL与实际方向偏好的surrogate是两层对象；未提供足够实现细节以填写完整unnormalized ratio/正则公式。",
+   "claimed_effect": "TableS1 unnormalized相对normalized五项平均70.12→72.99（作者+2.87pp）；V*81.15→83.77，HR4K71.50→75，HR8K66.50→70.50。Table8 Gaussian→标作vMF方法V*83.25→83.77。",
+   "conditions": [
+    "精确vMF KL要求单位方向、相同κ、旧向量确为旧mode",
+    "实际未归一化scores不满足上述严格解释",
+    "没有公开实现运行/梯度实测，本记录只核论文"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Supplement §1.3 p22; TableS1 p23",
+    "quote": "the exact probabilistic\ninterpretation as a vMF density ratio or KL divergence no longer strictly holds"
+   },
+   "failure_boundary": "不能把TableS1主结果归因于精确KL保证或纯方向学习；规范化模式在θ=θold时的局部一阶梯度退化需审计，不能把未归一化行为由理论公式反推。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B/3B",
+   "kind": "method"
+  },
+  {
+   "name": "HyLaR-SFT / text-only SFT",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "DAPO",
+   "kind": "method"
+  },
+  {
+   "name": "VLPO (Monet)",
+   "kind": "method"
+  },
+  {
+   "name": "LVR / Laser / SkiLa / Monet",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes / DeepEyesV2 / Thyme / ZoomEye",
+   "kind": "method"
+  },
+  {
+   "name": "Zebra-CoT",
+   "kind": "dataset"
+  },
+  {
+   "name": "DeepEyes / Thyme / CodeDance RL mixture",
+   "kind": "dataset"
+  },
+  {
+   "name": "V* / HRBench4K/8K / MMVP / MMStar / SeedBench2Plus / BLINK / HallusionBench",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明确实际未归一化surrogate不再严格是vMF density或KL。",
+   "quote": "the exact probabilistic\ninterpretation as a vMF density ratio or KL divergence no longer strictly holds",
+   "locator": "Supplement §1.3 p22"
+  },
+  {
+   "text": "作者明确latent rollout确定性，不能把其ratio称标准随机动作重要性比。",
+   "quote": "This formulation should be interpreted as a deterministic, mode-referenced pol-\nicy update in latent space, rather than a standard importance-sampling ratio\nover sampled stochastic actions.",
+   "locator": "Supplement §1.1 p21"
+  },
+  {
+   "text": "作者报告SFT超长latent产生表示漂移/性能退化。",
+   "quote": "performance consistently degrades when Ktest signif-\nicantly exceeds Ktrain",
+   "locator": "§4.3 p12"
+  },
+  {
+   "text": "开放agent环境与长程latent planning仍是future work。",
+   "quote": "we aim to extend this hybrid RL paradigm to open-ended agentic environments",
+   "locator": "§5 p15"
+  }
+ ],
+ "question": {
+  "observed_failure": "同一HyLaR-SFT起点V*80.63在GRPO后78.53（−2.10pp）、DAPO79.06（−1.57pp）；SFT超训练latent长度退化（§4.3/Table5/Fig4）。",
+  "load_bearing_assumption": "一个共享clip与Euclidean latent评分足以优化混合分类token/连续表示；规范化理论还隐含单位范数，附录实现放松此假设。",
+  "scope": "Qwen2.5-VL视觉latent的SFT→RL与fine-grained/VQA评测；非多轮外部crop信用分配。",
+  "success_criterion": "同SFT起点与数据条件下提升V*/HR/MMVP，并在固定测试latent步数扫α/clip；检验normalized与unnormalized区别。",
+  "why_open": "纯SFT缺少reward优化；现有统一RL/VLPO在该表示与尺度下提升不足；作者没有闭合行为采样与打分surrogate的严格PG一致性。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "rather than a standard importance-sampling ratio\nover sampled stochastic actions.",
+   "locator": "Supplement §1.1 p21",
+   "how": "区分确定性mode相似度比与随机行为重要性比，也区分latent step与真实tool step。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "all other hyper-parameters fixed.",
+   "locator": "Table6 caption p14",
+   "how": "α单变量消融；但没有足够成本/多种子数据保证所有主基线严格公平。"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "we first design a cold-start SFT phase",
+   "locator": "§3.1 p5",
+   "how": "先教text/latent交替，再用RL；不是RL从零发现任意补看行为。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "we partition each response into the set of text positions Z\nand latent positions S",
+   "locator": "§3.3 p8",
+   "how": "按表示类别拆分优化权重、clip、正则。"
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "role": "supporting",
+   "quote": "the hidden state from the previous layer is recurrently fed back as the in-\nput embedding for the next step, bypassing the discrete token vocabulary.",
+   "locator": "§3.1 p5",
+   "how": "用内部连续递归代替外部中间图像/离散表达；不等价取得新像素。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L_{Canvas}=\\frac1{|\\mathcal S|}\\sum_{t\\in\\mathcal S}\\|\\mathbf h_t-\\mathbf e_{t+1}\\|_2^2,\\quad \\mathcal L_{SFT}=\\mathcal L_{CE}+\\lambda\\mathcal L_{Canvas}",
+    "locator": "§3.2 Eq1 p6 + following text",
+    "scope": "SFT; λ value not reported"
+   },
+   {
+    "latex": "\\pi_\\theta(a_t|s_t)=C_D(\\kappa)\\exp(\\kappa(\\mu_t^\\theta)^\\top\\tilde z_t),\\quad \\mu_t^\\theta=\\mathbf h_t^\\theta/\\|\\mathbf h_t^\\theta\\|_2",
+    "locator": "§3.3 Eq4 p7",
+    "scope": "unit-sphere theoretical density"
+   },
+   {
+    "latex": "r_t=\\exp\\{\\kappa[(\\mu_t^\\theta)^\\top\\tilde z_t-1]\\},\\quad \\tilde z_t=\\mu_t^{\\theta_{old}}",
+    "locator": "Supplement EqsS2–S6 pp20–21",
+    "scope": "deterministic mode-referenced theoretical ratio, not stochastic IS"
+   },
+   {
+    "latex": "\\mathcal L_{PPO}=\\mathcal L_{tok}(\\theta|\\mathcal Z;\\epsilon_l^{tok},\\epsilon_h^{tok})+\\alpha\\mathcal L_{lat}(\\theta|\\mathcal S;\\epsilon_l^{lat},\\epsilon_h^{lat})",
+    "locator": "Eq6 p8",
+    "scope": "loss sign/reduction and full dual-clip expansion unspecified"
+   },
+   {
+    "latex": "\\mathcal L_{KL}^{lat}=\\frac1{|\\mathcal S|}\\sum_{t\\in\\mathcal S}\\kappa A_D(\\kappa)[1-\\cos(\\mu_t^\\theta,\\tilde z_t)]",
+    "locator": "Eq7 p8; S12–S14 pp21–22",
+    "scope": "exact only under normalized equal-concentration vMF distributions; old-mode anchor"
+   },
+   {
+    "latex": "\\mathcal L_{total}=\\mathcal L_{PPO}+\\beta_{tok}\\mathcal L_{KL}^{tok}+\\beta_{lat}\\mathcal L_{KL}^{lat}",
+    "locator": "Eq8 p8",
+    "scope": "βtok=.01 βlat=.005"
+   },
+   {
+    "latex": "\\hat A_i=\\frac{r_i-\\operatorname{mean}_{j=1}^G r_j}{\\operatorname{std}_{j=1}^G r_j+\\epsilon}",
+    "locator": "EqS16 p25",
+    "scope": "GRPO outcome reward; G8"
+   },
+   {
+    "latex": "\\mathbf h_t^\\top\\tilde{\\mathbf z}_t=\\|\\mathbf h_t\\|_2\\|\\tilde{\\mathbf z}_t\\|_2\\cos(\\mathbf h_t,\\tilde{\\mathbf z}_t)",
+    "locator": "EqS15 p22",
+    "scope": "explains practical norm dependence; not a complete implementation objective"
+   }
+  ],
+  "signal_routing": "SFT文本CE；canvas位置MSE到LLM与未detach目标compressor，SigLIP2冻结。RL同轨迹组优势A_i路由到文本Z和latent S，但分权重/clip；文本KL到reference，latent anchor是旧rollout mode，不是同一个冻结reference。start/end控制token按文本类别理解，精确mask边界未列出。没有局部必要性/因果credit或效率奖励。",
+  "normalization": "mean+std within prompt group (EqS16); κ fixed in theoretical vMF; actual latent vectors unnormalized. Eq7 latent KL平均|S|；两项PPO token/sequence聚合分母未明确。α在标准化优势之外，不被reward std直接消除。",
+  "invariance": "不是PBRS，无策略最优性保持定理；分clip/α/KL改变surrogate更新且共享参数仍互扰。仅单位球面理论的方向score对向量正尺度不变；附录实际未归一化保留模长，取消该不变性和严格KL解释。",
+  "baseline_or_potential": "优势baseline为同题G=8 reward均值，没有critic/势函数/answer-now MC。旧latent确定性mode是几何锚点；文本KL reference与旧policy的关系未说明。accuracy judge为GPT-5，不是当前policy价值。",
+  "degenerate_cases": "总reward相同则A=0；accuracy全0/全1组被[.1,.9]过滤（即使format不同也按accuracy过滤）。p(canvas或direct)≈0时无强制双分支/entropy下界；G=1会被binary accuracy过滤。无latent时S为空，Eq7需空集guard，论文未写。理论单位方向且θ=θold时cos=1且对hidden的局部一阶导为0，ratio=1、KL=0；这是读者解析条件推论，不是实现实测。κ=.01理论ratio∈[exp(−.02),1]，0.05下裁剪不会触发；不可把这结论套到未归一化实现。",
+  "gradient_audit": "normalized旧mode固定、同状态重算时∂cos(h,z)/∂h在对齐点为0；若实际训练有先前minibatch变化、状态不一致或未归一化norm通道则此退化不适用。论文未给update epochs/minibatch顺序、BPTT截断、teacher-forcing旧latent还是递归current latent、cache/position一致性、old latent detach契约，故不补完整梯度公式。",
+  "implementation_equation": null,
+  "implementation_equation_unknown_reason": "补充§1.3只说把cos-based terms全换inner product，没有完整ratio分母、KL常数/平移或Wκ实现；不擅自把1替成旧范数平方或宣称已知exact objective。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table5同HyLaR-SFT8 checkpoint比较GRPO/DAPO/VLPO/DePO；Tables6–7固定其余超参测α和clip；TableS1规范化vs非规范化是直接区分主文理论与实践收益的关键对照；Fig4交叉train/test latent长度。",
+  "controls": [
+   "text-only SFT删除中间图像监督",
+   "latent α=0、.2、.3、.5、1、2",
+   "latent clip0/.01/.025/.05/.1/.2；text clip固定(.2,.28)",
+   "Gaussian σ10与vMF-label κ.01，作者称匹配initial gradient scale，没给梯度测量",
+   "TableS1 normalized vs unnormalized",
+   "无等延迟/等训练token多种子控制；无随机latent/注意力置换或真实像素干预"
+  ],
+  "negative_results": [
+   {
+    "text": "GRPO/DAPO从同SFT起点在V*掉到78.53/79.06，SFT80.63。",
+    "quote": "the\nmodels trained using GRPO and DAPO even showed a significant decline on the\nV* benchmark",
+    "locator": "§4.3 p13 Table5"
+   },
+   {
+    "text": "α2相对.5 V*83.77→80.63；共享参数latent梯度过强。",
+    "quote": "Increasing α to 2.0 also degrades results",
+    "locator": "§4.3 p14 Table6"
+   },
+   {
+    "text": "SFT超长latent退化，RL缓解并不是所有深度下单调提高。",
+    "quote": "SFT models suffer from “over-thinking” degra-\ndation.",
+    "locator": "§4.3 p12 Fig4"
+   },
+   {
+    "text": "3B V*低于Qwen2.5VL3B 2.10pp，反驳紧邻正文所有benchmark都优于骨干的概括。",
+    "quote": "HyLaR-3B (Ours)   68.58     62.88        61.25      63.00   54.20        59.21",
+    "locator": "Table4 p12"
+   }
+  ],
+  "seeds": "not reported; no seed count/error bars/CI or paired significance; cannot assert single seed without evidence",
+  "falsifier": "读者提出未执行：同数据/同起点/匹配训练token与测试latent预算，多种子若分clip不优于统一clip则机制证据削弱；若增益只在norm变化出现，不能归因严格vMF；若真实pixel证据缺失题latent无效，则不能替代补看。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B; 3B scalability variant; frozen SigLIP2 SFT target encoder",
+   "framework": "TRL for SFT; EasyR1 for RL",
+   "group_size": 8,
+   "rollouts": null,
+   "steps": null,
+   "kl": {
+    "text": 0.01,
+    "latent": 0.005,
+    "latent_anchor": "old-policy mode, practical unnormalized surrogate"
+   },
+   "temperature": 0.9,
+   "max_turns": null,
+   "max_response_length": 2048,
+   "rl_batch_size": 64,
+   "rl_learning_rate": 1e-06,
+   "sft_learning_rate": 1e-05,
+   "sft_epochs": 1,
+   "sft_per_gpu_batch": 1,
+   "sft_gradient_accumulation": 16,
+   "sft_samples": 96193,
+   "rl_samples": 48654,
+   "hardware": "8 NVIDIA H20 for SFT and RL",
+   "sft_max_pixels": "2000×28×28",
+   "rl_max_pixels": "4000×28×28",
+   "latent_length": "§3.2 N16; TableS3 SFT8; Table5 initial SFT8; Fig4 RL8/16/32 and test0–64; Tables6/7 eval32; Table3 efficiency16"
+  },
+  "cost": "Author Table3 on H20: HyLaR N16 latency0.96×, memory0.98× vs Qwen2.5VL7B long-CoT; DeepEyes2.28×/3.64×. Total training tokens, RL updates, epochs, total rollouts, retained/rejected rollout counts, wallclock/GPUh not reported; not inferred from dataset×epochs.",
+  "pitfalls": [
+   {
+    "text": "latent失配与递归累积，需分位置监控ratio与clip而不照搬同一范围。",
+    "quote": "small perturbations can alter future states",
+    "locator": "§3.3 p6"
+   },
+   {
+    "text": "实际unit normalization可能损伤预训练尺度，作者改未归一化；代价是概率/KL保证消失。",
+    "quote": "Forcing them onto the unit sphere may distort the scale\nstatistics inherited from pre-training and harm optimization stability.",
+    "locator": "Supplement §1.3 p22"
+   },
+   {
+    "text": "全同正确组没有GRPO正确性差异，作者动态丢弃；不应照搬到需要全对组效率信号的本课题。",
+    "quote": "we discard any rollout\ngroup whose mean accuracy falls outside the range [0.1, 0.9].",
+    "locator": "Supplement §2.2 p25"
+   }
+  ],
+  "code": "https://github.com/EthenCheng/HyLaR",
+  "code_inspected": false,
+  "lesson": "当不同位置用不同动作表示且回放是确定性mode时，应先核对真正的采样、评分、归一化和stop契约，再调clip；否则可以把有效的内积surrogate误报成无偏PG或精确KL，且分clip并不能恢复缺失的直答支撑。",
+  "latent_distribution_and_replay": "Appendix states no stochastic vMF latent sampling; stored old mode scored by both policies. Text temperature .9. Recurrent hidden replay/cache reconstitution and detach details unspecified. Norm relaxation actual κ=.01 base scale, not a calibrated concentration of a true normalized vMF behavior sampler.",
+  "stop_and_pixels": "§3.1 describes canvas_end or maximum canvas budget; vocabulary projection/end-check cadence and whether fixed K overrides early stop unspecified. Format reward1 requires think→canvas start/end→answer (alternation allowed); optional zero-canvas route not documented. No external crop/API or new pixels at inference. SFT target images exist only during cold start.",
+  "reward_unknowns": "accuracy binary via GPT-5; format binary; exact combined scalar coefficients/formula not specified; no cost reward. Source calls no stochastic latent sampling despite main text previously sampled phrasing."
+ },
+ "relevance": [
+  {
+   "problem": "P10",
+   "how": "分clip只在ratio离1时作用；本项目每批一次更新的ratio恒1必须先测，不能直接迁移效应。",
+   "strength": 2
+  },
+  {
+   "problem": "P24",
+   "how": "按位置调约束可做共享参数干扰对照，但未分参数/头也没状态级U_choice，不能说解决路由泄漏。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "cold-start中间图像对齐先造交替行为；不能证明RL可凭空学无latent/abstain/recover。",
+   "strength": 1
+  },
+  {
+   "problem": "P11",
+   "how": "轨迹优势仍广播到各类位置；不同clip不是逐次必要性信用。",
+   "strength": 1
+  },
+  {
+   "problem": "P33",
+   "how": "end token+硬预算有界，未研究剩余预算条件化停止或停止校准。",
+   "strength": 1
+  },
+  {
+   "problem": "P56",
+   "how": "确定性latent回放与实际未归一化score须对齐；可迁移行为/评分契约审计，但不等同本项目logit bias。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "仍mean+std，未解决crop代价被归一化抵消；loss外α仅是通道权重。",
+   "strength": 1
+  },
+  {
+   "problem": "P29",
+   "how": "分clip/小κ并不提供两个离散动作采样支撑保证。",
+   "strength": 1
+  }
+ ]
+}

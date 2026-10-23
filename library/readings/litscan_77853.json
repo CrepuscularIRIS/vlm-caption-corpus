@@ -1,0 +1,181 @@
+{
+ "paper_key": "litscan:77853",
+ "title": "ACTIVE-o3",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77853.txt",
+  "sections_read": [
+   "Abstract/贡献",
+   "§3–4 pp4–7 Eq1–3",
+   "Tables1–3/Fig3 p8",
+   "AppB/C pp12–13",
+   "AppD pp14–15",
+   "E.2 p16",
+   "Tables4/6–8/14–16 pp17–21"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "同MLLM不同prompt区分sensing区域提案和task执行，以固定K候选预算训练区域选择，组合几何heuristic与下游task反馈。",
+  "why_non_obvious": "regionproposal不需人标最佳crop，但reward仍用GT检测框/分割mask；不能称完全无标注。",
+  "trigger_condition": "低分辨率全局输入限制小/密目标任务，base有指令/grounding能力。",
+  "contribution_type": "固定预算主动感知RL+benchmark",
+  "abstract_strategy": "把观察选择与任务输出分角色，评价选区下游效用。",
+  "abstract_trigger_condition": "可并行评多个高分辨率局部观察且下游metric可得。",
+  "abstract_key_step": "T=1输出最多3regions，MO生成response得GRPO组均值/std优势。",
+  "abstract_why_non_obvious": "角色解耦不等于参数解耦：正文固定MA为优化抽象，E.2明确共享policy backbone。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77853#s1",
+   "object": "一次生成的K个区域集合",
+   "information": "MO全局图shortside1024；MA每crop840²；GTbox/mask用于reward；同Qwenbackbone不同prompt",
+   "operation": "GRPO优化MO response，heuristic=format+不重叠+面积+coverage，taskfeedback来自MA检测AP+AR或分割IoU；固定感知预算。",
+   "claimed_effect": "LVISdense小目标AP1.6→4.3/AR2.0→5.5；SODA-A AP.7→9.2；combinedreward APs4.4vs task3.6/heuristic3.0。",
+   "conditions": [
+    "Qwen2.5-VL7B sharedpolicy",
+    "G8、KL.04、T1并行最多3区域；分割评测oracleclick并测至3zoom预算"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table15 p21",
+    "quote": "Combined Reward    4.4   5.8    15.4     20.2   19.1 27.4"
+   },
+   "failure_boundary": "MA执行非MO动作valueoracle；冻结MA参数未证，任务reward好坏依赖MA能力。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P48",
+   "how": "小/密目标与分割budget基准补任务外验证。",
+   "strength": 3
+  },
+  {
+   "problem": "P43",
+   "how": "GT下游检测/分割监督选区效用。",
+   "strength": 3
+  },
+  {
+   "problem": "P65",
+   "how": "固定预算选择有价值区域，不评是否本来无需crop。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen direct/CoT；DirectRFT",
+   "kind": "baseline"
+  },
+  {
+   "name": "heuristic/task/combined reward",
+   "kind": "ablation"
+  },
+  {
+   "name": "replace MA with GDINO at test",
+   "kind": "transfer"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "领域任务执行器弱会使taskreward估错；动作只能三region且无旋转。",
+   "locator": "AppD.1 p15",
+   "quote": "task-aware reward estimation due to the limited capability of the task model."
+  }
+ ],
+ "question": {
+  "observed_failure": "未训练CoT分割budget0 IoU.796→budget3 .561；ACTIVE到.863，但使用oracleclick隔离sensing。",
+  "load_bearing_assumption": "MA足够强，GT下游metric能评价MO选区价值且heuristic稳定探索。",
+  "scope": "静态2D小目标grounding/segmentation",
+  "success_criterion": "同感知预算AP/AR或IoU；独立reported latency而非用轮数替代。",
+  "why_open": "无zoom监督时直接全图RL受分辨率限制，但crop不能只按面积覆盖。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "AppD.2/segmentation oracle"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables6/15"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Tables7–8"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_n=(r_n-mean(r_{1:N}))/std(r_{1:N});\\quad J=E[N^{-1}\\sum_n\\min(w_nA_n,clip(w_n)A_n)-\\beta KL]",
+    "locator": "Eq2–3 p6"
+   },
+   {
+    "latex": "R_h=R_{format}+R_{nooverlap}+R_{area}+R_{coverage};\\quad R_{detect}=AP_{IoU=.5}+AR_{IoU=.5}",
+    "locator": "AppB.5/C p13"
+   }
+  ],
+  "signal_routing": "Eq2在MO完整y(think+proposal)层写ratio/adv；MA前向生成任务输出作reward，未说明MA输出是否另受梯度/冻结snapshot，不能凭固定task措辞断言MA权重冻结；token mask/长度细节未列。",
+  "normalization": "mean+std",
+  "invariance": "同组reward正仿射尺度会std抵消(零方差例外)；四heuristic内部weight全1，总heuristic/task相对组合系数未在已读段落明确。一般cost目标实验被固定Kbudget替代，非PBRS/显式成本最小化。",
+  "baseline_or_potential": "组内mean；非no-crop反事实baseline。",
+  "degenerate_cases": "所有proposal同分则A无差异；格式/面积binary奖励饱和；coverageGT不是无标注必要性；MA领域不熟可误导选区；共享参数更新可能同时改变MA行为，未做冻结身份核实。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table15组合reward；Table6 DirectRFT；Table16 generalQA对照；替换GDINO测跨taskmodule适配。",
+  "negative_results": [
+   {
+    "text": "DirectRFT LVISdense APl23.4/ARl35.6高于ACTIVE20.9/33.3，ARm20.0>19.7；优势集中small。",
+    "locator": "Table6"
+   },
+   {
+    "text": "Heuristic-only MMBench78.9低于base80.1；full仅三通用指标提升，不构成普遍非劣保证。",
+    "locator": "Table16"
+   }
+  ],
+  "seeds": "default+0/1/2四run：LVISdense APs4.25±.10，ARs5.50±.08；Table4",
+  "falsifier": "proposed：固定冻结MA快照和共享权重版本对照；相同K随机/均匀crop以及no-crop分层，测MO增益是否来自执行器变化。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B sharedpolicy；testGDINO；segoracleclick+SAM",
+   "framework": "GRPO/DeepSpeedZeRO3",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": 0.04
+  },
+  "cost": "8×80–90GBGPU通常<24h LR1e-6；训练step20.6→24.1s(+17%)。4090部署仅HTTP：CoT43calls210.08s vsACTIVE48calls92.31s，排除I/O；inference/call>HTTPmean/call提示计时不能相加。",
+  "pitfalls": [
+   {
+    "text": "nonoverlap pairIoU≤.3；area1%–50%；coverage有多种模式/阈值未完全确定，勿假定单公式。",
+    "locator": "AppB"
+   },
+   {
+    "text": "T1是静态2D提案批次，分割另报最多3zoom评测；一次MO前向不等于整个pipeline一次前向。",
+    "locator": "§4.1/§5.4"
+   }
+  ],
+  "code": null,
+  "lesson": "先把角色、参数身份、梯度对象分别说明；固定budget感知提升不自动说明学会少调用或stop。"
+ }
+}

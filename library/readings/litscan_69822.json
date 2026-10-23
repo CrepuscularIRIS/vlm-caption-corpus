@@ -1,0 +1,52 @@
+{
+ "paper_key": "litscan:69822",
+ "title": "Zebra-CoT",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_69822.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1 curation",
+   "§4 scaffolding/text-only ablation",
+   "§5 Table2/training",
+   "§6 future directions"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "跨18域182384条交错文本/生成图像轨迹，以原生图像生成SFT种视觉思考行为。",
+  "key_step": "程序渲染/模拟加Gemini丰富逻辑，Bagel补vision-start loss让模型能自主切换生成图像。",
+  "why_non_obvious": "视觉起始token未训练会使原有双模态模型不能原生交错生成。",
+  "trigger_condition": "When a unified model cannot emit interleaved visual traces, supervise modality-switch tokens and coherent visual examples.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先补行为接口再谈RL优化。",
+  "abstract_trigger_condition": "When desired actions are outside learned support, expose them in supervised traces."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:69822#s1",
+   "object": "统一生成模型的视觉CoT SFT",
+   "information": "程序/模拟/前沿模型合成轨迹；scaffolding测试给前1/2个GT多模态步骤",
+   "operation": "Anole端到端SFT；Bagel新增vision-start token loss与图文切换",
+   "claimed_effect": "Anole自建测试4.2→16.9；VisuLogic8.5→21.8；Vstar23.6→27.2",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5/Table2",
+    "quote": "we revise the training loop to include a loss term at the <|vision start|>"
+   },
+   "failure_boundary": "生成辅助图像非真实环境crop观测；scaffolding额外给正确步骤，不是自主推理增益。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 1,
+   "how": "支持SFT种行为的原则，但Qwen3VL crop并无原生图像生成接口，具体操作不同。"
+  }
+ ]
+}

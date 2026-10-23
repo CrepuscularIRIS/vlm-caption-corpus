@@ -1,0 +1,195 @@
+{
+ "paper_key": "litscan:63126",
+ "title": "CodeV: Code with Images for Faithful Visual Reasoning via Tool-Aware Policy Optimization",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_63126.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§2–4 Eq1–6",
+   "§5 Tables1–2 Figures2,4–6",
+   "Limitations and Future Work"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把工具输出证据相关性评分加入终答reward，避免只奖励工具发生；Python图像操作经sandbox回流。",
+  "key_step": "Qwen2.5VL32B仅看问题+tooloutput+metadata，不看thought/code，逐tool评分后取平均，加终答reward再GRPO均值baseline。",
+  "why_non_obvious": "可观察的输出比语言理由更易核，但contains-target是相关性proxy，不是必要性或因果依赖；逐toolreward最终汇总成trajectory优势。",
+  "trigger_condition": "When correct answers conceal irrelevant visual actions, score tool outputs directly and separately audit whether evidence is actually used.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以可观察证据替代过程文字评分",
+  "abstract_trigger_condition": "When correct answers conceal irrelevant visual actions, score tool outputs directly and separately audit whether evidence is actually used.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "Qwen2.5VL32B仅看问题+tooloutput+metadata，不看thought/code，逐tool评分后取平均，加终答reward再GRPO均值baseline。",
+  "abstract_why_non_obvious": "可观察的输出比语言理由更易核，但contains-target是相关性proxy，不是必要性或因果依赖；逐toolreward最终汇总成trajectory优势。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:63126#s1",
+   "object": "工具输出奖励",
+   "information": "Q+crop/其描述/坐标统计给judge；不看CoT/code；终答另判",
+   "operation": "rtool=逐code工具评分均值，R=λacc racc+λtool rtool，|λtool|<|λacc|；基于R组均值优势广播",
+   "claimed_effect": "reasoning54.2/perception69.7 vs accuracy-only51.2/67.5；V*84.8。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq5–6; §5.4 Table2",
+    "quote": "Accuracy only 51.2 67.5"
+   },
+   "failure_boundary": "实际λ、评分细则/空tool集合未见；“过程级”不代表独立step advantage或potential。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:63126#s2",
+   "object": "faithfulness评测",
+   "information": "GPT4o看原问题+每个crop，至少一个含目标则判faithful；条件在终答正确",
+   "operation": "将正确终答拆成目标crop存在/不存在，不审CoT",
+   "claimed_effect": "正确答案中DeepEyes57%、PixelReasoner43%被判faithful；CodeV相对约1.3–2倍。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3; §5.3",
+    "quote": "for DeepEyes and 43% for Pixel-Reasoner)."
+   },
+   "failure_boundary": "任意一个目标crop即可通过，多目标可只含一个；不证明学生读懂或使用，不是必要性gold。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 3,
+   "how": "直接关注错误crop仍答对及外部证据评分边界。"
+  },
+  {
+   "problem": "P36",
+   "strength": 2,
+   "how": "judge仅看tooloutput仍需当前policy可读性验证。"
+  },
+  {
+   "problem": "P44",
+   "strength": 2,
+   "how": "trajectory reward与stepcredit不能混同。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Accuracy-only reward",
+   "kind": "method"
+  },
+  {
+   "name": "Accuracy+consistency",
+   "kind": "method"
+  },
+  {
+   "name": "GPT5nano judge",
+   "kind": "method"
+  },
+  {
+   "name": "Zero-RL",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme/DeepEyes/PixelReasoner",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "静态judge带额外部署成本。",
+   "quote": "First, TAPO relies on a static judge model,",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "正确答案仅57%/43%有目标crop；新增faithfulness奖励提高分数但不证明模型依赖crop。",
+  "load_bearing_assumption": "judge判目标存在足以指导当前policy证据使用与必要性。",
+  "scope": "已有crop完成轨迹离线诊断，保留direct分支。",
+  "success_criterion": "matched-random crop替换降低正确率/目标margin且减少错误引用，direct非劣。",
+  "why_open": "主文评估any-target与正确条件比例；所指tool perturbation附录本地缺失。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§3先测正确答案中工具输出不忠实，再设计TAPO"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "§4 用仅工具返回可见的VLM judge生成无GT框的tool-output signal"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=lambda_acc*r_acc+lambda_tool*(1/|T_tool|)sum_{t in T_tool}r_tool,t; A_t=R-mean_group(R)",
+    "locator": "Eq5–6;§4.3"
+   },
+   {
+    "latex": "ratio_t=pi_theta(a_t|s_t)/pi_ref(a_t|s_t)",
+    "locator": "Eq3 (printed reference denominator)"
+   }
+  ],
+  "signal_routing": "同一trajectory advantage广播所有think/code/answer生成token；逐工具评分是reward来源不是独立step优势。tooloutput mask精确实现未知；Eq3分母ref与通常oldpolicy不同，正文SFTref冻结，不能自动改写。",
+  "normalization": "tool分数按工具次数平均；正文组mean-only无std，Figure3称normalize但未补std。token/trajectory averaging实施未给。",
+  "invariance": "非PBRS；reward含正证据分改变策略目标，不保证最优答题策略不变。均值baseline取消公共平移，不取消scale。",
+  "baseline_or_potential": "含self的组均值，非LOO；无actioncounterfactual。",
+  "degenerate_cases": "无工具|T|0公式未定义，文字说不需工具任务rtool默认近0；全同R组A0；多次同好crop的均值不增长但any-crop评测可被多次尝试利用；相关证据未必足够/被使用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 reward消融、Table1 SFT/ZeroRL/TAPO；主文提到扰动实验但本地无附录。",
+  "negative_results": [
+   {
+    "text": "accuracy+consistency reasoning50.4低于accuracy-only51.2，非所有过程奖励有益。",
+    "locator": "Table2"
+   },
+   {
+    "text": "ZeroRL提高平均分但工具使用塌到纯文字。",
+    "locator": "§5.4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "保持目标包含但破坏有效细节，或random matched crop仍同样答对/奖励，则contains-target不能识别真实依赖。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B policy; Qwen2.5VL32B reward judge",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8H200；SFT255 GPUh、RL288 GPUh；batch256/200steps/temp1/lr1e-6。",
+  "pitfalls": [
+   {
+    "text": "SFT含direct-answer及多步图操作；任务无视觉search时toolreward近0并惩罚明显错误；不能泛化成所有crop正奖励。",
+    "locator": "§4.3;§5.1"
+   },
+   {
+    "text": "λtool<λacc不保证wrong+tool不会压过correct−tool，需reward范围，主文未给。",
+    "locator": "§4.3"
+   }
+  ],
+  "code": "https://github.com/RenlyH/CodeV (not inspected)",
+  "lesson": "当用证据judge奖励工具时，应同时记录当前policy读证据后的变化，并明确空tool分支、分量范围和gradient路由。"
+ }
+}

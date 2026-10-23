@@ -1,0 +1,289 @@
+{
+ "paper_key": "2511.01833",
+ "title": "TIR-Bench: A Comprehensive Benchmark for Agentic Thinking-with-Images Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.01833.pdf",
+  "version": "v2",
+  "version_observed": "arXiv:2511.01833v2 [cs.CV] 5 Nov 2025, PDF p.1",
+  "version_url": "https://arxiv.org/abs/2511.01833v2",
+  "sections_read": [
+   "Abstract; 1 Introduction (pp.1–2)",
+   "2 Related Works (p.3)",
+   "3.1 Task Design; 3.2 Data Collection; 3.3 Benchmark Summary (pp.3–6)",
+   "4.1 Experiment Setup; 4.2 Experimental Results; Table 2 (pp.6–7)",
+   "4.3 Qualitative Analysis; Figs.4–5 (pp.7–9)",
+   "4.4 Function Call Experiment Results; Fig.3 (p.8)",
+   "4.5 Fine-Tuning Comparison Experiment Results; Fig.6 (p.9)",
+   "5 Conclusion; References (pp.10–12)",
+   "Appendix A LLM use; B Detailed Task Design and Collection (pp.13–14)",
+   "Appendix C.1–C.13 task examples, Figs.8–20 (pp.15–21, visually inspected)",
+   "Appendix D.1–D.2 Detailed Prompts; Table 3 (pp.21–22)",
+   "Appendix E Implementation Details (p.22)",
+   "Appendix F Examples of Model Responses, Figs.21–25 (pp.23–27)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "构建覆盖13类视觉操作的评测，比较有/无工具模型；另以旋转任务分离工具接口、提示和训练方式的影响。作者主张工具操作必要，但该必要性不是逐题因果证明。",
+  "key_step": "将视觉操作意图变成可评分任务：人工标注、程序生成/变换图像并保留答案；用GPT-4o抽取终答后计算准确率或列表IoU。旋转试验再比较预定义函数和生成代码、三档提示；OCR试点教模型先旋转再读。",
+  "why_non_obvious": "只测高分辨率搜索会漏掉旋转、亮度、绘线、重排等能力；提供工具本身也不保证模型调用或获得收益。",
+  "trigger_condition": "When static-input evaluations miss manipulation-dependent behavior, build tasks with verifiable transformed-image answers and compare tool interfaces, prompts, and supervised trajectories to expose the missing capability.",
+  "reviewer_praise": [
+   "low_evidence: manifest未提供OpenReview审稿来源。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 未获取审稿，不将读者局限判断冒充审稿意见。"
+  ],
+  "acceptance_signal": "low_evidence: manifest venue=arXiv, decision=null；本地PDF为Preprint。",
+  "contribution_type": "benchmark",
+  "abstract_strategy": "扩展测量对象，构建需要中间状态变换且可核验终值的任务。",
+  "abstract_key_step": "保留变换前后的状态和目标，改变接口与提示，并对比直接映射和显式操作示范。",
+  "abstract_why_non_obvious": "观察输入与主动变换输入是不同能力；可访问操作不等于会正确使用操作。",
+  "abstract_trigger_condition": "When an evaluation omits active transformations, construct verifiable transformation tasks and vary access and guidance to distinguish observed competence from interface limitations."
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.01833#s1",
+   "object": "13-task manipulation-oriented benchmark and answer-scoring pipeline",
+   "information": "构造者看到源图、程序变换/分割真值或人工标注；被测模型看到图像、题目及各自工具接口，不得到GT。评分器GPT-4o看到生成答案以抽取终答；正文没有给抽取提示、逐题工具必要性真值或过程真实性判定。",
+   "operation": "按视觉操作挑选/生成题目和GT，零样本运行有/无工具模型，抽取终答后对选择/短答精确比对，对列表型任务计算IoU。",
+   "output": "1215题、13任务的分任务和总分表；22模型比较。",
+   "claimed_effect": "Table 2: o3-TU All 46.0 vs o3 26.9；o4-mini-TU 37.5 vs 21.2；PyVision 31.8 vs GPT-4.1 18.8。是作者报告，不是本次复现。",
+   "conditions": [
+    "题目答案及图像变换正确；抽取器可靠；各工具环境和可用模型需清晰区分",
+    "Visual Search含32个HR-Bench题，评测集之间不能默认独立",
+    "列表IoU的元素/位置定义、无效输出规则及All聚合公式需实现核查"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.4.1 Evaluation, p.6",
+    "quote": "For multiple-choice and short-form answers, we compare the extracted value directly against the\nground-truth to calculate accuracy; for grounding type problems such as Jigsaw Game and Spot the\nDifference with list type answer, we calculate the intersection over union (IoU)."
+   },
+   "failure_boundary": "工具收益不均匀；Proportion下降，Jigsaw仍低。作者以人工直觉要求工具，非形式证明每题不能直答。工具开关对比未等算力且API路径不同；不能证明每次调用必要。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2511.01833#s2",
+   "object": "Rotation Game中的工具调用接口与提示",
+   "information": "模型获得旋转图、选项、预定义rotate函数或代码生成通道及返回图；prompt3暴露按选项枚举的搜索策略，非无提示发现。",
+   "operation": "交叉比较预定义旋转函数/完整代码生成与三档指导提示；循环返回旋转结果，直至模型直接终答。",
+   "output": "Fig.3准确率及Table 3平均调用次数。",
+   "claimed_effect": "作者报告大多数模型prompt3更准；Table 3中GPT-4.1函数调用次数0.00→1.15→4.68，o3为0.33→1.57→3.59。图中准确率无精确数据标签，不编精确数值。",
+   "conditions": [
+    "能执行旋转并把新图返回上下文",
+    "可访问选项角度；提示3给出更强策略指导",
+    "未报告统一最大调用数、token或时间预算"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.4.4 Results, p.8; Fig.3; Table 3, p.22",
+    "quote": "The prompt strategy hinting to check each degree choice\n(prompt 3) works best. The performance of most models increases with prompt 3 compared to the\nother two prompts."
+   },
+   "failure_boundary": "调用增加不能单独证明效率更好；Gemini-2.5-flash三个提示下都不写代码。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2511.01833#s3",
+   "object": "Qwen2.5-VL-7B旋转OCR的监督训练轨迹",
+   "information": "训练者知道旋转角度、还原图及OCR文本；模型先看到旋转图，输出角度后再收到恢复图。没有当前策略分叉估值或RL奖励。",
+   "operation": "用1k/5k/10k/15k旋转OCR样本比较直接监督终答和先监督角度、拼接还原图、再监督OCR的工具轨迹；各全参数训练5epochs。",
+   "output": "Fig.6损失曲线及60题Rotated OCR测试准确率曲线。",
+   "claimed_effect": "作者报告工具SFT优于直接SFT并随数据量增加改善。Fig.6目测近似：工具约73%→85%，直接约43–45%；这是图读数，非作者精确表格，不能据此作显著性判断。",
+   "conditions": [
+    "有可逆的旋转操作及角度监督",
+    "只有旋转OCR任务、单一7B模型；两臂同epochs但训练token/视觉观测量不同",
+    "测试60题，种子和区间未报告"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.4.5 Setup, p.9",
+    "quote": "An agentic approach where\nthe model first learns to output the correct rotation degree. The restored image is then concatenated\nwith the original context, and the model is subsequently trained to read the text from this corrected\nvisual input."
+   },
+   "failure_boundary": "不证明RL能发明缺失动作，不学习何时无需工具；论文对直接SFT遗忘的解释是推测，未报告通用能力遗忘实验。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Random Guess",
+   "kind": "method"
+  },
+  {
+   "name": "o3 / o3-TU (code interpreter)",
+   "kind": "method"
+  },
+  {
+   "name": "o4-mini / o4-mini-TU",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4.1 / PyVision",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL, LLaVA, InternVL3",
+   "kind": "method"
+  },
+  {
+   "name": "Direct SFT (rotated OCR)",
+   "kind": "method"
+  },
+  {
+   "name": "HR-Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "V* Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "OCRBench / OCRDataset",
+   "kind": "dataset"
+  },
+  {
+   "name": "RefCOCO",
+   "kind": "dataset"
+  },
+  {
+   "name": "accuracy / list IoU",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "o3-TU不能直接调用分割模型；需要该能力的Proportion任务下降。",
+   "quote": "However, the current o3-TU model can only write executable\ncode to manipulate images, but lacks the capability to call segmentation models specifically.",
+   "locator": "Sec.4.2, p.7"
+  },
+  {
+   "text": "定性轨迹在ChatGPT网页重新运行，不是API定量运行中同一条轨迹。",
+   "quote": "Since the responses from the OpenAI API contain no reasoning process, we re-ran\nthe questions in the web-based ChatGPT interface and analyzed the responses.",
+   "locator": "Sec.4.3, p.7"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table 2最佳非工具模型Gemini-2.5-Pro为28.9，o3无工具26.9，有工具46.0；工具o3仍仅46.0，Proportion从34.2降至31.7。",
+  "load_bearing_assumption": "仅测静态视觉问答或定位裁剪足以代表广义thinking-with-images能力；本文扩大操作覆盖来挑战该测量前提。",
+  "scope": "13任务评测，附旋转函数调用和旋转OCR监督训练两个小试点。",
+  "success_criterion": "分任务准确率/列表IoU及有/无工具差异；旋转试验还报调用次数。未预注册非劣、效率或统计显著性标准。",
+  "why_open": "V*和HR-Bench主要测高分辨率搜索；不能覆盖旋转、增强、重排、绘图等操作。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "quote": "Unlike previous benchmarks focusing solely\non visual search problems, TIR-Bench incorporates a diverse set of 13 tasks that require a wide range\nof tool-based interactions, such as zooming, rotating, increasing image contrast, adding auxiliary\nlines, and others to assess a model’s tool integrated reasoning capabilities.",
+   "locator": "Sec.1, p.2"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "An agentic approach where\nthe model first learns to output the correct rotation degree. The restored image is then concatenated\nwith the original context, and the model is subsequently trained to read the text from this corrected\nvisual input.",
+   "locator": "Sec.4.5, p.9"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "role": "primary",
+   "quote": "Additionally, we tested three prompt variations to assess the impact of guidance: (1) a baseline\nprompt containing only the question; (2) a prompt including a hint to leverage the rotation function;\nand (3) a more explicit prompt instructing the model to systematically test each degree from the\nanswer choices.",
+   "locator": "Sec.4.4 Set-up, p.8"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "主贡献是benchmark，无RL奖励/优势和token信用路由。Sec.4.5 SFT先学旋转角度，再收到恢复图并学OCR文本；原文未给训练损失公式、token mask、两段权重或图像token处理，不推测。",
+  "normalization": "n/a: 无GRPO/RLOO、组内均值/std、leave-one-out。评测对标量答案作精确比对，对列表作IoU；All聚合权重和IoU实现未明确。",
+  "invariance": "无势函数/最优策略不变定理。旋转还原保持OCR语义标签（依赖标注正确）但改变观测及监督序列；工具开关改变可行动作/计算预算。",
+  "baseline_or_potential": "n/a: 无critic/价值基线/势函数。比较基线是静态模型、随机猜测、Direct SFT。GPT-4o负责答案抽取，不是策略需求估计器。",
+  "degenerate_cases": "p≈0/1、全对/全错组不适用，无policy-gradient组采样。模型不调用工具时退化成静态回答；Gemini-2.5-flash不写代码是实际失败。工具调用上限/超时、抽取失败、空列表IoU、Jigsaw排列位置敏感性均未报告，不能补成实现事实。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "作者对同名o3/o4-mini有无解释器、GPT-4.1/PyVision进行对比，旋转试验交叉工具接口和提示，OCR试点同模型不同数据规模比较直接/工具SFT。能揭示关联与接口收益，但额外计算、返回图、监督长度及API路径未完全隔离。",
+  "controls": [
+   "reported: Random Guess和非工具模型；Table 2",
+   "reported: Rotation Game两种接口×三档提示；Fig.3/Table 3",
+   "reported: 同Qwen2.5-VL-7B、5epochs、1k/5k/10k/15k数据规模的Direct SFT对照",
+   "not reported: 等token/等墙钟工具对照、假工具/置换返回图、同算力非工具推理、答案抽取器人工一致率",
+   "not reported: 训练测试源图去重实测、逐题工具必要性或输出过程因果归因"
+  ],
+  "negative_results": [
+   {
+    "text": "工具可能降低任务表现：Proportion 34.2→31.7。",
+    "quote": "On\nProportion VQA, performance surprisingly decreases from 34.2% to 31.7%.",
+    "locator": "Sec.4.2, p.7; Table 2"
+   },
+   {
+    "text": "提供代码工具和更强提示未令Gemini-2.5-flash产生代码。",
+    "quote": "Since Gemini-2.5-flash does not write code for all three prompts, we\ndo not report it for writing code.",
+    "locator": "Sec.4.4, p.8"
+   },
+   {
+    "text": "直接SFT的数据扩张没有对应的准确率增长趋势。",
+    "quote": "For Tool-use SFT,\nperformance scales positively with data size, whereas Direct SFT shows no such trend.",
+    "locator": "Sec.4.5, p.9; Fig.6b"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出、未执行：在相同模型版本、视觉输入、token/时间预算和人工核验评分下，若有工具优势消失，则削弱工具操作本身产生增益的解释；若正确图与置换工具返回图同效，则削弱视觉返回被利用的解释；多种子等监督预算的SFT差消失会削弱轨迹教学归因。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "评测22个模型/agent配置，主SFT试点Qwen2.5-VL-7B全参数微调5epochs",
+   "framework": null,
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": 0,
+   "max_turns": null,
+   "temperature_scope": "App.E仅明确open models temperature=0, do_sample=False, max_new_tokens=2048；不可推广到闭源API或SFT。"
+  },
+  "cost": "NVIDIA A100用于open models；SFT 1k/5k/10k/15k数据各5epochs；函数调用成本见Table 3。GPU小时、训练token、精确更新步数、API费用、统一推理预算未报告；Fig.6a显示迭代横轴但不把图端点推断成全部配置步数。",
+  "pitfalls": [
+   {
+    "text": "工具API定量评测不输出推理，因此定性解释改用网页重跑，二者必须分别归档。",
+    "quote": "Since the responses from the OpenAI API contain no reasoning process, we re-ran\nthe questions in the web-based ChatGPT interface and analyzed the responses.",
+    "locator": "Sec.4.3, p.7"
+   }
+  ],
+  "code": "https://github.com/agents-x-project/TIR-Bench",
+  "lesson": "当基准要求工具操作时，接口、提示和返回图处理会影响结果，应同时记录终答分数、调用次数、可用工具和执行预算；调用更多本身不是效率提升。"
+ },
+ "relevance": [
+  {
+   "problem": "P48",
+   "how": "提供额外的多工具评测任务；Visual Search/Instrument可考虑用于crop协议，其余旋转、重排等需新工具，不能把13任务分数直接当现有crop策略评价。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "旋转OCR试点用显式工具轨迹监督动作再读图，支持先种行为的可迁移构造原则；未测RL行为发现或保持。",
+   "strength": 2
+  },
+  {
+   "problem": "P49",
+   "how": "Visual Search复用32个HR-Bench题，其他任务复用RefCOCO/OCRBench/ColorBench；新增QA不证明源图无泄漏。",
+   "strength": 1
+  },
+  {
+   "problem": "P53",
+   "how": "报告多家族尺度，但并非在各家族复现同一训练/停止机制。",
+   "strength": 1
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": []
+}

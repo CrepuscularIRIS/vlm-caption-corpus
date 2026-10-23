@@ -1,0 +1,167 @@
+{
+ "paper_key": "litscan:2420",
+ "title": "MMHalSnowball",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2420.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§2构造/评价 pp3–7（p4图中文字未逐读）",
+   "§3 Eqs6–10/Table3 pp7–9",
+   "§6局限 p10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "构造同图同问的错误历史、正确历史、无关历史对照；用去历史视觉预测与原预测的logits自适应混合以抑制错误历史。",
+  "key_step": "以有图无历史与无图无历史的JSD估计视觉依赖，控制去历史分支权重。",
+  "why_non_obvious": "直接去掉历史能修复视觉错误但破坏需要历史的问答；不同来源信息要按query依赖调权。",
+  "trigger_condition": "When prior generated text overrides visible evidence, blend a history-free visual prediction according to image dependence.",
+  "contribution_type": "diagnostic_and_methodological",
+  "abstract_strategy": "Contrast information sources to adapt how strongly a contaminated context influences prediction.",
+  "abstract_trigger_condition": "When memory may be wrong but still necessary, retain it selectively using an independent source.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "null decision;无reviews",
+  "abstract_key_step": "Estimate evidence sensitivity, then mix prediction scores.",
+  "abstract_why_non_obvious": "Discarding context fixes one failure while creating another."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2420#s1",
+   "object": "受错误caption干扰的输出分布",
+   "information": "同一当前模型的三个条件分布：图+历史+query、图+query、query；生成prefix保持共享。",
+   "operation": "逐token计算JSD(图+query,query)，alpha=min(2JSD,1)，将去历史和原历史logits加权再softmax；无训练。",
+   "claimed_effect": "LLaVA1.5 HalluConv14.96→32.84、FR78.21→53.52；WPI上下文任务92.84→91.54。",
+   "conditions": [
+    "可取三路logits",
+    "当前query能在去历史条件下解释"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p8",
+    "quote": "32.84 ↑ 17.88"
+   },
+   "failure_boundary": "JSD不是正确性/工具必要性；指代依赖历史时去历史分支含义改变。WPI简单数字回忆不代表全部多轮能力。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "错误caption可因果干扰后续答案，配对历史干预直接相关。",
+   "strength": 3
+  },
+  {
+   "problem": "P27",
+   "how": "修正输出但未训练显式改口，不能等同恢复行为。",
+   "strength": 2
+  },
+  {
+   "problem": "P41",
+   "how": "去历史改变信息集，可审计caption影响。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "普通解码；提醒看图prompt；VCD；固定alpha",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "主要使用合成幻觉历史，非各模型自然生成完整轨迹。",
+   "locator": "§6 p10",
+   "quote": "the scenarios we focus on are still"
+  }
+ ],
+ "question": {
+  "observed_failure": "LLaVA7B格式prompt Clean71.24→Hallu14.96；正确历史89.28，无关历史65.35。",
+  "load_bearing_assumption": "原图仍在上下文便足以纠正已有文字错误。",
+  "scope": "GQA/VisualGenome4973题、两轮错误图像描述+问题。",
+  "success_criterion": "降低从原本正确到错误的flip，同时维持依赖历史任务。",
+  "why_open": "单轮幻觉测量遗漏已有错误文字对后续决策影响。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§2.8 FactConv/IrrConv对照"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§2.7按四类幻觉拆分"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§2.8"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "p_{RVD}=softmax[\\alpha z_\\theta(v,x,y_{<t})+(1-\\alpha)z_\\theta(v,h,x,y_{<t})]",
+    "locator": "Eq8 p7"
+   },
+   {
+    "latex": "\\tau=JSD(p_\\theta(\\cdot|v,x,y_{<t}),p_\\theta(\\cdot|x,y_{<t}));\\alpha=\\min(\\beta\\tau,1),\\beta=2",
+    "locator": "Eqs9–10 p8"
+   }
+  ],
+  "signal_routing": "输出token解码分布被改写；不是奖励/优势、也没有只针对crop/action的mask。残余视觉分支无历史但仍包含图像/query/同一已生成prefix；query-only分支估视觉影响。",
+  "normalization": "other：先概率JSD，线性混logits后softmax；不是概率算术平均。JSD标[0,1]但log底未明确。",
+  "invariance": "非PBRS；显式改变解码策略，无最优策略不变保证。",
+  "baseline_or_potential": "query-only是分布对照，非价值baseline；没有冻结外部judge来决定需求。",
+  "degenerate_cases": "历史空时两视觉分布相同，退化普通解码；JSD0则alpha0保留历史，alpha1则忽略历史；本来无法识图时去历史也无法救。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "FactConv/IrrConv控制长度和信息真伪；固定alpha vs自适应beta；WPI检验保留历史。",
+  "negative_results": [
+   {
+    "text": "mPlugOwl2 WPI96.82→90.85(−5.97pp)，LLaVA Clean71.24→70.34，非全场景非劣。",
+    "locator": "Table3 p8"
+   },
+   {
+    "text": "Eq3/5 FR/WFR写分子计数除Acc比例，按字面缺样本数；正文语义是条件flip比例，不能照抄成可执行指标。",
+    "locator": "Eqs2–5 p5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：在真实caption错误/正确及历史必需三组上对比删历史、固定混合、自适应混合；若JSD仅反映视觉噪声或伤害历史必要组，则不作为必要性信号。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5,mPlugOwl2,ShareGPT4V",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "beta": 2
+  },
+  "cost": "每个token需原/去历史视觉/query-only三路条件预测；实际walltime未报，不写3倍确定耗时。",
+  "pitfalls": [
+   {
+    "text": "答案采用包含匹配，可能把否认中出现的答案当正确；FR公式存在分母问题。",
+    "locator": "§2.6.1"
+   }
+  ],
+  "code": "https://github.com/whongzhong/MMHalSnowball",
+  "lesson": "当caption历史可能错误时，应保留去历史的同图对照，并单测必须依赖历史的问题；不要把分布差异直接奖励给crop。"
+ }
+}

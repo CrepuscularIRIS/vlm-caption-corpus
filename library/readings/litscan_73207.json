@@ -1,0 +1,171 @@
+{
+ "paper_key": "litscan:73207",
+ "title": "POLIA",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_73207.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§4 pp3–5 Eq1",
+   "Tables1/Figs3–6 §5–6 pp6–8",
+   "AppendixA/B1 p12"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "按回答引用的GT对象集合分组，再按每对象的框置信度校正reward、组内standardize；额外advantage仅给坐标token。",
+  "key_step": "S_i为匹配GT身份的无序集合，G_S={i:S_i=S}；r_i,o=R_i s_i,o；同集合同对象归一化，Aext全token、ωAint仅对象坐标。",
+  "why_non_obvious": "比较对象和梯度路由同时改变；同对象集合不代表相同推理状态或真正相同可见证据。",
+  "trigger_condition": "结果奖励不能分辨正确答案中的错误视觉引用，且训练有对象GT框。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "条件化比较组与局部token路由，使结果目标保留同时训练视觉引用精度。",
+  "abstract_trigger_condition": "结果奖励不能分辨正确答案中的错误视觉引用，且训练有对象GT框。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "S_i为匹配GT身份的无序集合，G_S={i:S_i=S}；r_i,o=R_i s_i,o；同集合同对象归一化，Aext全token、ωAint仅对象坐标。",
+  "abstract_why_non_obvious": "比较对象和梯度路由同时改变；同对象集合不代表相同推理状态或真正相同可见证据。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:73207#s1",
+   "object": "coordinate-token advantage",
+   "information": "完整回答的预测框、GT对象身份及IoU/L1匹配质量、终答正确/格式reward",
+   "operation": "按exact object set分候选，按每对象R×confidence作组mean/std，额外优势仅路由该对象坐标",
+   "claimed_effect": "7B VSR81.3 vsGRPO59.0，GQA69.5 vs58.2",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4 pp4–5; Table1 p6",
+    "quote": "POLIA 81.3 56.7 69.5 74.8 29.4 48.7 93.3"
+   },
+   "failure_boundary": "监督依赖GT框；不是crop调用、不是独立视觉信息收益；singleton组额外信号消失。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "保留全token结果信用另加坐标局部信用，精确可迁移路由但需对象GT。"
+  },
+  {
+   "problem": "P44",
+   "strength": 3,
+   "how": "视觉信用依赖IoU/L1和GT对象，需明确框质量代理与因果贡献边界。"
+  },
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "两个层级分别std后再ω，正缩放不等于通道权重。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "DAPO",
+   "kind": "method"
+  },
+  {
+   "name": "GRIT",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5VL3B/7B",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Reader limitation: exact对象集合分组可能小组化；GT框人为调整与标注成本限制迁移。",
+   "quote": null,
+   "locator": "§4.3 p4; A1/B1 p12"
+  }
+ ],
+ "question": {
+  "observed_failure": "7B GRPO VSR59.0，POLIA81.3；coordinate引用质量无answer-only直接监督。",
+  "load_bearing_assumption": "相同GT对象集合内R×框confidence能表达对象贡献。",
+  "scope": "有GT框VSR/TallyQA训练、自然语言推理中显式坐标引用。",
+  "success_criterion": "等数据与步数下正确率和框质量同时升，matched grouping优于随机分组/单纯IoU aux。",
+  "why_open": "消融主要training reward，未对比同token预算普通GT框辅助loss。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§4.3按对象集合分组再算优势"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§4.4 text/coordinate token分路由"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Aext_i=(R_i-mean_jR_j)/(std_jR_j+δ); R_i=λans Rans+λfmt Rfmt",
+    "locator": "§4.1 pp3–4"
+   },
+   {
+    "latex": "G_S={i:S_i=S}; r_i,o=R_i s_i,o; Aint_i,o=(r_i,o-mean_{j∈G_S}r_j,o)/(std_{j∈G_S}r_j,o+δ)",
+    "locator": "§4.3 pp4–5"
+   },
+   {
+    "latex": "L=-E[(1/N)Σ_iΣ_{t∈Tall_i}g(ρ_i,t,Aext_i+ωΣ_o1[t∈Tbox_i,o]Aint_i,o)]+β KL(πold||πθ)",
+    "locator": "Eq1 p5"
+   }
+  ],
+  "signal_routing": "Aext全reasoning生成token；Aint只匹配对象coordinate tokens，非周围text或tool turn。同一个clip g中加优势。",
+  "normalization": "global answer group与各exact-set组各对象分别mean/std+δ；ω之后加，Eq1无length average；N3B16/7B9。",
+  "invariance": "无eps极限整体正reward缩放不变；reward平移不保持Aint，因为加常数后×不同confidence；非PBRS，不保最优策略。",
+  "baseline_or_potential": "生成对象集合和框confidence均action-dependent，不能当无偏因果baseline。",
+  "degenerate_cases": "singleton Aint0；同confidence则Aint退化为组内reward归一化；全错但format正时仍可按s产生坐标优势；所有R0则内A0；空S只Aext。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：离线统计每题exact-set组大小/空组/内方差；比较真实set与保持大小的随机分组、GT IoU aux，固定外A和坐标token mask。",
+  "negative_results": [
+   {
+    "text": "3B GQA60.2低于few-shot SFT64.6；N8准确率低于16/24，支持稀疏影响。",
+    "locator": "Table1 p6; §5.4 p8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若random groups或普通GT框aux等效，组条件化信用归因贡献不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B/7B",
+   "framework": null,
+   "group_size": 9,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "A10040GB，lr2e-6；3B perGPU8acc4 N16，7B3acc2 N9；rollout536.25s占97.24%，内A.002s。",
+  "pitfalls": [
+   {
+    "text": "s为.7IoU+.3normalized L1相关项并clip，但L1转similarity公式未给；match IoU>.5。group平均能掩盖singleton无信号。",
+    "locator": "A1 p12; §4.3 p5"
+   }
+  ],
+  "code": "https://github.com/dudu115/POLIAcode",
+  "lesson": "当用事后视觉引用集合分组时，先报每组支持和有效坐标更新比例，不能把分组数量下降直接解释为正确证据收敛。"
+ }
+}

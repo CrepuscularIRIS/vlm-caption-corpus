@@ -1,0 +1,183 @@
+{
+ "paper_key": "litscan:61931",
+ "title": "Glance-or-Gaze",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_61931.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 Tables1–5",
+   "§6 Limitations",
+   "Appendix C–D tools/config",
+   "Appendix E reward judge prompt"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "SFT学global glance/grounder候选区域筛选/search/反思，再用SFT失败率构造较难RL集合，以答案和格式reward训练多步混合搜索。",
+  "why_non_obvious": "crop主要用于向外部图搜提供更相关实体，而不只是放大原图；反思纠偏可降低错误关注但RL增加搜索依赖。",
+  "trigger_condition": "当长尾知识VQA被whole-image检索噪声限制时，先定位候选实体再选区域检索并迭代验证。",
+  "contribution_type": "多模态搜索agent与难度采样",
+  "abstract_strategy": "在检索前筛信息单元，再用难例训练跨模态反思。",
+  "abstract_trigger_condition": "外部知识需要视觉实体对齐且整图查询含无关信息时。",
+  "abstract_key_step": "grounder给top5框，模型选1至n个相关区域并行图搜。",
+  "abstract_why_non_obvious": "call数、并行轮次与检索信息增量不等价，外部工具贡献需核。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:61931#s1",
+   "object": "区域选择、图搜/文搜与反思轨迹",
+   "information": "原图/问题、GroundingDINO候选框、SerpAPI结果、Jina网页+Qwen3-32B摘要；训练GT答案",
+   "operation": "5750条人工核答案与框合理性轨迹SFT（43.5%无搜索），再难例GRPO；选区域并行检索，按反馈纠偏。",
+   "claimed_effect": "Qwen3-8B六任务平均50.17(SFT)→56.88(RL)；100例人工核gaze正确59→75%，错误反思30→70%；无搜索9.0→2.7%。",
+   "conditions": [
+    "知识密集英文VQA",
+    "工具需要外部搜索/摘要模型"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p8",
+    "quote": "Reflection Rate on Errors (%)   30     70"
+   },
+   "failure_boundary": "反思率非校准度指标；SFT→RL无搜索大幅减少，不能证明只必要时调用或保留直答。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P26",
+   "how": "人工核实错误focus后的再次关注提供relook行为参考。",
+   "strength": 2
+  },
+  {
+   "problem": "P61",
+   "how": "RL后无搜索比例<3%，是直答保持风险。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "SFT混合无搜索与搜索行为但难例RL改变其占比。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GoG SFT",
+   "kind": "ablation"
+  },
+  {
+   "name": "SFT without Selective Gaze",
+   "kind": "ablation"
+  },
+  {
+   "name": "MMSearch-R1",
+   "kind": "method"
+  },
+  {
+   "name": "Level1 RL",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "网络/API/网页异常约1–5%，英语外未验证。",
+   "quote": "failure rate of approximately 1–5% due to network",
+   "locator": "§6 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen3-SFT反思错误仅30%，RL70%；总体SFT50.17→RL56.88。",
+  "load_bearing_assumption": "有根据的候选区域筛选与难例训练能改善外部实体检索及纠错。",
+  "scope": "英文知识密集图像搜索VQA",
+  "success_criterion": "答案、人工区域合理性、反思成功率和保留直答/成本分别评估。",
+  "why_open": "整图搜索噪声大、单次工具调用缺乏反思。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table3错误子集人工分析"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3 dual stage"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "AppC"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_i=(1-\\lambda)r_{acc,i}+\\lambda r_{fmt,i};\\quad \\hat A_i=(r_i-\\mu_r)/\\sigma_r",
+    "locator": "§3.3 Eq2–3"
+   }
+  ],
+  "signal_routing": "gpt-oss120b输入Q/GT/pred判终答案，无图像、crop或检索内容输入；格式reward核结构，合成序列reward再组std。实际tool-return mask/token长度归一未说明；裁图合理性用于SFT人工筛选及评测，不是RL显式局部reward。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS；没有搜索成本项或非劣约束。AppD将KL作为actor loss0.001而非reward。",
+  "baseline_or_potential": "组均值；SFT成功率仅用于难例分层，不是动作价值基线。",
+  "degenerate_cases": "全同答案格式组无梯度；加入始终失败题并不保证组内有成功；难例偏置可导致近乎总搜索；格式λ未见具体数值。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4固定SFT去SG；Table5改RL难度集合；100gaze案例人工核。",
+  "negative_results": [
+   {
+    "text": "RL no-search：Qwen3 9.0→2.7%，Qwen2.5 30.4→2.9%。不能据称保留无需工具行为。",
+    "locator": "Figure3"
+   },
+   {
+    "text": "Table5 Qwen3 Level2六列与Table2相同，却Avg52.38 vs56.88；Level1六列均值约53.89而表48.89。难度平均增益数字不自洽。",
+    "locator": "Table5 vsTable2"
+   },
+   {
+    "text": "Table5 caption将两个级别都写Level2且阈值反向，正文描述Level1约50%、Level2含更难题；保留原文冲突。",
+    "locator": "§3.3/Table5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若固定检索预算/工具结果后SG或反思收益消失，则主要增益可能来自更多搜索信息而非更好focus策略。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B/Qwen3-VL8BThink；235B筛题",
+   "framework": "LLaMA-Factory/veRL/vLLM",
+   "group_size": null,
+   "max_turns": 5,
+   "kl": 0.001
+  },
+  "cost": "正文N4/actorLR2e-6，AppD/Table6 N5/LR1e-6，未自行合并；SFT正文LR1e-4/batch8，附录1e-5/128。工具各有8H800服务描述；policy inference2H800；4thread并行≠调用减少。",
+  "pitfalls": [
+   {
+    "text": "reward judge允许包含GT的宽数值范围判对；并不证明证据精确。",
+    "locator": "AppE p19"
+   },
+   {
+    "text": "GroundingDINO输出top5，模型选1至n区域；image/text各最多3call、5crop rounds，不能把五轮当五次总调用。",
+    "locator": "AppC–D"
+   }
+  ],
+  "code": "https://github.com/TOM-ZHOUch/Glance-or-Gaze",
+  "lesson": "当难例RL提高搜索与反思时，必须另外测原本能直答的样本及真实工具成本，并核对正文/附录训练配置。"
+ }
+}

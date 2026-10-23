@@ -1,0 +1,320 @@
+{
+ "paper_key": "2510.25092",
+ "title": "SeeingEye: Agentic Information Flow Unlocks Multimodal Reasoning In Text-only LLMs",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.25092.pdf",
+  "version": "v1",
+  "sections_read": [
+   "Abstract; 1 Introduction",
+   "2 Related Work",
+   "3 Method; 3.1 Translator; 3.2 Reasoner; Algorithm 1; Eqs. 1–6; Figures 1–2",
+   "4 Experiments; 4.1 Settings; 4.2 Main Results; Table 1",
+   "5 Discussion; 5.1 Plug-and-play; 5.2 Cost; 5.3 Agentic Flow; 5.4 Multi-round; Tables 2–5",
+   "6 Conclusion; References",
+   "Appendix A.1 Case Study of SIR; Figure 3",
+   "Appendix A.2 SIR Structure and Prompts; Figures 4–6",
+   "Appendix A.3 Tool Prompts; Figures 7–8",
+   "Appendix A.4 Agent Prompts; Figures 9–14"
+  ],
+  "version_observation": "PDF p.1 margin explicitly reads arXiv:2510.25092v1 [cs.MA] 29 Oct 2025. This is the locally observed historical version; latest remote version not checked.",
+  "pages_read": "1–22 (all PDF pages)",
+  "visually_inspected_pages": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   13
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用小视觉翻译者和文本推理者分工，通过可更新SIR和反馈请求组织推理期信息流。无需新增训练目标；SIR实际schema是global_caption字符串、confidence和feedback，并非已形式化的充分统计量。",
+  "key_step": "推理者只读SIR，在信息不足时指出缺失视觉细节；翻译者根据反馈调用OCR/read_table/SmartGridCaption，增量更新同一SIR后交回。",
+  "why_non_obvious": "把视觉文本化从一次性描述改为由下游推理需求驱动的往返状态更新；收益不能仅归于结构化字段，因为迭代预算、模型与工具也改变。后半句为读者证据边界。",
+  "trigger_condition": "When a text-only solver lacks task-critical perceptual evidence, apply a tool-using translator with a mutable intermediate description and targeted feedback to obtain the missing evidence before answering.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null and no review artifact is supplied; arXiv availability is not acceptance.",
+  "contribution_type": "system",
+  "abstract_strategy": "Separate observation from decision making and exchange an editable evidence record between specialists.",
+  "abstract_key_step": "Have the downstream solver request missing facts, then revise the existing record with targeted measurements.",
+  "abstract_why_non_obvious": "Replace a one-way summary interface with a feedback-driven state that remains inspectable across stages.",
+  "abstract_trigger_condition": "When a solver cannot directly inspect the source and its summary omits discriminating facts, query a specialized observer to refine the shared record before committing."
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.25092#s1",
+   "object": "推理期的像素→文本→答案接口及模型分工",
+   "information": "Translator可见原图、问题、上一轮SIR、反馈和工具历史；Reasoner可见SIR、问题/选项与文本工具历史，不见原始像素；均不使用评测答案来生成SIR。",
+   "operation": "以3B VLM生成并持续更新SIR，把纯文本交给8B LLM推理；两代理使用不同工具与结束动作。",
+   "output": "可交互SIR和最终答案；更换文本推理者不改视觉翻译者。",
+   "claimed_effect": "作者Table 1报告MMMUval 60.78%，对比Qwen2.5-VL-32B 51.56%和OpenManus 50.67%；Table 3的32B best-of-3为60.67%，不能混作同一对照。MIA-Bench仅84.10%，低于32B的89.60%。",
+   "conditions": [
+    "足够强的预训练视觉翻译和文本推理能力",
+    "文本记录可保留任务相关视觉细节",
+    "两个代理各3步、外循环最多3轮；工具可用"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3 pp.3–6; §4.1–4.2/Table 1 p.7; Table 3 p.9",
+    "quote": "SeeingEye(Ours)        60.78           44.62              33.33              33.99            84.10"
+   },
+   "failure_boundary": "不是对所有任务均优；无同模型同token的SIR-vs自由文本独立消融；不证明SIR事实正确或充分性可校准。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2510.25092#s2",
+   "object": "粗描述中缺失的局部视觉事实",
+   "information": "SmartGridCaption可见原图4×4格、问题/请求、此前全局描述；用视觉模型选区域和写caption；没有独立GT证据框或裁图必要性标签。",
+   "operation": "将图像分为4×4格，选择相关patch，生成局部caption，再把细节整合进原SIR。",
+   "output": "在全局上下文中保留被请求局部事实的SIR。",
+   "claimed_effect": "§3.1/Figure 2个案：原先无法辨认海报动物，选择区域[9,9]后描述出dove，单次outer iteration内作答；没有该工具独立量化消融。",
+   "conditions": [
+    "目标能由选定网格patch保留并在裁后被VLM识别",
+    "先前SIR与局部文本整合不引入推断幻觉"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.1 p.4; Figure 2 p.5",
+    "quote": "To resolve this ambiguity, the tool first discretizes the image into a 4 × 4 grid. It then leverages\na vision-LLM to interpret the query and select the most informative patches, in this instance, the\nrectangular region [9, 9] containing the poster (Step 2). A detailed caption is then generated for\nthis specific crop, yielding the critical observation: “Poster featuring a person holding a dove” (Step\n3)."
+   },
+   "failure_boundary": "仅示例，无逐框准确率、定位失败率、等预算随机crop负对照或工具使用率；格子选错可能在SIR累积错误（读者推断）。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2510.25092#s3",
+   "object": "证据充分性驱动的外循环与停止策略",
+   "information": "Reasoner基于SIR及自己的推理/工具历史估计信心；低信心返回具体缺失视觉信息；Translator再看原图。信心并非独立标注的正确率。",
+   "operation": "在低信心时继续文本推理或发送缺失信息请求；根据请求增量更新SIR，达到信心阈值或硬预算时终止。",
+   "output": "针对性的反馈、修订SIR、最终答案；到达最终outer iteration强制作答。",
+   "claimed_effect": "Table 5标为MMMU-Pro (Vision)的1/2/3轮准确率为34.21/36.84/44.62%；该3轮值与Table 1 Vision=33.33%冲突，且等于Table 1 Standard=44.62%。记录作者结果，实际子集无法判定。",
+   "conditions": [
+    "请求能指向真正缺失的视觉信息",
+    "调用次数增加被允许",
+    "自报信心与证据不足相关；该校准前提未实证检验"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.4 p.9; Table 5 p.10; contradictory Table 1 p.7",
+    "quote": "In the single-iteration setting (Max Iterations = 1), where the Reasoner cannot provide\nfeedback, the system achieves a baseline accuracy of 34.21%. This is analogous to static, one-shot\ncaptioning methods. Enabling a single round of feedback (Max Iterations = 2), where the Trans-\nlator can act upon the Reasoner’s request for more specific visual information, yields a significant\nperformance gain to 36.84%."
+   },
+   "failure_boundary": "更高轮数也增加推理/工具预算；没有同成本无针对性反馈对照。误报高信心会早停，预算用尽时低信心也必须答（算法规定）。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "LLaVA-1.5-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-3B",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-32B",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o-mini",
+   "kind": "method"
+  },
+  {
+   "name": "V* Guided Search",
+   "kind": "method"
+  },
+  {
+   "name": "OpenManus with Qwen3-8B",
+   "kind": "method"
+  },
+  {
+   "name": "OpenManus with GPT-4o-mini",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-32B best-of-3",
+   "kind": "method"
+  },
+  {
+   "name": "MMMU validation/dev (kept separate)",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMMU-Pro standard/vision",
+   "kind": "benchmark"
+  },
+  {
+   "name": "OCR-BenchV2",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MIA-Bench",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "作者Table 1中Qwen2.5-VL-3B在MMMUval为48.33%，OpenManus为50.67%；§5.4单轮基线34.21%。这些是作者用于动机的任务结果，不是已经隔离出的caption瓶颈率；Table 5子集标注存在冲突。",
+  "load_bearing_assumption": "一次静态描述或统一视觉-语言处理足以给文本推理者提供所需信息；作者用可反馈的翻译接口替换固定信息瓶颈。",
+  "scope": "知识密集VQA中小VLM/文本LLM两代理推理接口，四类benchmark；不研究GRPO训练或逐token信用。",
+  "success_criterion": "以作者报告的VQA分数及每题token价格成本比较小型模块系统与端到端/代理基线；本课题迁移还需独立检查caption事实正确、错误选项映射和crop成本。",
+  "why_open": "作者指出静态caption缺乏交互，既有动态工具通常传自由文本历史或仍耦合在单体VLM，不能直接接入更强文本推理者。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "To quantify the\nimpact of this mechanism, we conducted an ablation study on the maximum number of outer loop\niterations on the challenging MMMU-Pro (Vision) benchmark.",
+   "locator": "§5.4 p.9",
+   "note": "实际改变最大outer-loop次数；这是单变量预算消融，但并未固定算力来隔离反馈语义。"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "To ensure a fair comparison in\nterms of computational budget, we benchmark against the Qwen2.5-VL-32B’s best of three runs, as\nour own framework is also configured with a maximum of 3 iterations for both its inner and outer\nloops. Our method achieves a superior accuracy of 60.78% at a comparable, and in the median\ncase, lower, total cost.",
+   "locator": "§5.2 p.8; Table 3 p.9",
+   "note": "把成本与准确率一起比较；不等于非劣检验，也不包含训练成本。"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "role": "primary",
+   "quote": "Our proposed framework, SeeingEye, unlocks the multimodal reasoning capabilities of text-only\nLLMs by introducing a decoupled, two-agent system. This system comprises a Translator Agent\n(AT ) and a Reasoning Agent (AR ). The core of our method lies in a novel Agentic Information\nFlow, orchestrated through a nested loop structure, where the agents collaborate by iteratively im-\nproving a central Structured Intermediate Representation (SIR) (see details in Fig. 3 and Sec.\nA.2). Figure 1 provides a high-level illustration, while Algorithm 1 presents the formal specification\nof this interactive process.",
+   "locator": "§3 p.3",
+   "note": "明确拆为像素观察与文本推理，通过SIR交换，符合结构化中间物委派。"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "role": "supporting",
+   "quote": "IMPROVEMENT TASK:\n    1. Analyze the reasoning feedback carefully to understand what\n        visual details are needed\n    2. Look at the image again with this feedback in mind\n    3. UPDATE your current SIR to address the feedback - don’t start\n        fresh\n    4. Focus on visual details that help answer the question: {question\n        }\n    5. Maintain objectivity - describe what you see, don’t infer\n        answers\n\n    Remember: Update your existing SIR incrementally, don’t recreate it\n         from scratch.",
+   "locator": "Appendix A.2 Figure 6 p.15",
+   "note": "在推理期将反馈注入翻译者而更新任务相关信息，未增加参数训练。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "c_T^{(j)}=\\operatorname{VCoT}(I,Q,S_{i-1},F_{i-1},h_T^{(j-1)})",
+    "locator": "Eq.1 p.4"
+   },
+   {
+    "latex": "o_T^{(j)}\\sim\\pi_T(c_T^{(j)},I,Q,S_{i-1},F_{i-1},h_T^{(j-1)})",
+    "locator": "Eq.2 p.4"
+   },
+   {
+    "latex": "S^{(j)}=\\operatorname{RefineSIR}(S^{(j-1)},c_T^{(j)},r_T^{(j)})",
+    "locator": "Eq.3 p.5"
+   },
+   {
+    "latex": "c_R^{(k)}=\\operatorname{CoT}(S_i,Q,M_{R,i-1},h_R^{(k-1)})",
+    "locator": "Eq.4 p.5"
+   },
+   {
+    "latex": "o_R^{(k)}\\sim\\pi_R(c_R^{(k)},S_i,Q,M_{R,i-1},h_R^{(k-1)})",
+    "locator": "Eq.5 p.5"
+   },
+   {
+    "latex": "a_{\\mathrm{final}}\\sim\\pi_D(S_i,Q,h_R^{(k)})",
+    "locator": "Eq.6 p.6 (low-confidence choice only)"
+   },
+   {
+    "latex": "C_{\\mathrm{ours}}=\\sum_{i=1}^{N}\\left(\\frac{T_{\\mathrm{in},i}^{(\\mathrm{tr})}}{1000}p_{\\mathrm{in}}^{(\\mathrm{tr})}+\\frac{T_{\\mathrm{out},i}^{(\\mathrm{tr})}}{1000}p_{\\mathrm{out}}^{(\\mathrm{tr})}+\\frac{T_{\\mathrm{in},i}^{(\\mathrm{rs})}}{1000}p_{\\mathrm{in}}^{(\\mathrm{rs})}+\\frac{T_{\\mathrm{out},i}^{(\\mathrm{rs})}}{1000}p_{\\mathrm{out}}^{(\\mathrm{rs})}\\right)",
+    "locator": "§5.2 unnumbered cost equation p.8"
+   }
+  ],
+  "signal_routing": "无训练损失、reward或advantage。推理期：像素和视觉工具返回值只输入Translator；Reasoner只接收SIR文本；Reasoner feedback返回Translator，下轮增量更新。文本计算工具返回Reasoner的历史。没有按caption/crop/answer token分配梯度。",
+  "normalization": "other: no reward/advantage normalization; cost divides token counts by 1000 to apply quoted prices. Confidence uses low/mid/high categories and textual threshold instructions, not group statistics.",
+  "invariance": "预训练模型架构保持不变；改变信息输入、工具链和推理次数。无PBRS、策略最优性保持定理或SIR充分统计量保证。",
+  "baseline_or_potential": "无critic、价值基线或势函数。Translator与Reasoner自评信心；§3符号τ_T/τ_R，Appendix Figure 12要求confidence>=0.9，Figure 13写>90%；Translator数值τ_T及分档界限未报告。",
+  "degenerate_cases": "无GRPO组，故全对/全错组和p≈0/1梯度退化不适用。Nouter=1取消外反馈但仍有代理内循环和工具，不能等同普通一次无工具caption。高信心时可早答；低信心且到最终轮时仍强制答；Translator到步数上限强制输出SIR。若代理总是回答或总请求，行为由提示和硬cap限定，没有采样支撑保护或校准机制。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "作者Table 5控制最大outer次数1/2/3；Table 2固定Translator更换Reasoner；Table 4比较带同类文本工具与终止逻辑的OpenManus GPT-4o-mini；Table 3增加32B best-of-3成本对照。这些部分区分组件，仍不能单独识别反馈语义/SIR结构相对额外算力的贡献。",
+  "controls": [
+   "Table 1同benchmark端到端及动态工具框架；Qwen3-8B OpenManus包含作者prompt、文本工具、终止逻辑及可调用Qwen2.5-VL。",
+   "Table 2同Translator，Qwen3-8B/14B/GPT-4o-mini text-only在MMMUdev为52.67/54.67/54.29%。",
+   "Table 4 OpenManus GPT-4o-mini=46.77%，SeeingEye=52.67%，但底模/架构并非单一因素。",
+   "Table 5轮数消融；无等token无反馈、随机反馈、错误SIR、问题-only、答案泄漏或固定SIR字段置换负对照。后半为阅读中未发现的控制，不是作者执行。"
+  ],
+  "negative_results": [
+   {
+    "text": "Table 1作者报告的MIA-Bench中SeeingEye 84.10低于Qwen2.5-VL-32B 89.60和GPT-4o-mini 91.40；OCR-BenchV2相对OpenManus仅33.99 vs 33.65。这些数值限制普遍优越的措辞，未给统计显著性。",
+    "quote": "Qwen 2.5-VL-32b        51.56           32.93              28.77              33.49            89.60\nGPT-4o-mini            55.00           38.99              31.72              33.17            91.40\nV* Guided Search       14.78           11.79              10.40              13.50            66.30\nOpenManus              50.67           18.18              16.15              33.65            82.40\nSeeingEye(Ours)        60.78           44.62              33.33              33.99            84.10",
+    "locator": "Table 1 p.7 (MIA-Bench and OCR-BenchV2 columns)"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出、未运行：固定两个底模、总token/视觉调用预算与初始SIR，将针对反馈与随机/打乱反馈比较；若收益消失则不能把增益归因于定向信息流。对P40还需人核caption事实，若盲读者的成功或信心不能预测同一策略利用事实，则充分性迁移被否定。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-3B Translator + Qwen3-8B Reasoner; ablation Qwen3-14B/GPT-4o-mini text-only",
+   "framework": "other: SeeingEye two-agent inference framework; adapted OpenManus used as comparison; exact serving/runtime versions not reported",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": 3,
+   "max_turns_note": "Nouter=3; each Translator and Reasoner inner loop separately capped at3, so this is not a total3-tool-call cap.",
+   "training": "No new SFT/RL training described.",
+   "translator_max_inner_steps": 3,
+   "reasoner_max_inner_steps": 3,
+   "prompt_response_token_limit": 1024
+  },
+  "cost": "Table 3 MMMUval每题，按论文当时Qwen价格估算：32B best-of-3输入$0.003198+输出$0.009072=总$0.01227、60.67%；SeeingEye平均输入$0.0090+输出$0.0026=总$0.0116、60.78%；中位总$0.0101。不把历史价格当当前成本；未给GPU·h、延迟、工具单独成本、raw token总量及方差。三层cap不等于严格与best-of-3等算力，选择best-of-3规则未充分说明。",
+  "pitfalls": [],
+  "code": "https://github.com/ulab-uiuc/SeeingEye",
+  "lesson": "当文本推理者缺少特定视觉事实时，可将缺口明确返回给视觉观察者并增量更新记录；要先用等预算反馈负对照与事实核查验证收益，不能把更高信心直接当必要裁图标签。后半为本课题推断。"
+ },
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "可直接借鉴可读证据→独立文本推理的推理期诊断接口；没有报告caption已正确但终答错的发生率，更没有盲读者充分性校准或训练修正。",
+   "strength": 2
+  },
+  {
+   "problem": "P26",
+   "how": "实现根据自报信息不足请求再看，可作为行为示例；没有证明仅必要时调用，也未训练/校准不确定性触发。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "明确区分证据阈值与最大内/外轮数且到预算强制结束；不是学习剩余预算价值的停止策略，无2/4/8预算适应证据。",
+   "strength": 1
+  },
+  {
+   "problem": "P34",
+   "how": "使用confidence>=0.9或>90%提示和low/mid/high自报标签；未给AUROC/校准曲线，不解决本课题校准门槛。",
+   "strength": 1
+  },
+  {
+   "problem": "P42",
+   "how": "视觉只描述、保留未知符号、不推断答案的提示可帮助制定caption检查契约；无RL和训练前后漂移测量。",
+   "strength": 1
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": []
+}

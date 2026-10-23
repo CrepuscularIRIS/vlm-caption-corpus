@@ -1,0 +1,303 @@
+{
+ "paper_key": "2505.13379",
+ "title": "Thinkless: LLM Learns When to Think",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.13379.pdf",
+  "version": "v2",
+  "version_evidence": "p1 arXiv2505.13379v2 26 Jun2025; online latest not checked",
+  "page_count": 12,
+  "fulltext_path": "2505.13379.txt",
+  "sections_read": [
+   "Abstract/1 Introduction pp1–3",
+   "2 Related Works p3",
+   "3.1 paired warm-up pp3–4",
+   "3.2 reward and DeGRPO pp4–5 Eqs1–4/Fig2",
+   "4.1 setup pp5–6",
+   "4.2 results p6 Table1",
+   "4.3 dynamics pp7–8 Figs3–4",
+   "4.4 warm-up pp8–9 Table2",
+   "4.5 cases p9 Fig5",
+   "5 Limitations/6 Conclusion p9",
+   "References pp10–12; promised Appendix not present in local12-pagePDF"
+  ],
+  "visual_pages_inspected": [
+   4,
+   5,
+   6,
+   7,
+   8
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用同题长短teacher回答配对SFT建立两个控制token的行为，再把首token的policy loss从回答长度归一化中分离，以固定alpha与回答均值loss合并；奖励偏好答对且短模式。",
+  "key_step": "将每序列1/(T+1)的首token权重替换为与长度无关的alpha，剩余T个response token另按1/T平均。",
+  "why_non_obvious": "一个决策token和数千回答token共享长度分母，不仅导致决策弱，还使长/短模式首token梯度尺度不同；单纯加短回答奖励不能修复这种尺度差。",
+  "trigger_condition": "When one control token selects responses of very different lengths, separate its loss normalization from response-token averaging and calibrate its update weight.",
+  "reviewer_praise": [
+   "low_evidence: manifest无reviews_path。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 无独立审稿；限定为读者来源核查。"
+  ],
+  "acceptance_signal": "low_evidence: decision=null；PDF under review非接收结果。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Separate a scarce decision signal from a variable-length execution signal and weight each on its own scale.",
+  "abstract_key_step": "Replace length-dependent dilution of the decision with a fixed coefficient while averaging execution feedback separately.",
+  "abstract_why_non_obvious": "A shared normalization makes otherwise comparable choices learn at different rates solely because their continuations differ in length.",
+  "abstract_trigger_condition": "When a short decision controls variable-length work, decouple their normalization before tuning the decision preference."
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.13379#s1",
+   "object": "Initial two-mode policy behavior support",
+   "information": "同题配对长teacher DeepSeekR1与短teacher Qwen2.5Math输出；SFT见指定控制token及回答，无自然动作价值oracle。",
+   "operation": "长/短回答分别加<think>/<short>并对目标R1distill1.5B做1epochSFT；Table2比较OpenR1-97K/OpenThoughts114K/1M，手动插control评两模式。",
+   "output": "同一模型具备两种可采样行为，作为RL起点。",
+   "claimed_effect": "Table2 OpenR1 shortMATH.7212/long.8336，证明两模式可用但原R1.8608更高；1M long.8360仍不及原。",
+   "conditions": [
+    "teacher覆盖两模式且SFT保留条件行为。"
+   ],
+   "evidence": {
+    "quote": "the paired construction of Ddistill ensures that",
+    "locator": "Sec3.1 p4",
+    "kind": "author_claim"
+   },
+   "failure_boundary": "没有首动作50/50 RL强制支撑保证；主RL究竟取哪一SFTbank/checkpoint未明确。97K/114K/1M指bank规模，不自行倍增为实际优化条数。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.13379#s2",
+   "object": "Control-token versus response-token GRPO loss weighting",
+   "information": "当前策略rollouts及GT答案匹配，control位置固定t0；reward知道模式与正确性，不知同题另一分支的反事实收益。",
+   "operation": "short正确1、think正确1−gamma、错误−1；A=r−groupmean，不除std；控制loss alpha×L_i0，response loss(1/T_i)sum_tL_it，同一组平均，减reference KL；alpha=.001。",
+   "output": "共享模型参数上的分段加权policy objective；不是独立网络或两套advantage。",
+   "claimed_effect": "Fig3 vanilla在120步longsamples<10、全short，DeGRPO保持两模式；Table1 Think%Minerva25.88/MATH51.56/GSM13.31，AIME100。",
+   "conditions": [
+    "初始两种模式存在且正确性可验证；alpha与行为学习速度匹配。"
+   ],
+   "evidence": {
+    "quote": "normalizes the contributions of the control and response tokens:",
+    "locator": "Sec3.2 p5 Eq4",
+    "kind": "author_claim"
+   },
+   "failure_boundary": "控制/回答仍共享参数；无饱和恢复理论或逐状态必要性对照。gamma具体值、KLbeta、clip epsilon、温度、seed及采样控制token的非法输出处理未报告。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Original DeepSeek-R1-Distill-Qwen1.5B;Qwen2.5-1.5B;Qwen2.5-Math1.5B",
+   "kind": "method"
+  },
+  {
+   "name": "Model merging;CoT-Valve",
+   "kind": "method"
+  },
+  {
+   "name": "Router Random;Router Qwen7B",
+   "kind": "method"
+  },
+  {
+   "name": "Vanilla GRPO length-normalized;DeGRPO alpha=.5 vs.001",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "warm-up造成性能下降；未充分调参。",
+   "quote": "which results in a slight performance drop in the initial model for reinforcement learning.",
+   "locator": "Sec5 p9"
+  },
+  {
+   "text": "只验证40K数学训练与1.5B底座，非VLM多轮工具。",
+   "quote": "40K mathematical problems, future work could expand to a broader range of datasets,",
+   "locator": "Sec5 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "Fig3 vanilla GRPO长模式样本在120更新内跌至<10/约1024，评测全选short；AIME8.7%vsDeGRPO27.3%。",
+  "load_bearing_assumption": "同一个sequence-length平均可公平处理单个control与不同长度response；论文将这种均匀token处理视为不平衡。",
+  "scope": "R1-distill1.5B两个单token模式、数学生成；单次路由后整段回答。",
+  "success_criterion": "不塌为单模式，在数学benchmark降低think使用/token且保准确；实际并非全部对原模型非劣。",
+  "why_open": "外部router不充分了解目标模型；长度奖励与prompt预算不能自动校准首token/response两种梯度尺度。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "model with the basic ability to generate both long chains and short responses.",
+   "locator": "Sec4.4 p8;paired SFT实际执行"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "quote": "we observe an improvement in the accuracy of short-chain responses.",
+   "locator": "Sec4.3 p7/Fig3;按模式正确率及all-correct组计数"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "control token update weight (0.5) and the weight used in our",
+   "locator": "Sec4.3 p8/Fig4 alpha对照"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "quote": "normalizes the contributions of the control and response tokens:",
+   "locator": "Sec3.2 p5",
+   "role": "primary"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\pi_\\theta(c,a|x)=\\pi_\\theta(c|x)\\pi_\\theta(a|x,c)",
+    "locator": "Sec3.2 p4"
+   },
+   {
+    "latex": "r=\\begin{cases}1&c=short,correct\\\\1-\\gamma&c=think,correct\\\\-1&wrong\\end{cases},\\quad 0<\\gamma<1",
+    "locator": "Sec3.2 p4 unnumbered"
+   },
+   {
+    "latex": "\\hat A_{i,t}=r_i-\\operatorname{mean}(r)",
+    "locator": "p4 afterEq2;mean-only"
+   },
+   {
+    "latex": "L_{i,t}=\\min(\\rho_{i,t}\\hat A_{i,t},clip(\\rho_{i,t},1-\\epsilon,1+\\epsilon)\\hat A_{i,t}),\\quad\\rho_{i,t}=\\frac{\\pi_\\theta(a_{i,t}|x,a_{i,<t})}{\\pi_{old}(a_{i,t}|x,a_{i,<t})}",
+    "locator": "Eq2 p4"
+   },
+   {
+    "latex": "J_{GRPO}=E[\\frac1G\\sum_i(\\frac1{T_i+1}\\sum_{t=0}^{T_i}L_{i,t}-\\beta D_{KL}(\\pi_\\theta||\\pi_{ref}))]",
+    "locator": "Eq1 p4"
+   },
+   {
+    "latex": "J_{DeGRPO}=E[\\frac1G\\sum_i(\\alpha L_{i,0}+\\frac1{T_i}\\sum_{t=1}^{T_i}L_{i,t}-\\beta D_{KL}(\\pi_\\theta||\\pi_{ref}))],\\quad\\alpha=.001",
+    "locator": "Eq4 p5"
+   }
+  ],
+  "signal_routing": "同一序列outcome advantage用于control和所有response tokens；区别仅在control固定alpha和response1/T，非两套reward/adv估计。prompt不在所列loss中，padding/EOS/非法control masks未知；KL式写πθ(.|x)||πref(.|x)，具体per-token estimator/reduction未列。control分段不是freezehead，不阻止response更新经共享参数影响路由。",
+  "normalization": "明确mean-only无std，不是RLOO；基线含自身reward。每序列response平均再对G平均，control不随T变化。alpha=.001相对原1/(T+1)在T>999时较大、短于999时反而较小（读者算术），不能统称放大所有控制token。gamma未给值；beta=.9/.999是AdamW betas，不是KL值。",
+  "invariance": "无PBRS/最优策略不变定理；gamma偏好short改变目标，alpha加权改变共享梯度场。减组均值消除全组共同常数，正缩放reward不会被std约去。两模式同样正确时gamma仍影响优势；模式内token数重新定权不保证全局无偏原objective。",
+  "baseline_or_potential": "组reward平均baseline，由同题G8当前policyrollouts；没有冻结reader、statevalue或前后crop探针。SFT双teacher造行为，不是在线必要性judge。",
+  "degenerate_cases": "全错r全−1则A0；全对且全同模式A0；全对混两模式则short获得正、think负，其幅度随gamma。单模式支撑消失时只缩放control无法产生未采样动作；alpha0不更新直接control项但共享response仍可影响它。alpha过大可能先按初始能力定死分工；T0空response分母问题未给处理。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig3 vanilla vsDeGRPO动态及模式分布；Fig4alpha.5/.001；Table2不同warmupbanks；Table1随机/外部router。但Fig3vanilla只至120步、DeGRPO600步，不能当等训练预算严格比较，缺gamma×alpha及支撑强制的完整因子控制。",
+  "controls": [
+   "同率常数gate未测，RouterRandom约50%而Thinkless各任务率不同，且externalrouter调用额外模型费用未单列。",
+   "无训练seed/CI/重复采样明确协议；所有差值描述性。",
+   "teacher数据和RL数据去重/评测重叠未报告。"
+  ],
+  "negative_results": [
+   {
+    "text": "Table1 MATH.8608→.8184，−4.24pp；Minerva.9577→.9459，−1.18pp，AIME.2800→.2733，−.67pp；GSM+.71pp。",
+    "quote": "Thinkless                          0.2733",
+    "locator": "Table1 p6"
+   },
+   {
+    "text": "大alpha更快形成初始能力分类，可能阻止短模式继续学；未给最终准确率alpha表。",
+    "quote": "samples prematurely to the long-chain mode, degenerating the",
+    "locator": "Sec4.3 p8"
+   },
+   {
+    "text": "warmup长短都可能退化，Table2三bank并非规模越大各项越好。",
+    "quote": "process may incur some performance degradation.",
+    "locator": "Sec4.4 p8"
+   }
+  ],
+  "seeds": "not reported；Table1 Pass@1而非明确多seed结果，采样次数/温度未列；无CI。",
+  "falsifier": "未执行：固定SFT/数据/实际token预算，比较原lengthmean、固定controlweight、强制双模式support，记录control梯度与response诱导漂移；与同率constantmode对照。若仅支撑恢复而非alpha起效，收窄为sampling问题；若short率降而准确率越过预设非劣界则不迁移效率主张。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeek-R1-Distill-Qwen1.5B;longteacherR1-671B,shortteacherQwen2.5Math1.5B",
+   "framework": "Megatron SFT;VeRL RL",
+   "group_size": 8,
+   "rollouts": 1024,
+   "steps": 600,
+   "kl": null,
+   "temperature": null,
+   "max_turns": "single mode decision, no tool turns",
+   "batch_size": 128,
+   "sft_epochs": 1,
+   "sft_context": 16384,
+   "rl_context": 24576,
+   "rl_lr": 1e-06,
+   "optimizer": "AdamW betas(.9,.999),weightdecay.01",
+   "control_alpha": 0.001,
+   "short_reward_gamma": null,
+   "hardware": "single node4H100"
+  },
+  "cost": "600steps×128prompts×8rollouts=614400 sampled sequences为名义算术量，若无skip/retry；实际token/GPUh/walltime未报。Table1tokens是输出量：MATH5675→2555、GSM1919→624、AIME18063→7099但仍100%think；模式比例下降不等同长度节省比例。",
+  "pitfalls": [
+   {
+    "text": "快路由可阻止潜力short模式学习；alpha需与回答学习速度平衡。",
+    "quote": "However, excessively fast policy updates can",
+    "locator": "Sec4.3 p8"
+   },
+   {
+    "text": "SFT截断16K长样本，RL24K；可能改变长模式teacher覆盖。",
+    "quote": "warmup stage, we set the maximum context length to 16K and clip those overlong samples.",
+    "locator": "Sec4.1 p5"
+   }
+  ],
+  "code": "https://github.com/VainF/Thinkless",
+  "code_verified": false,
+  "lesson": "当单个决策token跟不同长度回答共用分母时，先算每种模式的实际决策梯度尺度，再调alpha；同时检查两模式支撑，固定权重不能救回从不采样的动作。"
+ },
+ "relevance": [
+  {
+   "problem": "P08",
+   "how": "独立control/response长度归一化直接对应单决策信号稀释。",
+   "strength": 3
+  },
+  {
+   "problem": "P21",
+   "how": "共享参数仍存在且只加权，不解决已饱和动作采样。",
+   "strength": 2
+  },
+  {
+   "problem": "P23",
+   "how": "文中一个control token；本库多token动作前缀边界须重定义。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "配对teacherSFT先提供两种行为。",
+   "strength": 2
+  },
+  {
+   "problem": "P29",
+   "how": "展示塌到全short，方向与本库全crop不同；结构不保证支撑。",
+   "strength": 2
+  },
+  {
+   "problem": "P61",
+   "how": "SFT行为可退化，未证明直答子集非劣。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "measurement_and_source_audit": {
+  "conflicts": [
+   "Eq4是loss项分段归一化，MethodSummary说advantages independentlynormalized不应被解成两套groupadv；Eq2下方明确同一r−mean。",
+   "Fig3实际vanilla塌到全short，不是全think。Finding3 short先降后升是Ushape；正文同时称long先升后降Ushape，长模式实际倒U。",
+   "Minerva所谓within1%与Table1差1.18pp不完全一致；MATH明显−4.24pp，不能全面保performance。",
+   "Table2OpenThoughts114K正文teacher写R1-67B，表写671B，保留名称矛盾。",
+   "Fig3按模式正确率是被策略选择后的条件准确率，不能据long下降直接证明能力没退化；缺固定题组反事实。",
+   "Fig4 alpha.5曲线仅早期约100步，.001延续600步，没有等预算最终准确率。",
+   "主RL的SFTbank、gamma、KLbeta、clipepsilon、温度、seeds均缺；代码URL来自PDF但未读取。"
+  ]
+ }
+}

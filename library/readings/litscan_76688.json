@@ -1,0 +1,167 @@
+{
+ "paper_key": "litscan:76688",
+ "title": "CofactGVR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_76688.txt",
+  "sections_read": [
+   "Abstract",
+   "3.4–3.6",
+   "Tables 1–5",
+   "Limitations",
+   "A.1 equations 12–14/Algorithm 1",
+   "A.2/Table 6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "反事实差分与有界正确性门控，再按优势绝对值筛选重采样",
+  "key_step": "真实框及随机加噪框各采样答案，以组均正确率正差给部分真实轨迹加 bonus",
+  "why_non_obvious": "反事实只估奖励而不进入优化；奖励门控与非均匀采样改变两个不同通道",
+  "trigger_condition": "当结果奖励允许无视证据时，用干预对照塑造真实分支并筛掉弱优势",
+  "contribution_type": "method",
+  "abstract_strategy": "反事实差分与有界正确性门控，再按优势绝对值筛选重采样",
+  "abstract_trigger_condition": "当结果奖励允许无视证据时，用干预对照塑造真实分支并筛掉弱优势",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "真实框及随机加噪框各采样答案，以组均正确率正差给部分真实轨迹加 bonus",
+  "abstract_why_non_obvious": "反事实只估奖励而不进入优化；奖励门控与非均匀采样改变两个不同通道"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76688#s1",
+   "object": "bbox→crop→答案两阶段轨迹",
+   "information": "原图、问题、当前策略预测框和随机加噪替代框；答案监督，无训练框GT",
+   "operation": "组均真实/反事实正确率差截正、clip，再给正确或top-k真实rollout奖励；Q-PAS重采样",
+   "claimed_effect": "去反事实 MME 2428.5→2349.1、RWQA 66.9→63.8；全体加bonus RWQA降61.7",
+   "conditions": [
+    "Qwen2.5-VL-7B",
+    "VisCoT 8K",
+    "原图在两个条件下均保留"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 4 / §4.3",
+    "quote": "→ 2349.1/63.8/87.9/75.1), confirming that the counterfac-                   Table 5. Ablation studies on different counterfactual baselines."
+   },
+   "failure_boundary": "这不是匹配框形的逐次内容效应，也不是裁图相对直答的价值；加噪产生分布外差异",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "显示组级反事实奖励不自动等于逐动作信用",
+   "strength": 3
+  },
+  {
+   "problem": "P43",
+   "how": "视觉证据干预可构造过程奖励候选",
+   "strength": 3
+  },
+  {
+   "problem": "P37",
+   "how": "低|A|过滤/重采样与探索保留冲突",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Ground-R1",
+   "kind": "method"
+  },
+  {
+   "name": "No-evidence / Plausible candidate region",
+   "kind": "counterfactual"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "bbox限定、文本推理监督仍隐式",
+   "locator": "Limitations",
+   "quote": "supervision of the accompanying textual reasoning traces                 arXiv:2505.20272, 2025."
+  }
+ ],
+ "question": {
+  "observed_failure": "全体加bonus的RWQA为61.7，低于门控66.9",
+  "load_bearing_assumption": "随机加噪框导致的正确率下降反映证据贡献而非提示/分布外干扰",
+  "scope": "单次bbox取证的组级奖励与重采样",
+  "success_criterion": "比较匹配像素/无证据/合理候选反事实及同预算采样",
+  "why_open": "尚无逐次必要性、裁图成本或停止对照"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M13",
+   "locator": "§3.4 factual/counterfactual branch; 对照不完全匹配"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "d=[\\mu-\\mu_c]_+; b=\\mathbf1[d>\\gamma]\\operatorname{clip}(d,b_{min},b_{max}); \\widetilde R_{a,ij}=R_{a,ij}+bm_{ij}",
+    "locator": "Eq. 2–8"
+   },
+   {
+    "latex": "R_{ij}=\\widetilde R_{a,ij}+\\lambda_fR_{f,ij};\\quad A_{ij}=(\\widetilde R_{a,ij}-\\mu_{\\widetilde R})/\\sigma_{\\widetilde R}",
+    "locator": "Eq. 9 versus A.1 Eq. 12"
+   },
+   {
+    "latex": "S=\\{ij:|A_{ij}|\\geq Q_q(|A|)\\};\\quad p_{ij}\\propto |A_{ij}|^\\alpha,\\quad M=\\rho G",
+    "locator": "Eq. 10–11 / Algorithm 1"
+   }
+  ],
+  "signal_routing": "CF只算奖励，真实rollout更新；Eq13概率比写答案t|I,Q,e，未明确证据生成prefix是否也拿PG，不能称已实现逐次crop段信用。重采样有放回，未见采样重要性校正。",
+  "normalization": "mean+std",
+  "invariance": "非严格PBRS；正向bonus和按|A|重采样改变目标。Eq14写正surrogate−KL却称minimize，优化符号待代码核对。",
+  "baseline_or_potential": "同题E×A组均值；正文final reward含format，Eq12却仅shaped accuracy，是否纳入format未统一。",
+  "degenerate_cases": "std=0、所有|A|=0时采样分母处理未见；全对同bonus会中心化消失；全错差分通常0；无直答支持恢复。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 bonus给所有/仅正确/仅top-k，及无quantile/无resample；Table5无证据MME2306、合理候选2386.4、随机加噪2428.5。",
+  "negative_results": [
+   {
+    "text": "不设bonus边界MME2341.6；全给bonus RWQA61.7。",
+    "locator": "Table4"
+   },
+   {
+    "text": "RefCOCOg val89.0低于Ground-R1 90.1；非所有grounding指标领先。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "匹配框形且不加噪时收益消失，或同重采样不含CF也恢复收益，则证据因果解释弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B",
+   "framework": "DeepSpeed ZeRO-3",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.04
+  },
+  "cost": "8×A100 80GB约28h；E4×A2，真实/CF各采样，推理无CF开销",
+  "pitfalls": [
+   {
+    "text": "正文奖励与附录归一化输入/优化符号不一致，不能按论文名假定标准GRPO。",
+    "locator": "Eq9,12,14"
+   }
+  ],
+  "code": null,
+  "lesson": "当反事实bonus改善答案时，应分别审计奖励输入、更新token和采样分布，否则无法推断crop动作信用。"
+ }
+}

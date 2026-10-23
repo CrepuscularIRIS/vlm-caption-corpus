@@ -1,0 +1,140 @@
+{
+ "paper_key": "litscan:76356",
+ "title": "PMSPO",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_76356.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs1/3–13",
+   "§4 Tables1–4",
+   "AppA Algorithm1",
+   "AppB8/Table12"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "软匹配多box reward、一次训练增益筛数据、逐阶段加入前景背景特征对比。",
+  "key_step": "先greedy+format，再Sinkhorn Fβ，最后IoU幂乘语义调制；选Δreward>.03样本。",
+  "why_non_obvious": "几何框重叠不保证目标内容；过强筛选丢难例，语义reward过早加入也不稳。",
+  "trigger_condition": "When localization rewards favor redundant or background boxes, match instances and add delayed semantic discrimination.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "按优化阶段逐步收紧代理指标。",
+  "abstract_trigger_condition": "When easy proxies are exploitable, delay stricter complementary supervision until basic behavior exists.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "几何与语义分阶段组合。",
+  "abstract_why_non_obvious": "平滑reward不意味着能通过离散生成直接反传。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76356#s1",
+   "object": "伪装目标定位GRPO",
+   "information": "训练用GTboxes与DINO预测/GT/扩框特征；SAM3输出最终mask",
+   "operation": "[redacted: project-internal]",
+   "claimed_effect": "COD10K MAE baseline3B .160→.024；Sinkhorn .035→PLGF .029→full .024",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table4",
+    "quote": "Rcontrast = cos(fpred , fgt ) − λ · cos(fpred , fbg )"
+   },
+   "failure_boundary": "GT几何/语义监督非policy必要性；平滑reward仅经scorefunction更新，未给可微生成路径。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "几何与语义grounding分开检验可迁移。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "greedy/Hungarian/Sinkhorn/PLGF/semantic/no curriculum/SegR1",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "依赖GTboxes、冻结DINO和SAM3；PLGF额外一轮训练成本与筛除难例风险；无独立局限节。",
+   "locator": "§3–4"
+  }
+ ],
+ "question": {
+  "observed_failure": "greedy CODMAE.039，Hungarian.041，Sinkhorn.035；δ.05退至.031vsδ.03 .029。",
+  "load_bearing_assumption": "IoU和单box匹配充分监督多实例语义grounding。",
+  "scope": "3B伪装目标定位→SAM分割",
+  "success_criterion": "匹配、筛选、语义、课程分别消融及多seed",
+  "why_open": "冗余框与背景混淆能满足粗几何代理。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2–4"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "reward梯度路径核对"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "P^0=exp(-(1-IoU)/\\tau);P^{t+1}=N_rN_c(P^t);\\tilde P=M^{-1}\\sum P^*_{ij}IoU_{ij};\\tilde R=N^{-1}\\sum P^*_{ij}IoU_{ij};R_{IoU}=\\frac{(1+\\beta^2)\\tilde P\\tilde R}{\\beta^2\\tilde P+\\tilde R}",
+    "locator": "Eqs4–7"
+   },
+   {
+    "latex": "R_{contrast}=cos(f_p,f_{gt})-.5cos(f_p,f_{bg});\\ R_{final}=R_{IoU}^{1.5}[1+\\alpha(2R_{contrast}-1)]",
+    "locator": "Eqs12–13"
+   }
+  ],
+  "signal_routing": "整个box输出组归一化scalar奖励，无每box/每token独立advantage；DINO冻结，未声明reward反传到采样box。",
+  "normalization": "mean+std；Sinkhorn行列归一化是匹配，与advstd分开。",
+  "invariance": "非PBRS；stage变更改变目标。Eq12理论范围[-1.5,1.5]，Eq13声称映射[-1,1]缺少额外缩放/截断说明。",
+  "baseline_or_potential": "组均值；PLGF是一次训练前后reward差，非state value。",
+  "degenerate_cases": "全同reward无优势；无预测/GT或F分母零处理未知；cos背景含目标非纯负；power>1使所有(0,1)数值变小，仅相对偏好高IoU。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "匹配/δ/课程组件消融；4seed独立run。",
+  "negative_results": [
+   {
+    "text": "δ≥.05过滤难例后变差；2epochs低于1epoch；直接加semantic非完整课程收益有限。",
+    "locator": "Table3/4/AppB7"
+   }
+  ],
+  "seeds": "Table12 seeds42/123/566/2026；作者称SD≤.003，非CI。",
+  "falsifier": "同样本量随机筛选不劣PLGF、或背景特征打乱仍同效，则增益归因削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B/DINOv2G14/SAM3",
+   "framework": null,
+   "group_size": 4,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2RTX PRO6000，主训练1epoch+筛选额外一轮；Sinkhornτ.1/T20 β1.1；α.1→.25。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当论文称reward可微时，核生成动作到reward有没有梯度路径；再核cosine组合的数值范围。"
+ }
+}

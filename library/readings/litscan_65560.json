@@ -1,0 +1,176 @@
+{
+ "paper_key": "litscan:65560",
+ "title": "OralGPT-Plus: Learning to Use Visual Tools via Reinforcement Learning for Panoramic X-ray Analysis",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_65560.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.2/Eq5–9",
+   "4 benchmark/evaluation",
+   "5.1/Table1–2",
+   "5.3 findings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "构造牙科局部重看及对侧比较SFT轨迹；用临床rubric连续分数与诊断可靠性门控的探索奖做GRPO。",
+  "key_step": "把对称比较显式变成Mirror-In动作，并使调用奖金仅在rubric过阈值时出现。",
+  "why_non_obvious": "低置信时奖励任意调用可被刷一次工具利用；但终轨迹高分并不证明重看有必要。",
+  "trigger_condition": "When subtle lesions need comparative inspection, teach mirrored views and gate exploration bonuses by diagnostic quality.",
+  "contribution_type": "domain tool design and conditional RL reward",
+  "abstract_strategy": "Encode a domain comparison operation and condition exploration incentives on credible outcomes.",
+  "abstract_trigger_condition": "When an undirected tool bonus encourages superficial inspection.",
+  "abstract_key_step": "Seed comparison behavior, then modulate its bonus using quality and exploration saturation.",
+  "abstract_why_non_obvious": "Outcome reliability and action necessity remain different quantities.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:65560#s1",
+   "object": "条件化对侧重检训练",
+   "information": "原始全景X光、区域/牙号标注构造SFT；训练GPT5mini评终轨迹rubric，在线图像工具不含GT。",
+   "operation": "Zoom-In与Mirror-In（中线左右镜像，1.5倍padding）；SFT后Rrubrics+Rformat+I[score>eta]*alpha*max(H-Cu,0)*Itool做GRPO。",
+   "claimed_effect": "7B MMOral-X简单23.06 SFT→43.16；复杂14.40→24.96；去Mirror复杂14.30。",
+   "conditions": [
+    "对称参考有效",
+    "专家标注与rubric可靠",
+    "SFT有工具示范"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "OralGPT-Plus                43.16           20.60               24.96"
+   },
+   "failure_boundary": "Cu/H/eta数值或更新定义正文不明；奖由最终rubric触发非观测前可执行confidence门。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "去instruction tuning的RL不能获得工具行为，直接支持先种行为边界。",
+   "strength": 2
+  },
+  {
+   "problem": "P26",
+   "how": "局部重看/对照视图SFT可作纠偏示范构造近邻。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "条件探索奖金进入标准化优势，其alpha有效尺度需按组构成检验。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SFT only / no instruction tuning / remove rubrics / remove conditioned reward / remove Mirror-In",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "条件奖是终轨迹rubric门控，未提供逐次重检因果增益；探索饱和度的可执行更新规则与阈值未在正文找到。",
+   "quote": "let Cu(x) represent the current exploration sat-",
+   "locator": "3.2.2"
+  },
+  {
+   "text": "3B复杂任务RL后10.70低于SFT14.18，容量与行为支撑构成失败边界。",
+   "locator": "Table1",
+   "quote": "OralGPT-Plus-3B                             3B      33.12"
+  }
+ ],
+ "question": {
+  "observed_failure": "无instruction tuning简单8.02/复杂4.98，完整43.16/24.96。",
+  "load_bearing_assumption": "有正确性奖励即会主动学会对侧重看。",
+  "scope": "全景牙片诊断工具行为",
+  "success_criterion": "rubric评分与调用结构，单独比较SFT/RL及Mirror",
+  "why_open": "静态局部观察不足以分辨对称微小病变"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "3.1 SFT /5.3 no-instruction ablation"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2 mirror and reward ablations"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "3.1.2 symmetry as Mirror-In action"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "I_mirror(x,y)=I(W-x,y), (x,y) in selected box",
+    "locator": "Eq5"
+   },
+   {
+    "latex": "R_diag(tau)=1[R_rubrics(tau)>eta]*alpha*max(H-Cu(x),0)*1_tool(tau)",
+    "locator": "Eq7"
+   },
+   {
+    "latex": "R=R_rubrics+R_format+R_diag",
+    "locator": "Eq8"
+   }
+  ],
+  "signal_routing": "GPT5mini给整轨迹连续rubric0–1，合并格式与条件探索回报，标准化优势进入GRPO；token mask、轨迹长度归一化和eta/H/Cu实现未给。",
+  "normalization": "mean+std (standardized advantages stated; exact epsilon/reduction unspecified)",
+  "invariance": "非PBRS：成功门控探索奖金改变工具偏好，无potential差分保证。",
+  "baseline_or_potential": "GRPO组相对baseline；rubric assessor并非当前策略反事实动作价值。",
+  "degenerate_cases": "rubric≤eta或Cu≥H时探索奖0；任何一次tool即Itool1，不能逐次识别冗余；p≈0依赖SFT；全同回报零优势。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "去SFT、条件奖、rubric或Mirror独立消融；3B/7B对照；MMOral-X五次评测。",
+  "negative_results": [
+   {
+    "text": "3B OPG从底座28.79到SFT21.02再RL24.48仍低于底座；非统一改善。",
+    "locator": "Table1"
+   },
+   {
+    "text": "训练奖励与评测同用GPT5mini rubric，不能当独立专家gold；五次评测不是五训练种子。",
+    "locator": "3.2.1/4.2/5.1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：同初始caption分原/对侧/随机crop，盲人工复核增量事实；若rubric高分仅靠措辞则不支持必要重检。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B/7B",
+   "framework": "language-module full SFT; GRPO",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "4×A800；4K SFT3epochs+1K RL分离；batch8/G8；视觉encoder/projector冻结；lr/最长轮次未知。",
+  "pitfalls": [
+   {
+    "text": "SFT轨迹用牙号检测/病灶GT proposal、多agent重写及专家抽样，不能把监督成本视为零。",
+    "locator": "3.1.3"
+   }
+  ],
+  "code": "https://github.com/isbrycee/OralGPT",
+  "lesson": "当judge同时用于奖励和评价时，应增独立人工标准及低置信错例审计；只奖励曾调用工具会遗漏逐次必要性。"
+ }
+}

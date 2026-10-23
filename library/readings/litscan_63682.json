@@ -1,0 +1,202 @@
+{
+ "paper_key": "litscan:63682",
+ "title": "CodeVision",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_63682.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3 pp3–5",
+   "§4–5 pp5–8 Tables1–3 Figs9–10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将旋转/翻转脆弱性转成可验证工具任务，以code统一动作接口；SFT包含多工具、错误日志修复，再用带元数据的dense reward RL。",
+  "key_step": "必用工具单次bonus与crop最好IoU增量；从K8rollouts比较可选tool/no-tool成功率并奖励成功使用者，配多种防hacking罚项。",
+  "why_non_obvious": "统一代码接口扩大可组合动作空间，也增加探索难度和刷动作风险；SFT支持与reward约束必须同时出现。",
+  "trigger_condition": "图像方向错误/极小文字需要真实变换，或多工具/错误修复不在已有策略支持内。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "构造可验证扰动与操作元数据，将终局监督扩展到行为覆盖、策略进展和成本约束。",
+  "abstract_trigger_condition": "图像方向错误/极小文字需要真实变换，或多工具/错误修复不在已有策略支持内。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "必用工具单次bonus与crop最好IoU增量；从K8rollouts比较可选tool/no-tool成功率并奖励成功使用者，配多种防hacking罚项。",
+  "abstract_why_non_obvious": "统一代码接口扩大可组合动作空间，也增加探索难度和刷动作风险；SFT支持与reward约束必须同时出现。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:63682#s1",
+   "object": "multi-turn tool-use support",
+   "information": "GT答案、预设工具/顺序、canonical image、GPT5 teacher和runtime日志",
+   "operation": "6K SFT中显式加入no-tool、single/multi-tool、multi-crop、error-handling；只对assistant tokens训练，工具返回缓存",
+   "claimed_effect": "直接RL不收敛；SFT后RL MVToolBench60.1，SFT26.6，base18.1",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2 pp3–4; Table3 p7; Fig10 p8",
+    "quote": "Qwen2.5-VL-7B-SFT 57.0 35.8 23.2 20.9 71.7 26.6"
+   },
+   "failure_boundary": "预设工具序列不是自然问题的必要性真值；canonical回归可验证操作但不证明必须用工具。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:63682#s2",
+   "object": "tool strategy reward",
+   "information": "GT required tools/targetbox；同题8rollouts的tool分组和终答正确性",
+   "operation": "首次正确必用tool奖1/N；crop只奖best IoU正增量；可选工具成功率差为正且no-tool成功≤1时奖励成功tool轨迹",
+   "claimed_effect": "去strategy后MVToolBench60.1→50.7；去penalty→55.9",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3.2 pp4–5; Table3 p7",
+    "quote": "w/o Stratrgy Reward 60.9 61.5 24.6 28.9 78.5 50.7"
+   },
+   "failure_boundary": "自选tool与no-tool不是同state随机干预，不能把成功率差称因果necessity；空分组无定义。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "直接检验无SFT训练不收敛，多工具及错误修复先由SFT种入。"
+  },
+  {
+   "problem": "P43",
+   "strength": 3,
+   "how": "提供有GT时crop IoU进展与必用操作过程信号，但可用GT范围受限。"
+  },
+  {
+   "problem": "P44",
+   "strength": 3,
+   "how": "报告重复裁图/枚举旋转刷奖励，并以专门罚项约束。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5VL7B",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3VL8B/32BThinking",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme",
+   "kind": "method"
+  },
+  {
+   "name": "SFT-only",
+   "kind": "method"
+  },
+  {
+   "name": "without strategy reward",
+   "kind": "method"
+  },
+  {
+   "name": "without penalties",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Reader limitation: must-use元数据监督不证明真实任务必要性；分组成功率有选择偏差与小样本噪声，不能证明新工具贡献。",
+   "quote": null,
+   "locator": "§3.3.2 p5"
+  }
+ ],
+ "question": {
+  "observed_failure": "OCRBench7B source86.4，vertical17.0；MVToolBench base18.1。",
+  "load_bearing_assumption": "方向恢复与GT目标框是可操作的学习监督，模型已有足够code和视觉基础。",
+  "scope": "可程序化旋转/翻转、极小文字和组合工具。",
+  "success_criterion": "恢复扰动后正确率并保留原图能力；减少无效工具回合且支持纠错。",
+  "why_open": "密集策略奖励、SFT数据、元数据与代码接口共同改变，无单独可选tool bonus因果效应。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Fig10 p8无SFT失败，§3.2主动构造error-handling支持"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "Eq3 p5从policy rollout成功差构造optional工具bonus"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "locator": "§3 code统一不同操作接口"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_SFT=-Σ_t m_t log pθ(y_t|x,y_<t)",
+    "locator": "Eq1 p4"
+   },
+   {
+    "latex": "R_total=R_outcome+β1Σ_t R_strategy(a_t)-β2P_cost; format weight=.1, β1=1 (must=1,suggested=.2), β2=.5",
+    "locator": "Eq2 p4; §4.1 p6"
+   },
+   {
+    "latex": "r_nec=max(0,mean_{Gtool}r_acc-mean_{Gnotool}r_acc)",
+    "locator": "Eq3 p5"
+   }
+  ],
+  "signal_routing": "过程分量最后相加为轨迹R_total；GRPO作为base未展开advantage/逐token路由，不能断言单步独立credit。Fig4说明SFT/RL mask工具返回，正文SFT明确assistant包括最终答案；RL细节未完整给。",
+  "normalization": "必用工具每项budget1/N；crop按best IoU正增量；optional按各分组数量均值。GRPO std/长度归一化实现未知。",
+  "invariance": "crop best-IoU增量可望远镜成maxIoU差，但与首次工具bonus、顺序bonus、thresholdpenalty混合不是严格PBRS，不保证最优策略不变。",
+  "baseline_or_potential": "self-selected组差为reward bonus，非无偏action baseline；没有state potential证明。",
+  "degenerate_cases": "Sreq=None时1/N不能直接用，文字另定义no-tool但公式分支未知；Gtool/Gnotool为空未定义；全对组rnec0但额外successful-tool bonus仍可能偏好tool。跨turn正IoU进展可能拖长轨迹，被turnpenalty控制。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：固定SFT现有rollouts，记录optional两组支持和成功率置信区间；同前缀随机允许/禁用某一工具、等预算续跑，对比observational rnec与干预收益；再分离去额外成功用tool奖。",
+  "negative_results": [
+   {
+    "text": "SFT V*71.7低于base74.6；去penalty71.2；无SFT RL失败。",
+    "locator": "Table3 p7; Fig10 p8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若随机干预tool无改善但自选组差仍正，则rnec不能充当必要性标签。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B; Qwen3VL8B/32BThinking",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "SFT6K两epoch batch128lr5e-6；RL40K两epoch batch64lr1e-6；GPU数量与时长未知。",
+  "pitfalls": [
+   {
+    "text": "超过|Sreq|+1 tool turns罚；correct且cropIoU<.1罚；无工具题旋转/翻转罚。每项binary，但额外turn按次还是整轨迹一次文字有粒度歧义。",
+    "locator": "§3.3.2 p5"
+   },
+   {
+    "text": "惩罚turn不是库函数次数，多操作一段code可压turn但仍有计算成本。",
+    "locator": "Figs8–9 pp7–8"
+   }
+  ],
+  "code": "https://github.com/ByteDance-BandAI/CodeVision",
+  "lesson": "当放开代码组合动作时，先在SFT教错误日志恢复并记录每个实际函数成本；只罚对话turn可能鼓励打包而非减少计算。"
+ }
+}

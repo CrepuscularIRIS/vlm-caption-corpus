@@ -1,0 +1,187 @@
+{
+ "paper_key": "litscan:61987",
+ "title": "MM-Doc-R1: Training Agents for Long Document Visual Question Answering through Multi-turn Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_61987.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3 Eq1–5",
+   "§4 Tables1–3",
+   "§6 Limitations",
+   "Appendix A.3–A.4"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用轨迹语义相似度加权同组终局奖励，替换均匀GRPO baseline。",
+  "key_step": "冻结BGE-M3编码完整轨迹Ti，cosine行归一得到wij，Ai=Ri−ΣjwijRj；整轨迹仍共享一个Ai。",
+  "why_non_obvious": "改变比较对象而非状态级credit；完整轨迹含未来动作，因此加权baseline并非action-independent state value。",
+  "trigger_condition": "When multi-turn trajectories diverge, compare outcomes with similar trajectories, while checking action-dependent baseline bias.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "条件化比较组",
+  "abstract_trigger_condition": "When multi-turn trajectories diverge, compare outcomes with similar trajectories, while checking action-dependent baseline bias.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "冻结BGE-M3编码完整轨迹Ti，cosine行归一得到wij，Ai=Ri−ΣjwijRj；整轨迹仍共享一个Ai。",
+  "abstract_why_non_obvious": "改变比较对象而非状态级credit；完整轨迹含未来动作，因此加权baseline并非action-independent state value。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:61987#s1",
+   "object": "SPO advantage",
+   "information": "完整采样轨迹、终局reward、冻结BGE-M3",
+   "operation": "cosine加权含自身的组奖励作trajectory baseline，不按每步重估",
+   "claimed_effect": "Qwen3-8B ACC49.7 vsGRPO44.7；4B46.0 vs39.9。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq4–5; Table1",
+    "quote": "+SPO            46.2    38.1    40.8      52.8    35.9    56.0     31.2     68.2    49.7   46.1"
+   },
+   "failure_boundary": "cosine可负、行和可零；未来动作依赖与selfweight导致偏差，作者未给无偏证明。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:61987#s2",
+   "object": "文档读取agent",
+   "information": "TOC/OCR、BM25top10、外部Qwen2.5VL7B读页返回文本；gold证据页只训练reward",
+   "operation": "planner→多轮search/read→answer，reward=证据页recall+终答正确分",
+   "claimed_effect": "读3.35页recall66.3 vsColQwen读5页65.4；8B推理154.44s vs未训练109.32s。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.1; §3.2.3; Table3; A.4",
+    "quote": "Final Reward = Recall + Correctness Score"
+   },
+   "failure_boundary": "read页reward无precision/成本惩罚；不是学生自身crop像素处理，外部reader能力不能当policy视觉Q。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P08",
+   "strength": 2,
+   "how": "动作相关的whole-trajectory语义权重改变baseline，需检查无偏性而不能只称降方差。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "以轨迹语义重定义比较对象，但最终仍将单个A广播整轨迹，未解决逐工具信用。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO same settings",
+   "kind": "method"
+  },
+  {
+   "name": "untrained MM-Doc-R1",
+   "kind": "method"
+  },
+  {
+   "name": "BM25/BGE-M3",
+   "kind": "method"
+  },
+  {
+   "name": "Mdoc Agent/M3docRAG",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "受TOC与OCR预处理质量限制。",
+   "quote": "and the OCR accuracy of the ingestion engine.",
+   "locator": "§6 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "8B GRPO44.7低于未训练45.7，SPO49.7；unanswerable68.2仍低于未训练73.9。",
+  "load_bearing_assumption": "完整轨迹相似即中间状态价值相近，足以抵消动作依赖baseline引入偏差。",
+  "scope": "固定caption/crop rollout离线重算SPO，先不训练。",
+  "success_criterion": "控制回答正确性/动作类后仍有方差下降且直答/crop对比方向不被翻转。",
+  "why_open": "未分离全轨迹相似与prefix-only或leave-one-out，未证明无偏。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq4–5区分trajectory similarity baseline与step credit；baseline权重依赖完整动作轨迹"
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "locator": "§3.2.2 用语义相似加权baseline替换均匀组均值"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=R_i-sum_j w_ij R_j; w_ij=cos(e_i,e_j)/sum_k cos(e_i,e_k)",
+    "locator": "Eq4–5"
+   },
+   {
+    "latex": "R=|read_pages∩evidence_pages|/|evidence_pages|+CorrectnessScore",
+    "locator": "§3.2.3"
+   }
+  ],
+  "signal_routing": "Eq1以每轨迹1/|oi|、组1/G平均clippedtokenratio*A并KL；整response同一终局reward，工具返回是否mask、planner/seeker/answer具体哪些参数/token训练未知。BGE冻结不代表baseline对采样动作独立。",
+  "normalization": "cosine行和归一，不是softmax；Eq2/4无std；Eq1每轨迹长度平均。",
+  "invariance": "行和非零时共同reward平移抵消，正比例reward缩放仍缩放A；非PBRS。轨迹相似不同使ΣiAi未必0。",
+  "baseline_or_potential": "包含i=j的加权return；依赖整轨迹，不能宣称action-independent unbiased baseline。",
+  "degenerate_cases": "全同reward→A=0；仅selfsimilarity非零→A=0；全部相似相同→均值baseline；cosine负/分母0处理未知；无证据页时recall分母0未知。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同训练设置SPO vsGRPO仅改advantage；Table2移除TOC/OCR/VLMread。",
+  "negative_results": [
+   {
+    "text": "8Bunanswerable未训练73.9>SPO68.2；GRPO60.5。",
+    "locator": "Table1"
+   },
+   {
+    "text": "摘要/正文10.4pp不适用于未训练45.7 vs最佳RAG39.3=6.4；49.7−39.3才10.4。",
+    "locator": "Table1; §4.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "prefix-only LOO或随机相似权重同样有效，或收益只来自放大正确组差且增read成本，则semantic-state机制未确立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-4B/8B orchestrator; frozen Qwen2.5VL7B reader/BGE-M3",
+   "framework": "verl custom advantage patch",
+   "group_size": null,
+   "max_turns": 4,
+   "kl": 0.005
+  },
+  "cost": "8H100；Adam5e-7,temp.8；A.3 batch4完整轨迹/rollout4步，未明确每prompt组大小；A.4已报推理延迟。",
+  "pitfalls": [
+   {
+    "text": "KL正文refpolicy，附录写old/new，真实KL基准未知。",
+    "locator": "Eq1 vsA.3"
+   },
+   {
+    "text": "externalreader返回文本不等于policy看原始页图。",
+    "locator": "§3.1; A.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当用完整轨迹决定baseline权重时，应先做selfweight、负余弦、零分母和动作依赖检查，不能把训练收益自动归因于无偏状态估值。"
+ }
+}

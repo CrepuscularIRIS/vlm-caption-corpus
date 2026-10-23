@@ -1,0 +1,15 @@
+# Public whitelist: only the redacted library, its README and a few scripts are tracked.
+# Working files (problems, cards, notes, full text, raw readings) stay local; see
+# .gitignore.private and the private backup remote.
+/*
+!/.gitignore
+!/README.md
+!/library/
+!/scripts/
+/scripts/*
+!/scripts/export_public.py
+!/scripts/fetch_pdfs.py
+!/deepread/
+/deepread/*
+!/deepread/verify_quotes.py
+__pycache__/

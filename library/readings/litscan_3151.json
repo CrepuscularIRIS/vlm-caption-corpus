@@ -1,0 +1,214 @@
+{
+ "paper_key": "litscan:3151",
+ "title": "Progressive Multimodal Reasoning via Active Retrieval",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3151.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3 methods Eq1–8",
+   "§4 Tables1–2 Figures5–6",
+   "Appendix Algorithm2; B.3–B.7 settings; Tables5,8",
+   "Limitations",
+   "PDFp6 equation visual check only"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "扩展时按当前推理前缀重检索相关例题，增加候选正确覆盖，再用成功续写比例标注PRM。",
+  "key_step": "文本/跨模态双检索+概念过滤→每步替换insights→gold续写比例MCTS标注→step DPO预对齐→pointwise PRM→推理逐步argmax剪枝。",
+  "why_non_obvious": "候选支持与验证质量分别控制；检索不是裁当前图，而是引入外部含答案的例题；最终PRM为文本骨干。",
+  "trigger_condition": "When multimodal expansion lacks useful candidate paths, retrieve step-specific external examples and train a process scorer from checked continuation outcomes.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "扩展支持与过程验证分离",
+  "abstract_trigger_condition": "When multimodal expansion lacks useful candidate paths, retrieve step-specific external examples and train a process scorer from checked continuation outcomes.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "文本/跨模态双检索+概念过滤→每步替换insights→gold续写比例MCTS标注→step DPO预对齐→pointwise PRM→推理逐步argmax剪枝。",
+  "abstract_why_non_obvious": "候选支持与验证质量分别控制；检索不是裁当前图，而是引入外部含答案的例题；最终PRM为文本骨干。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3151#s1",
+   "object": "每步推理候选",
+   "information": "原图/题目/已生成步骤；外部题解答案和concept labels",
+   "operation": "Contriever文本检索与CLIP平均图文向量检索，经相似度双阈值筛选；每步替换相关例题",
+   "claimed_effect": "Qwen2VL MathVista64.1，去active retrieval61.9，去filter62.8；WeMathS3 40.6 vs38.7/39.5。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2–3.5; Table2",
+    "quote": "while \"w/o PRM\" denotes using"
+   },
+   "failure_boundary": "检索含外部题解并使用concept标签，与在线crop获得当前视觉证据不同；数据重叠非零。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:3151#s2",
+   "object": "过程验证器",
+   "information": "训练gold答案检查续写成功率；推理无gold，文本骨干PRM评分",
+   "operation": "v>.8为正、v=0为负，先DPO后pointwise sigmoid；推理每轮只留最高分节点且4轮停止",
+   "claimed_effect": "去PRM MathVista61.0 vs64.1；软标签64.1 vs硬标签62.9。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.6; Table2; Appendix B.7 Table8",
+    "quote": "we extract the highest-scoring node"
+   },
+   "failure_boundary": "成功率反映固定生成器+检索条件下可恢复性，不是单步逻辑真值；印刷DPO公式退化，无法从论文复建正确实现。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P36",
+   "strength": 2,
+   "how": "终答续写估值与过程正确性需分开；可借鉴验证数据构造，不是直接crop Q。"
+  },
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "文本PRM看不到像素，应防止过程评分忽略视觉错。"
+  },
+  {
+   "problem": "P58",
+   "strength": 2,
+   "how": "测试预算与候选正确覆盖需要分别测量。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Self-consistency",
+   "kind": "method"
+  },
+  {
+   "name": "Self-correction",
+   "kind": "method"
+  },
+  {
+   "name": "ORM",
+   "kind": "method"
+  },
+  {
+   "name": "vanilla PRM without active retrieval",
+   "kind": "method"
+  },
+  {
+   "name": "Beam search with retrieval",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "MCTS标注耗资源，未给可复现总成本。",
+   "quote": "significant computational resources, leading to",
+   "locator": "Limitations"
+  },
+  {
+   "text": "文本PRM与视觉输入深耦合仍是未来工作。",
+   "quote": "image and text and provide supplemental",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen2VL self-correct MathVista50.8低于zero-shot58.8；AR64.1而去检索61.9。",
+  "load_bearing_assumption": "检索生成的可恢复性标签可泛化到待验证视觉推理，文本PRM不会把语言顺畅错当图像正确。",
+  "scope": "只作离线caption→crop完成轨迹候选覆盖/评分诊断。",
+  "success_criterion": "固定token预算与候选池，视觉错因层的排序改善，且移除检索近重复仍有效。",
+  "why_open": "候选pass@K提升混合外部信息、预算和PRM训练；不保证减少crop或不损准确率。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§3.5 expansion与simulation分离"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "检索生成器与文本PRM"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "E_x(x,t)=(E_I(x)+E_T(t))/2; D_ins={r:Sim(r,Q)>=T_r AND Sim(r,L_kc)>=T_kc}",
+    "locator": "Eq5; §3.4"
+   },
+   {
+    "latex": "V(s)=sum_j 1[y_j=gold]/k; Q(s,a)<-Q(s,a)+(V(s)-Q(s,a))/N(s,a)",
+    "locator": "§3.5"
+   },
+   {
+    "latex": "L_SDPO=-E log sigmoid(beta log(pi_theta(y+|Q)/pi_theta(y+|Q))-beta log(pi_ref(y-|Q)/pi_ref(y-|Q)))",
+    "locator": "§3.6 printed equation, visually confirmed PDFp6"
+   },
+   {
+    "latex": "L_PFT=sum_i [yhat_i log_piDPO(r_i)+(1-yhat_i) log_piDPO(1-r_i)]",
+    "locator": "Eq8 printed, visually confirmed PDFp6"
+   }
+  ],
+  "signal_routing": "gold续写成功比例用于搜索树统计与离线PRM标签；DPO/pointwise更新PRM，Appendix B.7明确对应文本骨干，closed models用Qwen2-7B；不对MLLM做目标域fine-tune。推理PRM只筛选节点，不在线RL更新。精确评分token与视觉信息如何转给文本PRM未明确。",
+  "normalization": "续写均值/k和增量均值1/N；检索图文算术均值，concept筛选cosine；无GRPO标准差。CLIP向量均值后是否再L2归一未明。",
+  "invariance": "非PBRS。Eq1 max乘积非一般归一化条件分布，不能当概率定理。印刷DPO两比值均为1→L=log2且梯度零；这与正文意图相反，不能擅自换成标准DPO。",
+  "baseline_or_potential": "πref初始πθ且冻结是参考策略，不是advantage baseline。搜索Q均值不是shaping potential。",
+  "degenerate_cases": "v全0或没有v>.8无preferencepair；0<v<=.8不用于DPO正负对。检索集空回退未知。Eq8无负号、log下标写πDPO且称r sigmoid分数，优化方向/真实实现未知；本文报告收益不能验证所印方程。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2删除PRM、检索或conceptfilter，Table8 soft vs hard；Figure6指标为至少一个候选正确的题比例(pass@K)，不是候选逐条accuracy。",
+  "negative_results": [
+   {
+    "text": "LLaVAOneVision WeMathS3 AR38.9低于zero-shot40.6/ORM44.2。",
+    "locator": "Table1"
+   },
+   {
+    "text": "作者称less than5% overlap即no overlap，但Table5报告非零0.1–4.5%，只能说明该n-gram指标值较小。",
+    "locator": "Appendix C.2 Table5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "固定检索预算、排除近重复、盲去gold concept后不胜vanilla PRM，或真实crop换随机crop评分不变，则不可迁移视觉信用。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2VL7B等生成器；文本骨干PRM/Qwen2-7B；CLIPViTL14@336+Contriever",
+   "framework": "DeepSpeedZeRO3;FlashAttention2;FAISS",
+   "group_size": null,
+   "max_turns": 4,
+   "kl": null
+  },
+  "cost": "8 A800；DPO lr5e-7 batch64 epochs2 beta.3 maxlen4096；PFT fullFT lr7e-6 batch128 epochs3 wd.1 maxlen8192。总GPU时未知。",
+  "pitfalls": [
+   {
+    "text": "真实推理Algorithm2是逐步单路径argmax，不等于训练标注时全MCTS搜索。",
+    "locator": "§3.6; Algorithm2"
+   },
+   {
+    "text": "训练排除当前测试源；检索跨用另一benchmark testmini及pseudoanswers，n-gram检查不能排除语义/图像重叠。",
+    "locator": "Appendix B.4–B.6; Table5"
+   },
+   {
+    "text": "正文强调multimodal verification但实际PRM文本骨干，不能假设视觉可辨识。",
+    "locator": "Appendix B.7"
+   }
+  ],
+  "code": null,
+  "lesson": "当搜索终答成功率被用来训练过程评分时，应记录生成器、可用检索信息和gold边界，并先验证公式有非零梯度及评分器是否实际接收图像。"
+ }
+}

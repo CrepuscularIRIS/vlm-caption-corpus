@@ -1,0 +1,162 @@
+{
+ "paper_key": "litscan:75376",
+ "title": "IC-VCO: Learning from Fine-Grained Visual Discrepancies: Mitigating Multimodal Hallucinations via In-Context Visual Contrastive Optimization",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75376.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "2–4",
+   "Tables2–4",
+   "5.3–5.4",
+   "7",
+   "C"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "algebraic_equivalence_unification",
+  "key_step": "把原图和编辑图同时放入同一context，用固定目标anchor比较两个回答，使DPO配分项抵消",
+  "why_non_obvious": "跨图固定回答的logratio不是同条件DPO；重新组织同context偏好恢复推导并蒸馏回单图",
+  "trigger_condition": "When visual preference swaps conditioning contexts, compare responses under a shared image-pair context",
+  "contribution_type": "preference objective and hard-negative data",
+  "abstract_strategy": "先统一条件空间，再迁移额外上下文的监督",
+  "abstract_trigger_condition": "原目标中被假定抵消的归一化量实则依赖context",
+  "abstract_key_step": "同anchor内部比较回答，双向训练；gated softteacher校准单图",
+  "abstract_why_non_obvious": "不同anchor之间仍不能当同condition抵消",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75376#s1",
+   "object": "single/multi-image preference branches",
+   "information": "edited image pairs plus response differences and current-policy preference logits",
+   "operation": "同context DPO+chosen anchor+门控多图到单图蒸馏；单图仅edited token评分",
+   "claimed_effect": "Interleave整体63.35；去VCDist63.04，去anchor61.15；OneVision66.82",
+   "conditions": [
+    "19,453 edited pairs",
+    "two 7B backbones",
+    "SFT then DPO"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "w/o LVCDist"
+   },
+   "failure_boundary": "门控是相对于偏好标签的胜率，不是实际视觉事实正确性oracle",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "局部视觉负例与token偏好可训练caption groundedness",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "跨观测条件likelihood差须谨慎，不自动是同状态动作价值",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DPO/mDPO/V-DPO/S-VCO/SymMPO matched annotations",
+   "kind": "method"
+  },
+  {
+   "name": "without VCDist/anchor/mask/stop-gradient/gate",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "关系编辑828/19453，关系指标并非全面最好。",
+   "quote": "of 19,453 samples. We leave richer relation-oriented editing",
+   "locator": "5.2"
+  },
+  {
+   "text": "随机顺序后仍有第二位置teacher accuracy+8.4点及trigger+12.7点。",
+   "locator": "5.4 Figure8"
+  }
+ ],
+ "question": {
+  "observed_failure": "去anchor63.35→61.15；蒸馏只贡献.31点",
+  "load_bearing_assumption": "同condition偏好+局部编辑迫使细粒度视觉辨别",
+  "scope": "caption局部事实token偏好",
+  "success_criterion": "控制编辑预算/teacher质量后事实率提升，顺序扰动稳定",
+  "why_open": "编辑artifact和teacher偏好校准可能仍是捷径"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "algebraic_equivalence_unification",
+   "locator": "Eq7–9"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "C SFT chosen samples then preference optimization"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "p_c=\\sigma\\{\\beta[\\log(\\pi_\\theta(y^+|c)/\\pi_{ref}(y^+|c))-\\log(\\pi_\\theta(y^-|c)/\\pi_{ref}(y^-|c))]\\}; L_c=-E\\log p_c",
+    "locator": "Eq9–10"
+   },
+   {
+    "latex": "L_D=-E\\,\\mathbf1[p_m>.5\\land p_s<\\operatorname{sg}(p_m)]\\{\\operatorname{sg}(p_m)\\log p_s+(1-\\operatorname{sg}(p_m))\\log(1-p_s)\\}",
+    "locator": "Eq11"
+   },
+   {
+    "latex": "L={1\\over2}[\\lambda_1(L_m+\\eta_1L_{ma})+\\lambda_2(L_s+\\eta_2L_{sa})+\\gamma L_D]+\\text{swapped-target term}",
+    "locator": "Eq12–15"
+   }
+  ],
+  "signal_routing": "多图DPO全response；单图preference score只edited response token；teacher是同模型多图branch，蒸馏stopgrad，单图student获梯度。Anchor防chosen概率下降。",
+  "normalization": "同context配分函数cancel；Bernoulli BCE expectation；mask后sum/mean长度归一化未明；无groupstd。beta=0.1,lambda1=0.75,lambda2=1.75,eta1=eta2=1,gamma=0.4。",
+  "invariance": "固定同一(M,anchor)条件时partition cancellation严格；跨anchor不能cancel。非PBRS；gating不保证真实事实正确。",
+  "baseline_or_potential": "SFT后冻结reference；多图teacher非独立高能力模型。",
+  "degenerate_cases": "pm<=.5或ps>=pm蒸馏关闭；无edited token mask处理未知；无真实语义变化的编辑会产生错标签；两个response相同无偏好margin。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同数据比较共享context各objective；Table4去蒸馏/stopgrad/gate/anchor；两图顺序分析。",
+  "negative_results": [
+   {
+    "text": "去mask BLINK50.18高于full49.44；去dual-gate50.34。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：背景编辑/标签随机化仍获同等提升，或顺序翻转决定偏好，表明视觉差异监督解释不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA-NeXT-Interleave7B / OneVision7B",
+   "framework": "LoRA rank128 alpha256",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8×H20；SFT1epoch/DPO1epoch；编辑成功91%",
+  "pitfalls": [],
+  "code": "https://github.com/OPPO-Mente-Lab/IC-VCO",
+  "lesson": "当跨图构造偏好时，应核所有条件是否相同，并把局部编辑检查与teacher胜率门控分开。"
+ }
+}

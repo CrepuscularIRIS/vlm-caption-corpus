@@ -1,0 +1,146 @@
+{
+ "paper_key": "litscan:70403",
+ "title": "SpatialLadder",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_70403.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.2 Eqs1–2",
+   "Tables1–4/§4.3",
+   "AppB Tables7–8/reward/coldstart",
+   "AppD.5 Table16",
+   "AppE limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "定位SFT→空间理解SFT→冷启动CoT和GRPO，逐层补能力。",
+  "key_step": "先6000定位，再多模态空间任务，1255条正确格式/答案筛选CoT冷启动后RL。",
+  "why_non_obvious": "直接RL未必能补感知能力，延长SFT也不等于RL增益。",
+  "trigger_condition": "When spatial reasoning is limited by perception, build localization and understanding before RL.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "按先决技能顺序训练，单独检验阶段增量。",
+  "abstract_trigger_condition": "When downstream optimization assumes missing prerequisites, explicitly teach prerequisites first.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "分阶段能力构建与同数据延长SFT对照。",
+  "abstract_why_non_obvious": "hint增益只能提示瓶颈，不能单独证明所有错误源于感知。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70403#s1",
+   "object": "空间VLM训练阶段",
+   "information": "定位/空间QA GT；7B合成且按格式+accuracy筛CoT，测试不提供GT",
+   "operation": "两阶段SFT、冷启动、格式+正确性GRPO；NQ用多相对误差阈值",
+   "claimed_effect": "Table3 stage1–2 60.2→全62.3；延长SFT58.2；OOD38.1→45.0",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2/Table3",
+    "quote": "we perform a cold-start"
+   },
+   "failure_boundary": "不是纯RL自动长出CoT；没有工具使用或停止效率目标。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "[redacted: project-internal]"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "冷启动行为先决与SFT/RL阶段对照。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "base / removeStage1/2/3 / extendedSFT / noCoT / changedKL,rewardscale",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅3B；26610条以ScanNet室内为主；固定阶段未必普适。",
+   "locator": "AppE"
+  }
+ ],
+ "question": {
+  "observed_failure": "去Stage2降9.4，去Stage1降1.8，去Stage3降2.1；general MMBench−.9/MMMU−1.2。",
+  "load_bearing_assumption": "可跳过感知基础直接训练推理。",
+  "scope": "3B空间定位/QA",
+  "success_criterion": "固定数据比较阶段消融、延长SFT与RL、域外任务",
+  "why_open": "感知hint诊断和训练顺序需分别证明，额外数据也可能解释增益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "AppB Cold Start"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=r_{format}+r_{acc};\\quad r_{NQ}=|T|^{-1}\\sum_{\\tau\\in T}1[|o-y|/y<\\tau],\\ T=\\{.50,.55,\\ldots,.95\\}",
+    "locator": "AppB Eqs5–8"
+   },
+   {
+    "latex": "A_i=(r_i-mean(r))/std(r)",
+    "locator": "§3.2 Eq2"
+   }
+  ],
+  "signal_routing": "整response终局标量优势；format只检查标签而非推理正确，NQ仅答案数值；无独立感知token credit。",
+  "normalization": "mean+std；AppD.5明确format稳定后accuracy整体权重被抵消。",
+  "invariance": "非PBRS；孤立正比例reward缩放在std下不变（忽略epsilon），不能借权重调出新目标。",
+  "baseline_or_potential": "组均值baseline，非potential。",
+  "degenerate_cases": "同reward组无优势/零std实现未知；NQ y=0处理未知；格式已恒定时仅accuracy决定排序；全对/错无新分辨信号。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3同数据相同额外epoch SFT对RL；AppD5缩reward和KL；初始200题bbox/direction hints诊断。",
+  "negative_results": [
+   {
+    "text": "延长SFT−2pp；通用能力略降；表1base Overall35.4与表3的38.8及+23.4口径不一致，不复述headline改善。",
+    "locator": "Tables1/3/4"
+   }
+  ],
+  "seeds": "Tables7–8 data_seed42，未见多训练seed/CI；表16重复相同超参45.7/45.2未解释。",
+  "falsifier": "同计算/数据打乱阶段顺序无差，或定位改善不预测空间QA增益，则层级必需性解释削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B",
+   "framework": "TRL SFT / VLM-R1 GRPO",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "4A6000 48G；各stage1epoch；1255coldstart；训练总小时未读到。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当改变奖励权重却训练无变化时，先做组内标准化代数检查；不要把不敏感包装成新鲁棒机制。"
+ }
+}

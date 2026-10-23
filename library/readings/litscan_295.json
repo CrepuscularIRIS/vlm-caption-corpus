@@ -1,0 +1,57 @@
+{
+ "paper_key": "litscan:295",
+ "title": "To Find Waldo You Need Contextual Cues: Debiasing Who’s Waldo",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_295.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction final contribution paragraphs",
+   "§3–4",
+   "Tables1–2",
+   "Conclusion/Ethical considerations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用位置/尺寸启发式暴露人名grounding捷径，再按语言结构筛数据。",
+  "key_step": "POS剔除无动词caption、dependency剔除至少3并列人名；重分84K数据并保证新test不与旧train重合。",
+  "why_non_obvious": "高分可由人名顺序和框大小取得，并非识别上下文。",
+  "trigger_condition": "When cheap positional heuristics approach a grounding model, filter ambiguous contexts and rerun matched-model comparisons.",
+  "contribution_type": "benchmark",
+  "abstract_strategy": "先测捷径，再按可判别上下文建评测。",
+  "abstract_trigger_condition": "When cheap positional heuristics approach a grounding model, filter ambiguous contexts and rerun matched-model comparisons."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:295#s1",
+   "object": "person-centric grounding dataset",
+   "information": "caption POS/dependency、maskedname与personboxes；无人物身份外部知识",
+   "operation": "以无动词/并列人名规则过滤再重分train/val/test，保留非平凡多候选样本",
+   "claimed_effect": "最强heuristic57.7→44.3%；新test同模型originaltrain50.2 vs filteredtrain54.0；模型-heuristic差5.8→9.7pp。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.4; Table2 p5",
+    "quote": "the performance of the Who’s Waldo"
+   },
+   "failure_boundary": "noverb/并列名不是信息不足的充要条件；位置捷径仍高于random13.3pp；未给独立seed数。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P49",
+   "strength": 1,
+   "how": "重新划分时显式排旧train与新test交集可借鉴，但本文不测图像近重复。"
+  },
+  {
+   "problem": "P36",
+   "strength": 1,
+   "how": "启发式baseline辅助审计比直接信任筛选质量更合理；人名规则不适用captioncrop。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

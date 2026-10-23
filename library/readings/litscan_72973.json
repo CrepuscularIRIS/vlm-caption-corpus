@@ -1,0 +1,190 @@
+{
+ "paper_key": "litscan:72973",
+ "title": "RexThinker",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_72973.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–3",
+   "§3–4 pp4–7",
+   "Tables3–5 and §5 pp8–10",
+   "Appendix A3 pp19–20 training; A4 pp23–25 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "候选检测与语义验证分工：detector产box hints，MLLM按planning/action/summarization逐候选推理与拒绝；CoT SFT后GRPO。",
+  "key_step": "以给定候选框构成检索式REC；训练奖励exact-box F1+.1format，整响应归一化优势广播所有生成token。",
+  "why_non_obvious": "把坐标回归变成候选选择提高定位精度，但候选召回决定上界；可读CoT不保证结果遵守该推理。",
+  "trigger_condition": "复杂属性/关系/多目标表达需要可靠拒绝，MLLM坐标不精确而detector语言不足。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "分离高精度候选生成与语言匹配，先教显式候选验证再结果优化。",
+  "abstract_trigger_condition": "复杂属性/关系/多目标表达需要可靠拒绝，MLLM坐标不精确而detector语言不足。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "以给定候选框构成检索式REC；训练奖励exact-box F1+.1format，整响应归一化优势广播所有生成token。",
+  "abstract_why_non_obvious": "把坐标回归变成候选选择提高定位精度，但候选召回决定上界；可读CoT不保证结果遵守该推理。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:72973#s1",
+   "object": "candidate grounded referring",
+   "information": "图像、候选框坐标和表达；训练数据teacher另见GT答案、红绿标记及位置顺序",
+   "operation": "detector生成候选，MLLM逐框验证，最终输出JSON框集合或无框",
+   "claimed_effect": "HumanRef CoT rejection67.3 vsPlain53.5；GRPO68.2，DF1 83.5 vsCoT82.3",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4 pp5–7; Table3 p8",
+    "quote": "Rex-Thinker-GRPO 88.5 88.7 84.1 87.2 87.1 84.6 81.5 83.5 79.1 87.7 85.4 82.3 88.0 89.3 87.2 86.6 86.8 83.5 68.2"
+   },
+   "failure_boundary": "HumanRef训练GT候选与OOD detector候选不同；F1匹配IoU1不等于测试DF1 IoU.5–.95。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:72973#s2",
+   "object": "CoT factual/answer alignment",
+   "information": "GPT4o见GT，emoji中间判断和最终框可解析",
+   "operation": "过滤action-summary不一致及summary不匹配GT，再SFT全部推理+答案；GRPO仅结果/格式",
+   "claimed_effect": "600样本人审逻辑/汇总错误0，事实错1.2%；GRPO仍有九对象推理只输出八框",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2 p5; A4.2 p25",
+    "quote": "the model identifies nine candidate objects in the reasoning"
+   },
+   "failure_boundary": "GT条件下合理化和emoji一致性不证明视觉事实全正确；RL未约束CoT与终答一致。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "strength": 2,
+   "how": "明确无目标rejection数据支持拒绝，但不是开放式不确定abstain。"
+  },
+  {
+   "problem": "P42",
+   "strength": 3,
+   "how": "SFT过滤推理/答案一致但GRPO只终局导致推理和输出再不一致，正撞caption无约束。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "RexThinkerPlain",
+   "kind": "method"
+  },
+  {
+   "name": "RexThinkerCoT",
+   "kind": "method"
+  },
+  {
+   "name": "RexSeek",
+   "kind": "method"
+  },
+  {
+   "name": "GroundingDINO",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5VL7B",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "推理与最终框偶有不一致；作者把consistency reward留作未来。",
+   "quote": "We observe occasional inconsistencies between the model’s reasoning process and its final output.",
+   "locator": "A4.2 p25"
+  },
+  {
+   "text": "单A100推理6.68s vsPlain1.13s；遮挡/合并候选框难验证互动关系。",
+   "quote": null,
+   "locator": "A4.1 p23; A3.6 pp22–23"
+  }
+ ],
+ "question": {
+  "observed_failure": "baseHumanRef拒绝7.1，Plain53.5，CoT67.3；CoT→GRPO仅+.9。",
+  "load_bearing_assumption": "候选足够覆盖真实目标，显式逐框验证可提升正确拒绝。",
+  "scope": "固定候选框的多实例REC。",
+  "success_criterion": "同候选下提升DF1与rejection，并检验推理-输出一致性。",
+  "why_open": "结果奖励未直接约束中间事实，detector误差与语义判断混合。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§5.4 p10 cold-start对照"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "§4.1 detector候选与MLLM验证分工"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=.9F1+.1format; A_i=(R_i-mean R)/std R; A_i,t=A_i",
+    "locator": "Eq1/5 §§4.2 pp6–7"
+   },
+   {
+    "latex": "J=(1/G)Σ_i(1/|o_i|)Σ_t[min(ρ_i,t A_i,clip(ρ_i,t)A_i)-βD_KL]",
+    "locator": "Eq3 p7"
+   },
+   {
+    "latex": "F1=2PR/(P+R), P=|M|/|pred|, R=|M|/|GT|; match IoU=1",
+    "locator": "Eq5 p7"
+   }
+  ],
+  "signal_routing": "整个reasoning+answer同A，非逐candidate/推理一致性奖励；input不生成，候选box静态提供，无动态crop。",
+  "normalization": "组mean/std，逐响应token平均，KLβ.04；format常数时消失。",
+  "invariance": "reward平移不变、正整体缩放在非零std时不变；非PBRS。",
+  "baseline_or_potential": "组均值，无逐状态baseline/potential。",
+  "degenerate_cases": "GT与预测均空的F1公式0/0，文中拒绝有效但实现未知；all-correct/all-wrong同reward组std0；候选漏检无法靠仅选候选修复。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：固定候选和已有轨迹，逐候选核对CoT事实、summary与最终框；分离不看CoT只看输出的奖励，比较一致性罚是否修正事实而非仅数量。",
+  "negative_results": [
+   {
+    "text": "CoT interaction DF1 77.2低于Plain80.2；零样本RefCOCOg83.3低于Qwen87.2，额外targetGRPO88.8。",
+    "locator": "Tables3–4 pp8–9"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若只约束数量就提升一致率却事实错误不降，则不能视为视觉grounding改善。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "DeepSpeedZeRO3; vLLM eval",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.04
+  },
+  "cost": "8A100，SFT2epoch10.1h，RL.25epoch112h；lr2e-5/1e-6，输出2048；LLM-only。",
+  "pitfalls": [
+   {
+    "text": "训练随机打乱box hints改变索引顺序；必须同步推理引用。GT候选精确匹配奖励对detector噪声分布迁移敏感。",
+    "locator": "§5.1 p7"
+   }
+  ],
+  "code": "https://github.com/IDEA-Research/Rex-Thinker",
+  "lesson": "当SFT监督了证据与答案一致而RL只保结果时，一致性可能退化；需单独记录而非以正确率代替。"
+ }
+}

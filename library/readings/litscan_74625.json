@@ -1,0 +1,244 @@
+{
+ "paper_key": "litscan:74625",
+ "title": "Evaluating and Steering Modality Preferences in Multi-modal LLMs",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74625.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3–5 pp3–8 incl Eq1–2/Tables1–3",
+   "§6 Discussion p9",
+   "A.1 Limitations p15",
+   "D.1 p21",
+   "E.5 pp24–25 Tables10–13",
+   "E.6 pp25–26 Table14"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在可各自理解的图文冲突上测模态偏好；用偏图/偏文指令的最后输入token隐状态均值差，推理时统一加向量调整依赖。",
+  "key_step": "离线提取层间text−vision方向，选差异大且跨样本稳定的中后层，按原隐状态平均范数归一方向；线上所有模态token共用该向量。",
+  "why_non_obvious": "无需微调但需要指令可诱发稳定方向；同一向量避免不同模态各自移动破坏相对表征，仍不保证每例正确依赖。",
+  "trigger_condition": "When a model follows modality-specific instructions and task evidence priority is known, cache a shared activation direction and steer the selected layer at inference.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把可由指令诱发的行为偏差投影为离线可复用内部干预。",
+  "abstract_trigger_condition": "When a model follows modality-specific instructions and task evidence priority is known, cache a shared activation direction and steer the selected layer at inference.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "离线提取层间text−vision方向，选差异大且跨样本稳定的中后层，按原隐状态平均范数归一方向；线上所有模态token共用该向量。",
+  "abstract_why_non_obvious": "无需微调但需要指令可诱发稳定方向；同一向量避免不同模态各自移动破坏相对表征，仍不保证每例正确依赖。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74625#s1",
+   "object": "图文冲突的测量",
+   "information": "2000样本8任务；两种单模态可读性及选项位置交换",
+   "operation": "制造局部事实冲突，过滤不懂单模态和不一致答案；VisionRatio=Sv/(Sv+St)并报告Others",
+   "claimed_effect": "Qwen2.5VL7B Sv52.2/St35.4/Others12.4，VisionRatio59.6；LLaVA1.5 13.4",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Fig2 p4",
+    "quote": "Qwen2.5VL-7B                                 52.2                     12.4                      35.4                         59.6"
+   },
+   "failure_boundary": "条件比例排除Others与选项不一致，不是无条件准确率；过滤与已有COCO数据选择可能限制外推。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74625#s2",
+   "object": "解码隐状态",
+   "information": "offline成对偏文/偏图指令，无答案label；任务方向先验",
+   "operation": "last-input-token text−vision均值差，范数重缩放，单层所有token统一加/减，所有解码步持续",
+   "claimed_effect": "Qwen2.5VL7B MathVista62.3 vs InstDesign59.0/CoT50.0；text选择分35.4→63.6",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq1–2/Tables1–2 pp7–8",
+    "quote": "MathVista              50.0       59.0         62.3"
+   },
+   "failure_boundary": "模态选择能力不等于真实性；弱指令跟随LLaVA1.5无法取得有意义方向；不是新增crop像素。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74625#s3",
+   "object": "steering强度",
+   "information": "归一化向量乘λ",
+   "operation": "固定方向逐步提高干预幅度",
+   "claimed_effect": "OneVision Sv从λ1的57.1降至λ2的3.9、λ2.5的0；Qwen文字分λ1.5最高76.0，λ1.75已降70.7",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table12 p25",
+    "quote": "OneVision-7B    40.2    45.5    51.8   52.6   57.1    56.5       32.6    12.1     3.9   0.1     0.0    0.0   0.0"
+   },
+   "failure_boundary": "作者prose称Qwen提升至1.75，与表中1.5峰值不一致；依表记录，不解读为可普适安全幅度。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 3,
+   "how": "提供图文冲突与选项置换测量，附录删除模态prob-drop选择方向；删输入本身改变策略，非caption因果价值真值。"
+  },
+  {
+   "problem": "P40",
+   "strength": 2,
+   "how": "即使图与文字各自可答，冲突时模态依赖也影响最终答案。"
+  },
+  {
+   "problem": "P42",
+   "strength": 2,
+   "how": "推理内表征干预可改变caption/图证据依赖，但不训练caption事实性或定位tokencredit。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "InstDesign",
+   "kind": "method"
+  },
+  {
+   "name": "CoT",
+   "kind": "method"
+  },
+  {
+   "name": "FewShot four-shot",
+   "kind": "method"
+  },
+  {
+   "name": "ICV token-wise steering",
+   "kind": "method"
+  },
+  {
+   "name": "MLLM-only",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者：构建可单模态答的冲突数据需要多轮筛选，耗时。",
+   "quote": "",
+   "locator": "A.1 p15"
+  },
+  {
+   "text": "作者：LLaVA1.5弱指令跟随无法取得稳定方向；统一向量可能伤害细粒度实例。",
+   "quote": "",
+   "locator": "E.5.6 p25"
+  },
+  {
+   "text": "Reader：主方法主动指定模态优先级；VisionRatio与能力的跨模型相关不证明其因果贡献。",
+   "quote": "",
+   "locator": "§4.3/6; E.6"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen2VL7B PhD-icc直答6.0→统一steering18.4，但counting6.0→5.0；偏好改善非每类非劣。",
+  "load_bearing_assumption": "指令差向量代表可迁移的证据依赖，而非提示词/任务混杂；已知哪种证据可信。",
+  "scope": "caption与像素冲突且各单模态可识别的样本",
+  "success_criterion": "同时测正确率、Others覆盖率、caption冲突检测和crop成本，并在同预算实例级对照不降准确率。",
+  "why_open": "统一向量、方向先验与可靠性prob-drop都可能在错误自信时失效。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "MC2先测冲突偏好"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table12 λ消融"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§3单模态过滤/冲突/选项置换"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "locator": "§5 activation steering"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "VisionRatio=S_vision/(S_vision+S_text)",
+    "locator": "§3.3 p4"
+   },
+   {
+    "latex": "u_l^t=(1/N)Σ_i(x_i,l^t−x_i,l^v)",
+    "locator": "Eq1 p7"
+   },
+   {
+    "latex": "w=(1/N)Σ_i ||x_i,l^t||/||u_l^t||; s_l^t=w u_l^t; h_l′,token←h_l′,token±s_l′^t",
+    "locator": "Eq2/§5.2 p8"
+   }
+  ],
+  "signal_routing": "无参数梯度、无reward/advantage。offline不同偏好指令的最后输入token隐状态用于u；选择层20–23附近，实际例为22层，附录又写21层（保留编号不一致）。online统一相同向量加到vision+text所有token，并在各解码步应用；KV-cache位置/重复prefill实现未知，不代补。",
+  "normalization": "other：方向L2范数分母，使||s||=平均||x^t||，不是组std；主文所谓align mean是范数尺度匹配而非逐维均值对齐。",
+  "invariance": "u正缩放在w反缩放下抵消，λ后乘不抵消；u符号反转会翻方向。共同平移所有h不保证attention/logits不变。非PBRS无政策不变定理。",
+  "baseline_or_potential": "零样本原模型与指令对照；无state potential/value baseline。",
+  "degenerate_cases": "u=0分母0；小u噪声可放大至完整hidden范数。Svision+Stext=0时VisionRatio无定义。强λ造成语言能力破坏。若视觉本身不可读，偏视觉不新增信息。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table10 N25–250和Table11单任务probe检测稳定性；Table12幅度揭示退化。E6未知方向通过移除模态的预测答案概率降幅推断可靠性，200例任务；识别85.3%，Qwen已知先验62.7/预测58.2/原49.1。",
+  "negative_results": [
+   {
+    "text": "OneVisionλ2.5视觉分0；Qwen最大分在λ1.5，非文本所称持续到1.75。",
+    "locator": "Table12"
+   },
+   {
+    "text": "Table3 Qwen2VL count6.0→5.0；Fewshot部分退化；所有类别并非非劣。",
+    "locator": "Table3"
+   },
+   {
+    "text": "LLaVA1.5无法稳定提取方向；E6预测方向低于已知方向。",
+    "locator": "E.5.6/Table14"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "固定冲突样本与随机等范数向量/指令only/不同方向对照；若VisionRatio上升但正确率、覆盖率或直答安全下降，则不能用偏好作为crop必要性代理。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2VL7B/Qwen2.5VL7B/OneVision7B/InternVL3-8B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "向量离线缓存。无FlashAttention/batching单样本MC2：原1.99s/offlineprobe2.21s/steer2.00s；PhD1.84/2.12/1.84s；未报告GPU型号/详细显存，不能外推训练吞吐。",
+  "pitfalls": [
+   {
+    "text": "别把全token同向量解释为只增强图token，或将layer绝对差/attention相关称唯一因果机制。",
+    "locator": "§5.2/5.4"
+   },
+   {
+    "text": "Table1 OneVision原Sv37.5与Fig2 20.9不一致，可能设置不同但文中未在已读节消解。",
+    "locator": "Table1/Fig2"
+   },
+   {
+    "text": "BLEU主文声称+1.33，Table2相对最强InstDesign为En→Tr+.75/Tr→En+.91，按表保留。",
+    "locator": "Table2/§5.3"
+   }
+  ],
+  "code": "https://github.com/EchoDreamer/Modality-Preference (paper-reported, not inspected)",
+  "lesson": "当文字与图证据冲突时，先测两边可读性及排除项覆盖率，再做强度受控的表征干预；稳定偏好不能替代实例级证据可信性。"
+ }
+}

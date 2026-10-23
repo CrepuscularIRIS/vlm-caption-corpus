@@ -1,0 +1,186 @@
+{
+ "paper_key": "litscan:66297",
+ "title": "CodeDance: A Dynamic Tool-integrated MLLM for Executable Visual Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_66297.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.2/Eq1–2",
+   "PDF p5 formula grouping check",
+   "4.1/Table1–3",
+   "4.4 reward ablation",
+   "5 Discussion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "34K原子代码工具SFT让简单题直答/难题代码取证；GRPO加组准确率调节的成功执行比例奖，以及按回合失败折扣回传的独立标准化优势。",
+  "key_step": "把整条轨迹成功反馈与代码执行失败局部信号分开标准化，再相加。",
+  "why_non_obvious": "工具执行成功不等于语义有效；相同比例不计调用数量，效率来自难度符号和SFT先验而非直接次数罚。",
+  "trigger_condition": "When outcome rewards cannot distinguish execution failures and redundant tools, combine difficulty-dependent sequence incentives with turn-level execution feedback.",
+  "contribution_type": "tool-code SFT and two-channel RL advantage",
+  "abstract_strategy": "Separate global success from local executability, then combine normalized learning signals.",
+  "abstract_trigger_condition": "When a single terminal score hides intermediate failure and tool overuse.",
+  "abstract_key_step": "Train executable atomic skills; reshape sequence reward and propagate discounted local failures.",
+  "abstract_why_non_obvious": "Different normalization domains change the effective relative influence and can erase reward magnitudes.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:66297#s1",
+   "object": "RBAT双层工具信用",
+   "information": "query级rollout准确率mu_acc；工具成功/失败执行标志；最终答案正确性，非GT视觉区域价值。",
+   "operation": "Rseq=(.5+.5Icorrect)*[sigmoid(4(.5−mu))−.2]*(Nsucc/Ntotal)；失败每轮−.5，折扣.2回传，batch标准化Aturn后加Aseq。",
+   "claimed_effect": "Table3准确率/平均轮数 outcome-only66.8/1.42，DeepEyes65.6/2.26，RBAT68.1/1.38；执行成功率.99。",
+   "conditions": [
+    "SFT已有code/直答支撑",
+    "代码执行反馈可得",
+    "同组多rollout成功率"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "+RBAT (CodeDance)"
+   },
+   "failure_boundary": "执行不报错可仍无视觉效用；Ntotal=0定义正文未给；相同成功比例下不能直接区分调用次数。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "组难度工具系数经序列std可能抵消，需按成功比例固定与否推导。",
+   "strength": 2
+  },
+  {
+   "problem": "P04",
+   "how": "工具成功比例而非次数定价，解释为何格式/执行改善未必解决最少调用。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "turn-level标准化执行反馈改变token信用，须核实际mask与归一化。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "34K SFT显式种直答与原子代码，emergence不等于无基础行为学习。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SFT / Racc+Rformat / DeepEyes tool reward / RBAT without turn reward",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "按Nsucc/Ntotal奖励成功比例，未定义无调用时0/0，且多次无用但成功执行可与一次同奖。",
+   "quote": "total tool calls in trajectory τ",
+   "locator": "3.1"
+  },
+  {
+   "text": "新组合行为作者归因已有预训练知识，不是RL从零生成能力的证据。",
+   "quote": "pretrained knowledge further shaped by RL",
+   "locator": "Figure 3 caption"
+  }
+ ],
+ "question": {
+  "observed_failure": "DeepEyes工具奖平均2.26轮/65.6，纯终奖1.42轮/66.8，RBAT1.38轮/68.1。",
+  "load_bearing_assumption": "每次成功工具调用都应获正奖励且终奖能覆盖局部失败。",
+  "scope": "执行代码视觉推理",
+  "success_criterion": "准确率/平均轮数/执行成功率三指标",
+  "why_open": "工具spam与工具不足、错误执行信用混合"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "3.2 easy-direct/hard-code SFT then RL"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 turn channel ablation"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "3.1 sequence vs turn normalization"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_seq=(0.5+0.5*1[R_acc>0])*d*N_succ/N_total; d=sigmoid(4*(0.5-mu_acc))-0.2",
+    "locator": "Eq1, PDF p5 visually checked"
+   },
+   {
+    "latex": "r_turn_m=-0.5 if execution fails else 0; R_turn_m=r_turn_m+0.2*R_turn_(m+1)",
+    "locator": "Eq2/implementation"
+   },
+   {
+    "latex": "A_turn_m=(R_turn_m-mu_batch)/sigma_batch; A=A_seq(R_acc,R_format,R_seq)+A_turn(R_turn)",
+    "locator": "Eq2/3.1"
+   }
+  ],
+  "signal_routing": "序列通道是终答/格式/工具比例的优势；局部通道失败回传到此前轮，并按batch标准化后相加。正文未说明turn值具体覆盖thought/code哪些tokens，也未给外部返回mask，不补实现。",
+  "normalization": "per-channel: sequence GRPO group-normalized (exact appendix formula unavailable); turn discounted returns batch mean+std",
+  "invariance": "非PBRS：组难度奖金和代码失败惩罚改变目标；无potential差分。读者推导：当组内Nsucc/Ntotal固定且格式常数时，Rseq只仿射缩放二元正确性，组std可能抵消其影响。",
+  "baseline_or_potential": "序列组relative baseline；回合batch均值非同状态critic。",
+  "degenerate_cases": "d正负界约mu=.8466（读者代数），不是.5；全错仍有.5d执行奖，但若全成功比例相同则组内无差；无工具0/0未定义；全部执行成功回合std0处理未知。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3三奖励机制及去turn，报告准确率、turn数、执行成功率；相同cold-start底座。",
+  "negative_results": [
+   {
+    "text": "去turn平均准确率67.5、同1.38轮但执行成功.91；完整.99。Pixmo去turn78.8高于完整77.1，非逐任务全优。",
+    "locator": "Table3"
+   },
+   {
+    "text": "V* Table1 DeepEyes90.4高于CodeDance84.8；headline非所有工具基线均超过。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：同执行成功率/相同正确性组内单独改调用次数与语义无效代码，验证Rseq是否能识别必要性；测std前后d的真实作用。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "SWIFT SFT/VeRL RL; sandbox Python execution",
+   "group_size": null,
+   "max_turns": 6,
+   "kl": null
+  },
+  "cost": "34K冷启动；gamma4/delta.2/beta.2；训练max6turn、评测10；硬件/batch/lr未读到。",
+  "pitfalls": [
+   {
+    "text": "easy/hard筛分由7B做、72B验证；原子技能包括crop/resize/数学/绘图，后续novel代码有预训练支撑。",
+    "locator": "3.2"
+   },
+   {
+    "text": "train6/eval10turn不等预算；表1delta为相对百分比不是百分点。",
+    "locator": "4/Table1"
+   }
+  ],
+  "code": null,
+  "lesson": "当工具奖是成功比例时，必须定义零调用并测多次无用成功代码；局部batch标准化要审计零方差和token映射，勿把执行成功当视觉证据。"
+ }
+}

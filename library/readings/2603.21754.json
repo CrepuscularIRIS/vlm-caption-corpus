@@ -1,0 +1,355 @@
+{
+ "paper_key": "2603.21754",
+ "title": "Let's Think with Images Efficiently! An Interleaved-Modal Chain-of-Thought Reasoning Framework with Dynamic and Precise Visual Thoughts",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2603.21754.pdf",
+  "version": "v1",
+  "version_observed": "PDF p.1 arXiv:2603.21754v1 [cs.CV] 23 Mar 2026; latest arXiv version not checked",
+  "pages": 9,
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "DAP-ICoT Reasoning",
+   "2.1.1 Confidence Estimation via Logit Margin Analysis",
+   "2.1.2 Visual Thought Insertion Guided by Confidence",
+   "2.2.1 Object-Level Selection via Cross-Modal Relevance",
+   "2.2.2 Interleaved Reasoning with Aligned Visual Inputs",
+   "Experiments Setting",
+   "Main Results",
+   "Analysis 1-6",
+   "Related Work",
+   "Conclusion",
+   "Acknowledgments",
+   "References",
+   "Equations 1-8",
+   "Table 1",
+   "Figures 1-8; no appendix in this PDF"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "将每步固定插入视觉信息改成按当前文本置信度触发，并用SAM2对象区域约束选取内容。是推理期信息再插入方法，没有SFT/RL新训练目标。",
+  "key_step": "对当前rationale每个位置top-2差值取平均，低于验证集选定阈值才插入与文本最相关对象；公开代码按句号token触发，实际用softmax概率差与SAM2 mask覆盖的原图视觉embedding。",
+  "why_non_obvious": "信息插入的时机和内容一起影响冗余与证据连贯性：每步都插图及挑零散高注意力patch不一定帮助；但论文未证明文本置信度等于视觉需求，源码与论文的置信度定义不同。",
+  "trigger_condition": "When a reasoning procedure inserts visual information at every step, apply a confidence threshold and object-constrained selection to insert fewer relevant visual representations.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null, no reviews_path or review notes. PDF carries AAAI 2026 copyright and repository describes AAAI 2026, but neither is a review report and neither changes the manifest decision.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Free a fixed evidence-insertion schedule and constrain the inserted content to coherent candidates.",
+  "abstract_key_step": "Aggregate local decision margins, trigger insertion below a threshold, and select the highest-relevance candidate.",
+  "abstract_why_non_obvious": "More frequent information injection can add noise and cost; the confidence of an output sequence need not identify the marginal value of another observation.",
+  "abstract_trigger_condition": "When an iterative procedure always repeats an expensive evidence step, gate that step on a measured state and choose a coherent subset of available evidence."
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.21754#s1",
+   "object": "推理期间插入视觉thought的时机",
+   "information": "可见当前文本rationale及每个解码位置top-2输出值；不可见答案真值、同状态不插图/插图的收益差、未来观测必要性。原文用raw logits，静态源码用softmax probability margin，二者不可视作同一测量。",
+   "operation": "将top-2 margin在rationale位置取均值，若C_t<tau便在后续步骤插入视觉thought，否则继续文本；tau在M3CoT验证集调优。",
+   "output": "按置信度决定插图的图文交错序列；这是插图门控，不是终答停止策略。",
+   "claimed_effect": "Qwen2-VL-7B, Fig.3：去DVTI后M3CoT 57.2→42.8、ScienceQA 75.9→55.1，分别-14.4/-20.8百分点。Fig.4完整系统平均总token 314 vs ICoT 1146，减少72.6%；不能将完整系统降幅全部归于DVTI。",
+   "conditions": [
+    "能读取生成分布并确定rationale/句子边界",
+    "阈值经独立验证集选定，且margin对该模型有状态判别力",
+    "允许控制模型插图而非让原动作token自主作决策"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec 2.1.2 Eq.3, PDF p.3; Fig.3 p.5",
+    "quote": "If the confidence Ct falls below the\npredefined threshold τ, the model is prompted to incorpo-\nrate visual context, retrieved via the Precise Visual Thought\nGuidance (§). Otherwise, no visual input is provided (∅), al-\nlowing for proceeding based on textual reasoning."
+   },
+   "failure_boundary": "高置信错误会跳过必要视觉线索；低置信但无需看图也可能反复触发；没有budget-matched随机门控/固定插入次数对照，没有剩余预算停止函数。源代码口径差异与未执行状态见implementation_audit。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.21754#s2",
+   "object": "插入的视觉信息内容与对象候选池",
+   "information": "可见SAM2对原图的分割候选和当前文本对原图视觉token的attention；没有GT目标区域或新拍摄图像。公开实现只重用首次编码的query_vokens，不重新编码高分辨率crop，也不是模型生成连续latent。",
+   "operation": "用SAM2组织对象候选，经跨模态注意力选最高分候选，将该对象的视觉表示插入文本后；源码为各mask所覆盖token的attention求和、取最大、复用选中embedding并移除候选。",
+   "output": "语义对象约束的视觉token子集。论文以object sub-image叙述；代码将mask映射至原图网格，保留1至64 tokens候选。",
+   "claimed_effect": "Fig.3 去PVTG：M3CoT 57.2→43.4、ScienceQA 75.9→55.5，-13.8/-20.4百分点。Fig.5完整系统在M3CoT/ScienceQA/MME每题插入次数0.934/0.992/1.684，对照3.578/2.323/2.013；插入图token均值16/21/41，对照240/156/135。",
+   "conditions": [
+    "SAM2分割对象覆盖任务证据；大小过滤不删掉必须对象",
+    "attention能定位相关候选；模型支持手工embedding/生成序列插入",
+    "图像网格索引与tokenizer/mRoPE/cache保持一致"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Sec 2.2.1 Eqs.4-6, PDF p.3; Fig.3 p.5; Fig.5 p.6",
+    "quote": "We then extract sub-images of ob-\njects, forming a pool of candidate object-centric visual in-\nputs. Unlike patch-level image tokens, these object-centric\nsub-images preserve semantic information."
+   },
+   "failure_boundary": "attention相关性不保证必要性；attention求和有面积效应且64-token上限过滤大对象；候选池耗尽便不能再插；跨对象关系或缩放丢失细节不能靠重播原图embedding恢复。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Direct",
+   "kind": "method"
+  },
+  {
+   "name": "MMCoT (TMLR 2024)",
+   "kind": "method"
+  },
+  {
+   "name": "DDCoT (NeurIPS 2023)",
+   "kind": "method"
+  },
+  {
+   "name": "SCAFFOLD",
+   "kind": "method"
+  },
+  {
+   "name": "CCoT (CVPR 2024)",
+   "kind": "method"
+  },
+  {
+   "name": "ICoT (Gao et al., CVPR 2025)",
+   "kind": "method"
+  },
+  {
+   "name": "M3CoT",
+   "kind": "benchmark"
+  },
+  {
+   "name": "ScienceQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME (Perception+Cognition score)",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [],
+ "limitations_notes": "正文无专门limitations节、无明确作者自述失败边界段；读者识别的限制保留在signature.failure_boundary、evidence_design与implementation_audit，不伪装为作者承认。",
+ "question": {
+  "observed_failure": "Qwen2-VL-7B的ICoT在M3CoT为38.0/44.8 (0/1-shot)，比Direct 33.0/35.0高，但低于SCAFFOLD 49.9/53.6；同时平均1146 total tokens、3.578次插图、240 inserted-image tokens (Table1, Figs4-5)。因而仅增加交错视觉不保证有效率。",
+  "load_bearing_assumption": "既有ICoT默认每个文本步骤都值得插入视觉信息，并把分散高attention image tokens当作足够的视觉thought。",
+  "scope": "五种现成MLLM、M3CoT/ScienceQA/MME上推理期视觉插入时机与对象选择；没有研究训练中首动作塌缩或信用分配。",
+  "success_criterion": "作者用任务accuracy/MME score提高，同时降低每题总token、插入次数和插入图token作成功判据；没有预注册准确率非劣界或端到端耗时目标。",
+  "why_open": "ICoT的attention-driven selection固定每步插入且token破碎；本文用置信度门控+对象组织填这两环，但不建立必要性真值或成本匹配因果验证。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "we conduct a comparative analysis with ICoT on image us-\nage during reasoning, based on two key metrics: (1) The av-\nerage number of image insertions per sample and (2) The av-\nerage number of image tokens consumed after insertion.",
+   "locator": "Analysis 3, PDF p.6",
+   "rationale": "[redacted: project-internal]"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "This experiment aims to assess whether DAP-ICOT\ncan effectively reduce token usage while maintaining strong\nreasoning performance.",
+   "locator": "Analysis 2, PDF p.5",
+   "rationale": "[redacted: project-internal]"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "role": "primary",
+   "quote": "we apply a\nthresholding mechanism to determine whether visual input\nis necessary for the next step.",
+   "locator": "Sec 2.1.2, PDF p.3",
+   "rationale": "将迭代推理中固定的视觉插入schedule变成状态条件设计变量，满足RS第3条窄定义。不是证明确切能力界、不是自监督信号、不是校准混淆的匹配诊断。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\delta_i=\\ell_{i,w^{(1)}}-\\ell_{i,w^{(2)}},\\quad i=1,\\ldots,|T_t|",
+    "locator": "Eq.1, PDF p.2",
+    "note": "原文raw logit gap；不替换为源码probability gap。"
+   },
+   {
+    "latex": "C_t=\\frac{1}{|T_t|}\\sum_{i=1}^{|T_t|}\\delta_i",
+    "locator": "Eq.2, PDF p.2"
+   },
+   {
+    "latex": "I_{t+1}=\\begin{cases}I^{\\mathrm{vision}},&C_t<\\tau\\\\\\varnothing,&\\mathrm{otherwise}\\end{cases}",
+    "locator": "Eq.3, PDF p.3"
+   },
+   {
+    "latex": "\\mathcal O=O_1,O_2,\\ldots,O_N",
+    "locator": "Eq.4, PDF p.3",
+    "note": "照原文列候选集合，未自加loss。"
+   },
+   {
+    "latex": "s_i=f_{\\mathrm{attn}}(T_t,O_i)",
+    "locator": "Eq.5, PDF p.3"
+   },
+   {
+    "latex": "\\widehat O=\\operatorname{argmax}_{O_i\\in\\mathcal O}s_i",
+    "locator": "Eq.6, PDF p.3"
+   },
+   {
+    "latex": "\\mathcal R_{t\\to v}=\\mathcal R_t\\oplus\\widehat O",
+    "locator": "Eq.7, PDF p.3"
+   },
+   {
+    "latex": "\\mathcal R_{t+1}=\\operatorname{argmax}_{\\mathcal R}P(\\mathcal R\\mid Q,\\mathcal R_{t\\to v},P_{t\\to v})",
+    "locator": "Eq.8, PDF p.3",
+    "note": "原文推断式；公开代码do_sample=True，不是argmax解码实证。"
+   }
+  ],
+  "signal_routing": "无训练reward/advantage/梯度路由。当前rationale的局部margin→下一次视觉插入gate；当前文本attention→对象选择；插入表示→后续文本生成。源码在输入句号token id13时判断、取当前forward输出分布，可能含下一token分布的边界偏移，未runtime核对。",
+  "normalization": "Eq.2仅按rationale token数求均值，无group mean/std/leave-one-out。源码先softmax，再对top2概率差求均值；对象分数对mask内attention求和，不按对象token数归一化。",
+  "invariance": "没有势函数塑形或最优策略不变定理。读者代数：raw-logit gap对所有logits共同平移不变、对乘尺度不变性不成立；softmax gap也平移不变，但还依赖其余词表logits，通常不能与raw gap用相同tau互换。插入gate改变条件输入和行为；复用embedding不增加原图之外的新像素。",
+  "baseline_or_potential": "无critic/MC基线/势函数；当前模型输出margin是启发式confidence；SAM2是外部分割器。tau由M3CoT验证集选出，并非估计补看的因果价值。",
+  "degenerate_cases": "p≈0/1、全对组/全错组对本文无PG含义，因为没有RL。对有限raw-logit margin C_t>=0，tau=0严格<使全部不插；tau很大趋每步插。softmax gap属于[0,1]，tau>1会在可用对象/句号边界上全触发。高置信错误仍可跳过必要信息；空rationale Eq2未定义；单步无句号/无下一步时可能不触发；源码候选耗尽或面积过滤清空池会停止插图但不停止文本生成。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig.3同Qwen2-VL-7B去DVTI/去PVTG分别比较两任务，Fig.7扫tau，Table1跨5骨干与0/1-shot。支持系统组件关联，但没有将dynamic与fixed/random插入严格匹配到相同次数、图token、生成token和SAM2成本；不能把降成本和增准归因为必要性判别已校准。",
+  "controls": [
+   "Table1: Direct/MMCoT/DDCoT/SCAFFOLD/CCoT/ICoT, five backbones, 0-shot and 1-shot.",
+   "Fig.3: full, w/o PVTG, w/o DVTI; detailed removed-module replacement and matched cost not specified.",
+   "Fig.7: tau=0.1..1.0 step0.1; best tau=.2, accuracy57.2; .1=56.8 and 1.0=52.3.",
+   "No fixed-K insertion at same mean frequency, shuffled confidence, equal-token random-mask, or equal-area contiguous-region negative control reported."
+  ],
+  "negative_results": [
+   {
+    "text": "提高阈值不单调改善accuracy；Fig.7从tau=.2的57.2降至tau=1的52.3，途中.5=57.1。正文percent降幅在Fig.3实际上是百分点差。",
+    "quote": "In contrast,\noverly conservative or overly aggressive visual interactions\nnegatively affect the model’s ability to reason effectively.",
+    "locator": "Analysis 5 / Fig.7, PDF p.6"
+   },
+   {
+    "text": "仅靠ICoT插图还会降低confidence：Fig.6 ICoT平均变化M3CoT -0.07、ScienceQA -0.08、MME +0.02；DaP对应+.15/+.17/+.13。提高自身confidence不等同提高真实正确率或校准。",
+    "quote": "The proportion of samples where the confidence\nlevel increases after image insertion, as well as the average\nconfidence value improvement, for DAP-ICOT and ICoT.",
+    "locator": "Fig.6 caption and bars, PDF p.6"
+   }
+  ],
+  "seeds": "single: paper explicitly says all methods reproduced once; seed values/CI/error bars not supplied. Public config sam2.seed=323 is not evidence of repeated reasoning experiments.",
+  "falsifier": "读者提出、未运行：在固定模型、同题同解码预算与同一对象池上，以相同插入次数/图token匹配confidence gate、随机gate、固定位置gate，检查accuracy-cost Pareto；再做mask relevance置换和等面积选区。若真confidence不胜匹配对照，或只增加自信不增正确率，必要性解释减弱。将SAM2预处理、full-attention和缓存成本计入端到端耗时；优势消失则72.6% token不能推出实际速度优势。",
+  "cost_conditioning": "Fig.4作者称average total tokens，没有逐题分布、input/output细分、是否过滤失败样本。Fig.5插入频率为每题均值；image token量写after insertion但没清楚说明零插入题是否纳入分母。不能把16/0.934当作已报告的E[tokens|call]。未报告E[cost|correct]、E[cost|wrong]、direct_ok/needs_look/H层条件成本。Fig.6是插图后confidence变化的条件样本统计，不能推出所有题的可信必要性。",
+  "source_evidence": [
+   {
+    "quote": "All methods are reproduced once using their official open-\nsource implementations and evaluated under both 0-shot\nand 1-shot settings.",
+    "locator": "Experiments Setting, PDF p.4"
+   },
+   {
+    "quote": "is tuned on M3\nCoT validation set by searching within [0, 1]\nand selecting the value that yields the best performance.",
+    "locator": "Experiments Setting, PDF p.4; tau"
+   },
+   {
+    "quote": "achieves a significant reduction in token consumption, using\nan average of 314 tokens, which is a 72.6% decrease com-\npared to ICoT that requires 1,146 tokens.",
+    "locator": "Analysis 2, PDF p.5"
+   }
+  ]
+ },
+ "engineering": {
+  "setup": {
+   "model": "Chameleon-7B, LLaVA-v1.5-7B/13B, Qwen2-VL-2B/7B; SAM2; inspected code is Qwen2-VL-7B/M3CoT only",
+   "framework": "Inference-only; official PyTorch/Hugging Face Transformers custom model and manual generation patch",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "paper_sampling": "default top-p and temperature of each MLLM; numerical values not given",
+   "code_generation_config": {
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "repetition_penalty": 1.2,
+    "min_new_tokens": 128,
+    "max_new_tokens": 2048
+   },
+   "threshold": 0.2,
+   "code_max_tokens_per_mask": 64
+  },
+  "cost": "无训练、更新次数或GPU·h报告。Fig.4 Qwen2-VL-7B/M3CoT平均314 vs1146 token，算术(1146-314)/1146=72.6003%。Fig.5跨benchmark宏平均DaP插图1.2033≈1.2 vs ICoT2.638≈2.6；图token宏平均26 vs177。不能把该宏均值当题量加权总体均值。SAM2生成候选、原图编码、output_attentions eager开销、CPU/GPU memory和latency未计量。源码复用已有embedding，不能与原图重新裁剪放大工具成本同名比较。",
+  "pitfalls": [],
+  "code": "https://github.com/67L1/DaP-ICoT",
+  "lesson": "当用置信度门控视觉补看时，应同时固定置信度定义、触发边界、预算和视觉信息来源；低token成本可能来自重播现有embedding及候选大小过滤，不能直接视作减少真实crop且保持准确率的证据。本文公式与源码差异使这项核对尤其必要。"
+ },
+ "relevance": [
+  {
+   "problem": "P34",
+   "how": "提供当前策略输出margin的低成本触发启发式，但无必要性AUROC或校准诊断；raw-logit与probability gap必须分清。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "不回答剩余预算/证据充分性停止：Eq3仅决定下一步是否插图，源码有固定生成长度上限。",
+   "strength": 1
+  },
+  {
+   "problem": "P30",
+   "how": "源码选过mask后pop减少相同候选重复，但候选可重叠；不保证去重实际crop或保留纠错再访。",
+   "strength": 1
+  },
+  {
+   "problem": "P24",
+   "how": "手工状态gate可作为固定直答率随机gate的候选对照；没有训练路由头/共享参数泄漏实验。",
+   "strength": 1
+  },
+  {
+   "problem": "P05",
+   "how": "报告accuracy与token/call点估计，但没有必要性真值、条件成本、端到端成本及非劣检验。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "源码重用缩放后原图visual tokens，不能恢复学生输入中不存在的高分辨率细节；SAM2分割原图并不等于VLM重新看高分辨率crop。",
+   "strength": 1
+  },
+  {
+   "problem": "P54",
+   "how": "公开代码显式检查图token/feature数匹配，并手工更新generation ids/cache；可迁移工程审计点，不能照抄Qwen2网格到Qwen3。",
+   "strength": 2
+  }
+ ],
+ "implementation_audit": {
+  "status": "static_source_read_only; not executed; not a reproduction",
+  "commit": "2cc65b2881ec5184c0aa2eabb528ee4ec1dc34fd",
+  "scope": [
+   "README.md",
+   "src/run.py",
+   "src/preprocess_pool.py",
+   "src/process_res.py",
+   "src/config/config.yaml"
+  ],
+  "observations": [
+   {
+    "text": "Eq1-2使用raw logit gap；源码softmax后top2 probability gap，在句号input id13时均值比较。概率差尺度[0,1]与文中tau区间相容但这不是原公式；不得默默修正文献。",
+    "locator": "src/run.py L201-216 at 2cc65b2881ec5184c0aa2eabb528ee4ec1dc34fd; PDF Eqs1-2"
+   },
+   {
+    "text": "注意力取各层各头mean后最后query对原图mask所含token的sum，不按mask大小归一化；top candidate取对应query_vokens并pop。不是新crop像素编码，也不是Coconut式生成latent。",
+    "locator": "src/run.py L229-256 at 2cc65b2881ec5184c0aa2eabb528ee4ec1dc34fd"
+   },
+   {
+    "text": "SAM2 mask坐标映射到缩放后原图token网格；仅保留1..64 token masks。超过64丢弃，不是压缩至64。",
+    "locator": "src/process_res.py L149-176; src/preprocess_pool.py max_tokens_per_mask=64 at 2cc65b2881ec5184c0aa2eabb528ee4ec1dc34fd"
+   },
+   {
+    "text": "min_new_tokens=128,max_new_tokens=2048；未见自定义confidence终答stop。池耗尽只停视觉插入；候选移除是固定有限资源约束，与学会何时停止不同。",
+    "locator": "src/run.py L224-256,481-488,531 at 2cc65b2881ec5184c0aa2eabb528ee4ec1dc34fd"
+   },
+   {
+    "text": "README要求手工改Transformers GenerationMixin._sample，将视觉placeholder及边界token插入input_ids。这里仅阅读说明，未修改依赖。",
+    "locator": "README.md section 4 Patch the transformers Library at 2cc65b2881ec5184c0aa2eabb528ee4ec1dc34fd"
+   },
+   {
+    "text": "本次静态读取run.py可见F.pad与response_list.append，但该文件未定义/导入F或response_list；未运行，不能确认公开快照开箱可运行，也不能把代码静态意图当论文结果的运行路径。",
+    "locator": "src/run.py imports, L119 and L210 at 2cc65b2881ec5184c0aa2eabb528ee4ec1dc34fd"
+   }
+  ]
+ }
+}

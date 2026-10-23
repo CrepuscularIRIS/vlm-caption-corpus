@@ -1,0 +1,206 @@
+{
+ "paper_key": "litscan:63890",
+ "title": "ViRC",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_63890.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3 pp3–6",
+   "Tables1–6 §4–5 pp6–8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把视觉交错推理按中间命题分成CRU，一块视觉证据支持多步文字；先结构SFT、再视觉SFT、最后共享历史下一CRU/答案的GRPO。",
+  "key_step": "CRUX构造明确的命题边界与crop/scale/display接口；RL只采一块完整CRU或答案，由类型选择奖励，工具返回不训练。",
+  "why_non_obvious": "信用单位从整条轨迹或单步变成语义命题，但命题正确性仍由外部teacher判断且与终答监督不是相同事件。",
+  "trigger_condition": "数学视觉推理单张图证据不足，而每步插图又冗余；需要跨命题取证与命题内逻辑连续。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用语义块重设动作与监督粒度，再分阶段学结构、证据使用和停止。",
+  "abstract_trigger_condition": "数学视觉推理单张图证据不足，而每步插图又冗余；需要跨命题取证与命题内逻辑连续。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "CRUX构造明确的命题边界与crop/scale/display接口；RL只采一块完整CRU或答案，由类型选择奖励，工具返回不训练。",
+  "abstract_why_non_obvious": "信用单位从整条轨迹或单步变成语义命题，但命题正确性仍由外部teacher判断且与终答监督不是相同事件。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:63890#s1",
+   "object": "visual-text reasoning unit",
+   "information": "Qwen72B生成路径、QwQ32B映射命题，视觉linker定位对象+文字框并集",
+   "operation": "每CRU=(一个visual observation,多文字步骤)，crop/scale/display插在块间；50K先mask视觉SFT再相同数据完整视觉SFT",
+   "claimed_effect": "去CRU后GeoQA74.67 vs75.07、MMStar72.80 vs77.20、VP37.18 vs43.57",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2–3.4 pp4–5; Table3 p7",
+    "quote": "Ours w/o CRU 74.67 72.80 79.26 37.18 75.92 67.32"
+   },
+   "failure_boundary": "chunking只是结构先验，不构成Miller心理理论或视觉按需必要性的验证；几何增益仅.40pp。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:63890#s2",
+   "object": "shared-history next-unit policy",
+   "information": "历史CRUs、GT答案/工具pattern、Qwen2.5VL72B对新CRU的文字一致和视觉相关评分",
+   "operation": "rollout为一个CRU或答案；CRU奖.5text+.4visual+.1pattern，答案奖correct，非法输出罚−1；external observation mask",
+   "claimed_effect": "去rmm时VP43.57→37.92；去hard subset→35.40并出现过度工具/少终答",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.4 pp5–6; Table6/Fig4 p8",
+    "quote": "w/o rmm 73.60 74.00 79.63 37.92 79.06 69.19"
+   },
+   "failure_boundary": "完整GRPO方程/std/G/return传播未给；不能认为这等价为每个自然工具调用估计Q或dV。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "将整轨迹同一结果信用拆成共享历史下一个命题块或答案的评分单位。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "明确SFT结构/实践阶段后再RL，先覆盖视觉回看、display、scale行为。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "去rmm偏直答、去hard子集或pattern过度工具，表明支持和reward对停止共同敏感。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5VL3B/7B",
+   "kind": "method"
+  },
+  {
+   "name": "MINT-CoT7B",
+   "kind": "method"
+  },
+  {
+   "name": "MM-Eureka7B",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "without CRU",
+   "kind": "method"
+  },
+  {
+   "name": "without multimodal reward/hard data/pattern",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Reader limitation: tools类型匹配GT pattern只奖励按模板行为，不保证纠正了错误命题；错误路径怎样作为监督在未提供B.2。",
+   "quote": null,
+   "locator": "§3.3 pp4–5; §3.4 p6"
+  }
+ ],
+ "question": {
+  "observed_failure": "7B数学三集平均58.99，ViRC77.79；无CRU同训练大部GeoQA收益仍在。",
+  "load_bearing_assumption": "一个中间命题是稳定且可judge的信用单位，视觉证据需要与命题而非每token绑定。",
+  "scope": "数学图像题与crop/scale/display工具。",
+  "success_criterion": "在等数据等训练预算下命题块相较step/整轨迹监督提高答案并减少冗余工具。",
+  "why_open": "不同stage/reward/数据一起改变；Table3保留CRU带来收益但未报告等token成本与seed。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§3.2–3.4明确定义CRU、文字step和tool action不同粒度"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.4三阶段训练，Table5"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3.4将CRU与final answer用不同reward分支处理"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "CRU_i=(v_i,{s_i,1,...,s_i,m_i}); C=[CRU_1,...,CRU_N,a]; Σm_i=K",
+    "locator": "Eq4–5 p4"
+   },
+   {
+    "latex": "s_t=(q;CRU_1,...,CRU_t); o_i∈{complete CRU, final answer}",
+    "locator": "§3.4 p5"
+   },
+   {
+    "latex": "r_CRU=.5 coherence+.4 visual_relevance+.1 1[tool type matches GT]; r_answer=1[correct]; invalid penalty=-1",
+    "locator": "§3.4 pp5–6, prose coefficients"
+   }
+  ],
+  "signal_routing": "同历史采G个下一unit，GRPO只训练生成token，观察visual token无梯度；CRU层reward不是每文字step；正文未明确是否含后继终答回报、token长度平均、KL/clip。",
+  "normalization": "judge text/visual分数各到[0,1]再加权；group advantage/std与ε未知。",
+  "invariance": "N1退化普通CoT，mi1退化每步VisualCoT；这是序列表示包含关系，不是优化等价证明。奖励不是γΦ(s′)−Φ(s)，非严格PBRS。",
+  "baseline_or_potential": "只称GRPO，基线实现未知；没有同state两动作因果baseline证明。",
+  "degenerate_cases": "同组全正确/错误是否零advantage取决于未给norm与其他分量；CRU可拿最高1而答错0，局部评分足以鼓励不终止；hard data/pattern删除确有tool过用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：固定现有轨迹将同一token序列按命题块或固定长度随机块评分，控制judge调用数；按caption后同state分直答/crop，核查CRU高分是否预测当前policy终答提升及停止。",
+  "negative_results": [
+   {
+    "text": "Stage1→Stage2 VP33.01→32.82，HR68.88→67.00；无CRU GeoQA仅比full低.40。",
+    "locator": "Tables3/5 pp7–8"
+   },
+   {
+    "text": "去rmm偏直答，去hard子集/pattern偏工具且不输出答案。",
+    "locator": "Fig4/§4.3 p8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若随机等长块效果等同命题块，或高CRU分不关联当前policy答题收益，则语义命题信用假设被削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B/7B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "100K CRUX来自54K题，训练使用50K子集；GPU/时长/batch/lr在未提供supplement未知。",
+  "pitfalls": [
+   {
+    "text": "最长正确/错误路径选择会偏长；原文称hard long reasoning超过15turn截断，15不是inference上限。",
+    "locator": "§3.3 p5; Fig3 p4"
+   },
+   {
+    "text": "pattern把display称verifying、scale称backtracking，但工具名/类型匹配不证明语义修订。",
+    "locator": "§3.3 p5"
+   }
+  ],
+  "code": "https://github.com/Leon-LihongWang/ViRC",
+  "lesson": "当以中间命题作局部RL单位时，必须同时记录终答出现率、工具率和块长度；高局部分数可与不终止共存。"
+ }
+}

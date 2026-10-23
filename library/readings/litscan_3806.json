@@ -1,0 +1,57 @@
+{
+ "paper_key": "litscan:3806",
+ "title": "ChartLens: Fine-grained Visual Attribution in Charts",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3806.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "5",
+   "6 Tables2–4",
+   "10 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将图表元素分割并打可引用标记，给MLLM图像与已生成QA进行一致性验证和支持区域归因。",
+  "key_step": "bar/pie采用启发式提示SAM，line用LineFormer细分；标号后让模型选支持答案的元素。",
+  "why_non_obvious": "直接坐标输出难精定位；图表线段等细结构需要特定候选划分。",
+  "trigger_condition": "When a chart answer needs traceable evidence, segment and label candidate elements before asking for attribution.",
+  "contribution_type": "post-hoc attribution and benchmark",
+  "abstract_strategy": "Convert fine-grained evidence into named candidates for explicit citation.",
+  "abstract_trigger_condition": "When free-form explanations lack verifiable grounding, expose addressable evidence units."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3806#s1",
+   "object": "图表答案的后验归因",
+   "information": "图像、题目和已经给定的答案；不是生成前盲定位，也不测删除区域后的因果变化。",
+   "operation": "按图类分割元素，SoM标记后用few-shot CoT验证QA并输出支持标号。",
+   "claimed_effect": "bar ChartQA F1 64.14 vs零样本GPT4o7.75；pie48.56 vs7.17；line AITQA检测59.14低于LISA94.62但区域面积1.25%远小于63.18%。",
+   "conditions": [
+    "候选分割覆盖证据",
+    "可识别图表元素"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "ChartLens        79.86 61.17 69.28      35.38 33.94 34.65     74.51 56.30 64.14"
+   },
+   "failure_boundary": "错误分割漏证据；未覆盖标题标签文本；给定答案可诱发事后合理化，归因不等于验证答案真。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "可作图表子域离线grounding检查；不提供工具必要性或逐步价值。",
+   "strength": 1
+  },
+  {
+   "problem": "P44",
+   "how": "只奖励候选匹配可能被候选覆盖与答案条件化误导。",
+   "strength": 1
+  }
+ ]
+}

@@ -1,0 +1,141 @@
+{
+ "paper_key": "litscan:4174",
+ "title": "S-VCO",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_4174.txt",
+  "sections_read": [
+   "Abstract/contributions; §3 Eqs3-7; §4 data; §5/Table1/ablations; Limitations; AppB settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以无图条件为中间锚点，分别拉高匹配图和压低矛盾图的相对reference似然，并对双图双文本交换对称训练。",
+  "key_step": "同一句回答在match/no-image/mismatch三个条件比较，再交换图文角色避免合成图风格捷径。",
+  "why_non_obvious": "坏图并非天然负例；它对自己的对应回答应是正例。",
+  "trigger_condition": "When corrupted-image preferences allow shortcuts, use symmetric semantically contradictory image-text pairs.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把单边偏好改成角色可交换的对照约束。",
+  "abstract_trigger_condition": "When nuisance cues identify the negative class, reverse roles under matched labels.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "同输出跨输入比较，以中性条件分开正负拉力。",
+  "abstract_why_non_obvious": "只提高视觉敏感性可能学到图像真假风格而非内容。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:4174#s1",
+   "object": "配对图文likelihood ratio",
+   "information": "训练知双图各自caption及共享query；reference冻结；无图分支用于loss，推理无额外teacher",
+   "operation": "match>noimage及noimage>mismatch两个logsigmoid，再交换图文对称求和",
+   "claimed_effect": "LV-INT MMVP41.3→50.7；MMHal46%→35%；去对称MMVP46.0",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eqs3-7/Table1",
+    "quote": "symmetry by summing over both roles"
+   },
+   "failure_boundary": "合成对照正确性和视觉encoder筛选不保证因果最小性；视觉敏感性非crop必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "可迁移到caption视觉grounding训练数据和同输出反事实诊断。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DPO/mDPO×VLF/MVC；MVCraw；不对称VCO；双侧SFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "多loss权重需调；合成对比操作种类有限，质量依赖真实差异。",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "1000 CounterCurate样本出现无图PPL更低；Table1双侧SFT平均−2.45%而S-VCO+10.47%。",
+  "load_bearing_assumption": "原图天然preferred、破坏图天然dispreferred足以学视觉语义。",
+  "scope": "7B LLaVA单轮视觉对照finetune",
+  "success_criterion": "同数据对称loss优于VCO/SFT并改善视觉依赖任务",
+  "why_open": "负图风格或模态偏置可以替代语义识别。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table1"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "Fig2"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_reversal",
+   "locator": "§3.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "f(i,y)=\\log\\pi_\\theta(y|i,q)/\\pi_{ref}(y|i,q);\\ L_{VCO}=-\\log\\sigma[\\beta_1(f(i_w,y_w)-f(\\varnothing,y_w))]-\\log\\sigma[\\beta_2(f(\\varnothing,y_w)-f(i_l,y_w))]",
+    "locator": "Eqs3-5"
+   },
+   {
+    "latex": "L_{S-VCO}=L_{VCO}(i_w,y_w,i_l)+L_{VCO}(i_l,y_l,i_w),\\quad\\beta_1=\\beta_2=.1",
+    "locator": "Eq7/AppB"
+   }
+  ],
+  "signal_routing": "训练条件化response likelihood ratio；不是rollout reward或工具token mask。无图policy分支参与差分，reference固定；未声称仅改变差异token。",
+  "normalization": "other: reference log-ratio/logsigmoid；无GRPO组std，所读未给长度归一化实现。",
+  "invariance": "非PBRS；对照监督改变模型分布，无准确率不变定理。",
+  "baseline_or_potential": "无图条件与固定reference均不是state value baseline。",
+  "degenerate_cases": "双图无真实差异会产生冲突约束；匹配caption错误会反向监督；β→0梯度消失；无group全对/错退化。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同MVC数据比较DPO/mDPO/VCO/SFT；raw数据等11149条，隔离处理但filter和augmentation联合消融。",
+  "negative_results": [
+   {
+    "text": "LV-INT SQA74.77→73.87；无图收益很小的任务不必受益；双侧SFT退化。",
+    "locator": "Table1/§5.3"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "交换角色后仍只按synthetic artifact区分，或人工核错对比例高，则语义对照解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5-7B/LLaVANextInterleave7B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "MVC11149pairs；2epochs batch32 8×A10080G；lr1e-6，β1=β2=.1；SigLIPsim>.7,DINOv2<.5。",
+  "pitfalls": [],
+  "code": "https://s-vco.github.io/",
+  "lesson": "当训练视觉对照时，让每张图都能成为匹配正例，检查合成伪迹和文本差异；不要把坏图风格当视觉能力。"
+ }
+}

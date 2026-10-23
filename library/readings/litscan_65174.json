@@ -1,0 +1,180 @@
+{
+ "paper_key": "litscan:65174",
+ "title": "VisionLeaf: Entropy-Guided Leaf-First Reasoning for Efficient and Accurate Think-with-Image",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_65174.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.2–3.5/Algorithm1/Eq3–6",
+   "4/Table1–2",
+   "5.1–5.2/Eq7–11",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "固定rollout预算下，从已有多轮前缀的高熵节点继续分支，代替所有样本独立从根完整生成。",
+  "key_step": "探索预算集中在工具观测后不确定的局部续写，同时共享前缀计算。",
+  "why_non_obvious": "工具新证据处更可能有多种续写，根部重复采样浪费；但高熵不等价高收益。",
+  "trigger_condition": "When uncertainty spikes after tool observations, branch from uncertain prefixes under a fixed rollout budget.",
+  "contribution_type": "rollout sampling strategy",
+  "abstract_strategy": "Reallocate sampling to uncertain intermediate states and reuse common prefixes.",
+  "abstract_trigger_condition": "When uniform root sampling undersamples important downstream alternatives.",
+  "abstract_key_step": "Rank frontier nodes, split a high-uncertainty node, and collect terminal rollouts.",
+  "abstract_why_non_obvious": "Local branching creates correlated samples and changes state coverage.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:65174#s1",
+   "object": "leaf-first高熵分支采样",
+   "information": "当前历史thought/action/原图crop结果；下一轮首token分布，实际用min-entropy近似。",
+   "operation": "维护frontier，选最高熵节点复制前缀并采B个续写，直到N完成轨迹；GRPO只训练生成token。",
+   "claimed_effect": "VStar .806→.848，HR8K .688→.721；random split HR8K .718，high .721。",
+   "conditions": [
+    "相同DeepEyes47K数据",
+    "固定16rollouts",
+    "最多5轮"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "VisionLeaf               7B        0.842       0.852        0.848"
+   },
+   "failure_boundary": "非必要性分类；min-entropy与Shannon排序并不普遍相同；分支关联影响理论条件。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P18",
+   "how": "从相同中间观测续写多分支可诊断必要但失败探索。",
+   "strength": 2
+  },
+  {
+   "problem": "P30",
+   "how": "作者报告更少重复工具轮次，但原因与分支选样需分离。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "熵作续写探索排序，不等于已校准crop必要性。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DeepEyes root rollouts / low-entropy split / random split",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "实际用min-entropy近似Shannon entropy，但排序相同不是一般保证。",
+   "quote": "we approximate this with min-entropy",
+   "locator": "3.3"
+  },
+  {
+   "text": "Eq11的逐节点Var[R|n]≤Var[R|s]不由全方差公式一般推出，只能有条件期望版本；熵变高也不自动使回报方差更高。",
+   "locator": "5.1–5.2",
+   "quote": "So higher entropy directly amplifies gradient noise."
+  }
+ ],
+ "question": {
+  "observed_failure": "DeepEyes VStar80.6，leaf分支84.8；HR8K68.8→72.1。",
+  "load_bearing_assumption": "独立根rollouts已充分覆盖工具之后新增的不确定性。",
+  "scope": "caption/crop多轮轨迹采样",
+  "success_criterion": "等rollout预算的准确率、推理轮次和生成成本",
+  "why_open": "单条下游续写给早期动作嘈杂终奖"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M13",
+   "locator": "3.3 shared-prefix sibling continuations"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2 high/low/random split"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "Algorithm1 leaf-first branching"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "H(n)=-sum_x p(x|s(n))*log p(x|s(n)); n_star=argmax_n H(n)",
+    "locator": "Eq4–5; implementation min-entropy approximation"
+   },
+   {
+    "latex": "R=0.8*R_acc-0.2*R_format+1.2*1[acc>0]*R_tool",
+    "locator": "Eq6"
+   },
+   {
+    "latex": "Var(R|s)=E[Var(R|s,y)|s]+Var(E[R|s,y]|s)",
+    "locator": "Eq7"
+   },
+   {
+    "latex": "A_i=R_i-mean_j R_j; Var(A_i|s)=(1-1/G)*Var(R|s)",
+    "locator": "Eq9; conditionally independent return assumption"
+   }
+  ],
+  "signal_routing": "工具payload mask=0，模型生成token mask=1；每轨迹按可优化token数归一化GRPO clipped项。节点组定义在理论为siblings，实际训练分组与prefix重复计权细节未清。",
+  "normalization": "other: optimizable-token mean; theory advantages mean-only; implementation group std not explicitly specified",
+  "invariance": "非PBRS；选择高熵节点改变采样覆盖，需考虑off-policy/state-selection bias。终reward含工具奖金改变目标。",
+  "baseline_or_potential": "理论组均值baseline；无独立critic。",
+  "degenerate_cases": "B1回单分支；全同reward理论mean-only优势0；p≈0首动作不因下游分支而获得支撑；高熵也可来自噪声/不可解状态。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "high/low/random split固定机制，其余数据/底座同DeepEyes；pass@16随训练与工具次数。",
+  "negative_results": [
+   {
+    "text": "high对random HR8K仅.003，未报告方差，不能宣称稳定显著；证明不覆盖标准化优势及关联叶子。",
+    "locator": "Table2/5.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：等生成token预算比较随机split，量化前缀重复权重和分支相关性；若随机等效则不支持熵必要。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "VeRL GRPO/sglang async rollouts",
+   "group_size": 16,
+   "max_turns": 5,
+   "kl": null
+  },
+  "cost": "batch128，lr1e-6，16rollouts，max5turns；训练时长未知。",
+  "pitfalls": [
+   {
+    "text": "正文max5turn与固定16rollout；branches-per-split B数值未读到。",
+    "locator": "3.3/4.1"
+   },
+   {
+    "text": "MME实际用lite子集；LLM-as-judge沿DeepEyes。",
+    "locator": "4.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当多个叶子共享前缀时，应保存节点ID和共享token权重，核mask只覆盖生成token，避免把重复样本当独立证据。"
+ }
+}

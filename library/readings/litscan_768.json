@@ -1,0 +1,54 @@
+{
+ "paper_key": "litscan:768",
+ "title": "VWSD",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_768.txt",
+  "sections_read": [
+   "Abstract",
+   "4/Eq2",
+   "5–6/Table1",
+   "7.1/Table3",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "边缘化潜在词义而非先硬选词义",
+  "key_step": "softmax得到context→definition与definition→image分布，再对所有定义求和；OOV用带上下文GPT-3释义",
+  "why_non_obvious": "避免词义先判错的流水线误差，同时保留多个定义的不确定性",
+  "trigger_condition": "当图文检索遇到多义词或OOV时，引入定义并边缘化词义以重排候选图",
+  "contribution_type": "method",
+  "abstract_strategy": "将隐变量显式化并边缘化",
+  "abstract_trigger_condition": "当图文检索遇到多义词或OOV时，引入定义并边缘化词义以重排候选图"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:768#s1",
+   "object": "零样本图文匹配候选排序",
+   "information": "WordNet定义或GPT-3上下文生成定义；冻结CLIP/FLAVA嵌入",
+   "operation": "P(v|c,t)=sum_d P(v|d,c,t)P(d|c,t)，使用softmax相似度估计",
+   "claimed_effect": "CLIP Hits@1 73.00→83.08(WN+CADG)，FLAVA70.13→78.85；仅模糊词CLIP+WN77.15≈T5SemCor77.12",
+   "conditions": [
+    "SE23单数据集，10候选图",
+    "无额外训练"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1,3",
+    "quote": "WN+CADG 83.08         89.60                                                                   CLIP    WordNet          DG      CADG"
+   },
+   "failure_boundary": "生成释义可能幻觉并误导检索；softmax相似度非校准后验",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "caption词义正确性与最终选图正确性可分离，但未涉及crop策略或RL",
+   "strength": 1
+  }
+ ],
+ "scientific_replication": false
+}

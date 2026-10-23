@@ -1,0 +1,173 @@
+{
+ "paper_key": "litscan:2777",
+ "title": "ActiView",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2777.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3–4 pp4–7",
+   "§5 Tables2–6 pp6–9",
+   "Limitations p9",
+   "App E–G pp15–18；Table12 p19"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "限制初始视域，将zoom、逐步shift和mixed分开评测，同时记录选择视图与人工视觉线索的precision/recall。",
+  "key_step": "把是否需要更多信息的判断与最终答题分开，按初始线索完整/部分/无划分难度。",
+  "why_non_obvious": "全图答题正确不代表能找到需要的视图；多看仍可能无法整合，人工线索也非策略必要性真值。",
+  "trigger_condition": "When full-image QA hides active sensing failures, restrict initial views and score view acquisition separately from answers.",
+  "contribution_type": "diagnostic_benchmark",
+  "abstract_strategy": "Control observation access and measure acquisition and use independently.",
+  "abstract_trigger_condition": "When success obscures the information-gathering process, constrain initial information and inspect intermediate choices.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "无todo reviews；正文致谢/抱怨审稿不作reviews证据",
+  "abstract_key_step": "Vary initial evidence while preserving the question and available views.",
+  "abstract_why_non_obvious": "Knowing the answer and acquiring the evidence are different abilities."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2777#s1",
+   "object": "按需补看及视图整合的评测协议",
+   "information": "314图325题，人工标2.64 clueviews/题；四分图，zoom全图低分辨率起步、shift部分视图起步。",
+   "operation": "zoom选区域后放至原输入尺寸；shift反复问是否还需视图，否则停止；mixed允许选择/丢弃视图。按clue视图算P/R/F1并报告QA。",
+   "claimed_effect": "GPT4o个体pipeline平均66.40 vs人84.67，mixed69.54；Qwen2.5VL7B个体68、mixed70.77。",
+   "conditions": [
+    "人工线索标注有效",
+    "四固定视图协议与模型输入支持一致"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p8",
+    "quote": "73.54     67.38     68.62"
+   },
+   "failure_boundary": "不是连续crop或预算优化训练；clue覆盖≠每次调用因果必要。单图与多图最终判分协议不完全等价。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P48",
+   "how": "可作为主动补看外部评测，协议需适配。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "显式问是否需更多信息，但没有剩余预算函数。",
+   "strength": 2
+  },
+  {
+   "problem": "P05",
+   "how": "区分clue覆盖与工具必要性，避免把recall当目标。",
+   "strength": 2
+  },
+  {
+   "problem": "P65",
+   "how": "按初始证据完整/部分/无分层可迁移。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Fullimage/Singleview；人工clue views；随机和textonly；one-shot ICL；4/6/8/9/16split",
+   "kind": "evaluation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只评静态VQA视图，未含视角变形、多传感器和真实动态交互。",
+   "locator": "Limitations p9",
+   "quote": "overlooks factors such as perspective distortion,"
+  }
+ ],
+ "question": {
+  "observed_failure": "GPT4o68.62 zoom低于人工线索73.54；InternVL2-8B56.00 vs线索73.23。",
+  "load_bearing_assumption": "全图QA好即可主动找证据，或收集全部局部视图就能整合。",
+  "scope": "四固定子视图和325选择题，zoom/shift/mixed。",
+  "success_criterion": "QA与clue选择精确率/召回率一起提升，分初始信息层报告。",
+  "why_open": "既有视觉评测把信息直接给模型，遮蔽获取信息能力。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "locator": "§3–4定义主动感知协议"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Shift-R/E/M/H及类别分层"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§4/AppE"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "P_{select}=TP/(TP+FP),\\quad R_{select}=TP/(TP+FN),\\quad F1=2PR/(P+R)",
+    "locator": "AppG Eqs1–3 pp17–18"
+   }
+  ],
+  "signal_routing": "仅评测；选view token或yes/no继续请求，无学习reward。答案选项在最终QA阶段给出，选视图按question；人工clue仅评价/对照不默认给策略。",
+  "normalization": "other：view集合precision/recall；平均QA跨zoom和四shift层；无GRPO。",
+  "invariance": "非PBRS/塑形。",
+  "baseline_or_potential": "人工clue oracle输入与fullview作对照；不估同状态动作价值。",
+  "degenerate_cases": "全选view可抬recall不保证QA；不选也可能由prior答对；固定四格与信息顺序影响难度。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Full/zoom/人线索、初始信息层、4到16split、图片拼接vscaption代替旧视图、one-shot。",
+  "negative_results": [
+   {
+    "text": "增加切块未必更好：LLaVA7B 4→16平均60.31→57.69；zoom上升但shift下降。",
+    "locator": "AppF.1 Table10 p16"
+   },
+   {
+    "text": "单图zoom逐个view问，任一回答正确即成功；多图模型联合回答，可能形成oracle选择优势，跨架构比较需限定。",
+    "locator": "AppF.3 p17"
+   },
+   {
+    "text": "文本替图并非一律坏：mPLUGOwl2 zoom55.38→62.77/shift47.38→54.15；正文多数下降不应写全部下降。",
+    "locator": "Table11 p17"
+   }
+  ],
+  "seeds": "随机baseline10K runs；模型训练种子不适用，重复推理方差未给。",
+  "falsifier": "proposed：在caption+crop上保留总像素和预算，使用相同最终判分，按初始证据充分性层验证选择正确与答案改善；若只提高clue recall而答案无益，不能认定必要性更好。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "GPT4o/Gemini/Claude及开源多图/单图模型",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "fixed_subviews": 4
+  },
+  "cost": "1625评测实例含同题五种初始条件；mixed zoom/shift次数不是walltime；未给统一GPU成本。",
+  "pitfalls": [
+   {
+    "text": "同题不同初始视图不独立；人工clues可能不完整，mixed可超过人工clue输入成绩。",
+    "locator": "§3.2/§5.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当评估主动视觉选择时，应同时报告视图选择和答题，并统一单图/多图的最终回答规则，不能用最佳视图oracle替实际策略。"
+ }
+}

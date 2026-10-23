@@ -1,0 +1,504 @@
+{
+ "paper_key": "2605.18641",
+ "title": "Leveraging Latent Visual Reasoning in Silence",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.18641.pdf",
+  "version": "v2",
+  "pages": 21,
+  "version_observed": "PDF p.1: arXiv:2605.18641v2 [cs.CV] 28 Sep 2026; remote latest version not checked. NeurIPS2026 footer is a source statement, not a replacement for manifest decision=null.",
+  "sections_read": [
+   "Abstract; 1 Introduction; Figure1",
+   "2 Related Work",
+   "3.1 Latent Dependence During Inference",
+   "3.2 Latent Generation Behavior; Table1; Figure2",
+   "3.3 Where Does Latent Reasoning Help?; Figure3",
+   "4 Leveraging Latent Visual Reasoning in Silence; Eqs1–4",
+   "5.1 Settings; 5.2 Main Results; Table2; Figure4",
+   "5.3 Analysis; Tables3–7; Figure5",
+   "5.4 Case Study; Figure6",
+   "6 Conclusion; Acknowledgments; References pp.11–14",
+   "Appendix A Broader Impacts; B Limitations and Future Work",
+   "Appendix C Details of LVR-SFT* Training; Table8",
+   "Appendix D Details of RL Post-Training; Table9",
+   "Appendix E Details of Latent Necessity Reward; Eq5; Table10",
+   "Appendix F.1 Necessity of Generated Latents in RL; Table11",
+   "Appendix F.2 Inference Speed and Response Length; Table12",
+   "Appendix F.3 Controlling effects of response length; Table13",
+   "Appendix G Inference Examples; Figures7–13"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "先用随机替换/移除latent和训练动态检验“生成了latent就使用了它”的前提，再把第一层后续文本对latent的注意力质量加入VLPO结果奖励，让latent可作为训练辅助表征而不要求最终持续生成。",
+  "key_step": "在old-policy logprob前向中读取第一层多头平均attention，累计后续文本到所有latent的质量并按后续文本数取平均；无latent为0；与正确性/格式加权后做组内mean+std。",
+  "why_non_obvious": "训练期的表征辅助与推理期显式格式不是同一件事；latent可以在RL末期消失而改善保留。但attention只是利用代理，既受长度影响也不是动作必要性。",
+  "trigger_condition": "When latent generation persists as a format without reliable downstream dependence, reward downstream interaction during post-training while allowing the model to stop emitting latents at inference.",
+  "reviewer_praise": [
+   "low_evidence: manifest has no reviews_path; no independent review artifact supplied."
+  ],
+  "reviewer_concern": [
+   "low_evidence: reviewer concerns unavailable; reader limitations are recorded separately."
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null; PDF NeurIPS2026 footer observed but no review/decision record used.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Separate the value of an intermediate computation during learning from its visible persistence at deployment.",
+  "abstract_key_step": "Measure how later outputs attend to generated intermediate states, add that proxy to outcome reward, and allow the generating mode to disappear.",
+  "abstract_why_non_obvious": "An intermediate state can help shape parameters without remaining useful on each deployed input; observing its presence alone cannot establish its contribution.",
+  "abstract_trigger_condition": "When an intermediate format can be removed without losing deployed accuracy, test whether interaction with its contents still improves learning."
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.18641#s1",
+   "object": "Latent-dependence diagnostic and behavioral-support preparation",
+   "information": "SFT-generated latent embeddings, prompt/image, same decoding context, model outcomes under replacement/removal; evaluated answer correctness. Natural latent/text mode frequencies additionally see selected responses, not randomized per-mode treatment.",
+   "operation": "Replace latent vectors by unit-Gaussian noise while preserving positions, or force latent_end immediately after latent_start; compare downstream accuracy before RL. For LVR format rigidity, add200 SFT steps with latent targets dropped with probability.4 before observing free mode choices.",
+   "output": "Inference content-dependence evidence, an LVR-SFT* model supporting both formats, and mode-conditioned response statistics.",
+   "claimed_effect": "Fig1 reports random/removal largely comparable with real latents, with MMVP exceptions. Table1 attemp.5 Monet ViRL39K latent rate36.1% SFT→10.0% released RL; Thyme69.2%→55.0%. These are model-stage observations, not a randomized causal effect of latent choice.",
+   "conditions": [
+    "Previously trained latent models and accessible hidden-state replacement path",
+    "Replacement random magnitude may be out of distribution; removal changes computational history",
+    "Mode behavior measurement uses1000 questions per dataset,8 responses each,temperatures.5/1.0; LVR-SFT* differs from original LVR"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.1 p.3; Figure1 p.1",
+    "quote": "before the subsequent generation step, we replace latent tokens with random values drawn from a\nunit Gaussian distribution. Positional embeddings are kept unchanged. We set k to 8 for LVR and 10\nfor Monet, following the settings used in their best-reported performance."
+   },
+   "failure_boundary": "Small output changes do not imply no training benefit, nor no effect on each individual question. Natural latent/text subset accuracies are selection-confounded. LVR random-drop extra SFT is a condition, not evidence RL alone discovers missing pure-text behavior.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.18641#s2",
+   "object": "VLPO trajectory reward using latent-to-text interaction",
+   "information": "First-layer old-policy causal attention from all post-latent text to generated latent vectors, averaged over heads; final outcome correctness and format. RA itself uses no GT answer, reference image regions, external judge or counterfactual continuation. It is computed after the whole response, so later text supplies information unavailable at mode-choice time.",
+   "operation": "Compute RA=(1/|Tt|)Σ_jΣ_k A_jk, set0 if no latent, add.9Racc+.1Rformat+1RA then group-standardize; optimize common sequence advantage with continuous-latent Gaussian-kernel ratios and discrete-token likelihood ratios.",
+   "output": "A sequence-level shaped advantage applied to latent and textual tokens; final model may emit no latents.",
+   "claimed_effect": "Table2 Monet +RA vsVLPO: MathVista59.9→67.9 (+8.0pp),MMVP65.7→76.0 (+10.3pp),V*81.2→85.3 (+4.1pp); MME-RW55.0→52.8 andHRBenchFCP59.3→56.8 fall. Table3 real-vs-random latents400 steps average+3.18pp over5 benchmarks; final latent use goes to0 in Fig4.",
+   "conditions": [
+    "Latent mode is sampled during early training",
+    "Attention is an informative proxy rather than only stylistic/length artifact",
+    "Access to first-layer attention during old-policy scoring; supported latent architecture",
+    "Weights.9,.1,1; batch4/group8; one-run comparison"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Appendix D p.16; §4 Eqs1–4 pp.6–7",
+    "quote": "The reward itself introduces no additional trainable module. It only extracts attention from the first\ndecoder layer during the log-probability computation of the old policy."
+   },
+   "failure_boundary": "RA is not causal evidence utility, factuality, necessity, or local credit. No latent implies no auxiliary signal; all-shared reward gives zero standardized signal. Mixed benchmark regressions and one-run uncertainty remain.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.18641#s3",
+   "object": "Diagnostic latent necessity reward RN (not the final attention method)",
+   "information": "Actual latent rollout and policy continuation from same prefix with latent block omitted; two final binary correctness scores require answer verification. This uses current policy branches, not a frozen-reader value. The exact RL judge/prompt and repeat/coupling protocol are not specified.",
+   "operation": "Regenerate from q+text1+latent_start+latent_end; add+n if latent correct/no-latent wrong,−n/2 if both correct or latent wrong/no-latent correct,0 if both wrong; train600 steps withVLPO+RN.",
+   "output": "Outcome-conditioned trajectory shaping from a sampled counterfactual continuation, not an unbiased value difference or a local action baseline.",
+   "claimed_effect": "Fig2 necessity reward suppresses latent mode faster thanVLPO. Table10 vsSFT:MathVista60.5→71.3,MMVP73.0→65.0,V*80.1→80.1; phrase on par conceals mixed task shifts. Does not establish accurate selective latent routing.",
+   "conditions": [
+    "Policy can complete both latent and no-latent formats",
+    "Prefix is shared, but continuation and length distribution may differ",
+    "Printed n inEq5, prose N=1; repeat count not given"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Appendix E pp.16–17 Eq5; Figure2 p.5; Table10 p.17",
+    "quote": "where ri , rj denote the accuracies of oi , oj . Intuitively, RN is positive only if a regeneration without\n<latents> has lower accuracy than the original latent response. We set N = 1 and train Monet-SFT"
+   },
+   "failure_boundary": "A single regenerated answer is noisy necessity evidence; both-wrong zero does not certify reasonable search. The reward itself assigns negative value to redundant successful latents and can drive mode removal, so collapse is not a general proof latent computation has no value.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Monet-SFT-stage3",
+   "kind": "method"
+  },
+  {
+   "name": "Monet-RL",
+   "kind": "method"
+  },
+  {
+   "name": "LVR-SFT",
+   "kind": "method"
+  },
+  {
+   "name": "LVR-SFT*",
+   "kind": "method"
+  },
+  {
+   "name": "VLPO",
+   "kind": "method"
+  },
+  {
+   "name": "Monet-SFT without latents + GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "Gaussian-random latent substitution",
+   "kind": "method"
+  },
+  {
+   "name": "Zero-latent rollout",
+   "kind": "method"
+  },
+  {
+   "name": "VLPO + RN",
+   "kind": "method"
+  },
+  {
+   "name": "Length penalty −.1 above150 tokens",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "SkiLa",
+   "kind": "method"
+  },
+  {
+   "name": "CoVT",
+   "kind": "method"
+  },
+  {
+   "name": "MathVista-Mini",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVerse-Mini",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMVP",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMBench-V11-Mini",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HRBench4K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Thyme-RL",
+   "kind": "dataset"
+  },
+  {
+   "name": "ViRL39K",
+   "kind": "dataset"
+  },
+  {
+   "name": "Visual-CoT",
+   "kind": "dataset"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Two representative latent-framework families only; not a broad architectural generalization.",
+   "kind": "author_claim",
+   "locator": "Appendix B p.15",
+   "quote": "Our study focuses on two representative latent visual reasoning frameworks, Monet and LVR. These\nmodels cover common designs for injecting continuous visual latents into multimodal reasoning, yet\nfuture methods may use different latent construction mechanisms. It would be valuable to examine\nwhether the observed RL dynamics and the benefits of the attention reward hold across a broader\nrange of latent reasoning architectures."
+  },
+  {
+   "text": "Attention is a proxy; authors explicitly leave stronger counterfactual contribution measurements and broader hyperparameter sweeps for future work.",
+   "kind": "author_claim",
+   "locator": "Appendix B p.15",
+   "quote": "Our attention reward uses attention mass as a proxy for latent utilization. This provides an efficient\ntraining signal. Future work could combine attention-based rewards with stronger counterfactual\nmeasurements of latent contribution. In addition, our experiments are conducted under limited\ncomputational budgets, so larger-scale post-training and broader hyperparameter sweeps may further\nclarify when latent reasoning is most beneficial."
+  },
+  {
+   "text": "Single-run protocol explicitly acknowledged; no repeat-run uncertainty.",
+   "kind": "author_claim",
+   "locator": "Appendix D p.16",
+   "quote": "Due to the substantial compute and API cost of latent-space RL, fully repeating both VLPO and our\nmethod across several seeds and architectures exceeds our available budget. The current one-run\nprotocol follows the previous works, where LVR and Monet don’t report standard deviation either."
+  }
+ ],
+ "question": {
+  "observed_failure": "Table1: Monet-SFT→Monet-RL ViRL39K latent trigger36.1→10.0% attemp.5 and18.9→5.4% at1.0; Thyme69.2→55.0% and40.7→32.4%. Fig1 replacement/removal often maintains accuracy. Extra RN training drives latent usage to≈0 even faster (Fig2), despite continued task performance.",
+  "load_bearing_assumption": "Generation of an intermediate latent format implies its contents causally contribute to the final answer and should remain in every inference response.",
+  "scope": "SFT/RL behavior of Monet and adapted LVR on visual reasoning; latent-representation use as training signal, no crop-tool interaction study.",
+  "success_criterion": "Reported: outperform matchingVLPO on multiple benchmarks while final latent generation may disappear; real-vs-random latent training and attribution should distinguish content dependence from mere formatting. No preregistered noninferiority or seed-powered criterion.",
+  "why_open": "Existing correctness/format rewards supervise outcome and latent format without proving utilization; an explicit sampled necessity bonus instead encourages skipping latent mode. Authors turn to a cheap attention interaction proxy."
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "To isolate\nthe effect from post-training dynamics, we conduct this analysis on latent reasoning models trained\nwith supervised fine-tuning (SFT) before RL.",
+   "locator": "§3.1 p.3",
+   "note": "Executed pre-RL perturbation diagnostic before proposing attention reward."
+  },
+  {
+   "vocab": "M",
+   "id": "M13",
+   "quote": "We define latent tokens as\n0.0\nnecessary when keeping them yields a\n0.2\nmore accurate final response than skip- 0.2\nping them from the same prefix before\n0.4\n<latent_start>.",
+   "locator": "§3.2 p.5; Appendix E Eq5",
+   "note": "Same-prefix alternative continuation operationalizes a local comparison; final-answer noise and format intervention remain."
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "To verify that the benefit of RA comes from\nmeaningful visual latents, we conduct an ablation that replaces real latent embeddings with random\nvalues during RL rollout.",
+   "locator": "§5.3 p.8; Table3",
+   "note": "Real-vs-Gaussian latent contents at400 steps isolate a stated variable, though no repeated-seed assurance."
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "role": "primary",
+   "quote": "As shown in Figure 1, we observe that random replacement performs on par with model-generated\nlatent tokens. Even though removing latent tokens is out of the training distribution, it is better than\nusing them in many cases.",
+   "locator": "§3.1 p.4",
+   "note": "Perturbation counterexamples challenge presence=use; pivot from mandatory inference format to training scaffold."
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "quote": "before the subsequent generation step, we replace latent tokens with random values drawn from a\nunit Gaussian distribution. Positional embeddings are kept unchanged.",
+   "locator": "§3.1 p.3",
+   "note": "Hold latent positions while randomizing contents; separate content-dependence from simply emitting latent format. Distribution-shift caveat retained."
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_A^i=\\frac{1}{|T_t|}\\sum_{j\\in T_t}\\sum_{k\\in T_L}A_{j,k},\\quad R_A^i=0\\ \\text{if no latents}",
+    "locator": "Eq1 §4 p.6",
+    "note": "First decoder layer; mean over attention heads; normalized by post-latent text count, not latent count. No clipping."
+   },
+   {
+    "latex": "r_i=0.9R_{acc}(o_i)+0.1R_{format}(o_i)+1.0R_A^i,\\quad\\hat A_i=\\frac{r_i-\\operatorname{mean}(r_1,\\ldots,r_G)}{\\operatorname{std}(r_1,\\ldots,r_G)}",
+    "locator": "Eq2 p.6 and weights p.7"
+   },
+   {
+    "latex": "\\mathcal J(\\theta)=\\mathbb E_{q,o\\sim\\pi_{old}}\\frac1G\\sum_{i=1}^{G}\\frac1{|o_i|}\\sum_{t=1}^{|o_i|}\\min[r_{i,t}(\\theta)\\hat A_i,\\operatorname{clip}(r_{i,t}(\\theta),1-\\epsilon,1+\\epsilon)\\hat A_i]-\\beta\\operatorname{KL}(\\pi_\\theta\\Vert\\pi_{ref})",
+    "locator": "Eq3 p.6",
+    "note": "KL written outside sums as printed. Token-level KL allocation and continuous-latent KL treatment not specified."
+   },
+   {
+    "latex": "r_{i,t}(\\theta)=\\begin{cases}\\exp(-\\|h^{old}_{i,t}-h^{\\theta}_{i,t}\\|^2/(2\\sigma^2)),&t\\in T_L\\\\\\pi_\\theta(o_{i,t}\\mid q,o_{i,<t})/\\pi_{\\theta_{old}}(o_{i,t}\\mid q,o_{i,<t}),&t\\notin T_L\\end{cases}",
+    "locator": "Eq4 p.6",
+    "note": "Printed continuous-token ratio is a Gaussian similarity kernel;σ=10 Table9. This is not the categorical next-token ratio. No derivation or likelihood calibration proof supplied in this paper."
+   },
+   {
+    "latex": "R_N(o_i)=\\begin{cases}n&r_i=1,r_j=0\\\\-n/2&r_i=1,r_j=1\\\\-n/2&r_i=0,r_j=1\\\\0&r_i=0,r_j=0\\end{cases}",
+    "locator": "Eq5 Appendix E p.17",
+    "note": "r_i/r_j here are binary branch accuracies, not Eq2 total reward. Printed n vs prose N=1 retained. RN is a diagnostic alternative, not combined with final RA in reported main method."
+   }
+  ],
+  "signal_routing": "RA is computed from post-latent-to-latent attention but added to whole-response reward before standardization. The same scalar A_i is broadcast to text and latent tokens, including mode switches; ratios differ by token type. It is not attention-token masking or local crop credit. AppendixD extracts attention from old policy scoring, no extra learned judge or direct differentiable RA auxiliary loss reported.",
+  "normalization": "Two stages: attention heads averaged and attention mass divided by|post-latent text|; then total correctness+format+attention reward mean/std normalized per8 rollouts. Eq3 averages per response length and across group. No epsilon/zero-variance convention given. KLβ appears but numeric coefficient is not in Table9 despite §5.1 promise.",
+  "invariance": "Not PBRS or an action-independent baseline: additive RA changes preferences/expected gradient. Group standardization is invariant to shared positive affine rescaling; therefore if accuracy/format are identical and only positive w3RA varies, w3 cancels (reader algebra, ignoring unspecified epsilon). Relative term weights matter in mixed groups. RA incentivizes format/attention concentration and may shorten responses; no guarantee of unchanged optimal task policy or crop economy.",
+  "baseline_or_potential": "Empirical same-prompt group mean/std. Old/current/reference policies play distinct scoring/ratio/KL roles. No learned critic or potential. RN uses a policy continuation conditioned on same pre-latent text and forced empty latent block, not an action-independent baseline.",
+  "degenerate_cases": "No latent→RA0; if mode probability≈0, attention reward cannot be observed and provides no support rescue (empirically mode disappears). All-correct/all-wrong same-format groups can still have nonzero attention advantages ifRA varies; identicalRA yields undefined0/0 in printed formula, convention unknown. Uniformly zeroRA returns VLPO. Empty post-latent text leaves1/|Tt| undefined, handling unknown. Fixed average pertext does not remove length-position confound; varying latent count changes summed mass. Positive RA can favor an incorrect latent response over a correct one in extreme theoretical range (weights do not impose strict accuracy priority), though observedRA small. For printed latent ratio, r≤1 and derivative wrt hθ is0 at hθ=hold; this is an algebraic property, not a runtime finding about actual sampled latent updates."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Content controls occur at both stages: SFT inference real/random/removed latent, then400-stepVLPO+RA training with real vsGaussian latent embeddings. Table3 real wins each of5 benchmarks by2.0/1.3/5.6/4.7/2.3pp (mean3.18). Additional400-step zero-vs10latentVLPO and length-penalty controls help separate architecture and style, but results are mixed and not seed-repeated.",
+  "controls": [
+   "Inference random replacement preserves position embeddings; immediate latent_end removes continuous block",
+   "Random latent training uses same nominal400 steps and attention reward",
+   "VLPO withoutRA; zero-latent vs10latentVLPO at400steps",
+   "−.1 length penalty above150tokens, with/withoutRA at400steps",
+   "300 held-out questions acrossThyme-RL/MMVP/V* forGxI/IG atsteps0/30/60 (only responses containing latents)",
+   "200 held-out Visual-CoT annotated important regions forimage attributionROC-AUC; GTregions used for evaluation, not RA training"
+  ],
+  "negative_results": [
+   {
+    "text": "Necessity reward drives latent generation down faster; Table10 MMVP73.0→65.0 despiteMathVista60.5→71.3, so no uniformly maintained quality.",
+    "kind": "reported_experiment",
+    "locator": "§3.2 p.5; Table10 p.17",
+    "quote": "As shown in Figure 2 (smoothed every 10 steps), this reward drives the model\nto skip latent generation even faster than vanilla RL while maintaining response quality."
+   },
+   {
+    "text": "Latent/text preference differs bymodel andquestion. Natural grouped results do not establish that a learned task router must fail.",
+    "kind": "author_claim",
+    "locator": "§3.3 p.6",
+    "quote": "For LVR-SFT∗ , the trend is\ndifferent: pure-text responses are more competitive in most clusters. Therefore, a single coarse\nquestion type cannot explain latent preference, and it is not consistent across model families."
+   },
+   {
+    "text": "Failure examples remain: wrongfinal answer despite a procedural reasoning plan and wrongspatial object relation.",
+    "kind": "author_claim",
+    "locator": "Appendix G p.21 Figure12",
+    "quote": "Figure 12: Our model may fail to produce the correct final answer despite demonstrating correct\nreasoning toward a solution, which could be a hallucination inherited from the base model."
+   }
+  ],
+  "seeds": "single: AppendixD explicitly states current one-run protocol. No confidence intervals, seed sweep or significance test. Two latent frameworks are not independent seeds, and both use related backbones.",
+  "falsifier": "Proposed, not executed: atmatched token/attention mass, random or permuted latent content must fail to reproduceRA benefits across repeated seeds; independently perturb high-attribution visual regions vs size/location matched control regions and compare answer change. If matchedstyle/length changes explain gains, orRA rises while causal pixel dependence/held-out accuracy does not, attention-as-use mechanism is unsupported.",
+  "causal_limits": "GxI/IG sensitivity and modest correlations(.247/.301 atstep60) are not correct-answer necessity or faithful grounding proofs. IG baseline/integration details and entropy construction are underspecified. Conditioning attribution analyses on surviving latent responses creates selection across checkpoints. RegionAUC.669vs.639VLPO/.654SFT supports association, not closed-loop necessity.",
+  "reported_regressions": [
+   {
+    "locator": "Table2 p.8",
+    "text": "Monet+RA vsVLPO MME-RW55.0→52.8; HRFCP59.3→56.8. LVR+RA vsVLPO MathVerse37.3→36.3,MMBench83.3→82.4,HRFCP59.8→59.3."
+   },
+   {
+    "locator": "Table11 p.17",
+    "text": "Zero-latentVLPO beats10latent onHRBench overall71.6vs68.6,FSP85.0vs83.8,FCP58.3vs53.5;10latent winsMathVista65.8vs64.0,MMVP73.0vs72.7,V*79.1vs76.4. General claim worse must retain this boundary."
+   }
+  ]
+ },
+ "engineering": {
+  "setup": {
+   "model": "Monet-SFT-stage3 and LVR-SFT* latent visual reasoning models;7B family; LVR adapted with extraSFT",
+   "framework": "verl",
+   "group_size": 8,
+   "rollouts": "8 perprompt, batch4; nominal32responses/update",
+   "steps": {
+    "Monet": 600,
+    "LVR": 400,
+    "random_vs_real_control": 400,
+    "RN_diagnostic": 600
+   },
+   "kl": null,
+   "temperature": 0.5,
+   "max_turns": null,
+   "learning_rate": 1e-06,
+   "weight_decay": 0.01,
+   "sigma": 10,
+   "max_response_tokens": 4096,
+   "latent_count": 10,
+   "max_pixels": "2000×28×28",
+   "accuracy_threshold": 0.6,
+   "dtype": "bfloat16",
+   "hardware": "2×NVIDIA H100-80GB",
+   "evaluation": "VLMEvalKit with Gemini-2.5-Pro/Gemini-3.1-Pro judging; exact perbenchmark judge version/prompts unspecified; §3.1 inference diagnostictemp≈0",
+   "lvr_extra_sft": "200steps,latent-drop.4,2H100,batchpack4,max4096,vision head frozen,min/maxvisiontokens128/5120,lr1e-5,wd.1,warmup.03,LVRλ.1; Table8 evaluationlatent8/temp0"
+  },
+  "cost": "AppendixD reports82.2 H100h/78.90GB vsVLPO82.0h/76.11GB; aggregation scope unspecified. Diagnostic light-training paragraph separately mentions atmost2GPUs×8h/run: do not silently equate the budgets. Reader nominal update-products600×4×8=19200 and400×4×8=12800rollouts exclude filtering/retries/additionalRN continuations. Tokens/update totals not reported. Table12 vLLM1H100,maxlen16384:V*1.91→1.64s(14.1%lower),52.85→41.31tokens(21.8%lower);MathVista4.43→2.74s(38.1%lower),184.02→111.02tokens(39.7%lower).",
+  "pitfalls": [
+   {
+    "text": "OriginalLVR always emits latents due toSFT format; authors addrandom latent-droppingSFT toenable bothmodes before RL.",
+    "kind": "reported_experiment",
+    "locator": "Appendix C p.15",
+    "quote": "Therefore, we perform an additional SFT stage with the latent target randomly\ndisabled at a probability of 0.4."
+   },
+   {
+    "text": "Attention reward has a length/position preference; conciseoutputs are a possible sideeffect, not isolated grounding evidence.",
+    "kind": "author_claim",
+    "locator": "§5.4 p.10",
+    "quote": "In transformers, attention\nfrom later text tokens to a fixed early prefix can naturally decrease as the context grows. Longer\ncontinuations therefore reduce average attention to latent tokens. This formulation may encourage\nthe model to generate shorter post-latent textual reasoning while maintaining interaction with visual\nlatents."
+   },
+   {
+    "text": "Attention extraction needs no additional trainable module but does require accessing firstlayer oldpolicy attentions; deployment engine support is separate.",
+    "kind": "author_claim",
+    "locator": "Appendix D p.16",
+    "quote": "The reward itself introduces no additional trainable module. It only extracts attention from the first\ndecoder layer during the log-probability computation of the old policy."
+   }
+  ],
+  "code": "https://github.com/ddydyd32/silent-lvr",
+  "code_status": "URL frommanifest/source; external repository not executed or audited.",
+  "lesson": "当一种中间表示只是被模型按格式生成时，先做保持位置的内容替换和移除对照，再区分训练辅助价值与推理必要性；注意力可作低开销代理，但要同时核对长度、随机内容负对照、真实区域依赖及单种子不确定性。"
+ },
+ "relevance": [
+  {
+   "problem": "P41",
+   "how": "同前缀移除/随机替换中间表示的诊断可借鉴；也直接提醒这些替换改变后续分布，不能把单次答错当因果必要性。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "原LVR格式总触发，额外latent-dropSFT补两种行为，说明RL诊断之前必须核采样支持；本篇没有多轮recheck行为。",
+   "strength": 1
+  },
+  {
+   "problem": "P29",
+   "how": "观察RL模式消失并给出初期支持证据；消失方向为latent而本任务常为直答，不能搬成同一结论。",
+   "strength": 1
+  },
+  {
+   "problem": "P11",
+   "how": "RN同前缀分支是邻近必要性诊断，但最终RA仍全轨信用，无逐次crop价值/路由。",
+   "strength": 1
+  },
+  {
+   "problem": "P42",
+   "how": "关注中间表示是否参与答案生成而非只存在；latent注意力不直接监测caption事实性/充分性。",
+   "strength": 1
+  },
+  {
+   "problem": "P44",
+   "how": "真实vs随机latent训练负对照和GTregionAUC可启发防hack评测；本任务GT目标框缺失，不可直接迁移AUC指标。",
+   "strength": 2
+  },
+  {
+   "problem": "P45",
+   "how": "明确单run且无误差条，跨benchmark不能替代种子重复。",
+   "strength": 1
+  },
+  {
+   "problem": "P58",
+   "how": "在oldpolicy打分时读取attention是低附加开销设计；Qwen3/crop多图注意力算子、显存和引擎支持尚未验证。",
+   "strength": 1
+  }
+ ],
+ "source_discrepancies": [
+  {
+   "locator": "§3.2 p.5; Appendix E pp.16–17",
+   "text": "Main text says same prefix beforelatent_start; AppendixE explicitly conditions on prefix includinglatent_start thenforcedlatent_end. Use appendix operational definition; distinction affects format intervention."
+  },
+  {
+   "locator": "Appendix D p.16; §5.1 p.7",
+   "text": "§5.1 saysKLcoefficient provided inD, butTable9 omitsβ; leavekl=null. Diagnosticbudget2GPU×8h/run vsreported82.2H100h have different/unspecified scope, no silent reconciliation."
+  },
+  {
+   "locator": "Appendix F.2 pp.17–18 Table12",
+   "text": "Prose≈38% less response time is accurate forMathVista38.1%, notV*14.1%; source table values retained."
+  },
+  {
+   "locator": "Table11 p.17 vsTables2/10 pp.8/17",
+   "text": "MonetSFT HRBenchOverall68.0 inTable11 but68.5 inTables2/10; source inconsistency. Zero-latents are better onallHRBench columns, contrary to a universal reading ofcaption worse."
+  },
+  {
+   "locator": "Appendix G Figure7 p.18",
+   "text": "Qualitative success writes secondintersection around99 but finalroundedanswer90;99 would round100, and graph visually intersectsnear90. Finalcorrectanswer is not faithfulintermediate-grounding proof."
+  },
+  {
+   "locator": "Appendix F.3 Table13 p.18; Table3 p.8",
+   "text": "Table13 caption sayslengthconstraint+attentiondegradesvsattentionalone, but noRA-onlyrow inTable13. Across400-stepTable3/13,RA-onlyvslen+RA ismixed:V*85.3vs81.2,MMBench80.6vs78.7 butMathVista62.9vs63.6,MMVP74.3vs76.7,HR67.9vs72.8. Cannot claimuniformdegradation."
+  },
+  {
+   "locator": "References[4],[40] pp.11/13",
+   "text": "V* reference title is video V-Star andMMVP reference title is motioncapture/pressure dataset, while experiments/examples use highresolution visualQA andflame perception. Treat bibliography entries as apparent mismatches; exactdatasetprovenance requirescode/data audit."
+  }
+ ],
+ "information_boundary": {
+  "attention_reward": "RA observes old-policy attention during complete-rollout scoring. No GT answer or GT region label enters RA itself.",
+  "correctness_reward": "Racc and RN require correct-answer verification. Table 9 gives accuracy threshold 0.6, but the RL judge model, prompt and score-to-correctness mapping are not specified. Do not borrow the evaluation judge identity.",
+  "evaluation": "VLMEvalKit with Gemini-2.5-Pro / Gemini-3.1-Pro as judge; exact per-benchmark mapping and prompt unavailable.",
+  "ground_truth_regions": "200 held-out Visual-CoT important-region annotations are used for ROC-AUC analysis only, not for the attention reward.",
+  "future_information": "RA aggregates post-latent text attention and RN compares completed continuations. Neither is a prefix-only decision statistic available before the latent-mode choice.",
+  "attribution_target": "Length-normalized log-probability of the final-answer span in responses; the paper does not explicitly say it forces a ground-truth answer. IG baseline and integration resolution are unreported."
+ }
+}

@@ -1,0 +1,180 @@
+{
+ "paper_key": "litscan:77776",
+ "title": "V-ABS",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77776.txt",
+  "sections_read": [
+   "Abstract/贡献",
+   "§3 pp3–5 Eq1–10",
+   "§4 pp6–8 Tables1–5",
+   "AppB/C pp12–13",
+   "AppD beginning pp13–14",
+   "AppF–I pp16–17"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "每候选先prior评分、执行tool再observer评分，以prior熵调权进行beam；binary action SFT改善开放动作搜索支持。",
+  "why_non_obvious": "先验自信会错，观察反馈也会噪声，不能固定信任一方。",
+  "trigger_condition": "工具执行后visualstate可验证但先验规划与实际效用不一致。",
+  "contribution_type": "test-time action search+binaryverification SFT",
+  "abstract_strategy": "将预测价值与执行后评价分离并按不确定性融合。",
+  "abstract_trigger_condition": "有可执行候选及独立观察证据，搜索空间可控。",
+  "abstract_key_step": "prior/observer各对候选softmax，w= sigmoid(-2(H-.5))，低熵跳observer。",
+  "abstract_why_non_obvious": "观察与先验共享MLLM可能相关，熵不是估计误差方差，最优融合解释依赖额外假设。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77776#s1",
+   "object": "candidate action→new visualstate beam节点",
+   "information": "当前图+history、执行后图；positive verificationtoken logprob；SFT正确/错误action标签",
+   "operation": "prior τ.5softmax、observer softmax，熵控制融合+可选heuristic，每层TopK；80k yes/no SFT。",
+   "claimed_effect": "Qwen3 V*75.9→90.5→SFT91.1；JigsawRes4 5.3→7.8→SFT81.2。",
+   "conditions": [
+    "beamK3默认，任务相关depth",
+    "small discrete vs open permutation actionspace分开"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p7",
+    "quote": "+ V-ABS + SFT       91.1          42.5                81.2"
+   },
+   "failure_boundary": "不是RLadvantage；搜索额外compute大且权重理论假设/熵单位尚有冲突。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P34",
+   "how": "熵调tool验证依赖confidence校准，观察前后不同信号。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "开放动作空间无SFT搜索几乎无益，SFT增幅大。",
+   "strength": 3
+  },
+  {
+   "problem": "P58",
+   "how": "调用/时间/beam预算量化。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "prior-only/observer-only/static fusion",
+   "kind": "ablation"
+  },
+  {
+   "name": "beam/MCTS singleworker budget",
+   "kind": "baseline"
+  },
+  {
+   "name": "SFT on/off",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "过深搜索降低V*准确；启发式偏浅/大区域反而伤小目标。",
+   "locator": "AppI p17",
+   "quote": "Removing the heuristic improves accuracy by +3.15%"
+  }
+ ],
+ "question": {
+  "observed_failure": "JigsawRes4纯search7.8；SFT81.2；仅prior低10.28pp，仅observer低7.38pp。",
+  "load_bearing_assumption": "prior熵可映射真实误差variance且observer稳定更准。",
+  "scope": "crop/nav/jigsaw/sudoku候选动作搜索",
+  "success_criterion": "等compute准确率及校准/observer跳过错误率。",
+  "why_open": "tool存在不保证模型使用执行反馈，强prior可压过反证。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§4.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Fig3/Table4"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "AppF/Table7"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "E^b_{pri}=\\sum_{w\\in W_{pos}}\\log\\pi(w|s,a_b);\\ F_{pri}=softmax(E_{pri}/.5);\\ F_{obs}=softmax(E_{obs})",
+    "locator": "Eq2–6 p4"
+   },
+   {
+    "latex": "w_p=(1+e^{2(H-.5)})^{-1};\\ S_b=w_pF^b_{pri}+1[H\\ge\\delta](1-w_p)F^b_{obs}+F^b_{heur}",
+    "locator": "Eq7/9 pp4–5"
+   }
+  ],
+  "signal_routing": "SFT Eq10 binaryyes/no交叉熵，仅verification生成token监督；推理score用于选beam，不是reward反传。Eq9没有明确累积之前节点分数。",
+  "normalization": "other",
+  "invariance": "softmax候选集合内归一；不同候选数/重复候选改变熵与ranking，非PBRS。Eq8 inversevariance最优需无偏且不相关误差，不能由同模型自评保证。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "自然log四象限H≤ln4≈1.386，但AppG δ1.84声称仅少量skip，与Eq7/9不相容，需核单位/候选定义；H0时wp=.731非趋1；跳observer后wp未重归一，可影响跨parent比分。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4闭集/开放动作；Table7 K1单worker明确成本；Table10有/无heuristic。",
+  "negative_results": [
+   {
+    "text": "GPT4o V*spatial80.3→67.1、HR8KFCP67.0→54.1；跨所有任务稳定改善不成立。",
+    "locator": "Table1"
+   },
+   {
+    "text": "withheuristic87.43低于无90.58；δ1.90降至87.43；V*depth>3下降。",
+    "locator": "AppG/I/Fig3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：记录实际四候选H/单位/skip率，再固定总调用比较融合与observer；检验sharedmodel误差相关性，不能把Gaussian假设当实证定理。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL8B/Qwen2.5-VL7B/InternVL3-8B；GPT4o",
+   "framework": "beam inference+SFT",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "SFT16H10080G 200steps batch128 LR1e-5；Table7 K1 D3 20.1calls/4.9Ktokens/32s/45.8% vsMCTS25.2/5.1K/39s/38.7%；不混默认K3。",
+  "pitfalls": [
+   {
+    "text": "crop四象限各.7×.7重叠；SFT按任务均衡positive/negative；expertlabels构造非无标注。",
+    "locator": "AppB/C"
+   },
+   {
+    "text": "熵阈值单位与四候选数待代码核；正文minimumvariance推导不证明同MLLM测量无偏独立。",
+    "locator": "AppD/G"
+   }
+  ],
+  "code": "https://github.com/pami-zwning/V-ABS",
+  "lesson": "先核熵范围与阈值，再做action前后验证；要报告相同worker/beam预算，避免把更多compute说成算法保证。"
+ }
+}

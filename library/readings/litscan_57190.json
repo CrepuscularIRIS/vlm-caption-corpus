@@ -1,0 +1,154 @@
+{
+ "paper_key": "litscan:57190",
+ "title": "Region-R1",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_57190.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.2–3.4 Eq1–9",
+   "§4.1; Tables1–2",
+   "§4.2; Tables5–7",
+   "§6 Limitations",
+   "Appendix implementation; Tables8–9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "固定候选池/scorer，把FULL/REGION选择转为动作，以相对全图排序增益训练，确保采样组含两种决策。",
+  "why_non_obvious": "局部化query可改变ranking而无需重建候选库；分支奖励和归一化决定FULL学习信号。",
+  "trigger_condition": "当top-K已有正例但背景干扰相似度时，学习保留原图或裁剪再重排。",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当top-K已有正例但背景干扰相似度时，学习保留原图或裁剪再重排。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "固定候选池/scorer，把FULL/REGION选择转为动作，以相对全图排序增益训练，确保采样组含两种决策。",
+  "abstract_why_non_obvious": "局部化query可改变ranking而无需重建候选库；分支奖励和归一化决定FULL学习信号。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:57190#s1",
+   "object": "query-side FULL/REGION决策",
+   "information": "policy只看query图和问题；训练reward使用固定scorer、候选正例标签、全图排名",
+   "operation": "两决策采样；crop原图重编码；MRR/NDCG/rank/margin改善加权，FULL只在全图top1正确时给1",
+   "claimed_effect": "CondRecall@1 E-VQA最佳既有.75→.90，InfoSeek.75→.81；加入margin使MRR .613→.706/.426→.473。",
+   "conditions": [
+    "Qwen2.5VL3B，N8，EVA-CLIP scorer，训练top20内有正例"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq5–9; Tables2,5",
+    "quote": "how often the model chooses region cropping (RC               + ∆Margin (Full)           0.706       0.473"
+   },
+   "failure_boundary": "Eq9全组mean/std与文字conditional-on-d冲突；强制采样实现/IS未给，不能认为FBFA完整实现。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P29",
+   "how": "确保两类动作采样，但无独立自然策略坍缩消融。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "std存在；按分支或全组归一化决定跨动作信号是否消失。",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "固定scorer排序收益不是当前VLM答案收益。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "EVA-CLIP no crop",
+   "kind": "method"
+  },
+  {
+   "name": "OMGM",
+   "kind": "method"
+  },
+  {
+   "name": "Center/Random crop",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "粗检索应用crop反降R@20：InfoSeek81.7→80.4/E-VQA50.8→49.7。",
+  "load_bearing_assumption": "固定scorer margin提升可转移为需要的答案证据与FULL选择。",
+  "scope": "固定top20内单步crop或保留",
+  "success_criterion": "分支/全组归一化分别测自然FULL率和ranking增益，迁移另测真实答案。",
+  "why_open": "没有采样和归一化单独消融；Eq9与文字冲突。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_{REGION}=.2\\Delta MRR+.2\\Delta NDCG+.2\\log\\frac{rank_{full}+1}{rank_a+1}+.4\\Delta margin-\\eta(b)",
+    "locator": "Eq5–7; Appendix setup"
+   },
+   {
+    "latex": "r_{FULL}=1[rank(\\pi_{full})=1];\\quad A_n=(r_n-\\mu_r)/(\\sigma_r+\\epsilon)",
+    "locator": "Eq8–9"
+   }
+  ],
+  "signal_routing": "生成决策/bbox，执行crop后scorer标量；称保留GRPO更新形式，未给token mask、长度聚合、IS细节，不能补写。每query一次region动作。",
+  "normalization": "mean+std",
+  "invariance": "Eq9全组中心化std，ε可忽略时统一正缩放近似不变；正文另称conditional-on-d，未解决。相对全图delta不是跨时间PBRS，FULL又用另一reward。",
+  "baseline_or_potential": "全图ranking为训练对照；组μσ为优势基线；非SFT准确率。",
+  "degenerate_cases": "若decision内中心化，同题FULL奖励恒定则A_FULL=0；若按Eq9全组则两分支可比较。σ=0由ε保护；确保两类采样的具体机制未知；缺正例训练过滤。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table5逐加ranking/margin；Table6换scorer；Table8粗检索负结果。",
+  "negative_results": [
+   {
+    "text": "粗检索crop降低Recall，重排无法恢复top-K外正例。",
+    "locator": "Table8; §6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若真实答案收益与scorer不同向，或分支内中心化消去FULL信号，则不能认为学会必要crop。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B; EVA-CLIP scorer",
+   "framework": "r-GRPO",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "4 A6000 48GB，2epochs，lr5e-5，LoRA r8 α32；batch8推理约1.55s/query（论文报告）。",
+  "pitfalls": [
+   {
+    "text": "GT候选标签仅用于训练reward，policy生成crop不看候选。",
+    "locator": "§3.2–3.4"
+   },
+   {
+    "text": "GroundingDINO目标框与商业judge是proxy，非人工GT。",
+    "locator": "Table7"
+   }
+  ],
+  "code": null,
+  "lesson": "当用固定scorer奖励crop时，先区分代理与答案目标，再核对跨动作归一化是否消去保留原图信号。"
+ }
+}

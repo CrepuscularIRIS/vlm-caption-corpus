@@ -1,0 +1,146 @@
+{
+ "paper_key": "litscan:70292",
+ "title": "Valor",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_70292.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.2 Eq1",
+   "Table1",
+   "§4.5–4.6 Tables5–6",
+   "§5",
+   "AppA.6.1 Eqs2–3/A.9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "无答案训练程序推理：冻结LLM分解检查逻辑/API，另用VLM验证高召回检测器伪标签。",
+  "key_step": "reasoning与grounding分别改；固定程序换grounder隔离贡献。",
+  "why_non_obvious": "不需要答案GT也能评估程序结构，但结构正确不保证视觉执行正确。",
+  "trigger_condition": "When task answers are unlabeled, verify plan/code structure and separately improve visual tools with pseudo-label filtering.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用可核对子问题监督替代不可得最终标签。",
+  "abstract_trigger_condition": "When terminal labels are unavailable, decompose verification by error source.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "推理结构奖励与视觉伪标注分开。",
+  "abstract_why_non_obvious": "强生成器未必可靠，应先核verifier与人工一致性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70292#s1",
+   "object": "语言program policy和检测器",
+   "information": "policy与语义reward看query/plan/code/API，无图像答案；另一VLM看图/框/crop造检测pseudoGT",
+   "operation": "格式乘五头加权reward，组中心化RL；过检框经粗筛/crop核验/去重后finetune detector",
+   "claimed_effect": "Omni3D37.5→43.9RL→44.0含grounder；Robo60.5→61.8→69.5",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table1/AppA.6.1",
+    "quote": "where tool calls are replaced with\ndummy functions"
+   },
+   "failure_boundary": "syntax通过不是真实工具执行成功；无人工答案不等于无机器监督或无噪声。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "按逻辑和视觉错误拆分验证与信号信息集。"
+  },
+  {
+   "problem": "P01",
+   "strength": 2,
+   "how": "实际mean-only公式可作std消尺度的对照。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-8B same tools / VALOR-RL / verifier-filtered SFT / proprietary LLM programs",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "verifier人工100输出一致87%；检测pipeline报告75%但其P公式TP/(TP+FP+FN)非标准precision，勿当标准精度。",
+   "locator": "§3.1–3.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen程序Omni3D37.5；RL43.9；更好grounding在Robo另+7.7pp。",
+  "load_bearing_assumption": "视觉推理训练必须有最终答案GT，或语言逻辑改善足以修复视觉工具。",
+  "scope": "语言LLM生成Python调用固定vision APIs",
+  "success_criterion": "同API验证推理增量，固定程序验证grounder增量",
+  "why_open": "程序逻辑与实际感知错误独立，可分开监督。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.5固定程序换grounder"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§3 verifier人工检查"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=r_{fmt}(.1r_{syntax}+.3r_{logic}+.2r_{attribute}+\\lambda_{sp}r_{spatial}+\\lambda_{ad}r_{adherence}),\\ \\sum\\lambda=1",
+    "locator": "Eq1/AppA.6.2"
+   },
+   {
+    "latex": "A_i=R_i-G^{-1}\\sum_j R_j;\\ L=G^{-1}\\sum_i[min(s_iA_i,clip(s_i,1-.2,1+.2)A_i)-.01KL]",
+    "locator": "AppA.6.1 Eqs2–3"
+   }
+  ],
+  "signal_routing": "整条plan+code同scalar奖励；无图像工具execution reward，无按statement/token类型mask细节；grounder另做监督训练。",
+  "normalization": "mean-only: Eq2明确不除std；名称GRPO不能覆盖此公式，代码实现未核。",
+  "invariance": "非PBRS；语义reward改变任务代理目标；不除std则reward尺度相对KL保留。",
+  "baseline_or_potential": "组中心化baseline非leave-one-out；非state potential。",
+  "degenerate_cases": "全格式错R0 A0；同六头组合全相同A0；p≈0仍无未采动作支持；正确程序也可因detector/depth错导致最终错。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "固定工具比较Qwen与RL，固定程序换grounder；同来源R≥.7 traces SFT38.3 vsRL44 Omni3D。",
+  "negative_results": [
+   {
+    "text": "RL-only Tally50.1→49.5、Count68.6→67.6；40→160训练样本40.0→39.2非单调。",
+    "locator": "Tables1/5"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "实际执行错误与高verifier奖励强相关或独立manual核验不一致，则程序代理无法取代执行验证。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-8B; Gemini2.5Flash verifier; GroundingDINO/MoGe2/GPT5mini tools",
+   "framework": "verl/vLLM",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "800query，8A1004epochs batch64；grounder7373图30826框，4A100；正文7epoch与Table11 4epoch冲突。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当方法只按名称叫GRPO时，检查优势公式；当syntax以dummy工具检查时，不把它记成真实执行验证。"
+ }
+}

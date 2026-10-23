@@ -1,0 +1,161 @@
+{
+ "paper_key": "litscan:53612",
+ "title": "ViGoRL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_53612.txt",
+  "sections_read": [
+   "Abstract",
+   "§4.1–4.3.1",
+   "Tables1–4; §5.2",
+   "A2 Limitations",
+   "A5.1–A5.5 training and linearization"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把坐标化thought作为MCTS节点，搜索成功与失败支路后线性化成直接/纠偏SFT轨迹，再做mean-only GRPO。",
+  "why_non_obvious": "树搜索可产生基座自然采样中缺失的探索和回退；仅给最终奖励可能放大捷径。",
+  "trigger_condition": "当基座没有区域探索和回退行为时，将步骤转为树搜索对象，用UCB/MCTS产生行为支持再RL。",
+  "contribution_type": "method",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "当基座没有区域探索和回退行为时，将步骤转为树搜索对象，用UCB/MCTS产生行为支持再RL。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "把坐标化thought作为MCTS节点，搜索成功与失败支路后线性化成直接/纠偏SFT轨迹，再做mean-only GRPO。",
+  "abstract_why_non_obvious": "树搜索可产生基座自然采样中缺失的探索和回退；仅给最终奖励可能放大捷径。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:53612#s1",
+   "object": "多轮grounded reasoning轨迹",
+   "information": "72B teacher搜索+任务答案；RL真实原图point-centered100×100 crop→384×384反馈",
+   "operation": "MCTS成功/失败支路拼接纠偏→SFT→全对话GRPO；格式和坐标多样性奖励保留多轮",
+   "claimed_effect": "V*Bench 7B78.0→86.4；3B多轮81.2，去diversity78.0。",
+   "conditions": [
+    "3B/7B Qwen2.5-VL；多轮G8，至多5turn"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3; §4; A5.3",
+    "quote": "Reward Design for Multi-Turn RL. Multi-turn settings introduce new failure modes: repeating"
+   },
+   "failure_boundary": "多样性每个不同调用加.2至4次，鼓励调用不等于必要性；中间grounding错误可能被最终正确掩盖。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "无warm start不能产生有效格式；MCTS补充动作与纠偏支持。",
+   "strength": 3
+  },
+  {
+   "problem": "P02",
+   "how": "显式正多样性bonus防止单轮，却不保证仅必要crop。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "终局A广播所有生成token，未区分grounding和答案信用。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Vanilla GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "Distill without MCTS",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "最终正确不保证中间推理和定位正确。",
+   "quote": "final answer level. In spatial reasoning tasks, this sometimes results in reward hacking, where the\nmodel receives positive reward despite generating partially incorrect or underspecified reasoning.",
+   "locator": "A2"
+  }
+ ],
+ "question": {
+  "observed_failure": "去MCTS warm start无有效格式；线性distill BLINK46.18 vs MCTS48.50；无diversity多轮退化单轮。",
+  "load_bearing_assumption": "奖励不同坐标能保留有用探索，而非无必要工具使用。",
+  "scope": "point crop的多轮视觉推理",
+  "success_criterion": "相同SFT下比较无bonus/正bonus/固定预算的accuracy、裁剪次数、重复率与直答率。",
+  "why_open": "原实验优化准确率与探索，不验证accuracy不降的最少动作目标。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4.2; Table4"
+  },
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§4.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=\\lambda_{fmt}r_{fmt}+\\lambda_{task}r_{task};\\quad \\hat A_i=R_i-G^{-1}\\sum_jR_j",
+    "locator": "§4.3; A5.1 Eq1"
+   },
+   {
+    "latex": "\\mathcal L=-G^{-1}\\sum_i|\\tau_i|^{-1}\\sum_t\\min(\\rho_{it}\\hat A_i,\\mathrm{clip}(\\rho_{it},1-\\epsilon,1+\\epsilon)\\hat A_i)+\\beta KL",
+    "locator": "A5.1 Eq1"
+   }
+  ],
+  "signal_routing": "同一终局标量A流向thought、坐标/tool_call、答案生成token；observation mask且无EOS样本mask；视觉输入保留、vision tower frozen。坐标有效性格式不等于定位GT监督；部分任务final grounding有GT box奖励。",
+  "normalization": "mean-only",
+  "invariance": "加组内常数不变；乘正奖励系数会缩放优势而不被std消去；非PBRS且多样性bonus改变最优动作偏好。",
+  "baseline_or_potential": "组均值（含自身），无critic/potential。",
+  "degenerate_cases": "组内总奖励相同A=0；全对/全错仍可因格式/diversity不同产生A；无EOS样本无更新；5turn后软提示强制答案。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 warm-start/grounding/MCTS/GRPO逐项；Table3移除diversity；point与bbox同81.2。",
+  "negative_results": [
+   {
+    "text": "线性teacher rollout ID略高但BLINK降2.32点；直接answer SFT额外阶段收益<1。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": "报告95%CI，未读到多训练seed。",
+  "falsifier": "若奖励去掉后等预算均匀crop相当，则探索增益未证明来自策略必要性判断。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B/7B；teacher72B",
+   "framework": "Llama-Factory SFT; EasyR1 GRPO",
+   "group_size": 8,
+   "max_turns": 5,
+   "kl": 0.01
+  },
+  "cost": "8 A100，SFT3epochs，RL500steps；MCTS每样本估21min×1500提示，10并行（未实测）。",
+  "pitfalls": [
+   {
+    "text": "A5.1 ε=.2，但TableA2/A3 clip=.28，记录矛盾，实际实现未核。",
+    "locator": "A5.1; Tables A2–A3"
+   }
+  ],
+  "code": null,
+  "lesson": "当RL压成单轮时先查warm start支持与动作奖励；正探索bonus可恢复多轮，但必须另测无必要crop增长。"
+ }
+}

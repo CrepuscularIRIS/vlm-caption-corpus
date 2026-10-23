@@ -1,0 +1,294 @@
+{
+ "paper_key": "2602.08346",
+ "title": "What, Whether and How? Unveiling Process Reward Models for Thinking with Images Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2602.08346.pdf",
+  "version": "v1",
+  "version_url": "https://arxiv.org/abs/2602.08346v1",
+  "observed_version": "PDF p.1: arXiv:2602.08346v1 [cs.CV] 9 Feb 2026; local candidates metadata independently names v1; latest online version not rechecked.",
+  "pages": 9,
+  "sections_read": [
+   "Abstract and Introduction (pp.1–2)",
+   "Related Works (pp.2–3)",
+   "Study Setup; Thinking with Images LVLMs; Downstream Benchmarks (p.3)",
+   "What Issues Persist in Current Thinking with Images LVLMs?; seven error definitions; Figures 1–2 (pp.1,3–4)",
+   "Whether Process Reward Models Can Help? Experimental Setup, Algorithm 1, Figure 3, Performance Analysis (p.4)",
+   "How Can We Build Better PRMs? Construction Pipeline stages 1–4; Figure 4 (p.5)",
+   "Evaluation: Experimental Setup, Main Results, Detailed Analysis; Figures 5–6, Tables 1–3 (pp.5–7)",
+   "Conclusion and Limitations (p.7)",
+   "Acknowledgments and References (pp.8–9)"
+  ],
+  "appendix_status": "No appendix in the supplied nine-page v1 PDF. No evaluator/annotation prompt, numbered mathematical formula, or supplement included."
+ },
+ "rs": {
+  "innovation_approach": "把包含图像编辑/重编码的轨迹按步骤人工标注，并以七种过程错误、正负样本和步骤位置分别测试现有 LVLM 能否充当 PRM；另用推理期候选搜索检验评分的下游作用。",
+  "key_step": "将工具返回图像和文字推理都保留在过程评价对象中，而不是只评终答或纯文字轨迹；对错误步骤标七类标签，并报告类别差异。",
+  "why_non_obvious": "终答正确可以与错误或冗余过程并存；整体 ACC 也可能掩盖几乎不识别错误的评价器。Table 2 LLaVA-OneVision-7B ACC52.36/F1仅2.55体现这种测量差异，但F1定义细节未给。",
+  "trigger_condition": "When intermediate reasoning alternates text and edited images, annotate and evaluate both modalities step by step to expose evaluator blind spots before using its scores for search.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null. Local source has AAAI copyright text, which is not an acceptance decision or review evidence. No supplied review locator or review document found.",
+  "contribution_type": "benchmark",
+  "abstract_strategy": "Preserve intermediate observations, label process errors, and stratify evaluator failures before using its judgments to select continuations.",
+  "abstract_key_step": "Retain both action descriptions and returned observations, then compare judgments with independently curated step labels.",
+  "abstract_why_non_obvious": "A correct endpoint and a high aggregate score can coexist with failures to detect invalid intermediate operations.",
+  "abstract_trigger_condition": "When a sequential solver changes its observations during reasoning, evaluate judgments over the resulting sequence and distinguish the error classes and positions."
+ },
+ "signatures": [
+  {
+   "sig_id": "2602.08346#s1",
+   "object": "四种工具型 LVLM 从公开视觉任务生成的 interleaved text-image 轨迹，最终保留1,206条。",
+   "information": "标注流程使用question-image pairs、生成步骤、工具返回图与终答，并人工按七类错误标步骤；Figure 2/4显示问题、步骤、答案。是否另提供标准答案/标准框、是否按前缀隔离未来步骤、标注者是否独立互盲均未说明。它不是当前策略的同状态反事实动作价值标签。",
+   "operation": "每题规则去重只留一条有效轨迹，五人七天逐步标注，三人三天按accuracy/consistency/completeness复核并移除未满足标准的轨迹。",
+   "output": "1,206条轨迹；Table1有12,714步，其中6,714 correct、5,233 incorrect、767 neutral；6,544图像；七种错误及四维16任务类别。",
+   "claimed_effect": "建立针对动态文字-图像过程的评价集；这是数据规模及覆盖声明，未报告相对于其他标注流程的误差下降或标注一致率。",
+   "conditions": [
+    "可访问原始题图及工具返回图；生成器为ViGoRL-3B/7B、DeepEyes-7B、PixelReasoner-7B",
+    "人工标准可复用，但详细guidelines/neutral定义未在PDF公开",
+    "保留规则为每题一条轨迹；并不证明按原图去重或与模型预训练数据去重"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.5, Stage 3 Data Filtering and Stage 4 Quality Assurance; p.6 Table 1",
+    "quote": "Only trajectories that satisfied all three cri-\nteria are retained."
+   },
+   "failure_boundary": "人工复核不等同无误金标；无IAA、逐类样本量、训练/测试划分和annotator参考答案权限说明。过滤可能影响错误分布，属读者边界而非作者已证实偏差。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2602.08346#s2",
+   "object": "正在生成的候选文字-图像步骤及其累计轨迹。",
+   "information": "作者指定Gemma3-27B/Ovis2-34B/InternVL2.5-78B对interleaved trajectory评分；Algorithm1 R.Score(τ′)只出现已生成前缀，无未来续写输入。problem p给生成系统，但R是否另收question/raw image、标准答案、评分rubric均无完整提示词可核验，不可断言GT-blind。",
+   "operation": "每阶段生成k=8候选，由外部LVLM评分后选择续写，最多10步；算法框版本累加score+r并保留top-k beam，正文版本只选最高分响应、平分按顺序；两版本不一致，不擅自统一。",
+   "output": "PRM选择的最终轨迹与答案。",
+   "claimed_effect": "Figure3：ViGoRL-3B44.3→53.3/53.0/53.0；ViGoRL-7B63.0→70.7/70.5/70.9；DeepEyes64.1→65.4/65.3/66.0；PixelReasoner57.7→55.7/57.3/56.4（按InternVL/Ovis/Gemma顺序）。为作者报告，非复现；正文1–8%概括未覆盖3B +9.0pt。",
+   "conditions": [
+    "评分器能处理跨步图像",
+    "候选生成存在可选的优质分支",
+    "基线与搜索计算量不同；没有相同k预算的random/majority/ORM对照"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p.4 Guided Search Implementation; Algorithm 1; Figure 3",
+    "quote": "scored response is selected (with ties broken by order). The\nprocess continues under a maxstep = 10 constraint."
+   },
+   "failure_boundary": "PixelReasoner三个评分器均降分；无候选充分性保证。k=8和beam语义不一致使实际调用量未知；不证明PRM本身优于单纯多采样，不保证少裁或纠错。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2602.08346#s3",
+   "object": "12种现有LVLM的步骤级判定输出。",
+   "information": "基准保留图文过程与人工correct/incorrect/neutral、错误类别用于评分；模型评价输入权限、是否可见GT、整轨迹还是前缀、评分到标签阈值未公开。人类参考与被测LVLM分离，但人类评测样本选择及独立性细节未知。",
+   "operation": "计算步骤ACC/F1与七类错误检出率，再按正确/错误样本及文本/图像步骤位置检查表现，揭露倾向判正与图像步骤弱项。",
+   "output": "Tables2–3分层性能与正文的步骤敏感性结论。",
+   "claimed_effect": "Table2 Ovis2-34B ACC41.74/F145.72、Human81.23/80.11；Table3 Gemini正确类78.89 vs错误类38.81。Table2 LLaVA7B ACC52.36但F12.55；不是“最高ACC模型就是最好过程评价器”。",
+   "conditions": [
+    "明确步骤标签和被测模型输出到标签映射；本文细节不足",
+    "neutral有767步，纳入/排除规则不明",
+    "步骤敏感性仅定性描述，没有专门逐步性能图或置信区间"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p.7 Table 3, Gemini-2.5-Flash row; p.6 Detailed Analysis",
+    "quote": "Gemini-2.5-Flash             78.89         38.81"
+   },
+   "failure_boundary": "Table2人类81.23与正文83.61冲突；Table3条件准确率与Table2整体的关系未交代，不能重建混淆矩阵；未建立可作为RL奖励的校准或抗hack能力。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "No-PRM original upstream model",
+   "kind": "method"
+  },
+  {
+   "name": "Gemma3-27B / Ovis2-34B / InternVL2.5-78B surrogate PRM search",
+   "kind": "method"
+  },
+  {
+   "name": "Human step evaluation",
+   "kind": "method"
+  },
+  {
+   "name": "Random 50/50 class baseline in Table 3",
+   "kind": "metric"
+  },
+  {
+   "name": "V*Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK",
+   "kind": "benchmark"
+  },
+  {
+   "name": "SAT / SAT-2 naming varies",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HRBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld (search experiment only)",
+   "kind": "benchmark"
+  },
+  {
+   "name": "PRMBench / VisualPRM / MPBench / ProcessBench (related work, not matched experiments)",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "轨迹限于当前主要支持crop/zoom的模型；更丰富工具和更强模型可能改变错误分类。",
+   "quote": "Our analysis is based on reasoning trajectories from current\nthinking with images models, which primarily support basic\nvisual operations such as cropping and zooming.",
+   "locator": "p.7 Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table2 Ovis2-34B步骤ACC41.74/F145.72，对照人类81.23/80.11；一些模型TE/RU检出率低于5%，如LLaVA7B0.20/1.78。并非所有模型所有错误均低于5%。",
+  "load_bearing_assumption": "在终答或纯文字过程上有效的LVLM评价，足以判断包含新视觉观测与工具操作的过程；论文诊断这一能力迁移假设，未给形式化反证。",
+  "scope": "crop/zoom为主的四种upstream模型，四来源基准，12种被测LVLM；搜索实验另含第五来源MME-RealWorld。",
+  "success_criterion": "对步骤正确性和七类错误检出进行可重复评测，并在搜索中改善答案准确率；没有预设非劣阈值、少裁目标或PRM上线标准。",
+  "why_open": "现有PRM基准以文字推理轨迹为主，缺少包含实际中间图像观测的工具过程测量；作者没有训练一个解决该缺口的专用PRM。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "quote": "seven distinct errors that commonly occur in thinking with images paradigm.",
+   "locator": "p.3 Figure 2 caption",
+   "rationale": "先定义工具视觉过程的错误类型并构造测量对象；只归纳问题定义动作。"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "quote": "Accuracy of\ndifferent models on correct and incorrect samples.",
+   "locator": "p.7 Table 3 caption",
+   "rationale": "按正确/错误分组读出正向偏置，而非只看整体ACC。"
+  },
+  {
+   "vocab": "rs",
+   "id": "outside_taxonomy",
+   "role": "primary",
+   "quote": "This indicates that LVLMs struggle par-\nticularly with detecting nuanced logical reasoning errors in\nmulti-step processes.",
+   "locator": "p.6 Main Results",
+   "rationale": "主要操作是人工构建benchmark与分层评估。没有构造matched confound controls，不标controlled_diagnostic_design；分组报告未施加差异操作，不标heterogeneous_decomposition。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r\\leftarrow\\mathcal R.\\mathrm{Score}(\\tau\\prime),\\qquad (s\\prime,\\tau\\prime,\\mathrm{score}+r)\\in\\mathcal C",
+    "locator": "p.4 Algorithm 1 lines 10–12; transcription of pseudocode, not a numbered equation"
+   },
+   {
+    "latex": "\\mathcal B\\leftarrow\\mathrm{TopK}(\\mathcal C,k)",
+    "locator": "p.4 Algorithm 1 line 15; transcription of pseudocode"
+   }
+  ],
+  "signal_routing": "没有训练/策略梯度或token级loss。外部PRM分数只路由到推理期候选选择；人工过程标签只用于基准评价，未见用来SFT/RL训练PRM或actor。不能把评价器判断步骤错误等同裁图动作的因果信用。",
+  "normalization": "other: Algorithm1累加原始score+r，无组内mean/std、RLOO、长度归一化或score校准说明。ACC/F1为评测统计；F1正类/averaging以及neutral处理均未明确。",
+  "invariance": "生成模型参数未更新，但候选筛选改变推理分布；没有策略不变性或PBRS保证。累加分数并非势函数差。",
+  "baseline_or_potential": "冻结/现成外部LVLM提示评分（未训练专门PRM），不是当前策略MC动作价值或critic；无价值基线、势函数。",
+  "degenerate_cases": "读者推导：k=1无候选排序收益；所有候选同分时正文按顺序取首，无法区分好坏；同前缀候选全错仍可能选错。p(action)≈0且候选从生成器采样时该动作可能永不出现，搜索没有显式支撑保证；本文无梯度故不存在其已解决p≈0梯度问题。全对/全错GRPO组不适用。文本/图像步骤的分数尺度和负分/终止处理未给，不能证明累加score对轨迹长短无偏。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "实际实验：同upstream checkpoint有/无三个PRM的搜索比较，12种LVLM与human的步骤评估，正负样本分层。它检验整套搜索是否有用，但未隔离额外采样算力与PRM评分质量；未提供干预式图像内容/步骤位置matched pairs。",
+  "controls": [
+   "Reported: same upstream with/without PRM (Figure3), three PRM families.",
+   "Reported: 12 evaluators across model sizes; human reference (Table2).",
+   "Reported: correct/incorrect split and 50/50 random reference (Table3).",
+   "Missing: equal-k random selection / majority / outcome-only ranker; complete compute-matched control.",
+   "Missing: blinded-prefix vs full-trajectory/GT access ablation; content-swapped image negative control; held-out source dedup audit."
+  ],
+  "negative_results": [
+   {
+    "text": "Figure3 PixelReasoner57.7→55.7/57.3/56.4全部下降。正文只写minimal to no improvement，按原图保留实际方向。",
+    "quote": "PixelReasoner-7B shows minimal to no improvement with",
+    "locator": "p.4 Performance Analysis; Figure3 for numeric values"
+   },
+   {
+    "text": "评价器在特定错误类型明显不足：LLaVA7B TE0.20、RU1.78；InternVL78B TE0.32。",
+    "quote": "LLaVA-OneVision-7B             52.36     2.55    0.20    1.78     1.01     1.27     3.65     0.80     2.61",
+    "locator": "p.7 Table2"
+   },
+   {
+    "text": "作者报告图像步骤相比文字步骤表现下降，但缺少逐步数表，未证实是位置本身的因果效应。",
+    "quote": "ing higher accuracy during text reasoning while experienc-\ning degradation during image extraction.",
+    "locator": "p.7 Detailed Analysis continuation"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出、未执行：冻结逐步前缀可见性与评分提示词，在原图来源隔离的留出数据上，以相同8候选/计算预算比较PRM、随机、终答评分；若PRM不优于这些对照或打乱其分数结果不变，则不支持评分机制带来增益。逐类人工互盲重标若无法复现正向偏置/图像步骤差异，则诊断需修订。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Upstream: ViGoRL-3B/7B, DeepEyes-7B, PixelReasoner-7B. Search PRM: Gemma3-27B, Ovis2-34B, InternVL2.5-78B. Benchmark additionally uses GPT-4o, Gemini-2.5-Flash, Qwen2.5-VL7B/72B, InternVL2.5-8B, LLaVA-OneVision7B/72B, Gemma3-4B, Ovis2-8B.",
+   "framework": null,
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": 10,
+   "search_candidates_per_stage": 8,
+   "training": "None; max_turns corresponds to reported maxstep, not our caption+crop turn unit.",
+   "benchmark_trajectories": 1206,
+   "collected_trajectories": 7558
+  },
+  "cost": "无训练成本。标注五人×七天，复核三人×三天（作者报告，不等同每人全天工时）；7,558生成轨迹、1,206保留。每阶段8候选、maxstep10；算法beam与正文greedy不一致，无法可靠折算总调用。GPU型号、GPU·h、latency、实际token和完整搜索开销均未报告。",
+  "pitfalls": [
+   {
+    "text": "作者报告现成评价器倾向给正判断，不能只凭整体ACC使用其奖励；未给已验证修法。",
+    "quote": "LVLMs as PRMs show consistent positive\nbias in their reward assignments.",
+    "locator": "p.6 Finding 1"
+   }
+  ],
+  "code": null,
+  "lesson": "当把现成LVLM接成裁图过程打分器时，应先用人工核验的图文步骤分开测正确/错误及工具错误检出，并明确前缀、GT和图像权限；整体ACC或搜索涨分不足以证明它能给当前策略提供必要性信用。"
+ },
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "直接提供图文过程及工具错误的评测问题与七类taxonomy，适合作为候选裁图评价器离线能力关卡；没有训练出可直接接入的reward。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "正向偏置与低工具错误检出提示奖励部署前校准需求；未做对抗reward hacking实验，不能声称已经量化hack风险。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "外部评价器不是当前策略的动作价值；本文未做同状态直答/裁图反事实，不能把RR标签当必要性金标。",
+   "strength": 1
+  },
+  {
+   "problem": "P36",
+   "how": "错误过程与正确终答可以并存；ARI的特定定义及人工逐步核验有助于审查SFT轨迹。",
+   "strength": 2
+  },
+  {
+   "problem": "P52",
+   "how": "五人标注三人复核提供原图人工检查流程参考，但未公开IAA和权限，不能替代本项目人工金标。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": []
+}

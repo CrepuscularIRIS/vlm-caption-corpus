@@ -1,0 +1,153 @@
+{
+ "paper_key": "litscan:1210",
+ "title": "lilGym",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_1210.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction final paragraphs",
+   "§4 actions/reward Eq.1",
+   "§5 program annotation",
+   "§6.1–6.2 Table2",
+   "§8 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "区分达到目标的状态和其余状态；训练到前者时只保留STOP，使稀有正确终止被观察。",
+  "why_non_obvious": "正回报不仅要求世界满足语句，还要求采到STOP；单纯到达目标也可能随后破坏它。",
+  "trigger_condition": "When successful states are visited but successful termination is rarely sampled, use a verified goal predicate to force stop during training.",
+  "contribution_type": "benchmark+training intervention",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When successful states are visited but successful termination is rarely sampled, use a verified goal predicate to force stop during training.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "区分达到目标的状态和其余状态；训练到前者时只保留STOP，使稀有正确终止被观察。",
+  "abstract_why_non_obvious": "正回报不仅要求世界满足语句，还要求采到STOP；单纯到达目标也可能随后破坏它。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:1210#s1",
+   "object": "PPO visual manipulation stop exploration",
+   "information": "语言、渲染状态；训练额外可执行真值程序验证目标已满足",
+   "operation": "PPO+SF 在训练满足目标时mask掉所有非STOP动作；测试撤掉此强制",
+   "claimed_effect": "ViLT SCATTER-FLIPIT test 16.81±7.43 →30.06±4.51；3 runs",
+   "conditions": [
+    "程序准确判定任意状态；目标是操作世界而非只观察"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6.1; Table2",
+    "quote": "ViLT     84.05±3.25 81.48±1.93 65.68±9.17 65.51±8.43 67.43±1.35 73.98±0.30                                       28.01±5.32 30.06±4.51"
+   },
+   "failure_boundary": "真实图片问答没有任意中间状态的准确目标谓词，强制STOP若错会提早终止。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "strength": 2,
+   "how": "停止动作的支持由训练时oracle强制提供；可区分不会停与没到可停状态。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "展示稀有终止动作的采样支撑问题，但oracle强制不是无偏自然采样。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "PPO",
+   "kind": "method"
+  },
+  {
+   "name": "NLVR-image matching reward",
+   "kind": "reward ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "合成图像不能代表真实视觉复杂性。",
+   "quote": "A   SC                                      lilGym uses synthetic visual stimuli, which does\n                        C3+BERT              ViLT                       Expert (estimate)                not reflect the complexity or characteristics of re-\n                                                                                                         alistic visual observations. This is critical for our",
+   "locator": "§8"
+  }
+ ],
+ "question": {
+  "observed_failure": "ViLT SCATTER-FLIPIT PPO test仅16.81%，PPO+SF30.06%。",
+  "load_bearing_assumption": "到达正确状态后，普通探索足够学会STOP。",
+  "scope": "合成NLVR派生操作世界与停止",
+  "success_criterion": "测试不强制STOP仍提升成功率，并报告长度/非法动作。",
+  "why_open": "大动作空间下成功状态与成功终止的联合事件稀疏。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§6.2 stopped/invalid rollout statistics"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§6.1 PPO+SF"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R(s,a)=1\\ (a=STOP,E_x(s)=b);\\ -1\\ (wrong\\ STOP\\ or\\ invalid\\ or\\ t=H);\\ -\\delta\\ otherwise",
+    "locator": "Eq.1"
+   }
+  ],
+  "signal_routing": "环境每步奖励进入PPO及独立critic；STOP forcing修改训练动作分布。非文本逐token信用。PPO优势的具体计算/归一化未在已读正文给出。",
+  "normalization": "other",
+  "invariance": "每步负代价改变最优效率偏好；不是PBRS。",
+  "baseline_or_potential": "独立critic网络，结构同policy，value输出tanh；无势函数。",
+  "degenerate_cases": "目标已满足但动作支持STOP近零时强制可打破采样瓶颈；目标不可达则始终无正奖励；全对/错GRPO组不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 同架构PPO vs PPO+SF，测试都撤mask；另用有限NLVR目标图匹配替代任意状态程序判断时无有效学习。",
+  "negative_results": [
+   {
+    "text": "成功策略仍低效，平均奖励常为负；有限已标图目标匹配不产生有效学习。",
+    "locator": "§6.2"
+   }
+  ],
+  "seeds": "3 runs，报告mean±std",
+  "falsifier": "若撤掉训练oracle后收益消失，或错误停止率上升，则不能把强制训练视为已学会证据充分性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "C3/C10+BERT; ViLT",
+   "framework": "PPO; Gymnasium environment",
+   "group_size": null,
+   "max_turns": 12,
+   "kl": null
+  },
+  "cost": "合成轻量环境；已读主文未提供总GPU时。",
+  "pitfalls": [
+   {
+    "text": "强制STOP仅训练；不可将测试oracle assistance与自主策略结果混报。",
+    "locator": "§6.1"
+   }
+  ],
+  "code": "https://lil.nlp.cornell.edu/lilgym/",
+  "lesson": "当成功需要显式终止时，应分别统计到达成功状态、实际STOP和随后毁坏目标，避免把探索失败误判为感知失败。"
+ }
+}

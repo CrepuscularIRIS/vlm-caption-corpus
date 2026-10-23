@@ -1,0 +1,439 @@
+{
+ "paper_key": "2608.21762",
+ "title": "Learning to Look Again: Loss-Gap Supervision for Free-form Crop Routing in Vision-Language Models",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.21762.pdf",
+  "version": "v2",
+  "version_evidence": "p.1 arXiv:2608.21762v2 [cs.CV] 29 Aug 2026; PDF link same v2; latest online not checked",
+  "page_count": 9,
+  "fulltext_path": "2608.21762.txt",
+  "sections_read": [
+   "Abstract/Introduction pp.1–2; Fig1 p.2",
+   "All Related Work p.3",
+   "Method: Loss-Gap Supervision pp.3–4; all unnumbered equations",
+   "Method: Free-Form Crop Router p.4",
+   "Method: Training and Inference pp.4–5; unnumbered total loss",
+   "Experiments: Benchmarks and Models/Label Mining and Training Data/Baselines/Main Results pp.5–6; Tables1–3 pp.4–5",
+   "Mechanism Analysis: Useful Crops Are Model-Specific/When Review Helps and Hurts pp.6–7; Figs2–3; Tables4–5",
+   "Crop Geometry and Context/Conclusion p.7",
+   "Complete references pp.8–9; no appendix in this 9-page local PDF"
+  ],
+  "visual_pages_inspected": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ]
+ },
+ "rs": {
+  "innovation_approach": "离线用将被部署的同一冻结VLM，比较global-only与候选crop增强的GT答案NLL或正确选项margin；把最大gap变成review/preserve、utility和框标签，再训练读取crop前状态的独立三输出头。推理只做一次是否加crop的路由。",
+  "key_step": "将缺失的“该模型该看哪里/是否看”标注，改为同一模型在同一问题的候选视觉输入上的答案得分差；只把这类差分蒸馏到路由头，骨干固定。",
+  "why_non_obvious": "人框/CLIP相关性不保证特定VLM受益；所需区域还依赖编码器、tokenizer与上下文。跨骨干效用保留均值仅0.44；但GT条件分数改善仍不同于自然生成正确率改善。",
+  "trigger_condition": "When extra evidence has model-specific value and action labels are missing, compare the same model with and without candidate evidence, then distill the resulting benefit labels into a pre-action router.",
+  "reviewer_praise": [
+   "low_evidence: manifest无reviews_path，没有独立review来源。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 本记录的缺失项和反例是读者核查，不冒充reviewer意见。"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null；arXiv v2不等于接收。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Measure the same fixed solver under paired information conditions and distill the benefit into a separate allocation module.",
+  "abstract_key_step": "Convert the best measured improvement into a joint decision label, utility target, and intervention target before deployment.",
+  "abstract_why_non_obvious": "An intervention can be semantically relevant yet unhelpful to a particular solver; its value depends on what that solver already preserves.",
+  "abstract_trigger_condition": "When intervention value varies across solvers and inputs, mine solver-specific comparisons and predict the intervention from information available before acting."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.21762#s1",
+   "object": "Model-specific crop action, utility and box supervision",
+   "information": "Offline miner有原图x、题q、GT答案y、候选框bank及同一目标VLM；分别测global与global+crop，不依赖外部冻结reader或人工目标框。router部署不能看GT或真实gap。",
+   "operation": "构造含不同中心/尺度/宽高比和context-expanded区域的候选bank；自由答案用L_NLL(global)−L_NLL(global+crop)，MC用correctoptionmargin增量；选最大gap对应b*；明显正值review，低/负值preserve，模糊过滤或降权；MC正负样本均衡。按骨干分别重挖。",
+   "output": "review/preserve标签、最大utility、正例框目标；不是每次crop因果credit，也不是GT-free训练。",
+   "claimed_effect": "Table3相同InternVL/router/bank/schedule/eval只换labelteacher，四VQA均分lossgap71.57 vsCLIP66.88 vsrandom64.00；action59.3%/58.0%/60.2%近似，tokens407.6/404.5/410.1近似。Fig3跨骨干效用保留均值0.44。",
+   "conditions": [
+    "GT答案有效，候选bank覆盖真正有益区域。",
+    "scoring prompt/parse/visualtoken配置与部署一致；NLL/margin增益能预测生成成功。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Method Loss-Gap Supervision p.4",
+    "quote": "The crop target and router labels come from the same"
+   },
+   "failure_boundary": "NLL的sum/mean、margin score是logit/logprob/prob、K及bank采样规则、正负阈值/模糊区均未给。argmax只能找bank里最好，bank无好框不证明原图无需crop；NLL升支持或margin变大也可仍答错。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.21762#s2",
+   "object": "Separate free-form crop router and auxiliary heads on a frozen backbone",
+   "information": "读取global preview的hiddenstates，声明位于任何reviewcrop渲染前及answer boundary；不使用返回crop token。具体layer/token pooling、问题文本注入方式、answer sequence mask未说明。",
+   "operation": "训练gate logit、utility回归、candidate-prior+bounded-residual连续框；总损失lambda_g Lgate+lambda_u Lutility+lambda_b Lbox，box含candidate classification/smooth regression/overlap penalty；preserve不施加positive box目标，ambiguous不做box监督；骨干固定。",
+   "output": "与生成参数解耦的可学习路由/效用/框头；不是VLM动作token概率学习。",
+   "claimed_effect": "Table1六benchmark均分LLaVA32.76→42.57，InternVL52.25→64.29，Qwen44.65→56.02；全方法收益而非独立证明head分离的消融。",
+   "conditions": [
+    "冻结hiddenstate含足够判别信息；头只能见pre-action输入。",
+    "候选先验/残差范围及框渲染与训练目标一致。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Method Training and Inference p.5",
+    "quote": "backbone is kept fixed; only the router and its auxiliary heads"
+   },
+   "failure_boundary": "未给head层数/参数量、loss函数具体形式、权重、优化器/LR/steps、初始化或精确mask；无同率常数gate强对照、无utility/box/残差/扩边分别消融。不能说已解决多轮RL中的共享参数漂移。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.21762#s3",
+   "object": "One-shot deployment allocation between global-only and global-plus-one-crop answer",
+   "information": "预测仅基于global状态，不看GT或测试时候选loss-gap；推理可用gate/utility阈值，具体阈值与组合规则未报告。",
+   "operation": "先编码global，router输出gate/utility/box；preserve直接用global生成，review从原图渲染连续框（可context expand）再global+crop生成；仍用标准generate-and-parse。每题最多一张额外crop，无迭代纠错。",
+   "output": "任务相关actionrate和视觉token使用；freeze backbone仍因输入变化而可能改变答案。",
+   "claimed_effect": "Table5 InternVL action Text.740,Doc.515,Chart.350,Info.765,VStar.539,MME.256；平均391.0 visualtokens vsBase256.0/CropVLM511.9。Table4作者计107修复/27破坏，分母选择未说明。",
+   "conditions": [
+    "追加crop仍保留global上下文、图像span正确。",
+    "gate选中的收益高于所消耗额外视觉预算。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Method Training and Inference p.5",
+    "quote": "either answers immediately or injects one rendered crop."
+   },
+   "failure_boundary": "gate0退化Base、gate1为always-one-crop；没有多轮stop/recheck/revise。不同任务平均action不证明同任务逐题必要性；视觉token不含离线mining/headtraining、文本decoding或walltime；比Base多token，不是无成本改善。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Base no-zoom",
+   "kind": "method"
+  },
+  {
+   "name": "ZoomRefine;ViCrop;CropVLM",
+   "kind": "method"
+  },
+  {
+   "name": "Random-label teacher;CLIP-relevance teacher",
+   "kind": "method"
+  },
+  {
+   "name": "TextVQA;DocVQA;ChartQA;InfographicVQA;VStarBench;MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "GQA train-balanced converted to A–D choices with answer-type-matched distractors",
+   "kind": "dataset"
+  },
+  {
+   "name": "Answer-NLL gap;correct-option margin gap;visualtokens;actionrate;W→R/R→W",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只训练头、单次crop，未展示多轮RL或自然动作token路由。",
+   "quote": "Inference is one-shot.",
+   "locator": "Method p.5"
+  },
+  {
+   "text": "模糊标签过滤/降权，实际保留规则未给；Table2 NLL36.2%、MC66.3%为ambiguous（读者算术）。",
+   "quote": "middle cases are filtered or down-weighted",
+   "locator": "Method p.4"
+  },
+  {
+   "text": "作者承认crop跨骨干效用只部分保留；冻结打分器不能无条件泛化到另一策略。",
+   "quote": "Off-diagonal retention averages 0.44",
+   "locator": "Mechanism Analysis p.6"
+  },
+  {
+   "text": "27例正确答案变错；“骨干固定”不保证行为无伤害。",
+   "quote": "answers and introduces 27 regressions,",
+   "locator": "When Review Helps and Hurts p.6"
+  }
+ ],
+ "question": {
+  "observed_failure": "仅global压缩丢局部信息；Table1 InternVL Base Doc55.84/Info39.42，Gap78.11/53.27；但LLaVA ZoomRefine MME28.39低于Base32.71。不是所有局部放大都提高答案正确率。",
+  "load_bearing_assumption": "语义相关框或统一更多视觉token足以适配各模型；作者以按目标骨干gap挖标签和跨模型transfer核查否定通用框效用假设。",
+  "scope": "三个冻结VLM，四自由答案VQA与两MC任务；global后最多加一crop，只训练外接head，不能外推多轮active policy。",
+  "success_criterion": "heldout相同generate/parse下，比Base与外部crop方法获得更高均分；比同router随机/CLIPteacher更好且visualtoken近似。需同时看回退harm与token预算；未预设非劣/置信下界或逐题gateAUROC。",
+  "why_open": "人工框/语义相关未反映特定模型是否丢失答案信息；test-time搜索昂贵；缺模型特定的“when+where”监督，需要从自身pairedinput评分蒸馏。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "quote": "We test this assumption by transferring",
+   "locator": "Mechanism Analysis p.6/Fig3;真实执行跨骨干crop效用测试"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "The supervision is mined by probing the same target VLM",
+   "locator": "Method p.3;先离线打分再训头，不是先训练后补故事"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "quote": "right (W→R), right-to-wrong (R→W), net correction, and",
+   "locator": "When Review Helps and Hurts p.6;W→R/R→W分类计数，分母待说明"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "action rate alone",
+   "locator": "Crop Geometry/context discussion p.7;与下一句not a faithful cost measure共同限定视觉预算口径"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "candidate bank, schedule, and evaluation are fixed; only the",
+   "locator": "Table3 caption p.5;更换teacher的已做对照"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "quote": "the gate, utility, and box heads are not trained from separate",
+   "locator": "Method p.4;制造缺失crop标签，但GT答案仍必需，不称label-free",
+   "role": "primary"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "quote": "source of the router signal from the benefit of adding",
+   "locator": "Main Results p.6/Table3;同head/bank比较随机与CLIP监督，隔离新增视图混淆但未分离when与where",
+   "role": "supporting"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal B(x,q)=\\{b_i\\}_{i=1}^{K},\\qquad b=(c_x,c_y,w,h)\\in[0,1]^4",
+    "locator": "Method pp.3–4; unnumbered"
+   },
+   {
+    "latex": "\\Delta_i=\\mathcal L_{NLL}(y\\mid q,g(x))-\\mathcal L_{NLL}(y\\mid q,g(x),c(x,b_i))",
+    "locator": "Method Loss-Gap Supervision p.4; unnumbered"
+   },
+   {
+    "latex": "m=s_y-\\max_{j\\ne y}s_j,\\qquad\\Delta_i=m_i-m_0",
+    "locator": "Method p.4; unnumbered;score type unspecified"
+   },
+   {
+    "latex": "b^*=\\arg\\max_{b_i\\in\\mathcal B(x,q)}\\Delta_i,\\qquad\\Delta^*=\\max_i\\Delta_i",
+    "locator": "Method p.4; unnumbered"
+   },
+   {
+    "latex": "\\mathcal L=\\lambda_g\\mathcal L_{gate}+\\lambda_u\\mathcal L_{utility}+\\lambda_b\\mathcal L_{box}",
+    "locator": "Method Training and Inference p.5; unnumbered;component forms and coefficients unspecified"
+   }
+  ],
+  "signal_routing": "gap生成标签，监督外接gate、utility、框head；骨干不更新，既不把gap加到RL reward，也不把结果advantage路由到caption/crop/answer token。review有正框目标；preserve无positive box supervision，ambiguous不做box监督，具体过滤/降权分支及utility target处理未披露。generatedanswer留在序列以对齐answer boundary，但原文无具体attention/mask，不能声称实际GT或crop token绝不泄漏到训练head。仅其设计意图明确pre-crop。",
+  "normalization": "不是GRPO/RLOO，没有组mean/std、PPO ratio、KL或adv归一化。NLL只说明answer-span，按token求和还是均值未知；margin的s是logit/logprob/prob、选项长度归一化未知。MC正负均衡有文字但具体采样/权重未知，NLL行不宣称同样均衡；loss三个lambda均未知。Fig3transfer除target自身最优gap，不是policy优化归一化；分母为0/负值及先比后均/先均后比未知。",
+  "invariance": "冻结骨干保持参数和标准生成接口，不保持答案输出；额外crop可改变上下文与解析结果。不是PBRS，无策略最优性不变定理。按同一参考减分的gap对参考与candidate共同加常数不变；对两者统一正缩放保留argmax，但固定阈值/utility标度不变时会改标签与损失。MC所有选项共同加同常数不改margin；logit缩放保排序但改gap/阈值；温度softmax可改margin尺度，未报告。",
+  "baseline_or_potential": "baseline是同一冻结目标VLM在global-only输入的GT条件NLL或margin；candidate branch加入真实crop。不是不同reader、MC生成成功率差或独立critic；看得到GT的offline scorer与不看GT的online head要区分。原文按backbone分别挖，未测试同骨干不同checkpoint drift或定期重挖。",
+  "degenerate_cases": "所有candidategap≤阈值则preserve（可能因为bank漏框而非真无需）；所有gap很大则review；无crop/错误candidatebank无法发现有益区域。外接头监督不依赖LM自然采到稀少动作，避免该采样瓶颈，但具体Lgate未给不能承诺不会饱和/全局bias。全对组/全错组概念不适用；即所有生成答案已对NLL仍可改善并标review，全部错margin也可变好仍review，标签不是四格必要性。本法本来单次，无法表达wrongcrop后补看/改口。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3同backbone/router/bank/schedule/eval，只换lossgap/random/CLIP labelteacher，action和tokens接近，支持监督来源有效而非单纯多一图。Fig3按同题bank将source最优框给target重新打分，支持model-specific utility。Table4 paired prediction transitions与Table5按任务行动率。尚不能隔离gate状态辨别、where定位和utility/box三head各自贡献。",
+  "controls": [
+   "随机labelteacher同时改变gate与box标签，不等于同一预测框下、同率constant gate；须保留P24强对照缺口。",
+   "四VQA每项1000、VStar191、MME1919，六均分是benchmark macro-average而非全部样本micro平均。",
+   "作者声明官方training用于mining/训练，heldout评测与mining/training/thresholdselection互斥；没有样本ID/跨源图像去重细节，记作者声明非本次已验证。",
+   "Table4未给transition audit分母/子集/seed聚合/二值right规则，无法和主表1K连续VQA评分直接对齐。",
+   "Fig3 self-mined=1是构造归一化，offdiagonal≤1在同bank且positive denominator下由argmax界定；0.44提供程度而非独立证明所有模型不泛化。",
+   "没有equalvisualtokens更强globalresolution、固定同框alwayscrop、gate/utility/box/residual/context expansion因子消融；不把Fig2单operatingpoint散点称完整Pareto阈值曲线。"
+  ],
+  "negative_results": [
+   {
+    "text": "LLaVA GapSight VStar48.93低于CropVLM52.64/ViCrop51.96；MME33.82低于ViCrop33.88，非所有方法每列最优。",
+    "quote": "GapSight          71.84      40.28      33.16    27.36    48.93     33.82",
+    "locator": "Table1 p.4"
+   },
+   {
+    "text": "随机teacher Info53.5略高于lossgap53.27；lossgap胜的是平均而非每一项。",
+    "quote": "Random labels 78.5 57.5 66.5 53.5 64.00 60.2%",
+    "locator": "Table3 p.5"
+   },
+   {
+    "text": "27正确→错误；Chart仅9修复/6损害，Info26/9且harm9.9%。",
+    "quote": "All                  107      27 +80       35.6     5.4",
+    "locator": "Table4 p.6"
+   },
+   {
+    "text": "跨模型框迁移仅保留部分效用，Chart尤其低；矩阵InternVL框→LLaVA为.01。",
+    "quote": "that loss-gap mining is not simply recovering a universal",
+    "locator": "Mechanism Analysis p.6/Fig3 p.7"
+   }
+  ],
+  "seeds": "作者明确所有benchmark entries averaged over three seeds，Table1 sixavg给mean±SD，GapLLaVA42.57±.33/Intern64.29±.24/Qwen56.02±.27。没有seed值或说明随机性来自独立headtraining、mining还是decode；不能断言三独立训练复现。Table3/4/5无各项误差；SD不是CI，未报配对统计。",
+  "falsifier": "未执行的最小迁移检查：在固定checkpoint/原图来源隔离状态上比较GT条件gap与自然生成双分支收益，检验符号/校准；候选bank增加上下文及随机同尺度框看最大gap是否稳定。固定同一个boxpredictor与同率/同token预算，比状态gate、constant gate、打乱state gate；若状态gate不胜常数，P24状态辨别主张不能成立。若增益只由更高像素预算或定位而非when带来，应收窄为where方法。对不同checkpoint重算gap检验漂移；严格N/A/0分母处理重算Fig3与transition审计。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA-1.5-7B;InternVL2.5-8B;Qwen2-VL-2B-Instruct;backbones fixed,router+auxiliary heads trainable",
+   "framework": null,
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": "one-shot: global preview then preserve or one additional crop",
+   "optimizer": null,
+   "learning_rate": null,
+   "batch_size": null,
+   "epochs": null,
+   "router_parameter_count": null,
+   "candidate_bank_size": null,
+   "positive_threshold": null,
+   "negative_threshold": null,
+   "gate_threshold": null,
+   "utility_threshold": null,
+   "loss_weights": null,
+   "training_data": "AnswerNLL58311 rows =23542positive+13679negative+21090ambiguous;GQA A–D80000=21491positive+5496negative+53013ambiguous;counts not broken down by backbone/actual selected training rows",
+   "eval": "fourVQA1K each,VStar191,MMELite1919;three reported seeds;macro6avg"
+  },
+  "cost": "只有inference visualtoken报数：LLaVA576→912.8，Intern256→391.0，Qwen144→331.9（读者算术1.585×/1.527×/2.305×Base）；外部crop方法更多。Fig2平均Gap约545.23tokens/54.29score，Base325.33/43.22，离线K+1条件打分及headtraining成本未计。无GPU设备/GPUh/walltime/文本token/更新数；decoder重算或KVcache复用未说明。",
+  "pitfalls": [
+   {
+    "text": "同框效用因目标骨干而异，应先按同模型打分，别以通用相关性替代。",
+    "quote": "the best crop is a region that changes the answer behavior",
+    "locator": "Mechanism Analysis p.6"
+   },
+   {
+    "text": "纯局部框可能丢单位/轴/字段，需要上下文；扩边规则与阈值未给。",
+    "quote": "a number with its unit, a",
+    "locator": "Method Router p.4"
+   },
+   {
+    "text": "预览token预算不同，actionrate不应直接当成本。",
+    "quote": "is not a faithful cost measure.",
+    "locator": "Discussion p.7"
+   }
+  ],
+  "code": null,
+  "code_verified": false,
+  "lesson": "当离线gap由某个固定模型与预览配置产生时，应把checkpoint、预览分辨率、answer-span/option打分、candidatebank、阈值和head读取位置一起锁定；否则标签、hiddenstate和部署crop条件不一致，正gap可能只反映评分或上下文差异，不能当真实必要性。"
+ },
+ "relevance": [
+  {
+   "problem": "P16",
+   "how": "同一目标VLM挖utility，并以跨骨干transfer实证模型特定性；不能扩成已验证checkpoint重挖必要。",
+   "strength": 3
+  },
+  {
+   "problem": "P17",
+   "how": "NLL/optionmargin不是自然生成成功率，存在GT条件与deployment语义差。",
+   "strength": 2
+  },
+  {
+   "problem": "P21",
+   "how": "单独head且骨干冻结，不依赖首动作LM概率采样；未报告gate具体loss与饱和诊断。",
+   "strength": 2
+  },
+  {
+   "problem": "P22",
+   "how": "不用K4采样估值，但bank argmax选择与gap噪声仍需校准；K未知。",
+   "strength": 2
+  },
+  {
+   "problem": "P23",
+   "how": "明确pre-crop/answerboundary设计意图，具体hiddenstate/tokenmask没给。",
+   "strength": 2
+  },
+  {
+   "problem": "P24",
+   "how": "路由与答题参数解耦直接已做；同率常数gate强对照及继续RL未做。",
+   "strength": 3
+  },
+  {
+   "problem": "P26",
+   "how": "显式review/preserve监督及任务不同actionrate；不是已证自然多轮不确定再看。",
+   "strength": 2
+  },
+  {
+   "problem": "P35",
+   "how": "有harm/repair统计却未做分层准确率非劣，难题必要探索不能保证。",
+   "strength": 1
+  },
+  {
+   "problem": "P45",
+   "how": "三seeds及aggregateSD有报告，但不明训练seed/无CI。",
+   "strength": 2
+  },
+  {
+   "problem": "P49",
+   "how": "声明train/holdout/threshold disjoint，但去重独立未验。",
+   "strength": 1
+  },
+  {
+   "problem": "P58",
+   "how": "offline候选bank打分成本未报，one-shot减少testsearch不等于总计算便宜。",
+   "strength": 2
+  },
+  {
+   "problem": "P69",
+   "how": "清楚区分增加准确率与减少相比外部crop的视觉token；相对Base仍多token。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "measurement_and_source_audit": {
+  "ambiguities_and_conflicts": [
+   "无附录；K、候选bank生成规则/尺度/长宽比、layer/pooling、headarchitecture、residual范围、crop扩边/clip规则、gate和utility阈值及组合、loss权重/具体函数/优化器/LR/batch/epochs/steps都未披露。未知保持null，不按常见实现补BCE/Huber/IoU/sigmoid。",
+   "训练答案保留在sequence并声明head处于pre-crop answerboundary；没有token位置/attention mask代码，无法排除GTanswer或crop特征泄漏的实现风险，也不据此断言发生泄漏。题q在打分公式中明确，但router问题条件如何进入hiddenstate未说明。",
+   "MC labels源GQA训练池构造A–D；VStar/MME是heldout评测格式。p7另提VStar/MME positives box audit，数据审计用于分析还是参与mining不清。作者声明eval disjoint，不能单凭这句话推断泄漏或全部标签来源。",
+   "Table4计数与rescue/harm百分比反推出约Text47wrong/153right、Doc79/121、Chart66/134、Info109/91，总计约800，像每项200题audit；原文未报告此子集。它不等于主表每项1000，也无法用net80直接解释主表平均增益。此为读者基于舍入率的推断，不把800当已明示事实。",
+   "Table4 right定义（VQA多标注得分阈值/normalizedanswerexact等）、seed aggregation与sampling缺失；主表三seedmean与转移计数可能不同口径。",
+   "Table1 LLaVA VStar48.93<ViCrop51.96/CropVLM52.64；MME33.82<ViCrop33.88。主张高均分成立，逐列全胜不成立。",
+   "Table3 Random Info53.5>lossgap53.27；平均胜4.69/7.57pp成立，正文outperforms on four benchmarks应按aggregate读，不能写全部四项严格胜。",
+   "Fig2每method只有跨三个不同模型平均的一个operatingpoint，非阈值连续预算曲线/严格Pareto证据。不同任务和backbone成本混平均会掩盖局部tradeoff。",
+   "Fig3 offdiagonal重新算均值.44417；Chart均值.16167低，Doc.60833高。但selfopt归一化分母0/负和aggregation未报，1.00是归一化定义，不是100%准确率；无seed/CI。",
+   "Table2 NLL23542+13679+21090=58311，MC21491+5496+53013=80000；ambiguous比例读者算术36.17%/66.27%。count是mined rows，不是实际训练样本/uniqueimages，也没分骨干。",
+   "MC正负balanced但原始counts不平衡约3.91:1，具体oversampling/weights/过滤未知；NLL正负是否均衡未说。",
+   "Table5 Interntokens近似256+256×action，各任务均token391.03与Table1一致；四VQA407.65与Table3一致。不能由此确认KVcache是否重算或walltime。",
+   "正文称alwayscrop会remove usefulcontext，而方法global+crop保留global；可能是注意干扰或替代预算，未隔离机制，不能写物理删除原图证据。"
+  ],
+  "source_evidence": [
+   {
+    "kind": "author_claim",
+    "locator": "Experiments p.5",
+    "quote": "All benchmark entries are averaged over three seeds."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Experiments p.5;author split claim",
+    "quote": "disjoint from mining, router training, and threshold"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Table2 caption p.5",
+    "quote": "rows are not box-supervised."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Method p.4;requires implementation mask audit",
+    "quote": "The generated answer remains in the sequence so"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Mechanism Analysis p.6",
+    "quote": "Values are normalized by the target model’s own self-mined"
+   }
+  ],
+  "information_boundary": "Offline有GT与候选增强图；训练head接labels但设计为仅global hiddenstates，具体mask未知；inference无GT/候选测试搜索，只一次globalstate预测+可选crop。原论文无LLM judge；准确率generate/parse、gap score、crossmodel normalizedretention三种量不能混同。",
+  "cost_units": "工具action为0/1额外crop，非多轮步数或整训练费用；平均visualtokens不同backbone预览budget不同。报告的相对外部crop省token不意味着少于Base，也不意味着walltime加速。"
+ }
+}

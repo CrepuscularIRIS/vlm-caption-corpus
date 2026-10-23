@@ -1,0 +1,320 @@
+{
+ "paper_key": "2602.10863",
+ "title": "ICA: Information-Aware Credit Assignment for Visually Grounded Long-Horizon Information-Seeking Agents",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2602.10863.pdf",
+  "version": "v2",
+  "version_url": "https://arxiv.org/pdf/2602.10863v2",
+  "sections_read": [
+   "Abstract; 1 Introduction; Figure 1 (pp.1–2)",
+   "2 Related Work (pp.2–3)",
+   "3 Preliminaries, Eqs.1–7 (pp.3–4)",
+   "4.1 Turn-Level Credit Assignment, Eqs.8–20 (pp.4–6)",
+   "4.2 External Observations; Figure 2 (p.6)",
+   "5.1.1–5.1.3 Experiments; Tables 1–3; Figure 3 (pp.6–8)",
+   "6 Conclusion (p.8)",
+   "Limitations; References (pp.9–11)",
+   "A.1–A.4 Experimental Details (pp.12–14)",
+   "Table 4; Table 5; B Additional Experimental Results (p.14)",
+   "Algorithm 1; C Judge Prompt (pp.15–16)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把完成轨迹中的可复用外部证据设为信用归因对象，按同题 rollout 中证据出现/未出现的终答成功率差排序，再将选中证据的二值奖励发给取得它的工具轮；终答独立监督。",
+  "key_step": "稳定 URL 级证据身份 → 组内出现/未出现成功关联 Δe → 每种工具选正分 top 10% → turn-local binary reward → 分工具/终答标准化优势。",
+  "why_non_obvious": "不是估计相同前缀的动作值；用低额外推理成本的跨完整轨迹关联替代逐步标签，并把弱连续估计只用于排名，避免直接用其幅值作奖励。",
+  "trigger_condition": "When repeated rollouts revisit identifiable external information and have mixed terminal outcomes, apply occurrence-conditioned success ranking and separate turn rewards to achieve denser evidence-acquisition supervision.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision is null; no review payload was supplied or found in the local manifest/candidate/inventory lookup.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Give reusable acquired items stable identities, rank them by their association with success, and supervise acquiring steps separately from terminal decisions.",
+  "abstract_key_step": "Convert conditional outcome differences into positive top-ranked membership, then normalize intermediate and terminal signals in separate scopes.",
+  "abstract_why_non_obvious": "Use retrospective cross-sequence association to manufacture missing intermediate supervision without treating its magnitude as a reliable local action value.",
+  "abstract_trigger_condition": "When comparable items recur across sequences with mixed outcomes, route selected-item membership to acquisition steps while reserving a fixed share of optimization weight for terminal decisions."
+ },
+ "signatures": [
+  {
+   "sig_id": "2602.10863#s1",
+   "object": "tool-acquired atomic evidence within one prompt rollout group",
+   "information": "Completed old-policy trajectories, binary judged final outcomes, and occurrence of stable URL-level SEARCH entries / FETCH snapshots. No shared-prefix continuations, no fixed-state action alternatives, no do-intervention, no direct observation of causal necessity.",
+   "operation": "Estimate P(success|acquired e) minus P(success|not acquired e), rank separately by tool type, select positive top fraction, and reward each tool turn whose returned evidence intersects the selected set.",
+   "output": "Binary per-tool-turn reward; corresponding within-tool-type standardized advantage replacing uniform terminal outcome credit.",
+   "claimed_effect": "Author-reported Table 2: on Qwen3-VL-8B-Thinking, ICA-Snapshot versus GSPO-Snapshot gives BC-100 25.0 vs 22.0, GAIA 69.9 vs 60.2, XDS 71.0 vs 68.0, Seal-0 25.2 vs 24.3 Pass@1 (%). This compares the ICA package, not this sub-operation alone.",
+   "conditions": [
+    "Same prompt rollouts with both successes and failures",
+    "Evidence identities comparable across trajectories",
+    "Acquisition membership has nonzero support and enough variation; ranking small groups remains noisy"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§4.1 p.5, Eqs.9–14",
+    "quote": "We rank atomic evidence units according to their association-based utility score ∆e , and select the top positive units:"
+   },
+   "failure_boundary": "All same-outcome groups have zero tool advantage. Membership-success association can reflect confounding or the outcome of the very sample scored; no held-out/leave-one-out estimator or causal identification is reported. Universal evidence receives zero Δ under the stated fallback.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2602.10863#s2",
+   "object": "Tool-turn and answer-turn policy objective",
+   "information": "Turn tokens and old/current policy likelihoods, separately centered tool rewards, shaped final reward and total consumed-token fraction. This reward is post-hoc rather than available to the acting policy online.",
+   "operation": "Assign one geometric-mean importance ratio per turn; optimize clipped turn surrogate; give final answer fixed weight w=.3 and average tool turns with weight .7; reduce failure penalty as used token budget grows.",
+   "output": "ICA-GSPO surrogate with differentiated answer/tool credit and budget-aware terminal shaping.",
+   "claimed_effect": "Table 2 reports gains above; no isolated ablations of answer weighting, failure-length shaping, or turn-level ratio are provided, so their individual effects are unknown.",
+   "conditions": [
+    "Identifiable turn boundaries and generated token masks",
+    "Token budget Lmax available",
+    "Nonzero per-scope variance or epsilon protection"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§4.1 p.5 Eq.16; Eqs.17–20 pp.5–6; Algorithm 1 p.15",
+    "quote": "Each token generated at turn t in trajectory τi inherits the turn-level advantage Ait :"
+   },
+   "failure_boundary": "This changes objective and credit, not a potential-based invariant transformation. Direct-answer-only trajectory gives Ti−1=0 in Eq.19; handling unreported. Failure shaping rewards spending more budget relative to shorter failures, which is not a crop-efficiency penalty.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2602.10863#s3",
+   "object": "FETCH observation representation and recurring evidence identity",
+   "information": "Rendered page visible content, layout and images; bounded by 20,000px maximum height and actual rendering/fallback. Not all hidden/off-page website content.",
+   "operation": "Render and clean pages, slice at 4,480px with 112px overlap, downsample 0.7×, and return visual slices under stable source identity instead of only text extraction.",
+   "output": "Visual evidence observations for Qwen3-VL and cross-rollout item matching.",
+   "claimed_effect": "Author-reported Table 3: under 128k context / 16k per-response truncation, SFT text overflow 36.0/15.5/6.0/20.0% vs snapshot 0/0/0/0 on BC-100/GAIA/XDS/Seal-0; Pass@1 11.0/54.3/55.0/20.7 vs 18.0/56.4/66.0/23.4. Figure 2 gives four URL token reductions 27.0–65.6%, not a dataset-wide reduction.",
+   "conditions": [
+    "Readable rendering at final VLM resolution",
+    "Reusable source-level identities",
+    "Appropriate render height and context limits"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Appendix A.3 p.13; Tables 2–3 p.7",
+    "quote": "For long pages, we enforce a hard maximum rendering height of 20,000 pixels, which covers the primary information region of most websites while bounding worst-case computation."
+   },
+   "failure_boundary": "§4.2 calls snapshots uncompressed/unfiltered; implementation actually cleans overlays, caps height, slices and downsamples. Visual token redundancy remains; rendering changes/dynamic pages can defeat stable identity.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-8B-Thinking baseline / SFT-Text / SFT-Snapshot",
+   "kind": "method"
+  },
+  {
+   "name": "GSPO-Snapshot",
+   "kind": "method"
+  },
+  {
+   "name": "random-p% and tail-p% evidence",
+   "kind": "method"
+  },
+  {
+   "name": "BrowseComp (BC-100 subset for ablations)",
+   "kind": "benchmark"
+  },
+  {
+   "name": "GAIA text-only validation (103 examples)",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Xbench-DS 2505",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Seal-0",
+   "kind": "benchmark"
+  },
+  {
+   "name": "LLM-as-judge Pass@1; separate Appendix Pass@4",
+   "kind": "metric"
+  },
+  {
+   "name": "WebLeaper",
+   "kind": "method"
+  },
+  {
+   "name": "C-GSPO",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Author limitation: raw visual tokens still create redundancy/compute cost. No learned visual compression or pooling before tokenization; image resizing in A.3 is nevertheless performed.",
+   "quote": "it inevitably introduces considerable token redundancy and computational overhead, particularly when processing visually dense or exceedingly long webpages.",
+   "locator": "Limitations p.9"
+  },
+  {
+   "text": "Author limitation: no sophisticated context management for unbounded exploration; truncation can lose early evidence.",
+   "quote": "In such cases of context overﬂow, the trajectory must be forcefully truncated, which may lead to the loss of early-retrieved crucial evidence",
+   "locator": "Limitations p.9"
+  }
+ ],
+ "question": {
+  "observed_failure": "Outcome-only GSPO-Snapshot achieves 22.0/60.2/68.0/24.3 Pass@1 versus ICA 25.0/69.9/71.0/25.2 (Table 2); text SFT hits context overflow 36.0% on BC-100 and 20.0% Seal-0 under Table 3 limits. These are baseline outcomes/representation failures, not numerical proof of misassigned tool credit.",
+  "load_bearing_assumption": "Uniform terminal credit treats intermediate acquisition actions alike; text-derived observations are assumed sufficiently stable and complete for evidence comparison.",
+  "scope": "Qwen3-VL-8B/30B-A3B web SEARCH/FETCH/ANSWER agents with recurring source-level evidence and long trajectories.",
+  "success_criterion": "Reported Pass@1 gains over fixed-snapshot GSPO; top-ranked evidence more sufficient for answering than random/tail at matched selection fraction and length bucket; reduced representation overflow.",
+  "why_open": "Prior dense signals compare turns/states/answer probabilities without attributing outcomes to identifiable acquired evidence; parsing/truncation/summarization obscure recurring unit identity."
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "In our implementation, an atomic evidence unit corresponds to a stable URL-level evidence item,",
+   "locator": "§4.1 p.4; operational unit definition"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "role": "primary",
+   "quote": "We estimate the empirical success probability conditioned on acquiring e as",
+   "locator": "§4.1 p.4 Eq.9; terminal labels are externally judged, intermediate labels derived from rollout outcomes"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "To decouple search quality from the ﬁnal outcome, we assign distinct rewards to intermediate tool turns and the terminal answer turn.",
+   "locator": "§4.1 p.5 Eqs.14–16"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "I_e^i=\\mathbb{I}[e\\in E_i],\\quad P_e^+=\\frac{\\sum_i I_e^i R_i}{\\sum_i I_e^i},\\quad P_e^-=\\frac{\\sum_i(1-I_e^i)R_i}{\\sum_i(1-I_e^i)},\\quad\\Delta_e=P_e^+-P_e^-",
+    "locator": "Eqs.8–11 p.4"
+   },
+   {
+    "latex": "\\mathcal T^c=\\{e\\in\\mathcal E^c\\mid\\operatorname{rank}(e)\\leq k_c\\land\\Delta_e>0\\},\\quad k_c=\\max(1,\\lfloor\\rho|\\mathcal E^c|\\rfloor),\\quad r_t^i=\\mathbb I[\\mathcal E_t^i\\cap\\mathcal T^{c_t^i}\\neq\\varnothing]",
+    "locator": "Eqs.12–14 p.5; floor verified visually"
+   },
+   {
+    "latex": "\\widetilde R_i=\\begin{cases}1,&R_i=1\\\\-1+\\sqrt{|\\tau_i|/L_{\\max}},&R_i=0\\end{cases}",
+    "locator": "Eq.15 p.5"
+   },
+   {
+    "latex": "A_t^i=\\begin{cases}(r_t^i-\\bar r_c)/\\sigma_{r,c},&a_t^i\\in\\{SEARCH,FETCH\\}\\\\(\\widetilde R_i-\\bar R)/\\sigma_R,&a_t^i=ANSWER\\end{cases}",
+    "locator": "Eq.16 p.5; Algorithm 1 lines 17–25 adds epsilon to denominators and confirms mean of shaped final rewards"
+   },
+   {
+    "latex": "s_t^i(\\theta)=\\exp\\left(\\frac1{|\\tau_t^i|}\\sum_{l\\in\\tau_t^i}\\log\\frac{\\pi_\\theta(y_l\\mid H_{t-1}^i,y_{<l})}{\\pi_{\\theta_{old}}(y_l\\mid H_{t-1}^i,y_{<l})}\\right)",
+    "locator": "Eq.17 p.5"
+   },
+   {
+    "latex": "J_t^i=\\min\\{s_t^iA_t^i,\\operatorname{clip}(s_t^i,1-\\epsilon,1+\\epsilon)A_t^i\\},\\quad J^i=wJ_{T_i}^i+\\frac{1-w}{T_i-1}\\sum_{k=1}^{T_i-1}J_k^i,\\quad J_{ICA-GSPO}=\\mathbb E_{\\tau\\sim\\pi_{\\theta_{old}}}[J(\\theta;\\tau)]",
+    "locator": "Eqs.18–20 pp.5–6"
+   }
+  ],
+  "signal_routing": "All generated tokens of a SEARCH/FETCH turn inherit its evidence-membership advantage; all tokens of ANSWER get its shaped-terminal advantage. This is tool-turn advantage replacement, not addition of Δ to terminal reward, and not only an action-tag mask. Returned observations are conditioning information. A turn may get positive acquisition credit despite its trajectory failing. Eq.17 averages token log-ratios within each turn, Eq.19 averages tool turns separately and reserves w=.3 for final answer. Algorithm 1 line12–13 uses E_i (whole trajectory) instead of Eq.14 E_t^i; record follows explicit turn-local Eq.14 and flags code semantics unverified.",
+  "normalization": "per-channel mean+std: SEARCH-turn rewards across all SEARCH turns in group, FETCH likewise; shaped terminal rewards across trajectories. Algorithm 1 adds epsilon; value unreported. Not leave-one-out; sample contributes to its own evidence statistic and baseline.",
+  "invariance": "No optimal-policy invariance theorem. Association-selected binary tool reward, terminal length shaping, independent normalization, and fixed answer/tool weighting alter the surrogate; not gamma Phi(s_next)-Phi(s) PBRS. Positive affine scaling within one nonconstant channel is approximately removed by std (epsilon aside); scale w outside normalization remains influential. Holding success fixed, longer failures are penalized less, so objective is not minimal necessary calls.",
+  "baseline_or_potential": "Empirical group means over post-hoc rewards, no critic/potential. Δ uses completed trajectories from pi_old and final judged correctness, not prefix success MC, not Q^{current}(h,a), not frozen reader before/after, not same-state counterfactual. Model-generated evidence occurrence determines association; reference judge accuracy is a separate issue.",
+  "degenerate_cases": "Author rule: all-success/all-failure groups set ALL TOOL advantages to zero. All-success final rewards identical => zero answer advantage with Algorithm1 epsilon. All-failure terminal rewards can vary with consumed length => nonzero final-answer advantage favoring longer failures (inference from Eq15–16), unlike tool channel. If either occurrence denominator zero, stated fallback sets P+ = P- = batch mean => Δ=0. No selected positive evidence or identical tool rewards => zero normalized tool signal with epsilon. Evidence acquired in all trajectories gets zero contrast. Unique evidence appearing only in one success can receive high Δ and overfit (inference). No forced sampling or policy-support repair for p(action)≈0/1. T_i=1 direct answer causes division by zero in Eq19 unless implementation special-cases; not specified. Repeated retrieval of selected evidence remains reward-eligible in Eq14; no first-acquisition-only condition."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 holds snapshot modality fixed for GSPO vs ICA; Table4 evaluates top/random/tail same-fraction evidence within five trajectory-length buckets (0–19 through 80–99). These discriminate acquisition-associated information sufficiency from some length confounding, but not same-state causal necessity or isolated components. Proposed unperformed falsifier: cross-fit evidence utilities, compare permuted/leave-one-out utilities, and match shaping/turn-ratio/answer-weight controls before interpreting credit mechanism.",
+  "controls": [
+   "SFT-Text vs SFT-Snapshot (Table2), with raw text processing clarification in A.3 and mixed-modality SFT curation in A.4; identical teachers/data not established.",
+   "Fixed snapshot GSPO vs ICA (Table2); complete ICA bundle changes rewards, ratio granularity, and aggregation.",
+   "Top-p% versus random-p% versus tail-p% for p=10/15/20 in each step-length bucket (Figure3/Table4).",
+   "Same 128k context, 16k per-tool-response truncation for text/snapshot overflow analysis (Table3).",
+   "Table1 starred literature baselines are heterogeneous reported systems; Table5 Pass@4 must not be combined with main Pass@1."
+  ],
+  "negative_results": [
+   {
+    "text": "Snapshot representation still has token overhead and forced truncation risk; not a universal compactness guarantee.",
+    "quote": "our system currently lacks a sophisticated context management strategy to handle unbounded exploration.",
+    "locator": "Limitations p.9"
+   },
+   {
+    "text": "No numeric continuous-Δ reward ablation is provided; authors motivate binarization by collapse under small groups.",
+    "quote": "Instead of relying on association-based utility scores that easily collapse under small group sizes, we assign a binary reward",
+    "locator": "§4.1 p.5 Action-Turn Reward; author claim, not isolated experiment"
+   }
+  ],
+  "seeds": "Main training-run seed count and confidence intervals unreported (null, not assumed single). Appendix Table5/B says four random seeds for baseline evaluation and reports Pass@4; that is multi-sample success, not four independent training replications or seed-averaged Pass@1.",
+  "falsifier": "For the transfer claim, if held-out evidence utility ranking is unstable or shuffled ranking gives equal improvement after matched shaping/normalization/compute, the evidence-aware mechanism interpretation fails; if it improves answer sufficiency while increasing crop counts, the fewer-necessary-crops transfer claim fails. These tests have not been run."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-8B-Thinking and Qwen3-VL-30B-A3B-Thinking",
+   "framework": null,
+   "group_size": null,
+   "rollouts": null,
+   "steps": 50,
+   "kl": null,
+   "temperature": 0.6,
+   "top_p": 0.95,
+   "max_turns": null,
+   "answer_weight": 0.3,
+   "evidence_top_fraction": 0.1,
+   "clip_epsilon": null,
+   "rl_questions": 400,
+   "context_limit_diagnostic": 128000,
+   "tool_response_limit_diagnostic": 16000
+  },
+  "cost": "Appendix A.2: 50 steps on NVIDIA H800, approximately 443 GPU-hours (8B) / 534 GPU-hours (30B-A3B). Training token count, updates-vs-rollouts breakdown, GPU count and incremental ICA cost versus GSPO not reported. 128k/16k are explicit diagnostic evaluation constraints, not inferred training limits.",
+  "pitfalls": [
+   {
+    "text": "Avoid tiny-group continuous utility reward magnitudes: authors rank and binarize; residual ranking noise remains.",
+    "quote": "Instead of relying on association-based utility scores that easily collapse under small group sizes, we assign a binary reward",
+    "locator": "§4.1 p.5"
+   },
+   {
+    "text": "Long-page slices overlap to prevent severed lines/tables; coordinate identity alone is not enough to preserve readable evidence.",
+    "quote": "vertical overlap 112 pixels, reducing boundary truncation artifacts",
+    "locator": "A.3 p.13"
+   }
+  ],
+  "code": "https://github.com/pc-inno/ICA_MM_deepsearch",
+  "lesson": "当按完整轨迹中证据出现与成功的关联分配信用时，应先验证证据身份、组内出现/未出现支撑与独立排名稳定性，再检查 turn-local mask；否则唯一证据可能只是成功标签的代理、重复取证可被重复奖励，且正文 E_t^i 与伪代码 E_i 的差别会改变所有工具轮的信用。"
+ },
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "提供按取得证据分组的工具轮信用候选；但证据关联不是逐次必要性，不能关闭 P11。",
+   "strength": 2
+  },
+  {
+   "problem": "P14",
+   "how": "工具轮替换式优势的直接近邻；独立标准化与长失败保护改变方向，未证明少裁。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "不用冻结读者前后判分，但当前/旧策略整轨迹关联仍不等于当前状态所需信息。",
+   "strength": 2
+  },
+  {
+   "problem": "P18",
+   "how": "失败轨迹可共享成功证据获工具正信用；全错组仍无工具信号，未区分合理失败与乱裁。",
+   "strength": 2
+  },
+  {
+   "problem": "P20",
+   "how": "给取证工具轮所有生成 token 同一优势，提供明确而较粗的责任边界，caption-before-crop 需单独对齐。",
+   "strength": 2
+  },
+  {
+   "problem": "P58",
+   "how": "复用同题已完成 rollout 的出现统计，不另开 MC 分叉；真实边际成本未报告。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": []
+}

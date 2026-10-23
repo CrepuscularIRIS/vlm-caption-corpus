@@ -1,0 +1,52 @@
+{
+ "paper_key": "litscan:2286",
+ "title": "AdaMatch",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2286.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 pp4–6",
+   "Tables1,4–8 pp7–9",
+   "Limitation p10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "AdaPatch预测patch偏移与尺度，双线性采样局部表示，最大匹配及均值聚合patch-word相似度进行双向对比学习；冻结后抽关键词/关键patch辅助双向报告生成。",
+  "key_step": "固定patch改为可学习位置尺度并局部最大匹配。",
+  "why_non_obvious": "局灶跨固定网格，热图不直接对应明确patch。",
+  "trigger_condition": "When lesions span fixed patches, adapt patch position and scale before local text alignment.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Adapt representation units to evidence scale.",
+  "abstract_trigger_condition": "When fixed units split relevant signals, learn flexible units before matching."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2286#s1",
+   "object": "胸片局部图文对齐",
+   "information": "配对CXR报告及训练集关键词/patch codebook，无行动价值。",
+   "operation": "局部对比loss训练AdaMatch；冻结后提供提示，dolly-v2-3b做报告与图像token生成。",
+   "claimed_effect": "MIMIC检索CXR→report R@1固定patch48.77→51.47；联合生成BLEU4 .0758→.1060。",
+   "conditions": [
+    "匹配领域数据与专用模块可用"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p8",
+    "quote": "48.77 83.89 92.94 48.72 83.95 92.90"
+   },
+   "failure_boundary": "ICU胸片领域；检索相似度不证因果证据或工具必要；循环生成不是策略纠错。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "局部图文对齐仅提供表示背景，尚需策略价值校准。",
+   "strength": 1
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,178 @@
+{
+ "paper_key": "litscan:72753",
+ "title": "SAM-Veteran",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_72753.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 pp3–9 Tables1–6",
+   "A.2–4 pp15–16 algorithms/config/data",
+   "C pp20–21"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "把box grounding、真实SAM-mask判断和合成mask错误修正拆成3个RL任务，显式教null终止及正负点。",
+  "why_non_obvious": "只加真实mask comprehension会永远修正，合成FP/FN辅助任务才形成stop行为；该信号依赖GT mask，非无标注自监督。",
+  "trigger_condition": "已有交互分割器但MLLM不理解overlay/终止条件。",
+  "contribution_type": "多任务grounding与adaptive stop RL",
+  "abstract_strategy": "先对动作语义造可判对错的缺陷，再把理解迁移到真实工具状态。",
+  "abstract_trigger_condition": "终局指标不足训练错误识别和停止。",
+  "abstract_key_step": "四类action配额过采样+box NMS扩大组内reward差，batch std替代局部std。",
+  "abstract_why_non_obvious": "提高采样支持可修梯度缺失，但人工状态和动作选择改变训练分布。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:72753#s1",
+   "object": "SAM mask状态下正/负point与stop",
+   "information": "image/query、green overlay；训练GTmask/box和合成FP/FN；测试无GT",
+   "operation": "GTbox→SAM造good/need状态；训练task-specific transition reward，辅助人为polygon错误教point/null，测试迭代最多3步。",
+   "claimed_effect": "Table4 TG+MC72.1avg但never stop；+aux72.2adaptive。ReasonSeg val由初始mask经3步提高2.47点，基座却下降2.48点。",
+   "conditions": [
+    "Qwen2.5-VL7B+冻结SAM2Large",
+    "RefCOCOg训练9k；mask状态600good+约700need"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p8",
+    "quote": "72.2      Adaptive"
+   },
+   "failure_boundary": "学习从离线GTbox得到的state转移，不等于长轨迹onpolicy信用；只能点refine，不能重新box或撤销。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "显式state质量条件的null stop监督；辅助任务决定是否终止。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "缺少mask理解与stop支持不能靠单一任务reward补全。",
+   "strength": 3
+  },
+  {
+   "problem": "P43",
+   "how": "GTmask变化为grounding局部动作提供reward，但依赖像素标注。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "TG/TG+MC/TG+MC+aux",
+   "kind": "ablation"
+  },
+  {
+   "name": "reward removal/dynamic sampling off",
+   "kind": "ablation"
+  },
+  {
+   "name": "Qwen+SAM2 iterative refinement",
+   "kind": "diagnostic"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "不可重选box或撤销；green overlay改变颜色且会被当真实物体。",
+   "locator": "C pp20–21",
+   "quote": "step or revoke previous actions when the mask quality degrades."
+  }
+ ],
+ "question": {
+  "observed_failure": "TG+MC提高IoU但Never终止；未经训练Qwen refine使IoU持续下降。",
+  "load_bearing_assumption": "mask错误理解与停止决策可由合成缺陷监督训练，且能迁移到真实SAM错误。",
+  "scope": "box→point/null SAM交互",
+  "success_criterion": "IoU随步数、终止比例、完美mask false-refine率。",
+  "why_open": "正确框/终mask奖励不保证知道何时停。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§3.2.3/Table4"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "aux data construction"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables4–6"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\Delta=IoU(M',M^{GT})-IoU(M,M^{GT});\\quad R^\\Delta=0,1,2,3\\text{ on }\\Delta\\le0,(0,.1],(.1,.5],(.5,1]",
+    "locator": "Table1 p5"
+   },
+   {
+    "latex": "R_{SAM}=IoU(M',M^{GT});\\quad GoodEnough:IoU_{edge-excluded}=1,\\quad Need:IoU_{edge-excluded}<.9",
+    "locator": "§3.2.2 pp5–6"
+   }
+  ],
+  "signal_routing": "每独立task rollout CoT+answer获taskreward；box奖励IoU>.5及L1mean<10、SAMIoU、format各类；MC加入decision与离散改善；aux按FP/FN存在、点落区、距中心<50px。不存在已证整个多步trajectory反传或point专属tokenmask。",
+  "normalization": "other",
+  "invariance": "global batch std替代GRPO localstd(use_batch_std=true)，组内centering/长度等未给完整公式；不同task reward量纲与采样比例影响全局尺度。离散Δ+stop奖励不是PBRS，不声称policy invariance。",
+  "baseline_or_potential": "训练IoU排除GT边界邻域，测试原IoU；不是action反事实baseline。",
+  "degenerate_cases": "MC对good null奖励4、单点鼓励2，aux补stop理解；训练排除.9≤IoU<1状态；完美mask reward差不足/行为不存在时需辅助任务；重叠全局偏差仍可止错。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4无aux不终止；Table5去RΔ avg72.2→70.4；Table6去DS70.8。",
+  "negative_results": [
+   {
+    "text": "Aux使RefCOCOg73.6→73.4；hardΔreward RefCOCO81.0高于完整80.8，非每项改进。",
+    "locator": "Tables4–5"
+   },
+   {
+    "text": "Table3 RefCOCOg73.4低于POPEN/SegAgent74.6，SOTA仅特定OOD/项。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：真实SAM输出状态而非GTbox状态上测stop混淆矩阵和错误恢复；合成缺陷分布外对照与固定3步比较准确率/实际成本。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B+SAM2Large",
+   "framework": "verl GRPO+batchstd",
+   "group_size": 8,
+   "max_turns": 3,
+   "kl": 0.005
+  },
+  "cost": "8×96GB GPU约30h；batch16 LR1e-6 episode1；840²图；response1300；MC重复5次。max_turns3为evalrefine，不代表训练轨迹轮次。",
+  "pitfalls": [
+   {
+    "text": "DS实际max_try3，不保证无限补齐；point配额1/2/2/1+最多2error，残量普通采样；box NMS.8，300iter后禁DS。",
+    "locator": "A.2/Fig6"
+   },
+   {
+    "text": "每次SAM继续提供最初box，错误box可能限制后续修正；green遮罩干扰颜色。",
+    "locator": "§4.1/C"
+   }
+  ],
+  "code": null,
+  "lesson": "把stop作为可观测质量条件分类，补错误识别支持；记录GT边界容忍、状态来源、采样配额和执行时可用信息。"
+ }
+}

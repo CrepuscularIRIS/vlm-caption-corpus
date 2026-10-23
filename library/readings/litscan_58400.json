@@ -1,0 +1,162 @@
+{
+ "paper_key": "litscan:58400",
+ "title": "Spec-o3",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_58400.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3",
+   "§4 Tables1–4",
+   "§4.7",
+   "§7 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "decompose_and_delegate",
+  "key_step": "专家审校少量光谱工具轨迹启动Qwen，再以答案与格式奖励GRPO，局部重新渲染波长区间作为新观测。",
+  "why_non_obvious": "领域知识要落到可核验的波长选择与形态描述，纯RL或仅SFT都明显落后。",
+  "trigger_condition": "当领域视觉诊断需局部细节且专家轨迹稀缺时，先精修少量流程再用标签数据RL。",
+  "contribution_type": "领域工具agent与数据构建",
+  "abstract_strategy": "把专家交互检查流程转为少量可信示范加大量终局监督。",
+  "abstract_trigger_condition": "高混淆诊断任务具备可靠标签和可重渲染原始数据。",
+  "abstract_key_step": "专家核对动作参数和证据陈述，工具返回不参与loss。",
+  "abstract_why_non_obvious": "学习使用证据的流程和学习领域分类需要两阶段配合。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:58400#s1",
+   "object": "光谱检查轨迹",
+   "information": "原始光谱数组、当前全局/局部图、专家诊断指南；RL可见正确类别",
+   "operation": "GPT-5草稿由3位专家修订/审校，约1k轨迹SFT，再答案格式reward GRPO；每次选择波长范围重渲染，mask工具返回。",
+   "claimed_effect": "7B macro-F1 28.3→76.5；仅RL40.5、仅SFT41.6、无工具55.8。",
+   "conditions": [
+    "五类LAMOST vetting",
+    "8rollouts/prompt；最多8tool calls"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p8",
+    "quote": "1     ✗    ✓     ✓     35.7 (-37.6)   40.5 (-36.0)"
+   },
+   "failure_boundary": "无工具消融是重新训练的系统比较，不是逐状态tool必要性反事实。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "精修cold-start+RL消融直接支持行为准备。",
+   "strength": 3
+  },
+  {
+   "problem": "P52",
+   "how": "专家核每条工具参数及视觉证据比只核终答案更具体。",
+   "strength": 2
+  },
+  {
+   "problem": "P05",
+   "how": "整体tool收益不能定义单次必要调用。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL7B",
+   "kind": "backbone"
+  },
+  {
+   "name": "pure RL / SFT only / no-tool",
+   "kind": "ablation"
+  },
+  {
+   "name": "o3",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "未提供校准、拒答、人类转交风险控制。",
+   "quote": "cases to human experts.",
+   "locator": "Limitations p10"
+  }
+ ],
+ "question": {
+  "observed_failure": "领域基座F1为28.3，单阶段训练最高41.6，完整76.5。",
+  "load_bearing_assumption": "局部波长细节及少量可靠专家流程是领域判别的必要先验。",
+  "scope": "五类天体候选检查",
+  "success_criterion": "不平衡测试的macro-F1、跨survey及任务迁移。",
+  "why_open": "筛选模型分数缺乏可审计检查轨迹且仪器迁移差。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3/4.6"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "§4.7"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r(\\tau)=\\mathbf1[o_{pred}=o_{gold}]-\\alpha\\mathbf1[\\neg f_{fmt}(y)]",
+    "locator": "Eq3（四分支等价写法）"
+   }
+  ],
+  "signal_routing": "SFT与RL均mask工具返回，训练模型自己生成的推理、工具参数与最终答案；序列终局reward，无显式工具使用reward。",
+  "normalization": null,
+  "invariance": "非PBRS。已读正文仅称GRPO，未给出advantage/std/长度归一完整实现，不从名称补全。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "仅答案格式奖励时同结果同格式组无差异反馈；无显式支持保护、效率项或失败状态credit分离。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 SFT/RL/tool三项消融；专家评100条轨迹。",
+  "negative_results": [
+   {
+    "text": "仅RL7B40.5 vs完整76.5；无工具55.8。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "在同预算及参数初始化下，若专家核改轨迹不优于未核改草稿，专门人工对齐机制证据减弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B/7B",
+   "framework": "GRPO；推理提及vLLM/SGLang",
+   "group_size": 8,
+   "max_turns": 8,
+   "kl": null
+  },
+  "cost": "8H100约0.2s/sample含渲染，是并发吞吐折算；比人工10s/sample约50倍，不是单例延迟20ms或端到端延迟证明。",
+  "pitfalls": [
+   {
+    "text": "cold-start排除test；专家指南和GT用于造训练轨迹，不能视作推理免费信息。",
+    "locator": "§3.2/4.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当专门视觉流程缺少先验时，先核对工具参数与证据陈述；报告吞吐时同时标硬件及并发语义。"
+ }
+}

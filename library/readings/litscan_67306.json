@@ -1,0 +1,136 @@
+{
+ "paper_key": "litscan:67306",
+ "title": "DrivingVQA",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_67306.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 dataset/judge",
+   "§4.2 Tables1–2",
+   "§5 Table3",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把相关实体框放在解释步骤前，预测框后插入真实裁图继续生成。",
+  "key_step": "标注由专家解释提实体并人工修框；SFT学多轮bbox→crop→解释。",
+  "why_non_obvious": "实体名字或重写解释不足，坐标和重编码视觉一起才明显改善。",
+  "trigger_condition": "When textual CoT misses small visual evidence, interleave predicted entity crops before dependent reasoning.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把取证步骤显式放到依赖证据的推断之前。",
+  "abstract_trigger_condition": "When language explanations omit observations, expose the observation interface.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "按实体拆分轨迹并插入可执行观测。",
+  "abstract_why_non_obvious": "事实标签和推理顺序共同影响模型能看到的信息。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:67306#s1",
+   "object": "SFT与推理中的实体裁图序列",
+   "information": "训练有专家解释、人工校正实体框；测试自行预测框，无GT框",
+   "operation": "生成bbox即暂停，扩大50%取图、编码插入后续上下文，直到答案",
+   "claimed_effect": "Table1 exam56.2→59.3，reasoning20.8→25.4；A-OKVQA80.6→84.2",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 RIV-CoT row",
+    "quote": "RIV-CoT                                              ✓                       ✓         ✓          ✓      59.3 (±1.0)      68.8 (±0.9)        25.4 (±0.8)"
+   },
+   "failure_boundary": "GT实体相关性不等于当前policy需要裁图；没有效率目标。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "可复用多轮bbox→真实观测→继续解释轨迹格式。"
+  },
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "分开实体定位、答案与解释正确率。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DirectAnswer / CoT / labels / labels+bboxes / noninterleaved crops / AnyRes",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "法国驾考域；解释评估依赖GT解释与GPT4o-mini，50对人工检查F1=.83。",
+   "locator": "§3.4/Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "CoT exam56.2，reasoning20.8；RIV59.3/25.4。",
+  "load_bearing_assumption": "纯文本解释足以处理多实体视觉细节。",
+  "scope": "LLaVA-OV7B监督微调与驾驶MCQ",
+  "success_criterion": "实体图像和交错增量优于labels-only等对照",
+  "why_open": "正确答案可能来自语言捷径，无法反推解释正确。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4.2"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table1"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "标准自回归SFT，论文称全部组件端到端训练；bbox/解释/答案输出受监督，crop是插入观测，具体loss mask未说明。",
+  "normalization": "other: 自回归loss，长度归一化未知；无GRPO。",
+  "invariance": "非PBRS，无效率或准确率保持定理。",
+  "baseline_or_potential": "没有value baseline；oracle entity仅评测。",
+  "degenerate_cases": "框错误会错取证；零实体样本存在；训练未建模crop成本，可能每实体都调用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1逐步加入label/bbox/crop/interleaving；interleaved labels56.4接近CoT56.2。",
+  "negative_results": [
+   {
+    "text": "RIV总体框准确69.6未超过非交错crop69.8；框错误与答错相关不等于因果归责。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "每训练5随机seed，均值±SD；非CI。",
+  "falsifier": "保持token预算换无关等尺寸crop仍同样增益，则实体证据解释减弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA-OneVision7B/SigLIP/Qwen2",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "3931驾驶样本80/20；10epochs×5seed；GPU成本未读到。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当重编码crop时，应记录原图框、50%扩张和插入位置；同时评测无关等token对照，不能把GT相关框当必要性标签。"
+ }
+}

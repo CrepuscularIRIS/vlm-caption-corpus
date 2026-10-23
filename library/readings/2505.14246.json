@@ -1,0 +1,354 @@
+{
+ "paper_key": "2505.14246",
+ "title": "Visual Agentic Reinforcement Fine-Tuning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.14246.pdf",
+  "version": "v1",
+  "sections_read": [
+   "Abstract (p.1)",
+   "1 Introduction (pp.1–3; Fig.1)",
+   "2 Related Work (p.3)",
+   "3.1 Preliminary (pp.3–4; Eq.1–2)",
+   "3.2 Framework (p.4; Fig.2)",
+   "3.2.1 Reward Design (pp.4–5; Eq.3–5)",
+   "4 MAT Benchmark (pp.5–6; Fig.3)",
+   "5 Experimental setup (p.6)",
+   "5.1 Main Results (pp.6–8; Tables 1–2)",
+   "5.2 Ablation Studies and Visualization Results (pp.8–9; Tables 3–4, Fig.4)",
+   "6 Conclusion (p.9)",
+   "References (pp.10–12; bibliographic entries only)",
+   "A.1 Tool-use prompts (pp.13–14; Figs.5–6)",
+   "A.2 Baseline prompts (p.13)",
+   "B.1 Data Source (pp.13–15)",
+   "B.2.1 Dataset Volume (p.15)",
+   "B.2.2 Data Categorization (pp.15–16; Figs.7–8)",
+   "B.2.3 Distribution (p.16)",
+   "B.2.4 Difficulty split (p.17)",
+   "B.2.5 Dataset cases (p.17; Fig.9)",
+   "C Limitation (p.17)",
+   "D Potential Societal Impact (p.18)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把多模态工具交互拆为带标签的思考、搜索/代码、终答步骤，用按动作类型不同的可核验奖励训练同一策略；代码内容不要求匹配标准解，允许通过运行图像处理代码取得下一步观测。",
+  "key_step": "按输出类型路由 R_acc：终答用答案 F1，搜索用生成 query 与人工参考 query 的 Sentence Transformer 语义相似度，代码块用常数 1；再加合法标签格式奖励。",
+  "why_non_obvious": "搜索有可比的参考 query，而同一图像问题可能有多种有效程序；若把所有工具调用都用内容正确性监督，作者初步实验观察到代码解法收缩。区别监督语义与协议合法性是实际操作，不能把代码常数分解读成视觉证据价值。",
+  "trigger_condition": "When tool steps have heterogeneous verifiability and multiple valid implementations, apply type-specific rewards and execute generated actions to achieve tool-assisted task completion.",
+  "reviewer_praise": [
+   "low_evidence：未获取实际 OpenReview 审稿意见。"
+  ],
+  "reviewer_concern": [
+   "low_evidence：未获取实际 OpenReview 审稿意见；本记录的审计疑点不冒充审稿人意见。"
+  ],
+  "acceptance_signal": "MANIFEST 的 decision 为 null，venue 为 arXiv；PDF 标为 Preprint。未推断录用或评分。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "按步骤的可验证属性划分输出，给各类输出配置相应的反馈，并把执行结果重新作为观测。",
+  "abstract_key_step": "保留结论与检索请求的内容评价，仅对存在多解的操作程序检查协议可执行性。",
+  "abstract_why_non_obvious": "统一的内容正确性标准可能限制多解探索；不同中间产物的可验证属性不相同。",
+  "abstract_trigger_condition": "When intermediate artifacts differ in verifiability and admit multiple valid solutions, apply differentiated feedback to preserve exploration while rewarding task completion."
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.14246#s1",
+   "object": "搜索/代码/终答三个类型的输出步骤",
+   "information": "能看到输出标签、最终参考答案、人工参考搜索 query 及 Sentence Transformer 相似度；不估计同状态下不调用工具的反事实结果，也不判断裁图内容是否必要。",
+   "operation": "按动作类型选择评分函数，叠加格式奖励，再用带参考策略 KL 的 GRPO 更新交互策略",
+   "output": "搜索查询语义分、终答 F1 分和代码常数分组成的步骤奖励",
+   "claimed_effect": "作者报告 7B MAT-Coding 平均 F1 32.12→50.68、EM 21.50→34.50；MAT-Search F1 53.49→63.77、EM 46.67→55.33（Table 1）。这是整套方法效果，并非单独证明类型路由有效。",
+   "conditions": [
+    "任务有参考答案；搜索训练还需要参考 query",
+    "环境可执行 OpenCV 代码或返回 Serper 搜索片段",
+    "使用明确的标签和逐步提示；并非无提示的原生行为"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§1 Introduction p.2（引文）; §3.2.1 Eq.4–5 p.5（操作）; Table 1 p.7（数值）",
+    "quote": "On the same benchmark, the 7B model achieves a significant improvement over the baseline, with a gain of +18.56% F1 and +13.00% EM."
+   },
+   "failure_boundary": "未报告移除 query reward、代码常数奖励、格式分或 KL 的独立消融；未报告工具数/token 成本。步骤分如何累计及回传到具体 token 未说明。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.14246#s2",
+   "object": "终答奖励与多解的图像处理程序监督",
+   "information": "F1 使用终答与参考答案的词元重合；代码分只按代码块类型/可执行块描述给 1，不看图像证据增益；执行成功判据的实现未公开于本文。",
+   "operation": "用 F1 取代终答 EM 奖励，并去掉代码内容的严格正确性奖励",
+   "output": "对部分匹配答案提供连续反馈，同时允许多种代码实现",
+   "claimed_effect": "Table 3 报告 F1 奖励相对 EM 奖励：MAT-Coding F1 46.68→50.68、EM 31.50→34.50；MAT-Search F1 56.30→63.77、EM 47.33→55.33。去掉代码内容监督的多样性作用仅有初步实验叙述，无数值对照。",
+   "conditions": [
+    "自然语言答案存在部分正确或表面变化",
+    "有标准答案供 F1 比较",
+    "不能直接照搬到单字母多选题，因为其 F1 基本退化为匹配结果"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2.1 p.5; §5.2 Table 3 p.8",
+    "quote": "To assess our reward design (section 3.2.1), we replace the F1 score-based reward with an EM-based alternative for both agentic search and coding."
+   },
+   "failure_boundary": "F1 只测词面匹配，不验证事实、推理或证据使用；代码常数分不能区分有效/无效工具，是否鼓励刷调用依赖未披露的轨迹聚合方式。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.14246#s3",
+   "object": "多模态代理训练与评测样本",
+   "information": "可见原始 VQA、合成畸变类型及标准答案；搜索样本由人提供多跳问题、参考事实/工具步骤；没有自然策略的工具必要性标签。",
+   "operation": "对既有 VQA 图像施加单一/复合退化并加入 crop/clean 条件，人工复核；另手工构造多跳视觉搜索问答，按简单/困难分层评测",
+   "output": "MAT-Coding 1,200 训练+200 测试，MAT-Search 20 训练+150 测试",
+   "claimed_effect": "提供 350 条测试的工具交互基准；作者报告两尺寸在困难子集 F1 改善，并用 4 个文本多跳 QA 集检查跨模态输入泛化。未独立验证数据质量或去重。",
+   "conditions": [
+    "有图像和 VQA 标注",
+    "合成畸变仍须可通过工具改善，而非不可逆丢失全部证据",
+    "简单/困难按畸变复合性和推理跳数划分，不等于当前策略是否需要工具"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "App.B.2.1 p.15; B.2.2–B.2.4 pp.16–17",
+    "quote": "200 test examples that form the MAT-Coding benchmark. These examples are manually validated to ensure the benchmark’s quality."
+   },
+   "failure_boundary": "规模小；未见图像级去重、人工一致率、自然无工具成功率分层；合成退化不代表我们的高分辨率小目标分布。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-3B/7B Direct Inference",
+   "kind": "method"
+  },
+  {
+   "name": "CoT",
+   "kind": "method"
+  },
+  {
+   "name": "RAG",
+   "kind": "method"
+  },
+  {
+   "name": "IRCoT (Table 2 language-only baseline)",
+   "kind": "method"
+  },
+  {
+   "name": "Search-o1",
+   "kind": "method"
+  },
+  {
+   "name": "Search-R1",
+   "kind": "method"
+  },
+  {
+   "name": "ZeroSearch",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o",
+   "kind": "method"
+  },
+  {
+   "name": "OpenAI-o3",
+   "kind": "method"
+  },
+  {
+   "name": "LLaVA-v1.5 / LLaVA-NeXT / LLaVA-OneVision",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL2.5-8B / XComposer2.5",
+   "kind": "method"
+  },
+  {
+   "name": "MAT-Coding / MAT-Search",
+   "kind": "benchmark"
+  },
+  {
+   "name": "2WikiMultihopQA / HotpotQA / MuSiQue / Bamboogle",
+   "kind": "benchmark"
+  },
+  {
+   "name": "F1 / Exact Match",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者只覆盖搜索和代码两种工具场景，不能据此证明任意工具泛化。",
+   "quote": "Our current implementation of Visual-ARFT focuses on two representative multimodal agentic tasks—search and coding—but does not cover other tool-augmented use cases.",
+   "locator": "App.C p.17"
+  },
+  {
+   "text": "作者承认 MAT 相对通用数据集规模较小。",
+   "quote": "The MAT benchmark, while diverse, is relatively small in scale compared to general-purpose datasets.",
+   "locator": "App.C p.17"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table 1：Qwen2.5-VL-7B 在 MAT-Coding Hard 上只有 F1 19.67 / EM 11.54；MAT-Search Hard F1 39.59 / EM 32.00。Table 4：同 7B 的搜索 RAG 平均 F1 50.79 低于 direct 53.49，CoT EM 40.67 低于 direct 46.67。",
+  "load_bearing_assumption": "静态单轮看图或简单加入 CoT/检索上下文足以解决需要图像修复与多跳外部事实的任务；作者提出将工具执行嵌入动态推理。属于待比较的工作前提，未建立一般不可能性结果。",
+  "scope": "Qwen2.5-VL-3B/7B 的合成退化/指定区域 VQA 和多跳视觉搜索；再测文本多跳 QA。",
+  "success_criterion": "在 MAT 两项及简单/困难子集上提升 F1/EM，并迁移到未训练的文本多跳集。未定义保持准确率下减少工具的目标。",
+  "why_open": "既有 Search-R1/ReTool 等主要是语言工具推理，视觉输入和图像执行反馈缺少统一的训练及评测；普通 CoT 无外部事实，固定 RAG 不保证拆题/选择信息。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "we replace the F1 score-based reward with an EM-based alternative for both agentic search and coding.",
+   "locator": "§5.2 p.8; Table 3",
+   "rationale": "同一奖励组件 F1/EM 对照；未据此声称训练预算及随机种子严格相同，因为原文未给。"
+  },
+  {
+   "vocab": "M",
+   "id": "M12",
+   "quote": "By removing content-level supervision on code, we promote broader exploration and maintain the agentic nature of decision making.",
+   "locator": "§3.2.1 p.5",
+   "rationale": "拒绝把多解程序收窄为标准内容；初步观察，没有可核对的多样性统计。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "For evaluating the effectiveness of search tool usage, we compute the semantic similarity between the model-generated search query and the ground-truth query using a Sentence Transformer.",
+   "locator": "§3.2.1 p.5; Eq.4",
+   "rationale": "明确按终答/搜索/代码的可验证性区别分派反馈，符合资源分区后差异处理。"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "role": "supporting",
+   "quote": "Visual-ARFT trains the model to autonomously analyze and decompose multi-hop queries and solve them through iterative interactions with a web search engine.",
+   "locator": "§3.2 p.4",
+   "rationale": "把多跳任务拆成搜索请求交外部引擎求解，再接回下一步；代码同样由外部执行环境处理。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\max_\\theta\\;\\mathbb E_{o\\sim\\pi_\\theta(o|q)}[R_{RLVR(q,o)}]=[R(q,o)]-\\beta\\,\\mathrm{KL}(\\pi_\\theta(o|q)\\Vert\\pi_{ref}(o|q))",
+    "locator": "§3.1 Eq.1 p.4（按原印式转录；原文右侧没有显式期望）"
+   },
+   {
+    "latex": "R(q,o)=\\mathbb I[o=\\mathrm{ground\\mbox{-}truth}(q)]",
+    "locator": "§3.1 Eq.2 p.4；仅 RLVR 预备定义，实际终答用 Eq.4 F1"
+   },
+   {
+    "latex": "R_{format}(o)=\\mathbb I[o\\ \\mathrm{contains\\ valid\\ tags}]",
+    "locator": "§3.2.1 Eq.3 p.5"
+   },
+   {
+    "latex": "R_{acc}(q,o)=\\begin{cases}R_{F1}(o_{ans},a),&o\\text{ is final answer }(\\langle answer\\rangle),\\\\R_{sem}(o_{search},s),&o\\text{ is search query }(\\langle search\\rangle),\\\\1,&o\\text{ is code block }(\\langle code\\rangle).\\end{cases}",
+    "locator": "§3.2.1 Eq.4 p.5"
+   },
+   {
+    "latex": "R_{total}(q,o)=R_{format}(o)+R_{acc}(q,o)",
+    "locator": "§3.2.1 Eq.5 p.5"
+   }
+  ],
+  "signal_routing": "作者明说逐步赋奖：终答接 F1，搜索请求接语义相似度，代码块接常数 1，合法格式另加 1；策略还受参考模型 KL 约束。未给逐 token loss mask、think/问题分析 token 是否共享该步奖励、环境反馈是否屏蔽、步骤 return 如何聚合、终答信用是否回传此前所有动作，因此不能写成已证实的逐调用优势路由。",
+  "normalization": "other：只报告使用 GRPO 与每次更新 8 个 sampled generations，全文未写 advantage 公式或 std/epsilon/跨步骤归一化细节；标准 GRPO 的 mean+std 只是背景推断，不能当本文实现证据。",
+  "invariance": "这是直接改奖励的工具训练，非势函数差分塑形，没有保持最优策略不变的证明。F1 替代 EM 改变偏好，格式/代码分也改变目标；KL 限制偏离参考策略的说法未有独立消融。没有少裁图项。",
+  "baseline_or_potential": "命名算法为 GRPO，参考策略用于 KL；reference 初始化来源、组基线的实际粒度和归一化未披露。没有学习 critic、势函数或当前策略反事实动作价值估计。",
+  "degenerate_cases": "以下仅为结构推论而非作者实验：若采用标准组中心化且同组所有输出类型、格式、F1 均相同，则常数代码奖励消失、策略奖励优势为零（KL 可仍非零）；全错 EM 组可能因 F1 部分重合出现方差，但字母题通常没有这个好处。全对组没有显式少工具方向。p(tool)≈0/1 时普通采样缺少另一动作，文中没有强制分支/熵支撑方案。单轮无工具输出退为格式+F1。若步骤奖励按次数累加，代码常数分可能鼓励多调用，但聚合未知，不能断言实际发生。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "最接近机制检验的是 Table 3 的 F1/EM 奖励替换，Coding +4.00 F1/+3.00 EM、Search +7.47 F1/+8.00 EM；没有移除工具常数分、控制相同工具访问预算的未训练代理、等算力工具基线或随机相似度负对照，因此整套方法的收益仍混合了训练、工具接入和提示因素。",
+  "controls": [
+   "Table 1 同基座 3B/7B direct vs Visual-ARFT，但同时改变训练与工具权限。",
+   "Table 3 EM vs F1 奖励；未报告 seeds/方差或详细相同预算。",
+   "Table 4 Direct/CoT/RAG vs Visual-ARFT；并非等搜索次数或等 token 的受控比较。",
+   "Table 2 4 个文本 QA 集测试视觉任务训练后的迁移；Search-R1 等基于文本 Qwen2.5，与 Qwen2.5-VL 基座不同。",
+   "App.A.2 baseline 加简短回答后缀，避免冗长输出造成字符串评分低估。"
+  ],
+  "negative_results": [
+   {
+    "text": "严格监督代码内容的初步实验出现少数确定性解并损害泛化；无量化结果。",
+    "quote": "In preliminary experiments, we observed that applying strict correctness-based rewards to code generation led the model to converge on a small set of deterministic solutions, which in turn reduced its ability to generalize across diverse visual reasoning scenarios.",
+    "locator": "§3.2.1 p.5"
+   },
+   {
+    "text": "普通 CoT/RAG 在部分条件下比 direct 差；Table 4 的 3B CoT F1 34.43 vs direct 45.32，7B RAG F1 50.79 vs direct 53.49。",
+    "quote": "Additionally, we observe that methods based on CoT prompting or standard RAG not only fail to improve performance, but in some cases, lead to degradation.",
+    "locator": "§5.2 p.9; Table 4 p.8"
+   },
+   {
+    "text": "3B 并非所有子指标提升：MAT-Coding Hard EM 13.85→13.08；MAT-Search Simple F1 57.54→56.41。此为表内数值检查，不能把总体收益扩大为无损。",
+    "quote": "+3.49 +4.29 +10.44 -0.78 +8.01 +1.0 -1.13 +0.0 +12.44 +9.33 +5.66 +4.66",
+    "locator": "Table 1 p.7, 3B delta row（保留原表 -0.78）"
+   }
+  ],
+  "seeds": "not reported：未给随机种子数、重复次数、置信区间或误差条；不能擅自标为 single。",
+  "falsifier": "我们提出、未执行：固定基座/提示/工具权限/训练与推理预算，比较原奖励、终答-only、去代码常数分、EM/F1，再以多种子和封存集检验；若等工具访问的原模型已获得相同提升，或去掉 typed 奖励不降，则不能归因于该奖励设计。少裁图迁移必须另过准确率非劣+调用减少；论文未做此检验。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-3B and Qwen2.5-VL-7B",
+   "framework": "other：论文未披露训练框架，不能从 GRPO 猜成 TRL/verl。",
+   "group_size": 8,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null
+  },
+  "cost": "作者仅报告 8 GPUs、每次 policy gradient 更新采样 8 generations；search 20 训练样本，coding 1,200 样本。GPU 型号、时长/GPU·h、训练 token、更新数、总 rollout、工具 API 次数/费用均 not reported；group_size=8 是对原文 sampled generations 的映射，不知是否跨步骤分组。",
+  "pitfalls": [
+   {
+    "text": "基线冗长输出会拉低 F1/EM，作者给问题添加简洁直答提示；这是评测格式兼容修复，并非推理能力提升。",
+    "quote": "These outputs make it difficult to extract clean answers, resulting in artificially low F1 and Exact Match (EM) scores during automatic evaluation.",
+    "locator": "App.A.2 p.13"
+   },
+   {
+    "text": "严格代码内容奖励限制多解探索；保留代码协议并去掉内容标准，但并未验证由此避免无用调用。",
+    "quote": "Instead of evaluating the correctness of the code itself, we allow the model to freely synthesize code based on its own reasoning.",
+    "locator": "§3.2.1 p.5"
+   }
+  ],
+  "code": "https://github.com/Liuziyu77/Visual-RFT/tree/main/Visual-ARFT",
+  "lesson": "当中间工具步骤存在多种等价程序时，按唯一程序内容监督可能压缩探索，应把协议可执行性、终答质量和证据效用分开记录；若目标是少裁图，不能直接把每个代码块 +1 当作有效裁图信用。"
+ },
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "提供按步骤类型区分奖励的早期实现思路，但不分同类型内有效/冗余调用，也未给具体 token 优势；只属相邻问题。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "20/1,200 条训练数据和强提示支持工具行为，但未报告冷启动 SFT 消融或动作覆盖；不能用其结果反证 RL 学不出缺失行为。",
+   "strength": 1
+  },
+  {
+   "problem": "P37",
+   "how": "严格代码内容监督压缩策略的初步观察支持保留多解探索；迁移到合理排除式裁图需另验，不能据此无条件保留全部失败轨迹。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "代码常数 1 并不是逐次裁图是否取到证据的过程奖励；标明这条近邻不解决 P43。",
+   "strength": 1
+  },
+  {
+   "problem": "P48",
+   "how": "MAT 提供搜索/图像处理评测及 simple/hard 划分，可补工具任务广度，但不是高分辨率必要裁图效率基准。",
+   "strength": 2
+  },
+  {
+   "problem": "P53",
+   "how": "同方法在 3B/7B 测试可借鉴跨尺寸报告，且 3B 子集有负结果；不能推出 Qwen3-VL-4B 上一致。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "语法/执行类奖励与视觉效用不同；本文没有证据替换或无效工具负对照，迁移时需补。",
+   "strength": 1
+  }
+ ],
+ "reading_time_seconds": null
+}

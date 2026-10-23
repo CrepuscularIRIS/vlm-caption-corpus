@@ -1,0 +1,141 @@
+{
+ "paper_key": "litscan:75845",
+ "title": "Spotlight",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_75845.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3",
+   "§4 Eqs1–4/Table3",
+   "Tables4–6",
+   "AppA.3–A.5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "多工具GUI聚焦，用GSPO+正确且格式有效样本的正例LM项稳定RL，后期按tool均衡采样。",
+  "key_step": "先SFT工具格式，CE只路由到有效正确轨迹；stage3降低λ并均衡tool桶。",
+  "why_non_obvious": "终局答对不够防止工具语法随RL退化；正例分布也可能被简单工具占据。",
+  "trigger_condition": "When tool syntax collapses during RL, reinforce valid correct completions with auxiliary likelihood.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用可执行成功样本锚定探索，同时控制辅助样本分布。",
+  "abstract_trigger_condition": "When exploration erodes a prerequisite behavior, retain a selective supervised anchor.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "过滤成功样本后辅助LM训练。",
+  "abstract_why_non_obvious": "并非给所有样本同样CE，后期工具频率需要平衡。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75845#s1",
+   "object": "GUI多轮grounding策略",
+   "information": "训练知GTbox；推理工具只返回crop/info/原图offset",
+   "operation": "GSPO组标准化+filtered正例loglikelihood；λ1→.01，后期各tool取min桶数",
+   "claimed_effect": "ScreenSpotPro UI-TARS38.7→52.8；Qwen26.8→38.7；GRPO/GSPO约300步语法退化",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2/§4.2/Table4",
+    "quote": "outputs are both format-valid and result-correct"
+   },
+   "failure_boundary": "目标是定位正确非少crop；GTbox奖励不等于任务必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "SFT种工具格式并以正例LM维持。"
+  },
+  {
+   "problem": "P30",
+   "strength": 2,
+   "how": "多工具过程奖励作为控制而非必要性监督。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO/GSPO/noCE/uncertainty selection/reference refresh/sparse vs dense answer",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "专用GUI工具/GT框；未见独立局限节，多工具全轨迹credit仍粗。",
+   "locator": "§3–4"
+  }
+ ],
+ "question": {
+  "observed_failure": "GRPO/GSPO约300steps格式坏导致性能降；CE项后持续改善。",
+  "load_bearing_assumption": "终局RL奖励可自行维持工具语法与行为多样性。",
+  "scope": "7B GUI三工具多轮定位",
+  "success_criterion": "同SFT/400RLsteps比较稳定性及heldout定位",
+  "why_open": "稀疏波动reward使格式退化，影响可执行性。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Stage1"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§3.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=(R_i-\\bar R)/std(R);\\ s_i=exp(|y_i|^{-1}\\sum_t[\\log\\pi_\\theta-\\log\\pi_{old}]);\\ J=J_{GSPO}+\\lambda\\frac{\\sum_{bt}C_bM_{bt}\\log\\pi_\\theta(y_{bt}|s_{bt})}{\\sum C_bM_{bt}+\\epsilon}",
+    "locator": "Eqs1–4"
+   }
+  ],
+  "signal_routing": "GSPO整条scalar优势；辅助LM仅正确且格式有效completion token；stage3按tool成功桶均采样。crop IoU/containsGT/color/format总reward，不是各tool独立advantage。",
+  "normalization": "mean+std；sequence logratio平均长度后exp；CE按有效token总数。",
+  "invariance": "非PBRS；GTbox和辅助CE改变目标；std仍可约消单一reward尺度。",
+  "baseline_or_potential": "组均值，无state potential。",
+  "degenerate_cases": "全同R无PG；没有正确格式样本CE为0；任何tool桶空可能nmin0；未处理缺支撑工具。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同初始SFT比较RL变体；dense中心答案reward劣于sparse；参考持续更新和最高不确定筛选退化。",
+  "negative_results": [
+   {
+    "text": "dense answer不如sparse；持续更新reference降低准确率。",
+    "locator": "§3.2–3.3"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "等量随机成功CE或格式CE能同样稳定则tool过滤/均衡独立贡献不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "UI-TARS1.5-7B / Qwen2.5VL7B",
+   "framework": "GSPO/DeepSpeed",
+   "group_size": 6,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "2561SFT+12kRL+4kstage3；使用H200机器GPU4–7；未报告总小时。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当工具语法在RL中退化时，先检查正确可执行正例的监督覆盖；保留offset防多层crop坐标漂移。"
+ }
+}

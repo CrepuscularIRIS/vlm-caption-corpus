@@ -1,0 +1,482 @@
+{
+ "paper_key": "2507.13348",
+ "title": "VisionThink: Smart and Efficient Vision Language Model via Reinforcement Learning",
+ "source": "candidates",
+ "decision": "poster",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2507.13348.pdf",
+  "version": "v1",
+  "version_evidence": "Printed first-page arXiv:2507.13348v1 [cs.CV] 17 Jul 2025; local version pinned, no latest-version claim.",
+  "sections_read": [
+   "Abstract; 1 Introduction; Fig.1",
+   "2.1 GRPO and Eqs.1–2; 2.2 computation",
+   "3.1–3.5 complete; Eqs.3–5; Figs.2–3",
+   "4.1–4.5 complete; Tables1–2; Figs.4–5",
+   "5 Related Works; 6.1–6.2 conclusion and limitations",
+   "References pp.11–17",
+   "Appendix A.1–A.3",
+   "Appendix B.1–B.6 complete; Tables3–7; Fig.6; Listing1",
+   "Appendix C.1–C.4 complete; Tables8–10; Figs.7–8; Eq.6",
+   "Appendix D qualitative cases, including raster-only second example on p.30; Appendix E"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将固定压缩率改为先低成本观察、再由模型决定是否恢复原始分辨率；用双向阈值惩罚避免一直扩图或一直直答。",
+  "key_step": "按正确直答数占两类正确数总和的比例 r 与 θ=0.2 比较，将0.1惩罚施加到直答或高分辨率请求；配合可零样本调用的 agent prompt 和分辨率需求均衡数据。",
+  "why_non_obvious": "只惩罚调用也会使偶然猜中的直答被强化而塌缩；不惩罚则总调用。成功还依赖初始提示词已有调用支持。",
+  "trigger_condition": "When cheap observations suffice for many samples but erase decisive details in others, apply a learned request-for-detail policy with direction-switching penalties to achieve adaptive observation cost.",
+  "reviewer_praise": [
+   "历史评审认可逐样本选择分辨率区别于固定剪枝（R1）。",
+   "历史评审认可在多个任务上减少 token 且保持性能（R2）。"
+  ],
+  "reviewer_concern": [
+   "历史评审追问 Eq.5 的 C 是否在线计算及训练数据来源（R3、R6）。",
+   "历史评审担忧收益主要来自推理，并要求简单规则路由对照（R4、R7）。",
+   "历史评审指出 ChartQA 额外时延及与其他模型泛化不足（R5、R8）。"
+  ],
+  "acceptance_signal": "Manifest and pinned review artifact record Accept (poster), NeurIPS 2025. This is historical decision metadata, not independent validation; no meta-review is present.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Start from a cheap observation and learn when to acquire a more informative one.",
+  "abstract_key_step": "Switch which action incurs a small penalty according to the relative frequency of successful cheap and expensive outcomes; seed both behaviors through a compatible interface.",
+  "abstract_why_non_obvious": "Avoid one-sided cost shaping that amplifies lucky successes and eliminates the expensive action, while retaining enough initial support to learn either behavior.",
+  "abstract_trigger_condition": "When information requirements vary across inputs and both modes are initially accessible, use success-conditioned bidirectional penalties to balance cost and task completion."
+ },
+ "signatures": [
+  {
+   "sig_id": "2507.13348#s1",
+   "object": "低分辨率输入后的直答/请求原图决策与总轨迹奖励",
+   "information": "策略先看1/4像素/token预算图像和问题，调用后才看原图；训练惩罚看 Cdirect、Chigh 正确次数，不看逐次裁图因果价值。计数在线/离线、逐题/批级及是否只罚正确样本未明确。",
+   "operation": "计算 r=Cdirect/(Cdirect+Chigh)；r<0.2 时罚直答0.1，否则罚请求原图0.1；加正确性0/1和格式0/0.5，用多轮GRPO更新生成token。",
+   "output": "可直答或再观察一次的策略",
+   "claimed_effect": "作者 Fig.3/8 报告无罚和一律罚调用分别塌到全调用/全直答，θ=.2 保持混合行为；Table8 报告RL请求比例 ChartQA79.1%、DocVQA6.5%、RealWorldQA29.9%。Table2报告平均保留51.3%视觉token及101.4%相对基线平均性能，但表内部分指标冲突见 notes。",
+   "conditions": [
+    "最多两轮、一次整图恢复分辨率",
+    "两种动作初始有采样支持",
+    "Cdirect+Chigh>0 才能直接使用公式；论文未给零分母分支",
+    "均衡的20K训练样本"
+   ],
+   "evidence": {
+    "quote": "When the probability of correctly answering with a low-resolution image is low, we apply a 0.1 penalty to direct answers to encourage high-resolution requests; conversely, when the probability is high, we penalize high-resolution requests with a 0.1 penalty.",
+    "locator": "Sec.3.4, p.6, immediately before Eq.5",
+    "kind": "author_claim"
+   },
+   "failure_boundary": "Fig.8 高阈值仍塌到调用；ChartQA时延高于全分辨率基线；r是正确次数份额而非直接成功概率，采样暴露量会影响它；无大于2轮或区域裁剪实验。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2507.13348#s2",
+   "object": "RL初始动作支持与训练题分辨率需求分布",
+   "information": "数据构造使用基础Qwen2.5VL-Instruct在两种分辨率各8次rollout的正确次数；agent prompt利用基础模型已有工具协议能力，不通过额外cold-start教动作。",
+   "operation": "选择两分辨率8/8全对的低需求题和高分辨率正确次数领先≥6的高需求题各10K；使用Qwen agent tool-call prompt使两种行为都能在零样本rollout出现。",
+   "output": "20K需求均衡QA数据与具有非零调用率的RL起点",
+   "claimed_effect": "Fig.7官方prompt调用率大致0.3–0.6，两种自制prompt迅速接近0；作者报告自制prompt最终全直答。Table9额外2K/8K cold-start再RL仍劣于无cold-start多项结果。",
+   "conditions": [
+    "基础模型已具Qwen工具协议行为",
+    "有两分辨率的真值可核对QA",
+    "离线数据需求标签不等于RL中逐题强制平衡动作"
+   ],
+   "evidence": {
+    "quote": "In contrast, the other two custom-designed prompts perform poorly, both in their initial behavior and in the final trained model’s ability to correctly request image resizing, and ultimately collapse into consistently producing direct answers.",
+    "locator": "Appendix C.3, p.29; Fig.7 p.28",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "并未保证整个RL过程动作支撑；无法据此声称RL能学出基础模型缺失的行为，亦不能推广为SFT普遍有害。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2507.13348#s3",
+   "object": "开放VQA答案正确性奖励",
+   "information": "外部LLM只收到问题、GT和预测文本，不看图像；能评语义匹配，不能独立确认视觉事实或裁图必要性。训练judge具体模型未在所读PDF明确命名；GPT-4o明确用于ChartQA评测和SFT数据构造，不能移作训练judge身份。",
+   "operation": "用纯文本LLM语义比较预测与GT，返回0/1正确性奖励，搭配0/0.5格式奖励训练；排除答案非唯一的主观题。",
+   "output": "用于一般VQA的离散结果奖励",
+   "claimed_effect": "Appendix B.1作者称1000例用户研究未见误判；Table6 130K RL版本MMVet61.6→69.5，MathVista68.2→71.2，但RealWorldQA68.6→66.5。此130K模型不包含效率决策，不得混成20K VisionThink的独立消融。",
+   "conditions": [
+    "GT文本可靠且能表达答案",
+    "过滤非唯一答案的主观开放题",
+    "judge的文本判断误差需另外验证"
+   ],
+   "evidence": {
+    "quote": "In a user study of 1,000 cases, no misclassifications were observed.",
+    "locator": "Appendix B.1.1, p.19",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "无用户研究抽样/标注一致性细节；未直接检验纯文本judge是否遗漏视觉错误；不构成caption可信性或工具必要性的真值。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen-RL full resolution",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen-RL (1/4)",
+   "kind": "method"
+  },
+  {
+   "name": "FastV",
+   "kind": "method"
+  },
+  {
+   "name": "SparseVLM",
+   "kind": "method"
+  },
+  {
+   "name": "VisionZip and VisionZip fine-tuned on 130K",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o-generated SFT on 20K, 1:1 high-resolution/direct",
+   "kind": "method"
+  },
+  {
+   "name": "2K/8K cold-start then RL",
+   "kind": "method"
+  },
+  {
+   "name": "ChartQA† GPT-4o-Judge + human verification",
+   "kind": "metric"
+  },
+  {
+   "name": "OCRBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "DocVQA",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只验证固定2x边长恢复、最多两轮；没有可变分辨率、crop或多于5轮工具链实验。",
+   "quote": "In this work, we focus on the setting of 2x resolution upscaling and at most two turns of conversations and yield promising results. However, it has not been extended to the setting of flexible resolution upscaling.",
+   "locator": "Sec.6.2, p.10"
+  },
+  {
+   "text": "强OCR任务可能比直接原图推理更慢。",
+   "quote": "It is worth noting that on strongly OCR-dependent benchmarks like ChartQA, our model consumes more time than the baseline QwenRL.",
+   "locator": "Sec.4.3, p.7"
+  }
+ ],
+ "question": {
+  "observed_failure": "Fig.1/Table2: 四分之一视觉token时ChartQA 79.8→62.9（Fig.1却为71.1，冲突保留），OCRBench81.5→68.8，DocVQA95.1→94.3；Fig.3无罚→全调用，一律对正确调用罚0.1→全直答。",
+  "load_bearing_assumption": "不同题/图可共享固定token压缩率，以及单向调用代价即可学出必要性决策。",
+  "scope": "Qwen2.5-VL-7B的一般VQA，先1/4视觉token，至多一次恢复原图。",
+  "success_criterion": "作者目标为维持任务性能并减少平均视觉token/实际vLLM耗时；没有预设准确率非劣界或置信区间。",
+  "why_open": "固定剪枝对OCR细节损伤更大；自然结果奖励偏向多看，单向代价又奖励低分辨率偶然猜对。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "question_evidence": [
+  {
+   "quote": "redundancy levels vary across different questions and images, leading to a natural question: Should we really apply a uniform token compression ratio across all scenarios?",
+   "locator": "Sec.1, p.1"
+  },
+  {
+   "quote": "However, this approach causes the model to favor direct answers, leading to a collapse where the model relies solely on direct answers, as indicated by the purple line in Fig. 3.",
+   "locator": "Sec.3.4, p.6"
+  }
+ ],
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "To improve efficiency without compromising performance, the model must accurately determine when high-resolution input is necessary.",
+   "locator": "Sec.1, p.2"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "quote": "Otherwise, if it is overly biased toward direct answering, the GRPO training process will fail to optimize effectively and may collapse into the direct-answering mode.",
+   "locator": "Appendix C.3, p.28"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "Therefore, we propose to dynamically process distinct samples with different resolutions, and present a new paradigm for visual token compression, namely, VisionThink.",
+   "locator": "Abstract, p.1"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "role": "supporting",
+   "quote": "Unlike prior methods that process full images and later discard redundant tokens, VisionThink directly inputs compressed visual tokens and allows the model to request the original high-resolution image when needed.",
+   "locator": "Sec.1, p.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal J_{GRPO}(\\theta)=\\mathbb E_{q\\sim\\mathcal D,\\{o_i\\}_{i=1}^G\\sim\\pi_{old}(\\cdot|q;\\mathcal I)}[\\frac1G\\sum_{i=1}^{G}\\frac{1}{\\sum_{t=1}^{|o_i|}\\mathbb I(o_{i,t})}\\sum_{t=1}^{|o_i|}\\mathbb I(o_{i,t})\\cdot\\min(p_{i,t}\\hat A_{i,t},\\operatorname{clip}(p_{i,t},1-\\epsilon,1+\\epsilon)\\hat A_{i,t})-\\beta\\mathbb D_{KL}[\\pi_\\theta\\Vert\\pi_{ref}]]",
+    "locator": "Eq.3 p.5; visually transcribed; printed KL outside token-average term"
+   },
+   {
+    "latex": "p_{i,t}=\\frac{\\pi_\\theta(o_{i,t}|q,o_{i,<t};\\mathcal I)}{\\pi_{old}(o_{i,t}|q,o_{i,<t};\\mathcal I)}",
+    "locator": "Sec.3.3 below Eq.3, p.5"
+   },
+   {
+    "latex": "\\mathbb D_{KL}(\\pi_\\theta\\Vert\\pi_{ref})=\\frac{\\pi_{ref}(o_i|q)}{\\pi_\\theta(o_i|q)}-\\log\\frac{\\pi_{ref}(o_i|q)}{\\pi_\\theta(o_i|q)}-1",
+    "locator": "Eq.2 p.3; sequence-level printed notation, not a statement of implementation aggregation"
+   },
+   {
+    "latex": "R_{overall}=R_{accuracy}+R_{format}-P_{control}",
+    "locator": "Eq.4 p.5"
+   },
+   {
+    "latex": "P_{control}=0.1[\\mathbf1_{direct}\\mathbb I(r<\\theta)+\\mathbf1_{high}\\mathbb I(r\\geq\\theta)],\\quad r=\\frac{C_{direct}}{C_{direct}+C_{high}},\\quad\\theta=0.2",
+    "locator": "Eq.5 p.6; repeated as Eq.6 p.29"
+   }
+  ],
+  "signal_routing": "Eq.3 masks user text, user images and tool-return tokens; optimizes all generated assistant output tokens across turns with per-sequence generated-token-count denominator then group mean. Reward combines terminal correctness, all-or-nothing format and action penalty. No separate action-only/caption-only routing is specified, and exact construction/broadcast of Ahat_i,t is not written; do not invent per-turn returns, discount or PPO epochs.",
+  "normalization": null,
+  "normalization_notes": "GRPO named, group-score baseline stated; mean subtraction/std division and epsilon handling for Ahat not explicitly defined in PDF. Eq.3 explicitly averages masked generated tokens per sequence, then 1/G. This does not establish the reward-normalization implementation.",
+  "invariance": "非势函数塑形；按动作惩罚改变任务优化目标，无最优策略不变定理。只保持工具返回不接收actor梯度的mask约束；不能把该mask当作视觉观测不影响梯度。",
+  "baseline_or_potential": "Sec.2.1 group scores estimate baseline without critic; old policy samples groups, reference policy enters KL. Text judge supplies correctness, not a value critic. Cdirect/Chigh origin, update schedule and count normalization are unspecified; no learned potential.",
+  "degenerate_cases": "Reader derivation, not reported experiments: if Cdirect+Chigh=0 Eq.5 undefined and fallback unknown. If Cdirect=0<Chigh, direct is penalized; if Chigh=0<Cdirect, high action is penalized. Identical correctness does not imply identical total rewards because format/action can differ; all-wrong group cannot be assumed zero advantage because formula/handling missing. If one action has zero sampled support, penalty alone cannot create its sampled trajectories; prompt is empirical support aid, not guarantee. With one generated turn, masking objective reduces to one-turn token average but penalty still depends on unavailable/defined counts. r is a share of successful counts, not P(correct|direct) unless exposure assumptions supplied."
+ },
+ "objective_evidence": [
+  {
+   "quote": "GRPO removes the need for a separate critic model by using group scores to estimate baselines.",
+   "locator": "Sec.2.1, p.3"
+  },
+  {
+   "quote": "Intuitively, we masked all text and image tokens from the user and performed optimization solely based on the multi-turn output tokens generated by the VLM.",
+   "locator": "Sec.3.3, p.5"
+  },
+  {
+   "quote": "Only when all formats are correct can the model achieve the full format score of 0.5.",
+   "locator": "Sec.3.4, p.5"
+  }
+ ],
+ "evidence_design": {
+  "discriminating_experiment": "Fig.3/8惩罚开关与阈值消融辨别双向控制是否避免两端塌缩；Fig.7三种prompt检验初始工具支持；Table8 SFT/RL同1:1示范比例检验仅数据平衡是否足够。它们没有等训练成本/等token或统一任务规则路由强对照，故未完全隔离推理训练增益与必要性决策增益。",
+  "controls": [
+   "无惩罚、所有正确高分辨率轨迹惩罚、不同θ（Fig.3/8）",
+   "Qwen官方agent prompt vs Simple Resize / Simple Think Resize（Fig.7/Table10）",
+   "GPT-4o构造20K SFT，1:1两种行为（Table8）",
+   "2K/8K cold-start，再用相同RL setup（Table9）",
+   "全分辨率QwenRL与1/4推理QwenRL，实际vLLM时延（Fig.4）",
+   "FastV/SparseVLM/VisionZip 50%/70%视觉token，非等训练计算对照（Tables2/7）"
+  ],
+  "negative_results": [
+   {
+    "text": "无惩罚/一律罚调用都模式塌缩。",
+    "quote": "Applying a penalty to all resize image requests or removing the penalty entirely will both lead to model collapse.",
+    "locator": "Fig.3 caption, p.5"
+   },
+   {
+    "text": "额外cold-start后再RL仍落后；Table9 RealWorldQA 2K→52.8，8K→55.8，无cold-start67.1，但Table1的该指标为68.5，保留冲突。",
+    "quote": "While RL improves the performance of cold-start models, they still fall short compared to models trained from vanilla Qwen2.5VL with RL.",
+    "locator": "Appendix C.2, p.27"
+   },
+   {
+    "text": "VisionZip加130K监督微调未改善总体表现，不能解释为通用SFT无效。",
+    "quote": "However, compared to the training-free version of VisionZip, this fine-tuned model does not show any performance improvement.",
+    "locator": "Appendix B.6, p.25"
+   },
+   {
+    "text": "阈值过高也会全调用。",
+    "quote": "Eventually, the model collapses into always requesting high-resolution images.",
+    "locator": "Appendix C.4, p.29"
+   }
+  ],
+  "seeds": null,
+  "seeds_notes": "No seed count, repeated-run variation, confidence interval or significance test reported; do not label verified single seed.",
+  "falsifier": "Reader-proposed: under held-out image-group split and matched RL budget, if adaptive policy fails to exceed a question/task-rule or constant-bias routing baseline on accuracy–cost frontier, or shuffled per-question count assignments preserve the result, necessity-specific interpretation fails. If zero-exposure groups dominate, r-based claimed necessity signal is unidentifiable."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct",
+   "framework": "verl",
+   "group_size": 16,
+   "rollouts": 16,
+   "steps": null,
+   "kl": 0.001,
+   "temperature": 1.0,
+   "max_turns": 2,
+   "batch_size": 512,
+   "mini_batch_size": 32,
+   "learning_rate": 1e-06,
+   "precision": "FP16",
+   "inference_framework": "vLLM",
+   "inference_temperature": 0,
+   "data_selection_rollouts_per_resolution": 8,
+   "training_dataset_size": 20000,
+   "separate_judge_rl_dataset_size": 130000
+  },
+  "cost": "Reported approximate average visual-token retention 51.3% (Tables2/7). Fig.4 actual vLLM time counts DocVQA3076→1355, ChartQA447→746; time unit, hardware and batch setup not specified in PDF. Training GPU-hours, total tokens, update count and judge-call expense not reported. Fig.3/8 axes extend to80 steps, not proof of total training updates.",
+  "pitfalls": [
+   {
+    "text": "自制协议导致调用动作几乎无初始支持并塌缩；复用Qwen官方工具提示。",
+    "quote": "The prompt must ensure that the model is capable of outputting the required special tokens during multi-turn rollouts in a zero-shot setting. Otherwise, GRPO will fail to optimize correctly due to the absence of gradients.",
+    "locator": "Sec.3.3, p.5"
+   },
+   {
+    "text": "采样中做重复/空回复过滤，不能擅自解释为全对/全错dynamic sampling。",
+    "quote": "For each prompt, we generate 16 candidate responses using a temperature of 1.0, and apply duplicate and empty response filtering, similar to DAPO [82].",
+    "locator": "Appendix B.3, p.20"
+   }
+  ],
+  "code": "https://github.com/dvlab-research/VisionThink",
+  "code_inspected": false,
+  "lesson": "当基础模型的自定义工具动作在自然rollout中几乎不出现时，仅靠结果RL不会建立可靠动作对照；先测协议支持并采用基础模型已熟悉的工具格式，再区分数据需求均衡与每题动作采样均衡。"
+ },
+ "engineering_evidence": [
+  {
+   "quote": "The mini-batch size is set to 32, and the KL divergence coefficient is 0.001.",
+   "locator": "Appendix B.3, p.20"
+  },
+  {
+   "quote": "we selected 10K samples that require high-resolution images and 10K samples that do not, to train our model.",
+   "locator": "Sec.3.5, p.7"
+  },
+  {
+   "quote": "If both the high-resolution and downsampled images yield correct answers in all 8 rollouts, we classify the sample as solvable",
+   "locator": "Sec.3.5, p.6"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P02",
+   "how": "直接报告结果奖励下全调用与单向代价下全直答，给双向惩罚近邻，但统计机制未充分说明。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "仍名为GRPO且未定义优势归一化，不能宣称修复std抵消。",
+   "strength": 1
+  },
+  {
+   "problem": "P29",
+   "how": "prompt与阈值消融证明初始支持/模式塌缩关键；不保证全程强制支撑。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "利用基础模型已有工具协议，无额外cold-start不等于无预训练/SFT行为支持。",
+   "strength": 2
+  },
+  {
+   "problem": "P65",
+   "how": "用两分辨率各8次正确差筛20K均衡需求题，可迁移训练题分层。",
+   "strength": 2
+  },
+  {
+   "problem": "P66",
+   "how": "作者将单向罚调用塌缩归因低分辨率侥幸正确，未给选项置换或猜测纠偏实证。",
+   "strength": 2
+  },
+  {
+   "problem": "P63",
+   "how": "小规模额外cold-start导致通用退化的负结果提供设置相关边界。",
+   "strength": 2
+  },
+  {
+   "problem": "P51",
+   "how": "性能保持仅点估计，未提供预设非劣检验。",
+   "strength": 1
+  }
+ ],
+ "reviews_source": {
+  "locator": "2507.13348.json",
+  "forum_id": "R6m6bNnmWm",
+  "decision_raw": "Accept (poster)",
+  "version_relation": "Historical NeurIPS2025 reviews; commented submission PDF/version not independently identified; local PDF v1 is dated17Jul2025."
+ },
+ "reviews_evidence": [
+  {
+   "evidence_id": "R1",
+   "note_id": "ynLbEuTT9A",
+   "quote": "Unlike previous efficient VLM methods that rely on fixed pruning ratios or thresholds, VisionThink autonomously decides whether to compress tokens on a case-by-case basis.",
+   "locator": "research/reviews/2507.13348.json; reviews[note_id=ynLbEuTT9A].content.strengths_and_weaknesses",
+   "scope": "historical_review_not_current_pdf_verification"
+  },
+  {
+   "evidence_id": "R2",
+   "note_id": "86YO4qyuCw",
+   "quote": "When reducing the image token, VisionThink maintains a performance close to or even higher than SoTA on multiple benchmarks.",
+   "locator": "research/reviews/2507.13348.json; reviews[note_id=86YO4qyuCw].content.strengths_and_weaknesses",
+   "scope": "historical_review_not_current_pdf_verification"
+  },
+  {
+   "evidence_id": "R3",
+   "note_id": "HXXGNfFYjP",
+   "quote": "The computation of $C$ in Eq. (5) is unclear. Are they computed online? A flowchart of pseudo-code is really appreciated.",
+   "locator": "research/reviews/2507.13348.json; reviews[note_id=HXXGNfFYjP].content.strengths_and_weaknesses",
+   "scope": "historical_review_not_current_pdf_verification"
+  },
+  {
+   "evidence_id": "R4",
+   "note_id": "6Ub07Gibtl",
+   "quote": "This raises a concern: if a model were to simply (supervised) fine-tune the baseline model with their 20K dataset and apply a rule-based strategy (e.g., use the original resolution whenever the question contains OCR- or ChartQA-related keywords, and use 1/4 resolution otherwise), it might achieve similar performance improvement, without needing such a complex RL setup.",
+   "locator": "research/reviews/2507.13348.json; reviews[note_id=6Ub07Gibtl].content.strengths_and_weaknesses",
+   "scope": "historical_review_not_current_pdf_verification"
+  },
+  {
+   "evidence_id": "R5",
+   "note_id": "8EyftWkKSa",
+   "quote": "However, I still have a lingering worry that VisionThink relies solely on Qwen and lacks experiments on other MLLMs, which makes it difficult to demonstrate sufficient generalizability and robustness at this stage.",
+   "locator": "research/reviews/2507.13348.json; reviews[note_id=8EyftWkKSa].content.final_justification",
+   "scope": "historical_review_not_current_pdf_verification"
+  },
+  {
+   "evidence_id": "R6",
+   "note_id": "HXXGNfFYjP",
+   "quote": "The data source is unclear. A specific data source should be provided.",
+   "locator": "research/reviews/2507.13348.json; reviews[note_id=HXXGNfFYjP].content.strengths_and_weaknesses",
+   "scope": "historical_review_not_current_pdf_verification"
+  },
+  {
+   "evidence_id": "R7",
+   "note_id": "HXXGNfFYjP",
+   "quote": "Therefore, the improvements mainly come from the reasoning ability, rather than the proposed ability to \"request a larger image.\"",
+   "locator": "research/reviews/2507.13348.json; reviews[note_id=HXXGNfFYjP].content.strengths_and_weaknesses",
+   "scope": "historical_review_not_current_pdf_verification"
+  },
+  {
+   "evidence_id": "R8",
+   "note_id": "8EyftWkKSa",
+   "quote": "On the other hand, in tasks that require image resizing, such as ChartQA, VisionThink does not improve performance but introduces significant additional inference time.",
+   "locator": "research/reviews/2507.13348.json; reviews[note_id=8EyftWkKSa].content.strengths_and_weaknesses",
+   "scope": "historical_review_not_current_pdf_verification"
+  }
+ ],
+ "reported_results_evidence": [
+  {
+   "quote": "RL           79.1%      62.3%       6.5%     30.7%       29.9%     9.5%",
+   "locator": "Table8 p.27, RL row; columns ChartQA/OCRBench/DocVQA/MME/RealWorldQA/POPE",
+   "interpretation": "Image resize call ratios, not accuracy."
+  },
+  {
+   "quote": "SFT          95.1%      64.0%      14.1%     39.0%       62.1%     37.8%",
+   "locator": "Table8 p.27, SFT row; same column order",
+   "interpretation": "Image resize call ratios, not accuracy."
+  },
+  {
+   "quote": "VisionThink ♠                   52.7    41.1     83.4       66.5   88.6   2314    71.2       48.3      69.5",
+   "locator": "Table6 p.25; 130K full-resolution variant row",
+   "interpretation": "Distinct model variant; do not attribute all gains to resize policy."
+  },
+  {
+   "quote": "Retain Approximately 51.3% Visual Tokens Across All Benchmarks",
+   "locator": "Table2 p.9 and Table7 p.26, VisionThink block heading",
+   "interpretation": "Author-reported token retention; benchmark weighting not detailed."
+  },
+  {
+   "quote": "Based on this observation, all ChartQA evaluations in this paper are conducted using a combination of GPT-4o-Judge and human verification, denoted as ChartQA† .",
+   "locator": "Appendix B.4 p.22",
+   "interpretation": "Changed evaluation metric; not unqualified standard ChartQA accuracy."
+  }
+ ]
+}

@@ -1,0 +1,182 @@
+{
+ "paper_key": "litscan:78419",
+ "title": "Generation Enhances Understanding in Unified Multimodal Models via Multi-Representation Generation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78419.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 pp3–8 Tables1–3/Fig6",
+   "Appendix B p14"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "为统一生成理解模型联合训练RGB重建、深度、分割边界生成与VQA。",
+  "key_step": "DepthAnythingV2/SAM生成dense辅助目标，不在推理新增工具或生成中间图；四loss等系数。",
+  "why_non_obvious": "RGB重建只学外观，几何/结构目标补互补信息；RGB仍需保留避免生成分布偏成depth/seg。",
+  "trigger_condition": "When a unified image generator has weak spatial understanding, jointly reconstruct geometry and structure alongside RGB and QA.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将外部感知结构蒸馏为生成任务的密集自监督。",
+  "abstract_trigger_condition": "When a unified image generator has weak spatial understanding, jointly reconstruct geometry and structure alongside RGB and QA.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "DepthAnythingV2/SAM生成dense辅助目标，不在推理新增工具或生成中间图；四loss等系数。",
+  "abstract_why_non_obvious": "RGB重建只学外观，几何/结构目标补互补信息；RGB仍需保留避免生成分布偏成depth/seg。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78419#s1",
+   "object": "共享视觉表征",
+   "information": "输入图、QA标签与外部depth/mask伪标签",
+   "operation": "四任务等权联合训练，推理架构不变",
+   "claimed_effect": "OpenUni VSR66.69→73.90；Harmon fullGenEval85.26，纯QA SFT仅0.30",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq1–5/Table1",
+    "quote": "UniMRG         81.44        74.67         64.56        66.01      73.90          68.00       81.78"
+   },
+   "failure_boundary": "以外部teacher信号训练，不证明额外像素证据；等loss权重不等梯度贡献。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78419#s2",
+   "object": "多目标干扰",
+   "information": "Harmon同模型逐加目标",
+   "operation": "pixel→depth→seg，评测理解与生成",
+   "claimed_effect": "DPG86.61→84.96→85.27，full仍低于pixel-only；理解指标提升",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p8",
+    "quote": "+ Segmentation Generation     52.23        62.67         49.32        51.90      61.21          85.26       85.27"
+   },
+   "failure_boundary": "“不伤生成”不成立于所有指标；Show-o提升小，codebook解释是作者推断。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "训练期dense几何/边界辅助监督可补视觉能力，但需生成头/架构改造。"
+  },
+  {
+   "problem": "P63",
+   "strength": 2,
+   "how": "单目标微调导致生成灾难遗忘，联合目标保能力。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "understanding-only SFT",
+   "kind": "method"
+  },
+  {
+   "name": "RecA",
+   "kind": "method"
+  },
+  {
+   "name": "RGB-only reconstruction",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Reader：depth评价也使用DepthAnythingV2目标，测teacher一致不是真实几何真值。",
+   "quote": "",
+   "locator": "Fig6"
+  },
+  {
+   "text": "Reader：OpenUni另加3000step pixel训练，需同预算对照。",
+   "quote": "",
+   "locator": "Appendix B.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "Harmon QA-only GenEval71.37→0.30；OpenUniHallusion60.88→64.56。",
+  "load_bearing_assumption": "生成辅助任务把teacher几何结构传给理解，而非仅额外数据/优化预算。",
+  "scope": "带图像生成能力的UMM",
+  "success_criterion": "同预算随机结构/teacher结构对照，理解提升且原能力非劣。",
+  "why_open": "伪标签质量和架构共享程度限制迁移到纯QwenVL。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3"
+  },
+  {
+   "vocab": "rs",
+   "id": "targeted_self_supervised_objective",
+   "locator": "§3.1"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "depth/seg targets"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L=L_pixel+L_depth+L_seg+L_und",
+    "locator": "Eq5"
+   },
+   {
+    "latex": "D_norm=255(D−Dmin)/(Dmax−Dmin)",
+    "locator": "Eq20"
+   }
+  ],
+  "signal_routing": "理解CE与生成CE/diffusion loss联合更新UMM可训部分；VQ-VAE及text encoder/decoder冻结，shared understandingencoder更新否则冻结（正文）。OpenUni额外pixel阶段冻结understandingcomponent。无RL/动作mask。",
+  "normalization": "other：loss权重均1；depth每图minmax0–255，3通道复制；各loss token/pixel reduction未知。",
+  "invariance": "depth正仿射在minmax下消除，绝对深度尺度不保；无PBRS。",
+  "baseline_or_potential": "无advantage/value；多任务辅助损失。",
+  "degenerate_cases": "常数depth分母0未说明；空mask全黑；teacher错误可被蒸馏；单目标造成遗忘。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3逐目标；Fig6 OOD depth1−MAE Harmon.623→.822、OpenUni.617→.834、Show-o.637→.664。",
+  "negative_results": [
+   {
+    "text": "Harmon fullDPG85.27<RecA86.61；OpenUniGenEval68<RecA70.07。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同预算额外QA/随机depth若匹敌真实几何则结构目标解释不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Harmon1.5B/OpenUni3.6B/Show-o1.3B",
+   "framework": "VLMEvalKit for understanding evaluation",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8H20：OpenUni3h/Harmon5h/Show-o8h；AdamW1e-5/1e-5/1e-6；4000/2000+3000pixel/2500steps。",
+  "pitfalls": [
+   {
+    "text": "SAM产生白边界黑背景而非带语义类别彩色mask；不要误当语义标签。",
+    "locator": "Appendix B.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当多任务生成辅助理解时，保留原输出目标并报告每类能力回退；teacher一致性不能代真实视觉正确性。"
+ }
+}

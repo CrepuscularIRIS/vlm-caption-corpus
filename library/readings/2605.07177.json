@@ -1,0 +1,459 @@
+{
+ "paper_key": "2605.07177",
+ "title": "HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.07177.pdf",
+  "version": "v2",
+  "version_evidence": "PDF p.1 margin: arXiv:2605.07177v2 [cs.LG] 11 May 2026; latest online version not checked",
+  "page_count": 31,
+  "fulltext_path": "2605.07177.txt",
+  "sections_read": [
+   "Abstract; 1 Introduction pp.1–3",
+   "2 Related Work p.3",
+   "3.1 Formulation/UGS; Fig.2 p.4",
+   "3.2 Data curation; Table1 pp.5–6",
+   "3.3 SFT/RL; Eqs.2–6 pp.6–7",
+   "4 IMEB; Eq.7; Fig.3 pp.7–8",
+   "5 Experiments; Tables2–5 pp.8–11",
+   "6 Conclusion p.11",
+   "References pp.12–14",
+   "Appendix A Limitations/B Broader Impacts p.15",
+   "Appendix C.1–C.4 dataset curation; Algorithm1 pp.15–18",
+   "Appendix D evaluation; Tables6–8 pp.18–20",
+   "Appendix E.1–E.7 training; Tables9–12 pp.20–24",
+   "Appendix F.1–F.4 analyses; Tables13–14; Fig.4 pp.24–27",
+   "Appendix G prompts; Tables15–19 pp.27–30",
+   "Fig.5 case study p.31"
+  ],
+  "visual_pages_inspected": [
+   6,
+   7,
+   8,
+   9,
+   11,
+   17,
+   20,
+   23,
+   24,
+   25,
+   26,
+   27,
+   29,
+   31
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将多实体定位作为检索动作的批量参数；通过短预算优先示范建立并行行为，以成功轨迹的历史最少轮数为逐题收紧边界，再对失败轨迹附加同族强教师的token蒸馏。",
+  "key_step": "同时约束交互轮数tc和总检索次数ts，阻止把串行冗余变成单轮并行乱搜；成功与失败轨迹接受不同效率区间，只有失败轨迹接收OPD。",
+  "why_non_obvious": "仅允许并行并不能抑制过检索；仅惩罚轮数会鼓励一次塞入大量查询，固定阈值又可能惩罚合理多跳。失败轨迹的统一结果信号不能定位哪一个token错，但冻结教师能否帮助取决于其效率行为已对齐。",
+  "trigger_condition": "When independent sub-retrievals can be batched but accuracy-only optimization causes over-searching, apply joint round/invocation references and failure-gated aligned-teacher distillation to improve accuracy with fewer serial interactions.",
+  "reviewer_praise": [
+   "low_evidence: manifest contains no reviews_path; no peer-review praise available."
+  ],
+  "reviewer_concern": [
+   "low_evidence: no local review source supplied; author limitations and reader concerns are recorded separately."
+  ],
+  "acceptance_signal": "low_evidence: decision=null copied from manifest; arXiv preprint is not acceptance evidence.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Fuse preparation and execution into a batched action; tighten per-instance resource references from successful attempts and correct only failed attempts with an aligned expert.",
+  "abstract_key_step": "Track both sequential depth and total work, rank outcomes within a group, and route dense expert matching only to unsuccessful completions.",
+  "abstract_why_non_obvious": "Reducing depth can hide increasing total work; a generic expert may undo the efficient behavior learned by the student.",
+  "abstract_trigger_condition": "When decomposable requests still waste sequential interactions and failure labels obscure locally useful behavior, jointly bound depth and work and apply aligned-expert correction to failed completions."
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.07177#s1",
+   "object": "UGS action space and parallel-amenable cold-start trajectories",
+   "information": "Policy sees image, query and prior tool results; emits normalized boxes or text-query list before receiving current-turn search results. PRS curator additionally sees ground-truth correctness, whole teacher trajectories and quality filters. No counterfactual evidence that every entity is causally necessary is measured.",
+   "operation": "Merge crop coordinates into image_search arguments; batch independent queries; sample five Gemini-3.0-Flash trajectories at budgets 2/4/8, stop at first budget with success, retain shortest success and quality-filter; LoRA SFT 30k trajectories.",
+   "output": "Parallel multimodal action policy; 30k cold-start trajectories from 271k QA pool.",
+   "claimed_effect": "F.2 controlled 3k SFT comparison on 235B: UGS average58.2 accuracy/2.04 turns vs LLM-Crop53.0/2.7 and Code-Crop55.3/3.07. Table4 filtering121k→30k improves average51.6→58.8 accuracy but increases average turns2.2→2.9; filtering itself is not proven to reduce turns.",
+   "conditions": [
+    "Independent sub-retrievals fit a batched tool call; necessary sequential hops remain sequential.",
+    "Tool-search environment supports bbox/image-id retrieval and batched queries; PRS/quality-filtered data differ from our caption/crop-only task."
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App.F.2 p.25; Fig.4",
+    "quote": "the Unified Grounded Search and Code Crop trajectories are mutually converted\nfrom the same underlying trajectory data, differing only in how grounding is expressed in the action\nspace; all three paradigms are SFT-tuned on Qwen3-VL-30B-A3B and Qwen3-VL-235B-A22B with\nidentical hyperparameters, and evaluated on the same six benchmarks under the same LLM-as-judge\nand turn budget."
+   },
+   "failure_boundary": "Does not establish globally shortest trajectories; PRS only searches five candidates within each budget. Tool-free and easy tool-using successes are filtered out; no explicit no-search-support guarantee. Fig4 average win does not mean win on every dataset (235B Code-Crop wins BCVL49.7 vs50.3 and IMEB40.3 vs42.8).",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.07177#s2",
+   "object": "Trajectory efficiency reward and per-query historical success references",
+   "information": "Receives final correctness/schema result, tc rounds, ts total invocations and initial/current-epoch successful rollouts for the same query. Does not see per-call causal necessity or counterfactual answer without a search.",
+   "operation": "Keep the minimum successful tc across epochs; associate ts with that selected trajectory; give correct trajectories positive rank reward only if both references are met, otherwise negative rank reward; tolerate failed tc within [reference,1.5reference], penalize outside; group-normalize the sum with correctness/format.",
+   "output": "TRACE scalar rewards and mean/std GRPO advantages.",
+   "claimed_effect": "Table5 static TRACE61.1%/2.5 turns→adaptiveTRACE62.7%/2.2; outcome-only58.3%/6.9 vs SFT58.8%/2.9. These are author-reported ablations, not replication.",
+   "conditions": [
+    "Each RL query has initial success from SFT pass@5 after pass@1 failure.",
+    "G=8; reliable correctness and reference persistence; comparator/indexing tie rules need implementation specification."
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.3.2 p.7, Eqs.3–5; Table5 p.11",
+    "quote": "Crucially, trajectories receive positive rewards only when falling in the strictly efficient region (tc ≤ t̂c\nand ts ≤ t̂s ). Incorporating the ts constraint elegantly prevents reward hacking, a scenario where\nthe model minimizes interaction rounds by exhaustively spamming parallel calls within a single\nturn."
+   },
+   "failure_boundary": "Reference ratchets can lock in lucky or contaminated successes; no certified minimal necessary calls; tc monotone does not imply ts monotone. Eq4 negative sign conflicts with signed λred in App.E. Unspecified equal-tc ties and no-success epoch handling.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2605.07177#s3",
+   "object": "Completion-token distribution on failed 30B rollouts",
+   "information": "Frozen RL-trained HyperEyes235B teacher and current student are conditioned on state st along the student rollout. Eq6 specifies no answer-key or privileged future context for teacher; full st serialization/multimodal packing and teacher request payload are not disclosed. Final correctness gates loss, rather than teacher per-call necessity labels.",
+   "operation": "On GRPO-shared rollouts add mean reverse KL(student||frozen teacher) over completion tokens only when final Racc=0; retain GRPO branch; λkd=.05; no OPD for235B training.",
+   "output": "Dense teacher-matching gradients in addition to trajectory-level GRPO gradients.",
+   "claimed_effect": "Table5 aligned teacher improves TRACE62.7→64.0% at2.2 average turns; vanilla235B teacher gives46.3%/2.8. SFT-free TRACE+OPD gives44.7%/2.2 vs full64.0%/2.2.",
+   "conditions": [
+    "Stronger same-family teacher already trained for parallel efficient search; SFT cold start supports desired behavior.",
+    "Teacher frozen, πold sampling-only, gradients through θ."
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.3.2 p.7 Eq.6; Table5 p.11",
+    "quote": "To recover learning signals from these\ncorrect intermediate steps, OPD distills token-level supervision from a frozen teacher πteacher into\nthe student πθ , applied exclusively to failed rollouts."
+   },
+   "failure_boundary": "Outcome gate does not identify erroneous tokens; all failed completion tokens receive KL. Success KL mask=0 is not invariance of successful behavior under shared-parameter updates. No causal guarantee of useful-step preservation; teacher capability bounds student and adds dedicated inference compute.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-30B-A3B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-235B-A22B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes-V2",
+   "kind": "method"
+  },
+  {
+   "name": "MMSearch-R1",
+   "kind": "method"
+  },
+  {
+   "name": "WebWatcher",
+   "kind": "method"
+  },
+  {
+   "name": "VDR",
+   "kind": "method"
+  },
+  {
+   "name": "REDSearch",
+   "kind": "method"
+  },
+  {
+   "name": "Kimi-K2.5",
+   "kind": "method"
+  },
+  {
+   "name": "Claude-Opus-4.6",
+   "kind": "method"
+  },
+  {
+   "name": "Gemini-3.1-Pro",
+   "kind": "method"
+  },
+  {
+   "name": "Outcome-only GRPO; static TRACE; TRACE; vanilla/aligned OPD; no-SFT RL",
+   "kind": "method"
+  },
+  {
+   "name": "LLM Crop; Code Crop",
+   "kind": "method"
+  },
+  {
+   "name": "MMSearch; FVQA; LiveVQA; BCVL; MMSearch+; IMEB",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Cost-Aware Score (CAS)",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "OPD needs stronger same-family teacher; cannot directly improve frontier-scale teacher with itself.",
+   "quote": "First, On-Policy Distillation requires a stronger same-family teacher, which inherently\nbounds the student’s reasoning capabilities and prevents direct application at the frontier scale.",
+   "locator": "App.A p.15"
+  },
+  {
+   "text": "Only static images/text; no video/audio grounding tested.",
+   "quote": "Second, our parallel framework focuses exclusively on static image and text environments, lacking\nthe spatial-temporal grounding mechanisms necessary for dynamic modalities like video or audio.",
+   "locator": "App.A p.15"
+  },
+  {
+   "text": "Cross-method metrics mix toolchains and checkpoint scales.",
+   "quote": "VDR releases only an 8B supervised fine-tuning checkpoint, withholding the 30B model utilized in\nits primary evaluations. Consequently, assessing these baselines requires navigating a fragmented\nlandscape of proprietary toolchains and missing model weights, which fundamentally limits the\ncomparability of the reported metrics.",
+   "locator": "App.D p.19"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table5 outcome-only RL on30B raises average tool-call turns2.9→6.9 while average accuracy58.8→58.3%; vanilla-teacher OPD underperforms aligned teacher64.0 vs46.3.",
+  "load_bearing_assumption": "Parallel action capability plus terminal correctness reward is sufficient for efficient search, and any stronger teacher supplies helpful token correction. Both fail in the reported ablations.",
+  "scope": "Static image/text multimodal web search with decomposable multi-entity/multi-constraint queries and remaining legitimate multi-hop dependencies.",
+  "success_criterion": "Increase six-benchmark accuracy while reducing sequential tool-call rounds; additionally CAS combines squared accuracy with token cost and rounds. This is not a preregistered statistical noninferiority criterion.",
+  "why_open": "Existing serial crop-then-search interfaces accumulate rounds; correctness-only rewards do not distinguish efficient/redundant success; fixed reference thresholds cannot adapt per-query achievable efficiency, and failure rewards lack token detail."
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "We characterize the tool usage of a trajectory by two dimensions: the number of tool-call rounds tc\nand the total number of tool invocations across all rounds ts .",
+   "locator": "Sec.3.3.2 p.6; unit distinction"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "Relying solely on outcome rewards inflates tool calls without\nimproving baseline accuracy.",
+   "locator": "Sec.5.3 p.10; Table5"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "Moreover, skipping the initial fine-tuning phase entirely collapses performance, demonstrating that\neffective distillation strictly requires a parallel-amenable cold start and an efficiency-aligned teacher.",
+   "locator": "Sec.5.3 p.10; Table5"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "OPD distills token-level supervision from a frozen teacher πteacher into\nthe student πθ , applied exclusively to failed rollouts.",
+   "locator": "Sec.3.3.2 p.7; success/failure differentiated treatment"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "quote": "To isolate the effect of noisy evidence from confounders such as policy\nquality or trajectory length, we adopt a third-party trajectory protocol:",
+   "locator": "App.F.3 p.26; shared third-party successful trajectory + injected distractor/shuffle diagnostic"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=R_{acc}+R_{fmt}+R_{tool},\\quad R_{acc}\\in\\{0,1\\},\\quad R_{fmt}\\in\\{0,-\\lambda_{fmt}\\}",
+    "locator": "Eq.2 p.6"
+   },
+   {
+    "latex": "\\hat t_c^{(e+1)}=\\min(\\hat t_c^{(e)},t_c^{(e+1)})",
+    "locator": "Eq.3 p.6; current-epoch minimum successful tc"
+   },
+   {
+    "latex": "R_{tool}=\\begin{cases}-\\lambda_{red}&R_{acc}=0\\land(t_c<\\hat t_c\\lor t_c>\\gamma\\hat t_c)\\\\0&R_{acc}=0\\land t_c\\in[\\hat t_c,\\gamma\\hat t_c]\\\\R^+\\in[r^+_{min},r^+_{max}]&R_{acc}=1,t_c>0,t_c\\le\\hat t_c,t_s\\le\\hat t_s\\\\R^-\\in[r^-_{min},r^-_{max}]&R_{acc}=1,t_c>0,\\text{otherwise}\\end{cases}",
+    "locator": "Eq.4 p.7 visually checked; successful tc=0 receives0 in following prose"
+   },
+   {
+    "latex": "R^*=r^*_{min}+\\frac{G-\\rho}{G-1}(r^*_{max}-r^*_{min}),\\quad *\\in\\{+,-\\}",
+    "locator": "Eq.5 p.7; rho ascending tc rank in sampled group; tie rules unspecified"
+   },
+   {
+    "latex": "\\hat A_i=(R_i-\\mu_R)/\\sigma_R",
+    "locator": "unnumbered immediately after Eq.5 p.7"
+   },
+   {
+    "latex": "\\mathcal L(\\theta)=\\mathcal L_{GRPO}(\\theta)+\\lambda_{kd}\\mathbb E_{\\tau\\sim\\pi_{\\theta^{old}}}\\left[\\mathbf1[R_{acc}(\\tau)=0]\\frac1{|\\mathcal A_\\tau|}\\sum_{t\\in\\mathcal A_\\tau}D_{KL}(\\pi_\\theta(\\cdot|s_t)\\Vert\\pi_{teacher}(\\cdot|s_t))\\right]",
+    "locator": "Eq.6 p.7 visually checked; A_tau=completion-token set"
+   },
+   {
+    "latex": "CAS=\\frac{Acc^2\\times100}{N_{tok}+2N_{tool}+1}",
+    "locator": "Eq.7 p.8; Acc fraction (inferred from Table3), Ntok thousands, Ntool sequential rounds"
+   }
+  ],
+  "signal_routing": "TRACE sums final correctness, schema penalty and trajectory cost before one group-relative advantage. Main text describes uniform token-level outcome credit; exact GRPO token-loss reduction/environment-token masking not specified. Eq6 adds failed-rollout-only reverse KL averaged over completion tokens; no per-call/region necessity gate, no replacement or masking of GRPO advantage, no OPD on successful trajectories or235B. Retrieved tool outputs are conditioning observations; exact exclusion from implemented completion mask is not shown and must not be invented.",
+  "normalization": "mean+std of aggregated scalar rewards within G=8; Eq5 additionally ranks tc over G and maps to positive/negative intervals; OPD token mean1/|A_tau|. No RLOO/no-std estimator. Sigma stabilization epsilon and rank ties undisclosed.",
+  "invariance": "TRACE is task-dependent reward modification, not potential-based shaping; no optimal-policy invariance theorem. Rank-only interpolation is invariant to tc changes preserving ranks/region membership; changing absolute tc or ts can cross thresholds. OPD success mask preserves zero explicit KL contribution for successes, not their learned behavior because parameters are shared. Whole-reward positive affine scaling cancels under exact mean/std, absent epsilon; additive efficiency coefficient is not generally invariant in mixed groups.",
+  "baseline_or_potential": "Group mean reward is the GRPO baseline. Per-query tc reference is historical minimum successful rollout cost; ts is attached invocation cost, not a learned value or necessity estimate. Frozen235B is a distillation teacher, not an answer-now counterfactual critic; no potential function.",
+  "degenerate_cases": "G=1 makes Eq5 denominator0. All-correct equal-format/region/rank-varying groups can retain efficiency gradients; rescaling their sole varying reward channel can be canceled by std. All-wrong groups may differ by tolerated vs penalized budgets/format; if every scalar reward equal sigma=0, numerical handling undisclosed, while failed-token OPD can still provide teacher mismatch signal. If all correct, OPD vanishes. Successful tc=0 gets tool reward0 (correctness1 remains), failure tc=0 below positive reference gets penalty with unresolved λ sign. At p(direct)≈0 no forced direct sampling restores support; no-search successes were filtered from data. If only one entity/serial dependency, batching offers little. tc lower bound and no-success epoch/tied-reference selection unspecified."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table5 isolates static vs updated reference, outcome-only vs TRACE, aligned vs vanilla teacher, and no-SFT variant. F.2 uses same3k QA/SFT hyperparameters, mutually converted UGS/Code-Crop trajectories, same judge and budget. F.3 uses48 shared-clean-correct Kimi trajectories with K=1/3/5/7/10 distractors and10 shuffles, isolating readout robustness rather than free agent search.",
+  "controls": [
+   "Table4 compares121k PRS trajectories vs30k filtered data; data quality/size/turn distribution co-vary.",
+   "F.2 changes action representation; LLM-Crop adds external235B grounding, so wall-time/compute is not matched despite same training-example count.",
+   "F.3 evaluates235B SFT vs base, not TRACE RL or OPD; cannot attribute distractor robustness to RL.",
+   "Table2 uses original-paper accuracy but locally reproduced turns; Table6 reports separate local accuracy; VDR local checkpoint8B vs advertised30B results."
+  ],
+  "negative_results": [
+   {
+    "text": "Outcome-only RL increases turns2.9→6.9 and lowers mean accuracy58.8→58.3 in Table5.",
+    "quote": "Relying solely on outcome rewards inflates tool calls without\nimproving baseline accuracy.",
+    "locator": "Sec.5.3 p.10; Table5 p.11"
+   },
+   {
+    "text": "Vanilla235B teacher yields46.3% vs TRACE62.7 and alignedOPD64.0; SFT-free44.7.",
+    "quote": "Crucially, replacing this teacher with a vanilla Qwen3-VL-235B causes a severe accuracy drop.",
+    "locator": "Sec.5.3 p.10; Table5 p.11"
+   },
+   {
+    "text": "Budget8 FVQA64.9 vs2 budget66.5; BCVL34.7 vs4/6 budget36.1. Prose says FVQA66.6 but table66.5; table used.",
+    "quote": "accuracy exhibits a\nnon-monotonic relationship with the budget across both benchmarks.",
+    "locator": "App.F.1 pp.24–25; Table13"
+   }
+  ],
+  "seeds": "Main Table2 seed42; AppendixE.7 repeats30B RL from SAME SFT checkpoint under42/1234/2026. Table11 average63.9±0.19 accuracy,2.18±0.02 turns; no CI/noninferiority test.235B single seed. Table5 variants not all shown with multiseed intervals. F.3 ten shuffled evidence orderings are not independent training seeds.",
+  "falsifier": "Reader-proposed, not executed: hold backbone/search backend/checkpoint/token/call accounting fixed; compare static/adaptive references and shuffled references with matched cost; report per-query actual invocations and wall time. If advantage disappears with matched resources or early ratcheting hurts necessary-search accuracy, efficiency mechanism claim fails. Teacher-gate comparison must match token/update compute; protect direct-capable and genuinely multi-hop strata separately."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-30B-A3B-Instruct and235B-A22B-Instruct; frozen RL-trained235B teacher only for30B",
+   "framework": "other: ms-swift SFT; Relax asynchronous RL + Megatron-LM trainer + SGLang0.5.9, PyTorch2.9.1 CUDA12.9",
+   "group_size": 8,
+   "rollouts": 256,
+   "steps": null,
+   "kl": 0.0,
+   "temperature": 0.8,
+   "max_turns": 9,
+   "rollouts_scope": "32 prompts×8 rollouts per update, not total run rollout count",
+   "max_turns_scope": "training Table10 max calls/turns8/9; evaluation Table8 calls/turns18/19. E.4 constant name MAX_TOOL_CALLS_TURN=8 leaves per-turn vs trajectory invocation accounting ambiguous.",
+   "learning_rate": 1e-06,
+   "top_p": 0.95,
+   "clip_low": 0.2,
+   "clip_high": 0.28,
+   "dual_clip": 3.0,
+   "tis": "enabled; formula/truncation threshold not supplied",
+   "opd_lambda": 0.05,
+   "epochs": null,
+   "sft": "LoRA r8 alpha32 all-linear;1epoch;global batch64;max seq32k;LR1e-4 cosine→1e-5;30k data",
+   "evaluation": "Table8/D:temperature0,top-p1,38k sequence,1200visual tokens/image,50images; Table10 eval1.0/.7 conflicts, exact use unresolved."
+  },
+  "cost": "Reported64 H20-141GB GPUs. SFT30B~10h and235B~20h; RL30B~48h and235B~72h. Arithmetic policy-cluster GPU-hours640/1280/3072/4608 respectively, excluding dedicated OPD teacher cluster (size/cost unreported), data synthesis/search APIs and extra seeds. Training token/update counts not reported. CAS not wall-time measurement; no measured end-to-end inference latency table.",
+  "pitfalls": [
+   {
+    "text": "Teacher alignment matters: larger vanilla model degrades distilled agent; use already TRACE-trained same-family teacher.",
+    "quote": "Effective distillation strictly requires an efficiency-aligned teacher.",
+    "locator": "Sec.5.3 p.10"
+   },
+   {
+    "text": "Prevent teacher from blocking async rollouts with separate service and bounded requests; no throughput benchmark given.",
+    "quote": "To prevent the teacher from becoming a bottleneck for asynchronous rollouts, we enforce a per-actor\nconnector limit of 32 concurrent requests and a 500-second timeout.",
+    "locator": "App.E.5 p.21"
+   }
+  ],
+  "code": "https://github.com/DeepExperience/HyperEyes",
+  "code_verified": false,
+  "lesson": "当独立搜索可并行时，应分别记录交互轮数、底层检索次数、生成token与实测耗时；只奖励少轮数可能把浪费藏进批内调用。对失败样本加教师蒸馏前，应检验教师是否具备同样的效率行为，保留原结果信用并审计完整token mask。"
+ },
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "TRACE仍组内除std，不能当作已解决代价尺度抵消；全对同区间应单独审计。",
+   "strength": 2
+  },
+  {
+   "problem": "P02",
+   "how": "结果奖励提高调用轮数而非准确率的直接领域近邻；目标是外部检索而非只裁图。",
+   "strength": 2
+  },
+  {
+   "problem": "P03",
+   "how": "失败轨迹在参考容忍区间免效率罚，区间外罚；这不等于识别必要但失败探索。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "失败token反KL纠正作为附加通道，保留GRPO；没有逐调用因果信用。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "强冻结教师可辅助分布匹配，不代表当前策略是否需要工具。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "无SFT44.7 vs有SFT64.0支持行为冷启动条件；禁止照搬删掉可直答题。",
+   "strength": 2
+  },
+  {
+   "problem": "P32",
+   "how": "历史成功最少轮数参考单调收紧，代替固定效率边界；无稳定性保证。",
+   "strength": 2
+  },
+  {
+   "problem": "P45",
+   "how": "30B三RL种子同SFT，235B单种子；仅平均±std。",
+   "strength": 2
+  },
+  {
+   "problem": "P51",
+   "how": "CAS准确率平方不等于准确率非劣约束。",
+   "strength": 1
+  },
+  {
+   "problem": "P58",
+   "how": "批量工具和独立教师服务涉及成本；不是当前两卡预算的直接方案。",
+   "strength": 1
+  },
+  {
+   "problem": "P68",
+   "how": "与分通道/失败信用保护相近但不是本库VEG/HDPO核心操作。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "measurement_and_source_audit": {
+  "unit_contract": "tc=tool-call rounds; ts=total invocations. Turns is defined as decoder forward passes emitting tool-call block (Sec5.1), best read as tool-emitting turns, not token-by-token forwards. UGS prompt permits only one tool at a time but lists multiple regions/queries in that tool; parallelism is intra-call batched retrieval, not unrestricted simultaneous tool types. Implementation counting of wrapper-call versus each subquery for ts is not shown. 5.3×=11.6/2.2 average rounds; no measured5.3× latency claim established.",
+  "judge_information": {
+   "evaluation": "Table18 supplies question,response,correct_answer and asks extraction/equivalence judgment, not solve. No explicit image/search-results input or necessity judgment. What response includes and exact judge identity are not specified.",
+   "rl_reward": "Racc binary correctness judge; full prompt/model of training judge not explicitly bound to Table18 (which is labeled benchmark evaluation). No evidence RL judge sees ground-truth regions or counterfactual no-search branches.",
+   "data_quality": "Gemini3.0Flash QA judge uses six dimensions; Qwen235B no-tool pass@1 filters solvable examples; trajectory quality discards duplicate/off-topic/ungrounded results. This is model curation, not independent gold."
+  },
+  "unresolved_source_ambiguities": [
+   "Eq4 uses -λred as penalty, AppE states λred=-0.1; literal substitution gives +0.1. Preserve conflict; intended negative penalty likely but unverified.",
+   "Table8/D evaluation0.0/1.0 conflicts with Table10 evaluation1.0/0.7. Training rollout0.8/.95 consistent. Exact evaluation deployment unknown.",
+   "E.4 names MAX_TOOL_CALLS_TURN=8 but prose says each rollout capped8 invocations and Table10 maxcalls8/maxturns9; per-turn/trajectory semantics and batched subqueries accounting not verified.",
+   "Sec3.2.3 ties RL data to PRS, while C.3 explicitly re-evaluates previously failed PRS queries with SFT and retains pass@1 failures/pass@5 successes. Record uses C.3 specific procedure.",
+   "Eq3 requires successful epoch minimum; no-success handling/tie resolution omitted; ts update may rise when shorter-round trajectory uses more total queries, so only tc monotonicity is explicit.",
+   "Fig5 shows12 tool rounds then final13 vs2 tool rounds then final3; captions/text compare12 vs3. Case mixes answer-including turns with tool-only rounds; not used as clean4× measurement.",
+   "F.1 prose FVQA66.6 differs Table13 value66.5; BCVL4 and6 tie36.1, not unique4 maximum. Claims of steadily declining FVQA are stronger than nonmonotonic table.",
+   "MainTable2 uses VDR published performance with local8B-SFT turns (AppD). Cross-backbone/toolchain comparisons cannot identify pure algorithm improvement or equal-size measured speedup.",
+   "Sec5.2 attributes235B improvement to TRACE+OPD but235B recipe hasTRACE only. F.3 distractor result is235B SFT, so it cannot validateTRACE/OPD robustness.",
+   "F.2 text claims strongest across all benchmarks; Fig4 has exceptions (235B CodeCrop BCVL50.3>UGS49.7; IMEB42.8>40.3), while average UGS wins."
+  ],
+  "source_evidence": [
+   {
+    "kind": "author_claim",
+    "locator": "Table2 caption p.9",
+    "quote": "Accuracy numbers are taken from the original papers, while tool-call\nturns and metrics missing from the original papers are obtained via local deployment and inference\nof their open-source models."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Table18 p.29; benchmark judge information",
+    "quote": "Judge whether the following [response] to [question] is correct or not based on the precise and\n   unambiguous [correct_answer] below.\n\n   [question]: {question}\n\n   [response]: {response}\n\n   [correct_answer]: {correct_answer}"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Sec3.3.2 p.7; Eq6",
+    "quote": "The teacher remains frozen and πθold acts as a sampling-only\nreference; gradients flow only through θ."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Table15 p.27; tool wrapper rather than unrestricted multi-tool parallelism",
+    "quote": "Only one tool can be called at a time."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "AppE.7 p.22",
+    "quote": "the 235B variant is reported with a single seed throughout."
+   }
+  ]
+ }
+}

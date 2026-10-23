@@ -1,0 +1,179 @@
+{
+ "paper_key": "litscan:63589",
+ "title": "ReFAct",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_63589.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3 pp3–6",
+   "§4–5 pp6–8, Tables2–3"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将图像检索前的区域选择和网页检索后的有损压缩/按ID恢复组成主动聚焦接口；RL主要训练视觉grounding。",
+  "key_step": "直接生成bbox作反向图像检索query；原始网页存外部memory，工作上下文留摘要+ID，Refocus恢复原文。",
+  "why_non_obvious": "区域减少检索背景噪声，压缩却可能丢后续必要细节；可寻址原文使压缩可逆于工具层，而非恢复模型隐藏状态。",
+  "trigger_condition": "目标在复杂图像中占比小，或检索结果耗尽上下文。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "在证据获取与证据保留两个阶段显式控制信息带宽。",
+  "abstract_trigger_condition": "目标在复杂图像中占比小，或检索结果耗尽上下文。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "直接生成bbox作反向图像检索query；原始网页存外部memory，工作上下文留摘要+ID，Refocus恢复原文。",
+  "abstract_why_non_obvious": "区域减少检索背景噪声，压缩却可能丢后续必要细节；可寻址原文使压缩可逆于工具层，而非恢复模型隐藏状态。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:63589#s1",
+   "object": "reverse-image-search query",
+   "information": "当前图像、问题、历史；bbox由policy生成，无第三方detector",
+   "operation": "Ground(I,bbox)裁出像素后提交ImgSearch，而不是单纯放大给视觉encoder",
+   "claimed_effect": "GroundedVQA移除Visual Focusing，51.3/37.5降至40.2/26.8",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.1 p3; Table3 p8",
+    "quote": "w/o Visual Focusing 40.2 -11.1 26.8 -10.7"
+   },
+   "failure_boundary": "推理时移除工具导致分布变化；不能独立证明bbox必要性或真实crop因果使用。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:63589#s2",
+   "object": "retrieval content in working memory",
+   "information": "外部存储原文，当前上下文摘要和唯一ID",
+   "operation": "Defocus保存原文压缩上下文；Refocus(id)取回原始内容",
+   "claimed_effect": "移除Memory Focusing，51.3/37.5降至49.4/33.9",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.1 p3; Table3 p8",
+    "quote": "w/o Memory Focusing 49.4 -1.9 33.9 -3.6"
+   },
+   "failure_boundary": "正文主动Defocus与Figure2 Auto Defocus存在接口粒度差异；论文明确RL主要训练视觉，动态memory策略稳定训练仍未解决。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P65",
+   "strength": 2,
+   "how": "用小目标复杂背景和无图筛选构造grounding高需求RL题集；仍需当前学生需求分层验证。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "ReAct Qwen2.5VL7B/32B/72B",
+   "kind": "method"
+  },
+  {
+   "name": "ReFAct plug-and-play models",
+   "kind": "method"
+  },
+  {
+   "name": "MMSearch-R1",
+   "kind": "method"
+  },
+  {
+   "name": "WebWatcher",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "局部query丢整体语境；LiveVQA ReFAct7B .300低于MMSearch-R1 .484；memory策略训练未稳定解决。",
+   "quote": null,
+   "locator": "§4.2 p7; §3.3 p5"
+  }
+ ],
+ "question": {
+  "observed_failure": "Base7B在高噪声GroundedVQA L1/L2只有.061/.036，框架未训练.072/.107。",
+  "load_bearing_assumption": "检索噪声由目标区域以外内容主导，而不是必须依赖全图实体关系。",
+  "scope": "小目标的知识型VQA + reverseimage search。",
+  "success_criterion": "同一检索预算下相对于wholeimage与随机同面积bbox提高答案且保持整体信息任务性能。",
+  "why_open": "主要结果与专门训练数据混合，工具移除不能隔离bbox选择质量。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§3.1 crop送搜索引擎而非直接等价读图；Fig2 Auto Defocus与主动工具叙述需区分"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "§3.1 grounding区域检索与摘要/原文ID memory分工"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_i=(1-λ)r_acc,i+λr_fmt,i; λ=.1",
+    "locator": "Eq4 p6"
+   },
+   {
+    "latex": "A_i=(R_i-mean_j R_j)/(std_j R_j+ε)",
+    "locator": "Eq3 p6"
+   },
+   {
+    "latex": "J=E[(1/G)Σ_i (πθ(τ_i|q,I)/πold(τ_i|q,I))A_i]-β KL(πθ||πref)",
+    "locator": "Eq2 p6"
+   }
+  ],
+  "signal_routing": "终局正确性+格式共同归一化后整轨迹ratio；没有显式step/crop独立advantage。Eq2未写clip，不能补GRPO常见实现；观察token mask未知。",
+  "normalization": "G8内mean/std+eps；λ在std前，β.01独立KL；token/长度归一化未说明。",
+  "invariance": "eps忽略时reward全体正比例缩放不变，加常数严格抵消；相对acc/fmt变动不抵消。",
+  "baseline_or_potential": "sample group mean非状态value；无PBRS/potential。",
+  "degenerate_cases": "全同reward A0；G小而correct稀疏，格式主导可形成无效但合法query；无零支持修复。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：固定现有轨迹与检索预算，按目标面积配对比较policy bbox、wholeimage和同面积随机bbox；将memory压缩固定为环境规则，单独比较refocus开放/关闭。",
+  "negative_results": [
+   {
+    "text": "无训练架构Qwen72B平均.339→.334，Gemini .473→.377；ReFAct7B LiveVQA .300。",
+    "locator": "Table2 p7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若same-area随机bbox同样改善或全图丰富query优于bbox，目标定位过滤假说被削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7BInstruct",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "8×A100，2epochs，lr2e-6；训练1500GroundedVQA+3000FVQA；walltime未知。",
+  "pitfalls": [
+   {
+    "text": "Auto Defocus与主动调用描写不同；retrieval实时变化，judge同用于reward与eval；bbox格式罚数值未给。",
+    "locator": "Fig2 p3; §4.1 p6"
+   }
+  ],
+  "code": null,
+  "lesson": "把裁剪给谁明确成接口契约：本篇crop驱动搜索引擎返回证据，不能照搬为crop后LVLM读像素收益。"
+ }
+}

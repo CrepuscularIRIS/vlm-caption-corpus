@@ -1,0 +1,152 @@
+{
+ "paper_key": "litscan:76691",
+ "title": "FOCUS",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_76691.txt",
+  "sections_read": [
+   "Abstract",
+   "4–5",
+   "7.1/Table1–2",
+   "8/Table3,5",
+   "9–10",
+   "Appendix Table7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将类别提示替换为实例bbox示范，先约束注意力再用IoU优化",
+  "key_step": "训练query-image token指向support bbox文本token的平均注意力margin",
+  "why_non_obvious": "不是在像素区域上直接贴注意力GT；注释token的结构先使实例对应可学",
+  "trigger_condition": "当模型靠类别先验忽略实例示范时，先监督query到bbox注释的注意力再RL微调",
+  "contribution_type": "method",
+  "abstract_strategy": "将类别提示替换为实例bbox示范，先约束注意力再用IoU优化",
+  "abstract_trigger_condition": "当模型靠类别先验忽略实例示范时，先监督query到bbox注释的注意力再RL微调",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "训练query-image token指向support bbox文本token的平均注意力margin",
+  "abstract_why_non_obvious": "不是在像素区域上直接贴注意力GT；注释token的结构先使实例对应可学"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76691#s1",
+   "object": "上下文实例定位模型",
+   "information": "support图+bbox文本、query图；训练query GT框",
+   "operation": "LoRA SFT+平方hinge注意力margin→IoU/格式GRPO",
+   "claimed_effect": "TAO4-shot SFT34.3、GRPO32.1、SFT+attn57.1、加GRPO68.5；Table1平均67.7 vs IPLoc58.8",
+   "conditions": [
+    "Qwen2-VL-7B",
+    "训练4-shot、测试1/2/4-shot"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables1,3",
+    "quote": "Qwen2-VL-7B (sft + attn loss + grpo) (Ours) 55.8 63.0 68.5               Table 5. Ablation on attention loss placement across layers on the"
+   },
+   "failure_boundary": "需要支持图bbox与训练query框；不能直接作为无框caption任务监督",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "先学习示范利用再RL，普通SFT并不足够",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "bbox文本监督和真实区域grounding需区分",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "IPLoc",
+   "kind": "method"
+  },
+  {
+   "name": "SFT / GRPO without attention",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "TAO4-shot裸Qwen36.1，单SFT34.3、单GRPO32.1",
+  "load_bearing_assumption": "失败来自实例示范利用而非模型缺少分类知识",
+  "scope": "类别无关的上下文bbox预测",
+  "success_criterion": "控制LoRA和数据后attention辅助优于SFT/RL",
+  "why_open": "注意力指向注释不直接证明最终答案使用正确像素"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§5.3–5.4 two-stage training"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "p_i^+=\\sum_jP_{ij}m_j/\\sum_jm_j; p_i^-=\\sum_jP_{ij}(1-m_j)/\\sum_j(1-m_j);\\ L_{bbox}=N^{-1}\\sum_i\\max(0,\\mu-(p_i^+-p_i^-))^2",
+    "locator": "Eq5–9"
+   },
+   {
+    "latex": "L_{SFT}=L_{LM}+\\beta L_{bbox};\\ R=IoU(b_{pred},b_{qry})+0.5\\mathbf1[format];\\ A_i=(r_i-\\bar r)/std(r)",
+    "locator": "Eq10–13"
+   }
+  ],
+  "signal_routing": "query图token到全部输入token的注意力矩阵跨层/头均值，mask选support bbox文本token；LoRA仅更新。第二阶段生成bbox拿序列结果优势，非crop工具局部信用。",
+  "normalization": "mean+std",
+  "invariance": "无PBRS保证；额外注意力损失和IoU目标显式改变训练。",
+  "baseline_or_potential": "同题输出组均reward；KL固定参考。",
+  "degenerate_cases": "全相同IoU且同格式组std=0处理未见；无bbox示范时正mask分母为空，不可直接套；单轮定位无停止。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3分解SFT/GRPO/attention；Table5 first5 layers62.8 > all57.1 > last5 42.12。",
+  "negative_results": [
+   {
+    "text": "SFT或GRPO单独低于base；不能把所有收益归RL。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "打乱support bbox或保持token数但换位置仍同样有效，则实例对应解释不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2-VL-7B-Instruct; LLaVA-OV复核",
+   "framework": "DeepSpeed, LoRA rank8 alpha16",
+   "group_size": 4,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "保留attention使显存57.2→64.1GB约12%；推理无辅助loss",
+  "pitfalls": [
+   {
+    "text": "监督目标是bbox文本token而非真实像素mask；需要明确query→support方向。",
+    "locator": "§5.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当RL仅优化框重叠却不会利用支持实例时，先检查信息通路与表征监督，不把扩大RL步数当补救。"
+ }
+}

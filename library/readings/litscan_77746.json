@@ -1,0 +1,171 @@
+{
+ "paper_key": "litscan:77746",
+ "title": "VisDeep",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77746.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1/3",
+   "§2 pp4–8",
+   "Tables1–6 pp6–8",
+   "§3.2–3.4 p9",
+   "Appendix A/C pp12–13"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "多尺度crop搜索成功后，把图像换成caption接强文本deepresearch模型，最后拼回图像生成长程SFT轨迹。",
+  "why_non_obvious": "视觉命中与深层文本检索能力分别借用不同模型；stop judge在造数据时可见GT。",
+  "trigger_condition": "视觉retrieval noisy、短轨迹冷启动使过早停搜时。",
+  "contribution_type": "长程多模态搜索数据/训练工程",
+  "abstract_strategy": "先获得可识别视觉锚，再通过共享文本context迁移长程能力。",
+  "abstract_trigger_condition": "不同模态模型能力不对称且工具观测可串接。",
+  "abstract_key_step": "30k SFT=16k视觉+8k文本+6k fuzzy；30B再15k在线RL。",
+  "abstract_why_non_obvious": "caption桥接改变teacher信息集，成功过滤不保证student同输入可完成每步。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77746#s1",
+   "object": "长程visual/text search轨迹",
+   "information": "造数据judge见I,q,累计证据,GT答案；文本teacher见caption替代image；训练最终judge匹配reference",
+   "operation": "视觉搜索/visit/summary后桥接文本deepresearch并拼接，成功过滤SFT；GRPO+LOO trick、异常trajectory梯度mask但仍算advantage。",
+   "claimed_effect": "30B agent avg40.9→SFT54.5→RL56.9；CIS+TS三难集40.0vs WIS+TS29.3；异步throughput作者报>10×。",
+   "conditions": [
+    "30B-A3B RL；8B仅SFT",
+    "最多50turn、64Kcontext、每turn4K"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p8",
+    "quote": "+RL training                         37.8          28.5       53.7           74.2                69.6            77.6         56.9"
+   },
+   "failure_boundary": "turn可含多个并行crop搜索，hundreds calls不是hundreds串行轮；长程改进不证明最少必要搜索。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "先造长程多tool/retry支持再RL。",
+   "strength": 3
+  },
+  {
+   "problem": "P20",
+   "how": "异常trajectory保留baseline但mask梯度的路由选择。",
+   "strength": 3
+  },
+  {
+   "problem": "P58",
+   "how": "异步并行与长尾终止的成本工程。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "WIS/CIS × text search",
+   "kind": "ablation"
+  },
+  {
+   "name": "SFT data additions / RL",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "API与walltime限制，RL未穷尽扩展；外部搜索会漂移。",
+   "locator": "§3.4 p9",
+   "quote": "due to API cost and wall-clock constraints"
+  }
+ ],
+ "question": {
+  "observed_failure": "wholeimage search BC-VL27.6→26.1，视觉噪声妨碍检索；SFT54.5到RL56.9增益较小。",
+  "load_bearing_assumption": "多尺度重试可提高真实engine命中，桥接能迁移长程teacher行为。",
+  "scope": "事实型开放世界VQA",
+  "success_criterion": "相同工具/预算下答案、实际调用数与walltime分开量。",
+  "why_open": "少轮全图search不足处理多实体噪声。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§2.2"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2–4"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "§2.3.2/AppA"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "h_t=Judge(I,q,V^t,a_{true})\\in\\{0,1\\};\\quad R=1[answer\\ correct]",
+    "locator": "Eq4 p5/§2.3.2 p7"
+   }
+  ],
+  "signal_routing": "SFT模型生成think/toolcall/answer；RL异常轨迹mask梯度但留adv集合。正文GRPO+LOO trick，无完整adv/std/观测mask/长度式；附录说reward结合format约束而正文纯accuracy，保留冲突。",
+  "normalization": null,
+  "invariance": "非PBRS、无cost项；LOO具体尺度未知，不能推断去std。屏蔽坏轨迹保留其baseline会改变实际更新分布。",
+  "baseline_or_potential": "LOO trick细节未知。",
+  "degenerate_cases": "全对/全错binary组相对差可能为0；格式/重复异常被mask可能失去直接纠错负信号；成功过滤仍可保留中间失败。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "CIS/WIS/text组合及Table4数据阶段；Table6 maxturn1/10/50 avg9.9/41.5/56.9。",
+  "negative_results": [
+   {
+    "text": "FP16在64K长context溢出，采用BF16；工具失败连续3次或n-gram重复截断。",
+    "locator": "§2.3.2"
+   },
+   {
+    "text": "RL LiveVQA77.6未升；8B50.5仍略低GeminiPro agent50.7。",
+    "locator": "Tables1/4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：固定总engine calls/实际walltime而非turn预算，且相同trajectory长度匹配，测multi-scale与bridge独立收益。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL8B/30B-A3B Instruct；teacher/judge型号已读范围未指定",
+   "framework": "Ms-Swift/rLLM",
+   "group_size": null,
+   "max_turns": 50,
+   "kl": null
+  },
+  "cost": "SFT8B50/30B110 H800GPUh，30B RL约1000H800GPUh；>10×是rollout吞吐非端到端证明。",
+  "pitfalls": [
+   {
+    "text": "可见GT的hit judge只用于数据生成，不能用于测试stop；summary模型过滤网页也决定信息。",
+    "locator": "§2.2"
+   },
+   {
+    "text": "toolcall或格式错误>半步/超预算轨迹梯度mask；未给逐tokenownership。",
+    "locator": "§2.3.2"
+   }
+  ],
+  "code": "https://github.com/Osilly/Vision-DeepResearch",
+  "lesson": "先记录teacher信息集与拼接边界；异步搜索分别报轮数、总调用和walltime，异常mask必须连baseline一起核。"
+ }
+}

@@ -1,0 +1,411 @@
+{
+ "paper_key": "2608.06270",
+ "title": "The Illusion of Visual Tool-Use: A Causal Audit of Thinking with Images",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2608.06270.txt",
+  "version": "v2",
+  "pages": 21,
+  "version_observed": "p.1 arXiv:2608.06270v2 [cs.AI] 8 Sep 2026; local version only, remote latest not checked",
+  "sections_read": [
+   "Abstract; 1 Introduction; 2 Related Work",
+   "3.1 Preliminaries; 3.2 SCM; 3.3.1 policy intervention; 3.3.2 trajectory corruption; 3.3.3 VEG",
+   "4.1 CWL/LWP; 4.2 diagnostic classifier; 4.3 ATE decomposition; Algorithm 1",
+   "5 Discussion; 6 Conclusion; Limitations; References",
+   "Appendix A.1-A.4 checkpoints, prompts, verification, intervention, compute",
+   "Appendix B.1-B.5 corruption choice, lengths, regenerated thoughts, force-answer, repeated runs",
+   "Appendix C.1-C.3 uncertainty, turn convention, POER",
+   "Appendix D open-ended gold likelihood; Appendix E.1-E.4 thresholds, decomposition, behavioral audit, HR4K; F LLM declaration",
+   "All Tables 1-20 and Figures 1-5; full 21 pages read"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "把工具调用带来的整体准确率变化拆成提示词/工具可用性干预、在线返回图像破坏、固定前缀的真实—反事实观测差分，以局部读数检验调用文本与像素内容的混淆。",
+  "key_step": "保持策略、调用前前缀、动作文本和答案 opener 一致，仅替换返回图像；由当前策略金选项对最强干扰项的 margin 计算 VEG，再按初始饱和/峰值/继续调用/耗尽预算分组并分解整体准确率差。",
+  "why_non_obvious": "调用前后 margin 上升包含动作文本、继续推理和像素共同作用；随机同形裁图也可使 margin 上升。匹配像素对照减少这类混淆，但所得局部概率差仍不是无工具自然策略的必要性价值。",
+  "trigger_condition": "When an aggregate capability gain may hide ineffective individual actions, apply matched observation interventions and stratified diagnostics to distinguish local evidence sensitivity from action-trace effects.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; manifest decision=null，不能由 arXiv venue 推断会议接收。",
+  "contribution_type": "empirical",
+  "abstract_strategy": "固定决策上下文，替换动作返回内容，并分开报告整体效果与局部内容对照。",
+  "abstract_key_step": "从真实返回和匹配替代返回的相同读出中相减，消除共同的前态项，再按可测行为分层归集总差。",
+  "abstract_why_non_obvious": "动作存在本身能改变下游预测；整体收益和前后变化均不能唯一归因于返回内容，且分层标签可能携带结果信息。",
+  "abstract_trigger_condition": "When a successful aggregate hides heterogeneous mechanisms, hold context and action fixed, replace the returned content, and report both local contrasts and population composition."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.06270#s1",
+   "object": "六个已发布模型在同一基准上的有工具/直答轨迹及在线工具回执",
+   "information": "策略见原图、问题和实际收到的观测历史；直答模式替换系统提示并关闭工具管线；在线破坏后的未来思考和动作重新生成。评价器另见 GT；策略不见 GT。",
+   "operation": "同权重同解码分别运行官方工具提示和工具禁用提示；另在每次工具返回时替换为同形随机原图裁块，并以噪声/全黑和达到12次时强制作答为对照。",
+   "output": "policy ATE、trajectory ATE、Hit-MaxT、调用数、force-answer 准确率。",
+   "claimed_effect": "V* Qwen3-VL-8B tool/direct=91.1/84.2 (+6.9 pp)；random-crop=30.4，force-answer=73.0，故原损失中较大部分来自循环/截断，仍余18.1 pp；DeepEyes 83.3→83.8，近零净干预效应。",
+   "conditions": [
+    "同模型内解码参数相同；Tmax=12",
+    "随机对照取原图 I、同返回形状，在线生成后续轨迹；不能复用干净后续思考",
+    "force-answer 只在预算上限加入必须作答指令"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App B.4 pp.15-16; Tables 1,2,9-11",
+    "quote": "Table 11 shows that forced answering recovers\na large part of the original drop for Qwen3-VL\n(from 30.4/38.2 to 73.0/69.6), so truncation of\nrepair loops explains part of the degradation. However, all force-answer accuracies remain well below\nclean tool-use accuracy, by 18.1 pp for Qwen3-VL8B, 16.8 pp for Qwen3-VL-4B, and 51.2 pp for\nMini-o3. Useful visual evidence is therefore genuinely lost under corrupted observations, and Minio3 remains especially brittle even with the forcedanswer instruction. This supports reading the main\ntrajectory-level result as the total effect of corrupting the observation-feedback process, which includes both evidence removal and induced repair"
+   },
+   "failure_boundary": "policy intervention 同时改变提示和可用动作；trajectory intervention 是证据替换+策略反应的总效应。force-answer 未隔离所有策略反应/指令效应，残余不能全算净视觉证据效应。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.06270#s2",
+   "object": "固定已采样调用的真实/反事实返回图像，以及当前策略下一答案标签分布",
+   "information": "同一模型、自身调用前完整历史和 Ti；保留历史原图/先前真实观测。诊断脚本知道金选项；MCQ GT 只用于取 margin，OE teacher forcing 还把之前的金答案 token 给评分模型。没有未来自然续写成败的反事实样本。",
+   "operation": "固定前缀、Ti 和 literal <answer>，分别读取真实图像与3个同形原图随机位置裁块下的选项受限 softmax；取金选项概率减最强错误选项概率，再做真实减反事实均值；另以每金 token 平均 loglikelihood 扩展到 OE。",
+   "output": "VEG_i ∈[-2,2]、近零/大效应比例、正确/错误及饱和/非饱和分层；OE 为无界 nats/token。",
+   "claimed_effect": "Table3 DeepEyes / Mini-o3 / Qwen8 VEG均值 .053/.063/.198，|VEG|<.01 比例81%/29%/56%；Qwen8非饱和均值 .55。App C.1四种子 Mini .0629±.0041、Qwen8 .1944±.0183，±为样本SD。",
+   "conditions": [
+    "白盒 next-token logits 与候选标签映射可用",
+    "真实/反事实仅观测内容变，前缀和调用绑定必须一致",
+    "GT 用于离线诊断；随机裁块并不由语义无关标注保证",
+    "R=3平均概率差，不是平均 logits 后softmax"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App A.3 p.13; Eqs 3-4 p.6; App D Eqs 7-9 pp.17-18",
+    "quote": "Step-level intervention (§3.3.3). The counterfactual observation uses the same RANDOM - CROP construction as the trajectory-level intervention. Each\nVEG value is obtained by averaging over three independently sampled counterfactual crops."
+   },
+   "failure_boundary": "仅固定读出局部效应；近零可来自饱和、对照也含目标、两支都误读或评分投影盲点；正值不保证视觉事实真/调用必要/免罚合理。无天然 opener 偏差抵消定理，亦无训练效果。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.06270#s3",
+   "object": "干净轨迹上的 n、g0、max_i VEG、是否耗尽预算和继续调用饱和指标",
+   "information": "事后看到完整轨迹、每步带GT的margin和峰值、终局/最大调用次数；直接答案来自独立无工具 rollout。没有可在当前决策时得到的全部分类特征。",
+   "operation": "按顺序分 No-call、g0>.95 或 Vmax<.01 的 CWL、继续饱和调用或 HitMax 的 LWP、剩余 Calibrated；把每组占比乘组内工具—直答正确率差，再相加。",
+   "output": "四组分布及加和的policy ATE贡献；阈值扫描和HR4K复核。",
+   "claimed_effect": "V* Qwen8 Calibrated 20.9%贡献+7.6 pp，总ATE+6.9；Mini Calibrated45.0%贡献+3.3，总+5.5。HR4K Qwen8 Calibrated10.1%贡献+4.4，总+5.0。",
+   "conditions": [
+    "是固定阈值后验诊断而非训练分类器",
+    "MCQ共享阈值；OE不迁移阈值/四组",
+    "空支持POER为undefined；附录并行调用采用first-of-turn约定"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec 4.3 p.8; Alg 1/Table4 p.8; Tables5/17/19/20",
+    "quote": "We use the resulting group distribution to decompose the policy-level ATE into per-group contributions. Let fb be the fraction of trajectories assigned\n¯ policy,b be the mean accuracy gap\nto group b and ∆\nbetween πtool and πdirect on those trajectories:"
+   },
+   "failure_boundary": "分组依赖GT、工具处理后的变量与整条未来轨迹，代数ATE分解不是随机化的亚组因果效应识别。Vmax<epsilon 不是 max|VEG|<epsilon，会把大幅负效应也判为CWL；分类顺序会遮盖同时发生的失败。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "official tool-use prompt",
+   "kind": "method"
+  },
+  {
+   "name": "tool-free prompt with same checkpoint/decoding",
+   "kind": "method"
+  },
+  {
+   "name": "RANDOM-CROP same-shape source-image return",
+   "kind": "method"
+  },
+  {
+   "name": "NOISE and BLANK corruptions",
+   "kind": "method"
+  },
+  {
+   "name": "force-answer at Tmax",
+   "kind": "method"
+  },
+  {
+   "name": "V* / HR-Bench-4K / HR-Bench-8K / VisualProbe / MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MCQ option-restricted gold margin; OE gold-token mean loglikelihood",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明确说闭源模型无法完成相同白盒步骤审计，不能推出闭源结论。",
+   "quote": "Model access constraints. All experiments are\nconducted on open-source thinking-with-images\nmodels. Our intervention levels have different access requirements: the policy-level and trajectorylevel interventions only require running the model\nand controlling the returned observations, so they\ncan apply to black-box models with an observable\ntool interface, whereas the step-level VEG uses\ntoken-level scores and thus needs white-box access.\nClosed-source models such as OpenAI o3/o4-mini\n(OpenAI, 2025a) expose neither their token-level\nprobabilities nor the ability to intervene on intermediate observations, so whether the same conclusions extend to the closed-source models is an open\nquestion that we cannot resolve here.",
+   "locator": "Limitations p.10"
+  },
+  {
+   "text": "只研究crop-and-zoom；OCR/分割/视频等迁移只是构造建议。",
+   "quote": "Limited tool set. We only focus on the CROP AND - ZOOM operation, which is the dominant tool\nin current thinking-with-images models. Other\ntools such as image segmentation, OCR, frame\nselection in video, code-based image manipulation,\nor external search may exhibit qualitatively different calibration behaviors, but our causal framework\ntransfers by constructing a tool-specific counterfactual observation. For OCR one can replace the\nreturned text with text from another region or an\nempty result; for localization one can replace the returned box with a shifted or random box; for video\nframe selection one can replace the chosen frame\nwith a temporally shifted or irrelevant frame. We\ndo not claim the crop-and-zoom patterns necessarily hold for these tools.",
+   "locator": "Limitations p.10"
+  },
+  {
+   "text": "RL trap为未做训练干预的假说，不是训练因果结论。",
+   "quote": "RL trap as a hypothesis. The RL-trap account\nin §5, which attributes policy miscalibration to\noutcome-only reinforcement learning over toolaugmented rollouts, is a hypothesis consistent with\nour observations rather than a causal claim established by training-time experiments. Our empirical\nfindings, the two failure modes and the concentration of gains in the Calibrated subset, hold regardless of whether this hypothesis is confirmed.",
+   "locator": "Limitations p.10"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table3 81% DeepEyes和56% Qwen8调用 |VEG|<.01；Table4 CWL占72.8%和70.7%；Table1 DeepEyes在V*有无工具均83.3%，但Fig1总token约10.0k vs4.6k。这些是作者协议下的诊断，不是逐调用必要性的真值。",
+  "load_bearing_assumption": "整体工具准确率提升或调用后置信上升足以说明模型使用了工具返回的视觉内容，并能据此把结果信用发给每个调用。",
+  "scope": "六个开源crop-and-zoom模型/五列基准；细粒度V*主要3模型，四组含Qwen4；HR4K复核3模型，OE仅补充。",
+  "success_criterion": "在固定前缀/动作下估计真实与匹配反事实像素的局部答案偏好差，并报告零/负效应、饱和、循环和按组总准确率贡献；非目标是证明训练后少裁图且非劣。",
+  "why_open": "已有政策级和行为分析不能区分动作文本shortcut与观测内容；过程奖励研究未回答逐次调用是否对当前策略必要。本文给局部敏感性审计，仍未闭合必要性和可训练信用之间的缺口。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Sec4.2 p.8",
+   "note": "执行：用四组分层，并用占比×组内差拆总ATE；非训练全对/全错分组。"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "App A.1 p.12",
+   "note": "执行：不微调地诊断现有模型；训练奖励因果机制留待未来。"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "App D p.18",
+   "note": "执行：MCQ概率差与OE nats/token分开，拒绝移植阈值；附录并行call按turn第一条计。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "App A.3 p.13",
+   "note": "执行：局部配对只换观测内容，并加force-answer/空白噪声检查；不是对训练目标作单变量实验。"
+  },
+  {
+   "vocab": "M",
+   "id": "M13",
+   "locator": "App D p.17",
+   "note": "执行：同前缀同Ti配对观测；比较的是观测内容而非不同动作Q值。"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "primary",
+   "locator": "App B.4 p.15",
+   "note": "用匹配像素对照和force-answer拆读数混淆；残余不代表所有混淆已消除。"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "role": "supporting",
+   "locator": "Sec5 p.9",
+   "note": "执行：推翻总体增益能代表各调用有效的推断；不贴未执行的监督信号工程/训练目标标签。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "T_i\\leftarrow f_\\pi(I,Q,T_{<i},O_{<i}),\\quad O_i\\leftarrow E_{tool}(I,T_i),\\quad Y\\leftarrow f_\\pi(I,Q,T_{1:n},O_{1:n})",
+    "locator": "Sec3.2 p.3",
+    "note": "原文SCM，保留I,Q直达Y以及Ti直接至Y路径；后续行动依赖前观测。"
+   },
+   {
+    "latex": "ATE_{policy}=\\mathbb E_{do(\\pi=\\pi_{tool})}[1[Y=Y^\\star]]-\\mathbb E_{do(\\pi=\\pi_{direct})}[1[Y=Y^\\star]]",
+    "locator": "Eq1 p.4",
+    "note": "独立rollout，系统提示和工具管线不同。"
+   },
+   {
+    "latex": "ATE_{traj}=\\mathbb E[1[Y=Y^\\star]\\mid do(O_i=\\widetilde O_i\\ \\forall i)]-\\mathbb E[1[Y=Y^\\star]]",
+    "locator": "Eq2 p.4",
+    "note": "动态在线总效应，干预分支可改变动作、长度和停机。"
+   },
+   {
+    "latex": "\\widetilde P(y\\mid C)=\\frac{e^{z_y}}{\\sum_{k\\in\\mathcal V}e^{z_k}},\\quad g(C)=\\widetilde P(Y^\\star\\mid C)-\\max_{k\\ne Y^\\star}\\widetilde P(k\\mid C)\\in[-1,1]",
+    "locator": "Eq3 p.6",
+    "note": "gold标签决定margin符号；候选集通常ABCD，不是全词表正确率。"
+   },
+   {
+    "latex": "\\Delta M_i^{real}=g_i^{real}-g_{i-1},\\quad\\Delta M_i^{cf}=g_i^{cf}-g_{i-1},\\quad VEG_i=\\Delta M_i^{real}-\\Delta M_i^{cf}=g_i^{real}-g_i^{cf}",
+    "locator": "Eq4及前文 p.6",
+    "note": "最后等号为直接代数展开；App A.3实际cf取3次独立裁图后差分平均。"
+   },
+   {
+    "latex": "POER=\\Pr(g_{k-1}>\\tau_{sat}\\mid k\\ge2,\\ g_0\\le\\tau_{sat}),\\quad\\tau_{sat}=0.95",
+    "locator": "Eq5 p.6",
+    "note": "每call的条件率；Algorithm1又写每trajectory二值POER，聚合/any判定转换没有单独公式，不能默默视为同一个变量。"
+   },
+   {
+    "latex": "ATE_{policy}=\\sum_{b\\in\\mathcal B}f_b\\overline\\Delta_{policy,b},\\quad\\mathcal B=\\{NoCall,M1,Cal,M2\\}",
+    "locator": "Eq6 p.8; Eq10 p.19",
+    "note": "按工具轨迹后验分层的代数恒等式，不是独立训练出的效应。"
+   },
+   {
+    "latex": "g^{open}(C)=\\frac1L\\sum_{t=1}^L\\log P(y_t^\\star\\mid C,y_{<t}^\\star),\\quad VEG_i^{open}=g^{real,open}_i-g^{cf,open}_i",
+    "locator": "Eqs7-9 p.17",
+    "note": "明确teacher forcing先前GT token；按金答案长度平均；报告median/IQR而非mean。"
+   }
+  ],
+  "signal_routing": "本论文没有训练损失、advantage、reward更新、token mask或critic。VEG是每个被审计返回的离线标量，分发到调用统计和轨迹分类；policy/traj准确率来自终答评分。GT进入评分而不进入普通MCQ生成。§5的process supervision和inference stopping只是用途提议，未实现训练或在线无GT gate。",
+  "normalization": "MCQ仅候选选项softmax，g∈[-1,1]，VEG∈[-2,2]；对3个cf的margin差作算术平均。无GRPO组均值/std、RLOO或优势白化。OE按L平均金token loglikelihood，分布重尾故median/IQR。Table3按call池化，峰值按trajectory平均，C.2按turn首call；这些不同权重不可混用。",
+  "invariance": "配对固定权重/前缀/动作/opener/图形状，只改返回像素，公共g_pre精确相消。相同opener的非线性像素交互不会因此消失；不是自然解码估值不变性。不是PBRS，也没有最优策略/无偏PG保证。现有卡把A乘门控会改变期望梯度，不受本文不变性保障。",
+  "baseline_or_potential": "cf是原图均匀随机位置的同形裁图，不是Q(stop)、冻结读者、价值critic或潜函数。前态g仅定义MG，VEG中完全消去；不是去掉工具动作的baseline。3次cf的采样分散度/每调用CI未报告。",
+  "degenerate_cases": "无调用则No-call、g0设+inf，VEG不存在；单turn则POER无条件支持，DeepEyes记N/A而非0。两支都饱和/同样看错/都含目标可使VEG≈0；当前采样下不存在的动作无可诊断数据。g_pre>.95仅推出每个MG<=.05，不限制real-cf差绝对值，见数值反例。全负VEG且max<.01会进CWL，和内容无效不同。阈值边界max=.01落后续分支；全对/全错RL组、p(action)≈0梯度不适用，因为未训练。OE无界，MCQ阈值不可移植。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "固定Ti/历史比较真实与同形随机像素，避免只靠pre/post margin把动作形式算作内容；在线随机/噪声/全黑回执与force-answer诊断动态修复/截断；四种子局部统计和HR4K同阈值复核。它们验证诊断模式，不验证训练门控减少无效裁图。",
+  "controls": [
+   "同checkpoint且有/无工具使用同解码参数；不过system prompt和pipeline共同改变。",
+   "random-crop保留原图/形状/自然像素统计；没有语义无关或IoU排除的已报告检验。",
+   "NOISE iid RGB uniform[0,255]和BLANK全零；Qwen8 BLANK61.8优于RANDOM30.4，说明检测损坏与策略反应影响结果。",
+   "force-answer保持已生成的损坏历史，到Tmax强制答；Qwen8恢复42.6pp，但未构造clean+sameforce指令的全因子对照。",
+   "E.1 epsilon .005/.01/.02/.05、tau .80/.90/.95/.97/.99两个单轴扫描，并非完整联合网格。",
+   "C/I与sat/non-sat分层；Vmax/Vmin和per-position计数；k>=4尾部小样本显式标注。",
+   "作者未报告真实回执原样重插的null control、option permutation、不同opener、同框低清对照或匹配计算量自然续写一致性。"
+  ],
+  "negative_results": [
+   {
+    "text": "开放题全调用中位数Mini为负-.027，Qwen8为.000；分数重尾，不能宣称普遍正向信息增益。",
+    "locator": "App D p.18; Table14 p.19"
+   },
+   {
+    "text": "force-answer后仍落后clean，但作者也承认其余policy反应可能贡献残余。",
+    "locator": "Sec3.3.2 p.5; Table11"
+   },
+   {
+    "text": "Qwen8第>=4次仅17call/9non-sat；尾部下降不能作决定性结论。",
+    "locator": "Table13 footnote p.17"
+   }
+  ],
+  "seeds": "App B.5：原始+2额外random-crop seeds（控制decode+crop），V* corrupted acc Mini23.6/22.5/24.6；Qwen8 30.4/36.1/28.8；Qwen4 38.2/46.1/42.9。App C.1：4独立seeds，Mini toolacc85.1±1.8pp、VEG.0629±.0041；Qwen8 90.6±.6pp、VEG.1944±.0183，明确sample SD，不是CI。未给种子ID、逐调用/总体ATE配对CI或cluster bootstrap。E.3另8×191=1528 Mini rollout，不能当所有实验8seeds。其它主表重复次数不明确，不补写single。",
+  "falsifier": "若保持图像绑定和前缀的无干预重插即可产生同量VEG，或更换opener/标签排列翻转结论，局部效应读出失效；若经自然续写校准后VEG与real-cf续写正确率无关联，则不得用其作任务价值门控；若 matched training 下打乱VEG同等有效，则门控效果不能归因于内容。这些是后续提案，本文未运行。",
+  "compute": "每个调用real+3cf至少4份后态评分；MG和sat还需前态评分，可能共享cache但未报告。无额外free-form step probe；在线corruption可显著增加轮数，所以不能宣称等推理预算。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepEyes-7B, PixelReasoner-RL-v1, Mini-o3-7B-v1, Qwen3-VL-8B/4B-Instruct, Thyme-RL; judge Qwen3-30B-A3B-Instruct-2507",
+   "framework": "vLLM, bf16, native image preprocessors",
+   "group_size": null,
+   "rollouts": "main benchmark items 191/800/800/141+268+106/1919; repeat counts in evidence_design.seeds",
+   "steps": null,
+   "kl": null,
+   "temperature": {
+    "DeepEyes": 0.0,
+    "PixelReasoner": 0.1,
+    "Mini-o3": 1.0,
+    "Qwen3-VL-8B": 0.7,
+    "Qwen3-VL-4B": 0.7,
+    "Thyme": 0.01
+   },
+   "max_turns": 12,
+   "max_turns_note": "Table7 is max TOOL CALLS Tmax=12; not necessarily12 reasoning turns or parallel invocations counted identically",
+   "top_p": "1,.95,1,.8,.8,.001 respectively",
+   "top_k": "-1,-1,-1,20,20,1 respectively",
+   "training": "none; released checkpoint, no fine-tuning/adapters/quantization"
+  },
+  "cost": "AppA.4 H200：每rollout server1卡、实验合计使用8卡；judge另以2卡tensor parallel服务，8是否含judge未明确。无总GPUh、总tokens或runtime。Fig1 DeepEyes V*/HR4K/HR8K 工具总token10.0k/31.8k/34.3k vs直答4.6k/15.2k/16.4k（视觉读图约数）。不是训练效率对照。",
+  "pitfalls": [
+   {
+    "text": "不能替换图后复用原干净思考文本：会把真实观测事实泄入counterfactual。",
+    "locator": "App A.3 p.13"
+   },
+   {
+    "text": "并行调用的计数口径会让POER缺失；不能把N/A当零或直接与allcall总量混合。",
+    "locator": "App C.2 p.16"
+   }
+  ],
+  "code": "https://github.com/OpenCausaLab/CauAudit",
+  "code_status": "paper p.1 link only; external code not inspected or executed, commit/license/implementation binding unknown",
+  "lesson": "当替换工具回执来测内容贡献时，应记录原图/真实框/随机框/返回像素hash与前缀绑定，在线重生成受干预的未来，并分别报告局部logit差、自然续写结果和预算截断；相同答案opener只能控制形式，不能替代探针语义校准。"
+ },
+ "relevance": [
+  {
+   "problem": "P05",
+   "strength": 2,
+   "how": "把工具可用性、像素效应和调用时机分开；不提供必要裁图真值或准确率非劣实验。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "逐返回局部内容差可作为候选diagnostic；没有token路由训练，不能闭合必要性信用。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "使用被审计策略自身logits，减少冻结读者能力失配；仍有强制opener和金标签依赖。"
+  },
+  {
+   "problem": "P17",
+   "strength": 2,
+   "how": "A.3明确固定readout而非自由答案形成；共同前缀不证明预填偏差在图像对比中抵消。"
+  },
+  {
+   "problem": "P18",
+   "strength": 1,
+   "how": "正VEG的失败轨迹可存在，但不能分辨正确视觉事实、搜索必要、未命中或蒙对；wrong-wrong免罚不获证明。"
+  },
+  {
+   "problem": "P27",
+   "strength": 2,
+   "how": "可测固定状态下答案偏好是否随像素变化；不测自然改口REVISE行为，也非SFT/RL前后恢复比较。"
+  },
+  {
+   "problem": "P41",
+   "strength": 1,
+   "how": "源方法替换像素而非caption句子；随机crop所写文本是否中性未验证。"
+  },
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "提供可复核局部诊断公式，§5建议过程监督；没有已训练PRM或效果证据。"
+  }
+ ],
+ "information_boundary": {
+  "gold": "MCQ g用GT选择正项，错项max可随branch改变。普通模型输入不含金标签；OE loglikelihood却teacher-force之前金token，属于teacher-forced评分。最终answer verification用GT。",
+  "judge": "A.2最后<answer>或fallback boxed抽取，去空白标点/大小写并MCQ规约到letter；exact失败才调用Qwen3-30B-A3B-Instruct-2507，输入question+gold+model response，greedy/no-thinking；未列图像输入、校准集或judge error。exact OR judge correct算对。无人工必要性金标。",
+  "counterfactual": "正文另位置，A.3均匀从source I取same-shape；没有数值IoU、不重叠保证、语义目标排除、嵌套crop坐标转换、resizing边界或失败fallback细则。正确绑定必须保Ti文本、前缀和图像slot，不能把另位置坐标替换到Ti；代码未核，执行细节未知。",
+  "future": "trajectory corruption 不保留干净后续thought，以免泄漏；局部pair保留以往真实history是定义的一部分，须排除本次真实crop已产生的后续描述。文本说through current thinking block但未提供完整serialized slice例，真实切点不靠猜测补全。分类max/HitMax及最终C/I是事后未来信息，不能在线拿来决策。",
+  "causal_boundary": "这是对指定随机替代分布和固定readout的观测干预效应。作者称NIE，但未定义自然替代动作分布及将该margin读数等同自由终答Y的识别条件；宜保留local counterfactual probe解释。保持Ti控制其共同直接项，不证明所有action×pixels交互为零。",
+  "necessity": "VEG>0表示real比随机cf更支持gold，不表示real绝对支持gold，更不保证读到事实为真或不crop失败；VEG≈0不表示无必要，可能是等效好cf/双支坏/冗余但确认有用/探针饱和。原始I仍在上下文中，干预不删除所有视觉证据。",
+  "selection": "Table3主模型按§3.3.1-2已观察行为挑选3个，非随机模型样本；主诊断V*191，HR4K800复核。OE/table18说valid calls但未给剔除定义/invalid总量；C.2首call每turn并行折叠，DeepEyes2/191并行案例被折叠；Qwen8 k>=4仅17/9non-sat。C/I按终局分层及post-treatment分类有选择依赖。"
+ },
+ "source_discrepancies": [
+  {
+   "locator": "Sec3.3.1 p.4; Table1 p.5",
+   "note": "正文连句Mini-o3和Qwen8后举+21.3pp，表明确+21.3是Mini-o3 VisualProbe，Qwen8为+11.7；记录按表区分，不归给Qwen8。"
+  },
+  {
+   "locator": "Sec4.1 p.7; Eq4 p.6",
+   "note": "饱和只界定MG提升空间；不能机械推出VEG近零。自己的数值反例gpre=.99,greal=.99,gcf=-.99 => MGreal=0,MGcf=-1.98,VEG=1.98。反例是公式范围检查，非模型实测。"
+  },
+  {
+   "locator": "Algorithm1 p.8",
+   "note": "Vmax<epsilon包含所有强负VEG调用，不等同|VEG|nearzero；若仅一call VEG=-.8,g0=0,未HitMax，仍判CWL，而返回内容明显影响局部读数。"
+  },
+  {
+   "locator": "Sec3.3.3 p.7; Table3 p.6",
+   "note": "把非零MGcf全部归因call itself需cf无相关内容且其余thinking作用已隔离；随机原图patch可能仍含证据。DeepEyes非饱和mean.10，故文字“all columns around zero/best does nothing”比表定量更强。"
+  },
+  {
+   "locator": "App C.3 p.16; Eq5",
+   "note": "g0不饱和不能证明genuinely required tool use，后续提高可来自推理/动作文本；条件化不是因果归因证明。"
+  },
+  {
+   "locator": "Sec4.2 p.8; Alg1 vs Eq5",
+   "note": "分类不拟合outcome labels不等于不使用GT：g0/Vmax来自gold margin；POER概率与每轨迹boolean记号混用，须落实聚合。"
+  },
+  {
+   "locator": "App E introduction/E.1 p.18",
+   "note": "介绍称joint sensitivity sweep，但实际Tables15-16是各固定另一参数的单轴扫描，未验证联合交互。"
+  }
+ ],
+ "tier": "full"
+}

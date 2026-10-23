@@ -1,0 +1,404 @@
+{
+ "paper_key": "2607.23605",
+ "title": "Hybrid Advantage Estimation with Unified Critic for VLM Agentic Reinforcement Learning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.23605.pdf",
+  "version": "v1",
+  "pages": 29,
+  "version_observed": "PDF p.1: arXiv:2607.23605v1 [cs.AI] 26 Jul 2026. Latest remote revision not checked.",
+  "sections_read": [
+   "Abstract and 1 Introduction pp.1–2; Figure1",
+   "2 Related Work p.3",
+   "3 Preliminaries pp.3–4 Eqs1–4",
+   "4.1 Turn-/Token-wise Formulations pp.4–5; Eqs5–8",
+   "4.2 Hybrid Advantage/Unified Value pp.5–6; Eq9–10; Theorems1–2; Figures2–3",
+   "4.3 HyGAE pp.6–8; Eq11–17; Algorithm1",
+   "4.4 Bias/Variance p.8; Theorems3–4",
+   "5.1–5.5 Experiments pp.8–11; Tables1–2; Figures4–5",
+   "6 Conclusion p.12; References pp.12–16",
+   "Appendix A.1 Formulations p.17 Eq18–23",
+   "Appendix A.2 all proofs pp.18–21 Eq24–33",
+   "Appendix B.1 all environments/prompts pp.21–28; Tables3–6",
+   "Appendix B.2 Training Details p.29 Tables7–8"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "把轮级与token级策略梯度写为同一token logprob结构，混合两种GAE；用含轮内折扣奖励的混合return训练同一个critic，避免两个价值模型。",
+  "key_step": "A_hyb=α A_turn+(1−α)A_token；actor所有生成token用混合优势。critic目标用α G_turn,broadcast+(1−α)G_token，其中轮级return回播需加该位置到轮尾的折扣微奖励，默认α=.5。",
+  "why_non_obvious": "轮级信号避免跨大量推理token衰减但失去轮内差别，token信号有细粒度差别却受序列长度影响；共享critic不能只把同一轮return平铺。作者用折扣对齐和价值等价作理论依据，但原文条件历史/索引存在待核问题，实验有效性不能代替证明。",
+  "trigger_condition": "When one interaction turn contains many generated tokens and feedback arrives at turn boundaries, combine turn- and token-scale advantages and fit a shared critic with position-aware mixed return targets, after checking reward, discount and history alignment.",
+  "reviewer_praise": [
+   "low_evidence: manifest supplies no reviews_path; independent praise unavailable."
+  ],
+  "reviewer_concern": [
+   "low_evidence: no independent reviews; reader concerns separated in theory_audit/evidence_design."
+  ],
+  "acceptance_signal": "low_evidence; manifest decision=null copied without inferring acceptance.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Express two temporal resolutions in a common update form, mix their estimates, and share the predictor using aligned targets.",
+  "abstract_key_step": "Broadcast the coarse estimate to fine positions, preserve fine-position variation through a convex mixture, and reconstruct each training target with the intervening discounted signals.",
+  "abstract_why_non_obvious": "A common predictor can reduce duplication only when its conditioning state and return target agree across resolutions; a superficial broadcast can train incompatible values.",
+  "abstract_trigger_condition": "When one coarse action consists of many fine decisions with delayed feedback, align histories and rewards before mixing estimates and sharing their predictor."
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.23605#s1",
+   "object": "Actor advantage tensor over reasoning and executable-action tokens across turns",
+   "information": "Completed on-policy trajectories contain observation/action/reward history, generated token indices and turn boundaries, plus jointly learned critic estimates. GAE training targets use later realized rewards/values; policy and critic conditionals are written on prefixes, not a GT future trajectory prompt. Environment-specific privileges are material: VIRL executor has GT route and only executes aligned actions; Primitive Skill observations include object coordinates.",
+   "operation": "Compute turn-wise and token-wise TD/GAE estimates from the same rollout, broadcast the turn advantage across its generated tokens, mix with token advantage at α=.5, and optimize token likelihood ratios with PPO clipping.",
+   "output": "Every generated token receives A_hyb; no explicit crop-only sign table, answer-now fork, independent semantic judge or process-reward model.",
+   "claimed_effect": "Table1 HyGAE mean.91 vs Token-PPO.81/Turn-PPO.47/GRPO.38; mean is consistent with ten subtask columns, not five environment means. Table2 α0/.25/.5/.75/1 yields Sokoban.59/.64/.83/.78/.38 and FrozenLake.72/.76/.80/.73/.70.",
+   "conditions": [
+    "Correct turn/token boundaries and masks",
+    "Learned value estimates are usable",
+    "Reward and discount conventions align across resolutions for theoretical equality",
+    "Rich simulator feedback and action formats used in evaluation"
+   ],
+   "evidence": {
+    "quote": "We ablate the mixing coefficient α used in both the hybrid advantage in Eq. (13) and the hybrid\nreturn in Eq. (17), where α controls the balance between turn-level and token-level signals. In this\nsetting, α = 0 corresponds to Token PPO, α = 1 reduces to Turn PPO with broadcasted values,\nand α = 0.5 is our default configuration. As shown in Table 2, the default choice α = 0.5 achieves\nthe best performance on Sokoban, FrozenLake, and Primitive Skill. The intermediate mixtures also\ngenerally outperform the pure turn-wise setting, suggesting that combining token-level and turn-level\ncredit assignment provides a more reliable training signal.",
+    "locator": "§5.4 p.11 Table2",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "No direct/crop efficiency or zero-support recovery test. Same α changes both actor and critic targets, so this ablation does not isolate actor mixing. Primitive Skill α.25/.75=.73 is worse than pure token.98. Clipping, approximate critic and nonaggregated KL break any simple exact-gradient assertion.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.23605#s2",
+   "object": "Unified critic training targets at turn boundaries and intermediate token positions",
+   "information": "One learned Vψ is used for token estimates and at turn-ending locations for turn estimates. Critic training target combines sampled future rewards with bootstrap values; it is trained with actor rather than a frozen external reader. The formal τ_turn excludes current action while τ_token_end includes generated tokens, so information equivalence is not established by matching γ alone.",
+   "operation": "Construct G_token=A_token+V(prefix); construct G_turn,broadcast=A_turn+sum of discounted within-turn rewards+V(turn); mix returns using the same α and regress shared critic to that target; use constant turn value for the turn-advantage baseline.",
+   "output": "One critic supporting two GAE granularities, with corrected target variation across a turn.",
+   "claimed_effect": "Figure4 Sokoban validation: full.83, Token-PPO.59, uniform-value target.42, no-critic REINFORCE.00; choice of turn baseline.83 vs broadcasted turn-value baseline.68. This supports tested implementation choices, not the exact value identity proof.",
+   "conditions": [
+    "Position of endpoint value and reward accumulation are defined consistently",
+    "No reward double counting between boundary reward and broadcast micro-rewards",
+    "Critic target is treated as a target during regression; actual detach/mask code not inspected"
+   ],
+   "evidence": {
+    "quote": "The return must be precise. The formulation of the mixed return in Eq. (17) is critical. We observe\nthat alternative choices, such as broadcasting the turn-level return uniformly across all tokens within\na turn or omitting the value model entirely (i.e., using REINFORCE), lead to training collapse, as\nshown in Fig. 4. This observation aligns with known challenges in PPO for language models, where\ntraining the value model is difficult Shen et al. (2024); Sheng et al. (2024). The formulation of the\nhybrid return in Eq. (17) provides the precise target and necessary variance reduction to stabilize the\nvalue function Vψ throughout training.",
+    "locator": "§5.3 p.10 Figure4",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "Theorem2 claims start-history/end-token value equality without resolving changed conditioning; App.A Eq27 and reward indexing need independent mathematical audit. Critic architecture/init, λ and separate discount settings are incompletely reported. Shared critic saves a second critic conceptually, without measured GPU-hour/memory advantage.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Token-PPO; Turn-PPO; GRPO; RL4VLM; VAGEN-Base on Qwen2.5-VL-3B",
+   "kind": "method"
+  },
+  {
+   "name": "Frozen Qwen2.5-VL-3B; Gemma3-4B; VLM-R1-3B; Cosmos-R1-7B; Qwen3-VL-4B",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-5; Gemini2.5Pro; ClaudeSonnet4.5",
+   "kind": "method"
+  },
+  {
+   "name": "Uniform critic target; REINFORCE; KL aggregation; broadcasted turn baseline; α sweep",
+   "kind": "method"
+  },
+  {
+   "name": "Sokoban; FrozenLake; Navigation Base/CS; Primitive Skill Place/Stack/Draw/Align; VIRL ID/OOD",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "论文无独立Limitations节；作者指出critic目标必须准确，平铺return或无critic会训练失败。",
+   "quote": "The return must be precise. The formulation of the mixed return in Eq. (17) is critical. We observe\nthat alternative choices, such as broadcasting the turn-level return uniformly across all tokens within\na turn or omitting the value model entirely (i.e., using REINFORCE), lead to training collapse, as\nshown in Fig. 4.",
+   "locator": "§5.3 p.10"
+  },
+  {
+   "text": "VIRL改变环境：只执行GT轨迹对齐的动作。会屏蔽错误行动后果，不能直接外推自由导航。",
+   "quote": "The original environment provides the ground-truth trajectory. For simplicity, we modify the environment to execute only the generated actions that are aligned with the ground-truth trajectory.",
+   "locator": "Appendix B.1 p.27"
+  },
+  {
+   "text": "Primitive Skill有对象位置元数据，非纯像素3D定位。",
+   "quote": "We will provide the object positions to you, but you need to match them to the object in the image by yourself. You’re facing toward\nthe negative x-axis, and the negative y-axis is to your left, the positive y-axis is to your right, and the positive z-axis is up.",
+   "locator": "Appendix B.1 p.26"
+  },
+  {
+   "text": "案例呈现改了输出模板，不是完整原始rollout。",
+   "quote": "To improve the readability, we modify the output template and highlight the observation,\nreasoning, prediction, and answer here.",
+   "locator": "§5.5 p.11"
+  }
+ ],
+ "question": {
+  "observed_failure": "Figure5 frozen模型重复无效动作，未给重复率。数字证据Table1：同骨干Token-PPO.81而Turn-PPO.47；Figure4无critic.00、uniform target.42、full.83；这些是训练配方失败/对照，不能冒充量化的反馈忽略率。",
+  "load_bearing_assumption": "只用token或只用turn一种粒度已足够；或将轮级return均匀复制即可训练共享critic。",
+  "scope": "Qwen2.5-VL-3B在五类视觉交互环境，3–7轮，每轮可输出多个动作，学习混合优势及critic目标。",
+  "success_criterion": "固定骨干和环境比较token/turn/mixed的成功率、critic目标消融与跨run离散程度；效率需另测critic计算和内存。",
+  "why_open": "已有独立粒度或层次方案无法同时保留轮间反馈和轮内语言信用，且双critic昂贵；当前贡献尝试同形式梯度与单critic，但未直接解决crop事实/必要性或token责任账本。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "This generation–interaction loop can be viewed at either the turn or token scale, leading to distinct POMDP formulations and corresponding RL training strategies. Below, we detail these two\nperspectives.",
+   "locator": "§4.1 p.4",
+   "note": "实际分别定义token行动与整轮宏动作，Eq7分解logprob；实验还允许每轮多动作，turn不能当作一次环境action。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "Aggregation of small token-wise rewards is optional. As discussed in Section 4.3, strictly\nspeaking, additional token-level rewards, e.g., KL-divergence penalties, should be aggregated into\nthe turn reward when computing the turn-level advantages. This ensures that the system provides\nexactly the same reward from the token-wise and turn-wise RL perspectives. However, since these\nrewards are typically small, we show in Fig. 4 that aggregating them at the turn level or not leads to\nsimilar results.",
+   "locator": "§5.3 p.10 Figure4",
+   "note": "实际对照是否把微小KL奖励聚合到turn reward：.80 vs .83；只针对该开关，不将α同时改变actor和critic叫作独立actor机制证明。"
+  },
+  {
+   "vocab": "M",
+   "id": "M08",
+   "quote": "We compare the finetuning performance of the\nQwen2.5-VL-3B backbone using standard reinforcement learning methods, including TokenPPO Schulman et al. (2017); Ouyang et al. (2022), Turn-PPO Schulman et al. (2017); Chen\net al. (2025), GRPO Guo et al. (2025), RL4VLM Zhai et al. (2024), and VAGEN-Base Wang\net al. (2025a).",
+   "locator": "§5.1 p.9",
+   "note": "实际用Token/Turn-PPO、GRPO、RL4VLM、VAGEN命名对照；不是泛泛声称用标准RL。"
+  },
+  {
+   "vocab": "rs",
+   "id": "algebraic_equivalence_unification",
+   "role": "primary",
+   "quote": "The two estimators focus on different properties during training. As shown in Fig. 2, the turn-wise\nadvantage estimation remains constant across the turn. This preserves the turn-level reward signal\nand avoids excessive discounting through intermediate reasoning tokens. Conversely, the token-wise\nadvantage estimation provides fine-grained advantage values for each individual token, preserving\nwithin-turn differentiation.\nExisting methods typically employ either estimator independently or use one signal to guide the\nother when both advantages are considered. The equivalence above provides a theoretical basis for\noptimizing with both advantage signals without introducing hierarchical modeling; instead, the two\nsignals can be directly hybridized.",
+   "locator": "§4.2 p.5",
+   "note": "作者实际展开共同surrogate并给Theorems1–2/App.A证明，进而统一混合和critic；标记执行该研究动作不表示本读者确认其定理正确。"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "role": "supporting",
+   "quote": "This equivalence implies that we can use\nexactly one shared value model, Vψ , which provides turn-wise values at the end of the turn and\ntoken-wise values at intermediate token positions.",
+   "locator": "§4.2 p.6",
+   "note": "共享同一价值预测器与混合return目标；不是仅关键词共享模型。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\log\\pi_\\theta(\\mathbf a_t\\mid\\boldsymbol\\tau_t)=\\sum_{i=0}^{I_t-1}\\log\\pi_\\theta(a_t^i\\mid\\tau_t^i)",
+    "locator": "Eq7 p.5"
+   },
+   {
+    "latex": "\\widehat{\\mathbf A}_t=\\sum_{t\\prime=0}^{T-t}(\\boldsymbol\\gamma\\lambda)^{t\\prime}\\boldsymbol\\delta_{t\\prime},\\quad\\boldsymbol\\delta_{t\\prime}=\\mathbf r_{t\\prime}+\\boldsymbol\\gamma\\widehat V_\\psi(\\boldsymbol\\tau_{t\\prime+1})-\\widehat V_\\psi(\\boldsymbol\\tau_{t\\prime})",
+    "locator": "Eq11 p.6",
+    "note": "Faithful printed indexing; summand is δ_tprime rather than δ_t+tprime, unlike Eq3. Do not silently repair."
+   },
+   {
+    "latex": "\\widehat A_t^i=\\sum_{j=0}^{I-i-I_{<t}}(\\gamma\\lambda)^j\\delta^{(j+i+I_{<t})},\\quad\\delta^{(k)}=r^{(k)}+\\gamma\\widehat V_\\psi(\\tau^{(k+1)})-\\widehat V_\\psi(\\tau^{(k)})",
+    "locator": "Eq12 p.6",
+    "note": "j/k rename dummy indices for legibility; end-index convention remains inconsistent with0..I_t−1 elsewhere."
+   },
+   {
+    "latex": "\\widehat A_{t,\\mathrm{hyb}}^i=\\alpha\\widehat{\\mathbf A}_t+(1-\\alpha)\\widehat A_t^i,\\quad\\alpha\\in[0,1]",
+    "locator": "Eq13 p.7"
+   },
+   {
+    "latex": "\\widehat L^{\\mathrm{hyb}}(\\theta)=\\mathbb E\\left[\\sum_t\\sum_i\\min\\{\\rho_t^i(\\theta)\\widehat A_{t,\\mathrm{hyb}}^i,\\operatorname{clip}(\\rho_t^i,1-\\epsilon,1+\\epsilon)\\widehat A_{t,\\mathrm{hyb}}^i\\}\\right],\\quad\\rho_t^i=\\pi_\\theta(a_t^i\\mid\\tau_t^i)/\\pi_{\\theta\\prime}(a_t^i\\mid\\tau_t^i)",
+    "locator": "Eq14 p.7"
+   },
+   {
+    "latex": "\\widehat G_{t,\\mathrm{token}}^i=\\widehat A_t^i+\\widehat V_\\psi(\\tau_t^i)",
+    "locator": "Eq15 p.7"
+   },
+   {
+    "latex": "\\widehat{\\mathbf G}_t^i=\\widehat{\\mathbf A}_t+\\sum_{k=i+1}^{I_t}\\gamma^{k-i}r_k+\\widehat V_\\psi(\\boldsymbol\\tau_t)",
+    "locator": "Eq16 p.7",
+    "note": "r_k as printed; text discusses token KL micro-rewards, but exact inclusion/exclusion of terminal environmentreward in thisbroadcastsum is not fully specified. No invented implementation."
+   },
+   {
+    "latex": "\\widehat G_{t,\\mathrm{hyb}}^i=\\alpha\\widehat{\\mathbf G}_t^i+(1-\\alpha)\\widehat G_{t,\\mathrm{token}}^i",
+    "locator": "Eq17 p.7"
+   },
+   {
+    "latex": "L_{\\mathrm{critic}}(\\psi)=\\mathbb E_t[(\\widehat V_\\psi(s_t)-\\widehat G_t)^2]",
+    "locator": "Eq4 p.4; Algorithm1 applies Eq17 target",
+    "note": "Eq4 uses s_t while surroundingtext useshistoryτ. Doesnotestablishprivilegedfullstatecriticinput."
+   },
+   {
+    "latex": "\\boldsymbol\\gamma_t=\\gamma^{I_t},\\qquad\\mathbf V^\\pi(\\boldsymbol\\tau_t)=V^\\pi(\\tau_t^{I_t})",
+    "locator": "Theorems1–2; Eq10 p.6/Eq25 p.18",
+    "note": "Author-stated condition/identity only; not independently accepted. Conditioning and variable-duration discount problems detailed in theory_audit."
+   }
+  ],
+  "signal_routing": "Token environmentreward is statedzero except turn endpoint; tokenKL micro-rewards also enter token estimator. TurnGAE constant is broadcast to all generated reasoning/actiontokens, mixed withtokenGAE, thenPPOtokenratios. Nosemanticsegments orcrop-onlymask. Critic trainedonmixedtarget atalltokenpositions. Environmentobservationtokens notpolicyactions byformulation, but exactresponse/visionmasks andlossaggregation notshownincode. Mainimplementation omitsmicro-KL aggregationfromturnreward; thisremovesexactrewardequivalence.",
+  "normalization": "other: learned critic baselines plus γλ temporal filtering and convex α mixing; equations contain no groupmean/std orRLOO. Advantagewhitening/rewardscaling inactualveRL notspecified, so cannotclaim verifiedno-std implementation. Formulaα isnot itself eliminated bystd here, but addingcroppenalty stillrequirescheckingactualnormalizers.",
+  "invariance": "Author Theorem1 asserts sameunclipped policygradient if γ_turn,t=γ_token^I_t andrewardconventionsmatch. This isnotpotentialshaping anddoesnotmakefeweractions anewoptimum. Rewardmicro-KL omission, PPOclipping, criticapproximation, conditioningambiguity andvariableturnlength meanpractical invariance notestablished. Step/progress/formatrewards alreadydefineobjective beyondsuccessalone. Do not inferoptimalpolicy preservation inourcropRLOO.",
+  "baseline_or_potential": "One learnedcritic Vψ updatedwithactor, trainedbyTD/mixedreturns, supplies tokenvalues andend-of-turnvalues. ItisnotMCanswer-nowQ(commit), notexternalfrozenreader, andnotprovenaction-independentstartbaseline whenreadatendofgeneratedturn. No explicit Φpotential.",
+  "degenerate_cases": "α0=tokenPPO, α1=turnPPO withbroadcastvalues, measuredinTable2; I_t=1 withalignedreward/history makesgranularitiescoincide. Allcorrect/allwrong groups do not forcezero because no groupcentering, but ifrewardsconstantandcriticperfect residuals vanish; imperfectcriticcancreatespurioussignal. λ0=one-stepTD; λ1=fullreturn limit(withfinitehorizon/bootstrap conventions), actualλunknown. γ→1 orI=1 makesstrictvariance-boundseparationdegenerate. Missingaction sampling support cannotbe restored bymixingexistingadvantages."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Figure4 critic-target/uniform/no-critic, KLaggregationandbaselinechoice; Table2 αsweep; sameQwen2.5-VL-3B backbone forRLbaselines; Sokoban crossrunvariance reported. Sharedcriticvs twoindependentcritics compute-matchedtest notprovided.",
+  "controls": [
+   "Figure4 full.83 / TokenPPO.59 / UniformValue.42 / REINFORCE.00 (validationlabels).",
+   "Figure4 KL aggregation with.80 vs without.83; turnbaseline.83 vs broadcastedturnbaseline.68.",
+   "Table2 α changesbothadvantageandcriticreturn, so factorialactor-only/critic-onlymixingcontrol missing.",
+   "No shuffledturnlabels/constantdummycoarsechannel ormatchedgradientnormnegativecontrol reported.",
+   "Fiveenvironment suite uses3–7turns andstrongstructuredprompts; instructions/actionsperturnandVIRLGTgate shouldbe heldfixedwhencomparing."
+  ],
+  "negative_results": [
+   {
+    "text": "均匀平铺return(.42)和无critic REINFORCE(.00)弱于full(.83)，后者明显collapse；不能把所有劣势都叫zero collapse。",
+    "quote": "The return must be precise. The formulation of the mixed return in Eq. (17) is critical. We observe\nthat alternative choices, such as broadcasting the turn-level return uniformly across all tokens within\na turn or omitting the value model entirely (i.e., using REINFORCE), lead to training collapse, as\nshown in Fig. 4.",
+    "locator": "§5.3 p.10 Figure4"
+   },
+   {
+    "text": "聚合KL并没有更好：with.80 vs without.83；理论奖励一致性并非最好实测设置。",
+    "quote": "However, since these\nrewards are typically small, we show in Fig. 4 that aggregating them at the turn level or not leads to\nsimilar results.",
+    "locator": "§5.3 p.10 Figure4"
+   },
+   {
+    "text": "中间混合非总比token好：Primitive Skill α.25/.75=.73低于α0=.98；α1=.25最差。",
+    "quote": "Table 2: Ablation study on the mixing coefficient α.\nα\n\n0\n\n0.25\n\n0.5\n\n0.75\n\n1\n\nSokoban\nFrozenLake\nPrimitive Skill (avg.)\n\n0.59\n0.72\n0.98\n\n0.64\n0.76\n0.73\n\n0.83\n0.80\n1.00\n\n0.78\n0.73\n0.73\n\n0.38\n0.70\n0.25\n\nWe ablate",
+    "locator": "Table2 p.11"
+   }
+  ],
+  "seeds": "Sokoban acrossruns PPO.5797±.2105 vsHyGAE.8222±.0711 explicitlyreported; numberoftrainingseeds andwhether±SD/SE/CI notdefined. Do notcallsingle orassert3seeds. Otherbenchmarks lackuncertainty. Environmentgeneration usesdifferenttrain/testseeds, distinctfromtrainingreplicates.",
+  "falsifier": "Reader-proposed notexecuted: controlledtwo-tokenMDP checksstart/endhistoryvalues andsemimarkovdiscounttelescoping; restorearbitrarywrongactionsinVIRL; matchtokens/walltime/criticcapacity andfactorialmixactor/critictargets. IfgainvanishesundermatchedcomputeorGTgate removal, claimscope narrows; ifunifiedtarget inconsistentwithtruevalues, Theorem2/unbiasedness cannotbeusedasguarantee.",
+  "compute": "Tables7–8 reportGPUcountsandsteps,but noGPU-hours,peakmemory,actualtokens,rolloutsperprompt orcriticarchitecturalfootprint. Actor+onecritic vsGRPO includesextra network; noequalbudgetproof."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-3B-Instruct actor; unified critic architecture/initialization not specified",
+   "framework": "verl",
+   "group_size": null,
+   "rollouts": null,
+   "steps": {
+    "Sokoban": 300,
+    "FrozenLake": 300,
+    "Navigation": 100,
+    "PrimitiveSkill": 100,
+    "VIRL": 100
+   },
+   "kl": 0.001,
+   "temperature": 0.7,
+   "max_turns": {
+    "Sokoban": 3,
+    "FrozenLake": 3,
+    "Navigation": 4,
+    "PrimitiveSkill": 3,
+    "VIRL": 7
+   },
+   "actor_lr": 1e-06,
+   "critic_lr": 1e-05,
+   "optimizer": "AdamW",
+   "batch_size": 128,
+   "ppo_minibatch": 32,
+   "entropy_coeff": 0.001,
+   "top_p": 0.95,
+   "gamma": 0.99,
+   "lambda": null,
+   "alpha": 0.5,
+   "max_response_lengths": [
+    200,
+    200,
+    200,
+    200,
+    150
+   ],
+   "max_trajectory_lengths": [
+    2400,
+    2400,
+    4000,
+    4000,
+    8192
+   ],
+   "window_sizes": [
+    5,
+    5,
+    5,
+    5,
+    1
+   ],
+   "gpu_counts": [
+    2,
+    2,
+    4,
+    4,
+    8
+   ],
+   "gpu_types": "NVIDIA A100/H100/H200; perenvironmentmappingnotgiven",
+   "training_examples": "10KeachSokoban/FrozenLake/Navigation;PrimitiveSkill10K×4;VIRL1K",
+   "test_examples": "128,128,128×2,128×4,VIRL32+18",
+   "actions_per_turn_caps": "Sokoban/FrozenLake3;Navigation5;Primitive2;VIRL10, fromprompts; notsameasturncount"
+  },
+  "cost": "Singlecritic avoidssecondcritic conceptually; measuredGPU-hours/tokens/memorynotreported.2/2/4/4/8GPUs with300/300/100/100/100steps. Critictraining andend-to-endrolloutsstillcostmorethancritic-freeruleonly; inferenceusesactorwithenvironmentfeedback, noextraHyGAEcriticneededbydescribedpolicy.",
+  "pitfalls": [
+   {
+    "text": "错误平铺critic目标会劣化/塌缩，actor优势回播与critic return回播不可混淆。",
+    "quote": "Conversely, the turn-wise GAE only provides a single return at the end of the turn. To compute\nthe hybrid return in the middle of the turn, we must broadcast the turn-wise return back to each\nintermediate token position by summing the discounted rewards from the current token index to the\nend of the turn:",
+    "locator": "§4.3 p.7 Eq16"
+   },
+   {
+    "text": "Turn baseline与token-specific baseline不同；额外细粒度value未必更稳，图4 .68 vs .83。",
+    "quote": "We evaluate two strategies: 1) using the token-specific value, which\nprovides fine-grained, state-dependent guidance but relies on potentially noisy broadcasted intermediate value; or 2) using the turn-level value as a constant baseline for all tokens within a turn. Our\nempirical results in Fig. 4 show that the theoretically grounded choice of using the turn-level value is\nsufficiently robust.",
+    "locator": "§5.3 p.10"
+   },
+   {
+    "text": "VIRL只执行正确路径动作，是环境行为限制而非policy自己学会规避全部错误。",
+    "quote": "The original environment provides the ground-truth trajectory. For simplicity, we modify the environment to execute only the generated actions that are aligned with the ground-truth trajectory.",
+    "locator": "Appendix B.1 p.27"
+   }
+  ],
+  "code": null,
+  "project_page": "https://wx-zhang.github.io/hygae-web/",
+  "code_status": "Manifest github=null; paper linksprojectpageonly. No externalrepositoryfetched/executed; implementationmasks,whitening,lambda,discountmappingunverified.",
+  "lesson": "当把轮级信用回传到token级时，应分别核对actor advantage、critic target和时间边界；保留奖励累积位置与环境返回的token mask，并用可枚举短轨迹检查。本文均匀return失败可作工程警示，但不能靠共享critic名义跳过start/end历史与折扣的一致性。"
+ },
+ "relevance": [
+  {
+   "problem": "P20",
+   "how": "turn/token混合提供跨尺度信用的近邻操作，但没有定义本项目旧视图caption、bbox、返回新图和后续caption的责任契约；需要critic和精确边界改造。",
+   "strength": 2
+  },
+  {
+   "problem": "P68",
+   "how": "确认已有in-domain turn/token actor-critic混合近邻，限制泛称分层信用/共享critic的新颖性；不是当前idea卡核心crop路由。",
+   "strength": 2
+  }
+ ],
+ "information_boundary": {
+  "policy": "当前及历史观察/反馈加自身token前缀；未来realizedreward只进入离线GAE/critic训练target。实际causalattentionmask未查源码。",
+  "critic": "论文Vψ(prefix)但Eq4写s_t，架构与输入未详述；不能据此声称fullstateprivilegedcritic。Turnvalue取生成末端，信息多于turnstart，须区分actorconditioning与trainingsignal。",
+  "environment_oracles": "PrimitiveSkill显式objectpositions/workspace/drawer metadata；VIRL标准轨迹过滤可执行动作并反馈checkpoint/correctaction；这些比一般camera-onlypolicy有更多结构与oracle信息。",
+  "training_vs_inference": "训练是在线环境rollout+actor/critic更新，非testtime搜索；部署仍多轮真实观察与动作执行。优势不是裁图价值标签，未来回报不作为在线决策时可见值。"
+ },
+ "theory_audit": {
+  "status": "reader_source_and_algebra_audit_not_external_peer_review",
+  "conditioning": "Theorem2/Eq25写V_turn(τ_t)=V_token(τ_t^I_t)，而Eq6 τ_t止于o_t，token历史含当轮生成前缀。App.A Eq27直接改变conditioning，不能仅靠γ匹配推出点态相等。一个两token轮的首token决定最终0/1reward，轮开始期望介于0和1，观察首token后的末token前缀return则依分支为0或1(加相应discount)；这个基本信息差应先解决。此为解析反例思路，不是模型实验。",
+  "indexing": "p.4 reward r_t^i定义i=I_t非零，但随后sum i=0..I_t−1；p.19 Eq27前一行也sum0..I_t−1乘1[i=I_t]，字面为零。Eq11 δ_tprime缺t偏移。记录原文，不改原始text或静默修方程。",
+  "discount": "γ_turn,t=γ^I_t是单段discount，不自动允许variablelength目标写成γ_turn,t^t；应有累计duration/product与端点reward时点的一致约定。Table7仅给γ.99，λ及γ_turn实现未报告。",
+  "bound_vs_actual": "Theorems3–4比较bias/variance上界系数，不推出真实bias/variance逐样本排序，也未给混合协方差使α.5普遍最优的结论。Theorem3tokenbias在p.8/p.19印成等号，而Lemma2是上界；p.19Lemma3定义σmax却右侧δmax。",
+  "practical_exception": "作者明确省略turn reward中的microKL聚合且认为效果相近；这已经放松理论reward一致性，PPOclipping和approxcritic进一步限制精确等价。"
+ },
+ "source_discrepancies": [
+  {
+   "locator": "Table1 p.9",
+   "finding": "Avg .91复算是10个子任务列等权(0.83,.80,.90,.86,1,1,1,.99,.72,1)；五环境均权是约.8735，非.91。报告作者口径并单列算术，不替作者重定义metric。"
+  },
+  {
+   "locator": "Table1 p.9; §5.2",
+   "finding": "SOTA acrossallbenchmarks不能解释为所有子项严格最佳：Align .99低于TurnPPO/proprietary1；NavigationBase .90与TokenPPO打平；VIRLOOD1与RL4VLM打平。"
+  },
+  {
+   "locator": "AppendixB.1 p.27",
+   "finding": "ID称NYC，OOD列表又包括NewYork；城市划分描述有重合，实际split未核。"
+  },
+  {
+   "locator": "Table7 p.29 vs theory",
+   "finding": "未报告GAEλ、分别的turn/tokendiscount或lengthadaptive实现、advantagewhitening；无法认定理论条件按实验满足。"
+  }
+ ]
+}

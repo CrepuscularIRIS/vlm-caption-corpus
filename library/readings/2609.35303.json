@@ -1,0 +1,142 @@
+{
+ "paper_key": "2609.35303",
+ "title": "PIVOT: Pivot-Aware On Policy Self Distillation for Multi-Turn VLM Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2609.35303.txt",
+  "sections_read": [
+   "Abstract/contributions; §2-3; §4 Tables1-2/Fig5-6",
+   "§6 limitations; AppB pivot summary; AppE/F Tables9-12 and Eqs10-13"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "离线solver监督失败诊断器，在线用失败轨迹未来视觉面板重评分原动作，联合GRPO与门控自蒸馏。",
+  "key_step": "共享模型分Student/Analyzer/detachedTeacher；训练teacher见pivot邻域和诊断，student只见原历史。",
+  "why_non_obvious": "全错且等reward组GRPO为零，额外token项仍有梯度；但其正向门控并不是负优势纠错。",
+  "trigger_condition": "When all-failure groups have zero relative signal, use privileged hindsight to gate auxiliary token learning.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将离线失败定位与在线特权监督连接。",
+  "abstract_trigger_condition": "When outcome feedback is silent, add a separately routed learned diagnostic signal.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "保留行动信息边界，让未来信息只影响训练目标。",
+  "abstract_why_non_obvious": "特权重评分与真实回滚并非同一种因果干预。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.35303#s1",
+   "object": "失败轨迹所有valid action tokens",
+   "information": "Analyzer见完整轨迹collage/action log；teacher见pivot前中后3帧及诊断；student只见当时history；offline solver标签",
+   "operation": "GRPO外加入失败mask×sigmoid detached logprob gap的正向token loglikelihood辅助项",
+   "claimed_effect": "3B aggregate .83→.90；随机pivot使Sokoban .95→.75、Navigation .90→.80",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1/2; AppF Eqs11-13",
+    "quote": "Rollout actions are not resampled;"
+   },
+   "failure_boundary": "并非只更新pivot token，也未生成替代正确动作；正gate仍增加原失败动作概率。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P07",
+   "strength": 2,
+   "how": "可作为全失败组辅助训练，但需pivot标签与正确信用方向验证。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "VanillaGRPO；AnalyzerSFT+GRPO；SDAR；P/M/M+P/R与随机pivot",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "pivot依赖离线可行性heuristic/solver；开放对话/连续控制未知；仅模拟小模型。",
+   "locator": "§6"
+  }
+ ],
+ "question": {
+  "observed_failure": "Sokoban失败组48.3%零方差；PrimitiveSkill16.5%；随机pivot低于vanilla。",
+  "load_bearing_assumption": "整trajectory outcome足以识别首个预算内不可恢复动作。",
+  "scope": "5个VAGEN任务，3B/2B，每环境独立checkpoint",
+  "success_criterion": "全失败仍有可用辅助梯度，正确pivot优于random且不加推理teacher",
+  "why_open": "全错没有相对信用，回滚昂贵；hindsight能否替代仍需匹配诊断。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§2.1"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§2.2/Table2"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_n=(R_n-\\mu)/(\\sigma+\\epsilon);\\ \\Delta=sg[\\ell^{tea}-\\ell^{stu}],\\ g=\\sigma(5\\Delta)",
+    "locator": "Eq1/AppF Eq11"
+   },
+   {
+    "latex": "L=L_{GRPO}+.01 E[1_{fail}m_{act}g(sg[\\ell^{tea}]-\\ell^{stu})];\\nabla L_{OPD}=-E[1_{fail}m_{act}g\\nabla\\ell^{stu}]",
+    "locator": "AppF Eqs12-13"
+   }
+  ],
+  "signal_routing": "GRPO标量到所有action tokens；辅助项到失败trajectory所有valid action tokens，非pivot局部mask。teacher和gap均stop-gradient，gate始终正：重加权模仿原动作；不等同signed logprob-gap advantage或完整reverse-KL梯度。",
+  "normalization": "mean+std 仅GRPO组G8；OPD独立期望不做组std；SFT每序列token均值。",
+  "invariance": "非PBRS，额外aux objective改变更新；内化回滚是作者解释，没证明等价真实状态恢复。",
+  "baseline_or_potential": "GRPO组均值；solver Feas决定首不可恢复点，诊断预测近似它。",
+  "degenerate_cases": "全错等reward仍有OPD但可能强化坏动作；全对无OPD；teacher-student相等g=.5仍有辅助梯度；一轮pivot落末步，不能证明恢复行为生成。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "单后缀n=1真实rollback，比较t*和t*+1以及无hint/3B/8Bhint；训练random pivot负控。",
+  "negative_results": [
+   {
+    "text": "3B SVG加R从.84降.82；random pivot低于vanilla；rollback探针仅n=1且不代表所有OPSD实现。",
+    "locator": "§2.2/Table1/2"
+   }
+  ],
+  "seeds": "验证每环境128episode；未读到跨seed CI；rollback n=1。",
+  "falsifier": "若随机pivot或等权failed-token imitation匹配效果，定位/teacher语义贡献失败；需把signed-gap和正gate作区分。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B/Qwen3-VL2B",
+   "framework": "VAGEN/vLLM",
+   "group_size": 8,
+   "max_turns": 25,
+   "kl": 0.01
+  },
+  "cost": "每环境959–1719 accepted SFT，3epochs；RL250steps（Table12 Sokoban350），8GPUs；Sokoban平均95s/update vs vanilla102s，非固定rollout长度成本。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用未来诊断打分旧动作时，先展开梯度方向和mask；门控不等于负信用，额外重评分成本也要与长度变化分开。"
+ }
+}

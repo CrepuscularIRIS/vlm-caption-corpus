@@ -1,0 +1,181 @@
+{
+ "paper_key": "litscan:30805",
+ "title": "Visual Agents as Fast and Slow Thinkers",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_30805.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§2",
+   "§3 Tables1–5",
+   "§8 reproducibility",
+   "Appendix A trainingdata/hyperparameters",
+   "Appendix F limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "负样本教switchadapter触发慢路径，慢路径分别用proposal与SAM建立证据链。",
+  "key_step": "对象缺失/小于20×20的训练样本输出missingobjects和contextclue，然后定位和分割再回答。",
+  "why_non_obvious": "直接VQA监督不教何时承认细节不可见；精细segmentation不必每题都付出。",
+  "trigger_condition": "When the initial view lacks object detail, emit a search cue and invoke trained region and mask adapters.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "教会识别观测缺口，再按粒度逐级补充证据。",
+  "abstract_trigger_condition": "When the initial view lacks object detail, emit a search cue and invoke trained region and mask adapters.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "对象缺失/小于20×20的训练样本输出missingobjects和contextclue，然后定位和分割再回答。",
+  "abstract_why_non_obvious": "直接VQA监督不教何时承认细节不可见；精细segmentation不必每题都付出。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:30805#s1",
+   "object": "fast/slow visual routing",
+   "information": "image/question、negativeobjectexamples、worldknowledgeclues；训练有bbox/mask及InstructBLIP筛选",
+   "operation": "switch输出缺失实体及线索，proposal找区域/框，segdecoder产mask，整合证据回答",
+   "claimed_effect": "GQA63.8、1475ms vs slowonly64.0、2937ms；MME1517.4、2023ms vs1518.6、2938ms。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2; Table3 p8",
+    "quote": "running 31% faster than System 2 Only"
+   },
+   "failure_boundary": "错误switch会不取证或找不存在对象；未测当前策略必要性金标；非独立自由cropagent。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P26",
+   "strength": 2,
+   "how": "缺失/小目标负例可教显式补看行为。"
+  },
+  {
+   "problem": "P23",
+   "strength": 2,
+   "how": "自然switch输出与下游协议绑定应明确，不可当外接概率阈值。"
+  },
+  {
+   "problem": "P39",
+   "strength": 2,
+   "how": "20×20阈值必须随学生336输入缩放重审。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "LLaVA-v1.5",
+   "kind": "method"
+  },
+  {
+   "name": "LISA-7B",
+   "kind": "method"
+  },
+  {
+   "name": "System1Only",
+   "kind": "method"
+  },
+  {
+   "name": "System2Only",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "预定义负例不覆盖新复杂场景。",
+   "quote": "the system’s reliance on a predefined set of negative data for training",
+   "locator": "Appendix F p25"
+  }
+ ],
+ "question": {
+  "observed_failure": "alwaysslow GQA2937ms，而fastonly737ms但61.9vs64.0accuracy。",
+  "load_bearing_assumption": "统一直接回答或统一精细处理适合所有视觉需求。",
+  "scope": "LLaVA-Vicuna7B视觉问答/segmentation",
+  "success_criterion": "接近slowaccuracy并降低runtime，分离switch/proposal/seg作用。",
+  "why_open": "普通VQA监督缺少看不清/不存在的负例。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table3 latency/accuracy"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "negative SFT §2.1"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "switch/proposal/seg §2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "(O_{missing},C_{clue})=S(E_V(I),E_L(Q))",
+    "locator": "Eq3"
+   },
+   {
+    "latex": "Region=P(E_V(I),E_L(Q),C_{clue});\\quad Ans=F_{slow}(E_L(Q),E_V(I),Bbox/Mask)",
+    "locator": "Eq4,7"
+   }
+  ],
+  "signal_routing": "switch/proposal分别LoRA SFT；segadapter与SAMdecoder学习mask；baseLLM冻结、LoRA和projection/resampler训练。正文未给统一损失/CE与maskloss权重，保留unknown；无policy-gradientadvantage。",
+  "normalization": "no groupreward normalization; resampler crossattention compresses256visualtokens→32; lossreduction unknown",
+  "invariance": "非PBRS；引入特定SFT/多模块改变模型和条件输入。",
+  "baseline_or_potential": "无critic/potential；teacher InstructBLIP+LaMa目标擦除筛选。",
+  "degenerate_cases": "对象真正不存在时zoom不能创造证据；patterned图seg可能失败；fast/slow饱和未给恢复控制；单简单题直接路径。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3 alwaysfast/alwaysslow/adaptive；Tables4–5移除proposal/seg与missing/clue。",
+  "negative_results": [
+   {
+    "text": "refCOCO73.3低于LISA74.1；GQA adaptive63.8仍略低alwaysslow64.0，未给非劣区间。",
+    "locator": "Tables2–3"
+   }
+  ],
+  "seeds": "未报告独立训练种子/置信区间。",
+  "falsifier": "匹配触发率随机switch达到同accuracy/runtime，说明未学逐题需要；或只增强encoder解释收益。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA-v1.5 Vicuna7B + CLIP336 + SAM",
+   "framework": "PyTorch/DeepSpeedZeRO2",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "lora_rank": 128,
+   "lora_alpha": 256
+  },
+  "cost": "8A10080GB，总复现约15A100GPUdays；switch/proposal各1epoch，seg10Ksteps。",
+  "pitfalls": [
+   {
+    "text": "bbox输出[w0,w1,h0,h1]非标准xyxy；原图→336后目标大小需重标。",
+    "locator": "Appendix A/§2.3"
+   },
+   {
+    "text": "GIoU此文指meanperimageIoU，CIoU指累计intersection/union，不是常用box generalized/completeIoU公式。",
+    "locator": "§3.1.2"
+   }
+  ],
+  "code": "https://anonymous.4open.science/r/Sys2-LLaVA-8B0F/",
+  "lesson": "当方法称不确定性驱动时，先查实际是概率校准还是负例生成模板，再用同触发率随机路由作对照。"
+ }
+}

@@ -1,0 +1,190 @@
+{
+ "paper_key": "litscan:62297",
+ "title": "SenseSearch: Empowering Vision-Language Models with High-Resolution Agentic Search-Reasoning via Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_62297.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3 Eq1–5 data",
+   "§4 Tables1–4 and tool settings",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "三工具协同SFT→RL，GSPO组标准化后再对optimizer minibatch标准化。",
+  "key_step": "3K难题教师工具轨迹coldstart；长轨迹几何均值importance ratio；两级std advantage；答对1+格式.5。",
+  "why_non_obvious": "三工具有不同信息源，且二级std在理想完整组已归一情况下冗余；需区分实现非理想条件与作者解释。",
+  "trigger_condition": "When tool trajectories vary across tasks, bootstrap multi-tool behavior and inspect normalization before attributing training stability to batch standardization.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "多工具协同与归一化再设计",
+  "abstract_trigger_condition": "When tool trajectories vary across tasks, bootstrap multi-tool behavior and inspect normalization before attributing training stability to batch standardization.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "3K难题教师工具轨迹coldstart；长轨迹几何均值importance ratio；两级std advantage；答对1+格式.5。",
+  "abstract_why_non_obvious": "三工具有不同信息源，且二级std在理想完整组已归一情况下冗余；需区分实现非理想条件与作者解释。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:62297#s1",
+   "object": "BN-GSPO",
+   "information": "每题G轨迹终答/格式reward，optimizer minibatch的组优势",
+   "operation": "先组mean/std再batchmean/std，以长度归一序列ratio优化",
+   "claimed_effect": "无coldstart消融：BN-GSPO MMSearch56.72/V*79.05/HR4K69.12，GSPO53.80/53.93/44.50。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq2–5; Table3",
+    "quote": "two-stage normalization to the advantage estimates."
+   },
+   "failure_boundary": "若完整等G非退化组、相同population std，则第二级恒等；原文未给eps/zero-variance/group packing，不能据数字确认解释。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:62297#s2",
+   "object": "三工具数据/行为",
+   "information": "textsearch返回Qwen3-32B摘要；imagesearch返回titles/thumbnails；crop回流像素",
+   "operation": "≤1/8成功难例用GeminiFlash生成，GPT4o核验；SFT后混合search/perceptionRL",
+   "claimed_effect": "HR-MMSearch29.80→38.52；总search均分53.06→57.43；工具调用约4→2。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3; §4; Tables1,4 Figure4",
+    "quote": "the top five image search titles and thumbnails"
+   },
+   "failure_boundary": "外部搜索知识/摘要不是原图crop收益；新图2025并不证明预训练无泄漏。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "两级std的尺度不变性直接关系成本系数是否保留；完整等大组条件下第二次归一化可能冗余。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "hard题冷启动工具轨迹后RL，表3单独纯RL对照区分冷启动贡献。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "GSPO",
+   "kind": "method"
+  },
+  {
+   "name": "SenseSearch-SFT",
+   "kind": "method"
+  },
+  {
+   "name": "MMSearch-R1",
+   "kind": "method"
+  },
+  {
+   "name": "search-only/perception-only RL",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "当前本地PDF没有提供所指Appendix或显式Limitations；eps/工具token mask未见。",
+   "quote": null,
+   "locator": "local PDF §3–4; reader access limitation"
+  }
+ ],
+ "question": {
+  "observed_failure": "纯RL GSPO V*53.93 vsBN79.05，巨大差值并不能由完整非退化组二次标准化直接推得。",
+  "load_bearing_assumption": "二级归一实际改变了跨组尺度而非实现差异/退化组比例。",
+  "scope": "复用本地rollout离线计算两级std和mask，不训练。",
+  "success_criterion": "定位第二级非恒等的具体来源，并排除长度/组截断混杂后再评估。",
+  "why_open": "无归一化边界实现披露；缺std约定与G。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq3–4区分group与minibatch归一化，明确条件下重复"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "§3.1文字搜索/图像搜索/像素crop获取不同证据"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "s=exp((1/|y|)sum_t log(pi_theta(y_t|h)/pi_old(y_t|h))); Abar=(r-mean_group r)/std_group(r); Atilde=(Abar-mean_batch Abar)/std_batch(Abar)",
+    "locator": "Eq2–4"
+   },
+   {
+    "latex": "R=1[answer_correct]+0.5[format_valid]",
+    "locator": "§4.1"
+   }
+  ],
+  "signal_routing": "sequence-levelclippedratio*Atilde−KL；SFT训练LLM冻结vision/projector。RL工具observation tokens是否从ratio长度/损失mask排除未说明，不能默认。搜索摘要器/缓存结果与policy分离。",
+  "normalization": "groupmean+std后batchmean+std；ratio按序列token数几何均值；clip低.2高.28。",
+  "invariance": "非PBRS；组内正仿射reward变化被Eq3抵消。完整同G非零组populationstd→batchmean0/std1，Eq4恒等；sample std同组大小通常仅固定scale。含零组/eps或minibatch切组才可改变此结论，具体未知。",
+  "baseline_or_potential": "组均值，非LOO；batch二次均值非state value。",
+  "degenerate_cases": "全对/全错且format相同→组std0公式未定义；格式不同仍可训练。G1无方差；训练10turn未终答算错；全batch优势零std0未给fallback。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3纯RL同初始化比较算法；Table4混合数据。",
+  "negative_results": [
+   {
+    "text": "perception-only V*85.24>mixed83.84，search指标较mixed低但并非正文所称低于SFT：MM54.09>53.80、HR33.11>29.80。",
+    "locator": "Table4"
+   },
+   {
+    "text": "SenseSearch-RL V*83.8<Pixel84.3；MME63.9<DeepEyes64.1。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "完整组离线两级A完全相同，则“跨题reward scale修正”不足以解释收益；应查eps/masking/packing而非立即迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B; Gemini2.5Flash teacher/GPT4o judge; Qwen3-32B search summarizer",
+   "framework": "LLaMAFactory/verl",
+   "group_size": null,
+   "max_turns": 10,
+   "kl": 0.0001
+  },
+  "cost": "SFTlr1e-5 epochs3，RL1e-6 batch128；每turn8192/轨迹32768tokens。GPU成本未报于现有PDF。",
+  "pitfalls": [
+   {
+    "text": "imagesearch训练prefetch/cached，与实时网络环境分布不同；textsearch外部摘要影响信号。",
+    "locator": "§4.1"
+   },
+   {
+    "text": "V*/HR使用Avg@8，search Pass@1；不可将其作为同预算统一排名。",
+    "locator": "§4.1"
+   }
+  ],
+  "code": "https://github.com/OpenSenseNova/SenseNova-MARS (not inspected)",
+  "lesson": "当标准化叠加时，先代数检查冗余和零方差处理，再将实验差异归因于新算法；还需把外部摘要/搜索成本计入。"
+ }
+}

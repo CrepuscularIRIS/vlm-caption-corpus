@@ -1,0 +1,203 @@
+{
+ "paper_key": "litscan:74479",
+ "title": "DivFreq",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74479.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§2–3 pp3–8 Eq1–9",
+   "§4–5 pp8–9 Tables2–4",
+   "AppB3 p13; C3/D pp14–16"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把工具频率与探索多样性分开测；在DAPO上加基于完整rollout token熵的比例反馈正则，而非正确用tool额外bonus。",
+  "key_step": "λ_t=.03 max(.9−H_batch,0)，优化J_DAPO+λ_t mean_entropy；允许工具自然下降，早期探索保留更多语义/区域路径。",
+  "why_non_obvious": "工具使用率100%也可只重复同一区域；最终少工具不证明训练期工具无效。",
+  "trigger_condition": "可选工具任务中vanilla塌direct、bonus塌tool，二者准确率增益有限。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "控制探索熵而非动作频率，配工具禁用和早期正则对照区分训练与推理价值。",
+  "abstract_trigger_condition": "可选工具任务中vanilla塌direct、bonus塌tool，二者准确率增益有限。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "λ_t=.03 max(.9−H_batch,0)，优化J_DAPO+λ_t mean_entropy；允许工具自然下降，早期探索保留更多语义/区域路径。",
+  "abstract_why_non_obvious": "工具使用率100%也可只重复同一区域；最终少工具不证明训练期工具无效。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74479#s1",
+   "object": "adaptive rollout entropy",
+   "information": "当前batch所有生成token的policy distribution；不使用GT框或工具必要性标签",
+   "operation": "当mean entropy低于.9时以.03比例增熵；不直接奖励tool",
+   "claimed_effect": "3DSR62.9 vsvanilla59.2/bonus59.9，末期tool约3% vs2%/100%",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq7–9 p7; Table2 p8",
+    "quote": "Entropy-regularized Yes 62.9% ∼20% → ≈3%"
+   },
+   "failure_boundary": "62.9为best validation，3%是end training batch；未等latency非劣检验，token熵非binary动作熵。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74479#s2",
+   "object": "training-time tool exposure",
+   "information": "相同Mini-o3起点，有无tool与有无entropy的对照",
+   "operation": "禁tool全程；或仅前60步开entropy再关",
+   "claimed_effect": "禁tool+entropy57.8低于启tool62.9；early-only62.5接近full62.9",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.5/Table2 p8; AppB3/TableA p13",
+    "quote": "Early-Only Entropy Reg 62.5"
+   },
+   "failure_boundary": "支持早期探索有帮助，但未直接证明表征内化机制；禁token也改变采样分布，非纯像素信息消融。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P29",
+   "strength": 3,
+   "how": "直接分析可选工具分支塌缩，并用全token熵防早期同质化而非强制比例。"
+  },
+  {
+   "problem": "P05",
+   "strength": 3,
+   "how": "工具频率不是效率目标，训练期与推理期效用区分。"
+  },
+  {
+   "problem": "P32",
+   "strength": 2,
+   "how": "超过100step不稳定/动态采样昂贵，最佳分与最终行为需分报。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Mini-o3",
+   "kind": "method"
+  },
+  {
+   "name": "vanilla DAPO RFT",
+   "kind": "method"
+  },
+  {
+   "name": "tool-banned",
+   "kind": "method"
+  },
+  {
+   "name": "correct-tool bonus",
+   "kind": "method"
+  },
+  {
+   "name": "PixelReasoner curiosity",
+   "kind": "method"
+  },
+  {
+   "name": "tool-banned+entropy",
+   "kind": "method"
+  },
+  {
+   "name": "early-only entropy",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "best-validation结果及单种子未明；judge错误率2.3/6.25/5.47%不等，且熵增长伴随更长think。",
+   "quote": null,
+   "locator": "§3.4 p7; AppC3/D pp14–16"
+  }
+ ],
+ "question": {
+  "observed_failure": "tool bonus使100%调用仅59.9 vs59.2；完全禁用58.1；entropy62.9。",
+  "load_bearing_assumption": "早期多样化视觉/文字探索改善最终策略，而非仅增加token或改变评估抽取。",
+  "scope": "已会crop的Mini-o3，1.2K空间题与Avg@8 3DSR评测。",
+  "success_criterion": "等训练token/预算下跨seed提高准确率且末期低工具；early-only保留收益。",
+  "why_open": "方法增加文本长度，缺等计算与跨seed检验；tool dropout与representation未隔离。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§3.2/3.5拆tool allowed/banned与entropy有无"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "§3.3明确tool frequency不是目标"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "Table2/B3工具与早期熵对照"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=(r_i-μr)/σr; J_GRPO=E mean_i min(ρ_iA_i,clip(ρ_i)A_i)",
+    "locator": "Eq3 p3, concrete DAPO p4"
+   },
+   {
+    "latex": "Jent=J_GRPO+λ_t E Hbar(τ); Hbar=mean_generated_tokens[-Σ_vπ(v|s)logπ(v|s)]",
+    "locator": "Eq7–8 p7"
+   },
+   {
+    "latex": "λ_t=.03 max(.9-H_batch,0)",
+    "locator": "Eq9 p7"
+   }
+  ],
+  "signal_routing": "outcome组A在DAPO token-level loss；entropy所有生成token而非仅bbox、think或首动作；external observation不是生成token。overturn轨迹排除advantage计算。λ反馈是否detach未给。",
+  "normalization": "reward mean/std，entropy每rollout生成token均值、batch反馈；无KL项明确给出，实际KL未知；动态采样丢同reward组。",
+  "invariance": "entropy loss系数不受reward std消除；整体reward正缩放A不变；entropy改变优化目标非PBRS。",
+  "baseline_or_potential": "sample group mean；没有statewise必要工具Q。",
+  "degenerate_cases": "H≥.9时λ0；全词熵高仍可首动作塌；uniformreward组动态重采样，>10次提前停；overturn censoring改变有效训练样本分布。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：固定配方做0/early-only小λ与等token生成预算对照，至少两seed；同时统计首动作熵、bbox条件熵、全token熵和正确/错误组分支支持，不以工具率单指标选模型。",
+  "negative_results": [
+   {
+    "text": "tool-banned+entropy57.8≤58.1；tool encouragement CV3D74.5低于Mini-o3 77.6，entropy78.8。",
+    "locator": "Tables2–3 p8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若等token预算或人工选项抽取消除增益，或首动作支持仍迅速失去，则不能归因为有用探索多样性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Mini-o3 Qwen2.5VL7B; supplemental OpenThinkIMG",
+   "framework": "DAPO following Mini-o3",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "1.2KSpatialReasoner，最多100steps；50rollouts×1.2K作step40空间diversity诊断；Avg@8评测。",
+  "pitfalls": [
+   {
+    "text": "不能把≤100step最佳分与末期training tool率作同点Pareto；熵增大可能混语言/repetition，固定系数很敏感。",
+    "locator": "§3.4 p7"
+   }
+  ],
+  "code": "https://scaffolded-exploration.github.io",
+  "lesson": "当策略可直答也可看图时，先看分支支持与区域多样性，再调工具频率；记录熵项覆盖token及额外token成本。"
+ }
+}

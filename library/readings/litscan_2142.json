@@ -1,0 +1,59 @@
+{
+ "paper_key": "litscan:2142",
+ "title": "MultipanelVQA",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2142.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 pp3–5",
+   "Table2/§4.3 pp6–8",
+   "§4.4/Table4 p8",
+   "§6 p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把模型单图能答对的子图组成多面板，分离相邻干扰、像素分配、布局和文本提示的影响。",
+  "key_step": "保持目标子图，先删除邻图但保留画布，再单独放大目标图，区分去干扰与增加像素。",
+  "why_non_obvious": "多图失败不能直接归因分辨率；邻图干扰对多数模型更大，编号提示也可降低准确率。",
+  "trigger_condition": "When a known-recognizable target fails in a collage, remove distractors before enlarging it to separate causes.",
+  "contribution_type": "diagnostic_benchmark",
+  "abstract_strategy": "Hold the target fixed and remove confounds sequentially.",
+  "abstract_trigger_condition": "When multiple input changes explain a failure, vary them separately."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2142#s1",
+   "object": "多面板视觉诊断",
+   "information": "已筛单图正确子图、固定位置与目标问答、人审问题；先脚本判分再GPT4复核。",
+   "operation": "合成不同布局/相似度/大小的面板，目标不变做删邻图与单图对照；8模型评3次。",
+   "claimed_effect": "GPT4o synthetic75.5±.2、real78.2±.5 vs human96/99；Q2编号caption81.6→73.3。",
+   "conditions": [
+    "单图筛选使用被测模型",
+    "该集合主要yes/no和短答"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p8",
+    "quote": "81.6              73.3 (-8.3)"
+   },
+   "failure_boundary": "图像干预诊断，未改crop训练或验证工具必要性；单图筛选导致条件总体，非自然任务分布。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P39",
+   "how": "提示区分像素不足与邻图干扰，但面板任务与裁图轨迹不同。",
+   "strength": 1
+  },
+  {
+   "problem": "P41",
+   "how": "遮盖与裁图并不等价，可作为测量警示。",
+   "strength": 1
+  }
+ ],
+ "scientific_replication": false
+}

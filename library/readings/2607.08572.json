@@ -1,0 +1,556 @@
+{
+ "paper_key": "2607.08572",
+ "title": "Switch-Reasoner: Learn When to Think in Multitask Mixtures via Reinforcement Learning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.08572.pdf",
+  "version": "v1",
+  "version_observed": "PDF p.1 arXiv:2607.08572v1 [cs.CV] 9 Jul 2026; latest online version not checked",
+  "pages": 19,
+  "sections_read": [
+   "Abstract/Introduction pp.1–3; Related Work p.3",
+   "3.1 GRPO pp.3–4; 3.2 Thinking-as-Tool p.4; 3.3 controller/3.4 counterfactual sampling p.5; 3.4 labels/3.5 reward pp.5–6, Eqs1–17/Fig2",
+   "4.1–4.4 experiments/Table1/Figs3–5 pp.7–9; Conclusion p.9",
+   "References pp.10–13",
+   "App.A notation/Table2 p.14; App.B four detailed prompts pp.14–15; App.C Algorithm1 pp.15–16",
+   "App.D dataset and evaluation/Table3 pp.16–17; App.E parameters/ablation Table4 pp.17–18; App.F cases/Figs6–7 pp.18–19"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "将固定的先思考再回答改为显式虚拟工具路由，用上一batch模式统计控制加当前策略双模式反事实rollout标签，共同塑造GRPO轨迹奖励。",
+  "key_step": "每题额外强制direct/think各K4次，以成功率差和direct可靠性阈值分must-think/safe-direct/uncertain；对自然switchable rollout按是否匹配该类别加±.03，而全局信号只惩罚暂时过用且相对不利的模式。",
+  "why_non_obvious": "全局维持两种模式不等于逐题选择正确；强制分支可观察罕见路线的表现，却不自动给主策略提供该动作的梯度样本。",
+  "trigger_condition": "When a fixed deliberation policy wastes computation and outcome-only training favors one route, expose a discrete route and combine delayed population control with current-policy route comparisons.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null and no reviews_path; no review note source available.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Make a fixed processing stage optional and regulate its global use separately from instance-level benefit.",
+  "abstract_key_step": "Sample both alternatives under controlled prompts, abstain from uncertain preferences, and apply signed preference rewards to ordinary trajectories.",
+  "abstract_why_non_obvious": "Population balance and instance utility are different quantities; observing an alternative does not guarantee learning support for choosing it.",
+  "abstract_trigger_condition": "When shared optimization collapses heterogeneous cases to one behavior, combine population-level feedback with conservative per-instance preference estimates."
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.08572#s1",
+   "object": "显式思考前的可观察模式选择及两阶段输出协议",
+   "information": "原始图像/问题与switchable prompt；只决定是否让同一模型继续文字推理，无新增像素/外部执行器结果，无专用新增decision token的明确实现。",
+   "operation": "初始生成只能输出<answer>最终答案或<tool_call>包围的require_think JSON。合法工具调用后环境追加think-tool response，要求<thinking>再<answer>，不再允许其它工具；direct立即终止。",
+   "output": "可解析的mode m和完整轨迹，供基础reward与global/local控制；模式由输出格式隐式实现。",
+   "claimed_effect": "作者完整4B系统总体score71.60、think51.53%，all-think70.66/100%；8B72.22/37.73% vs71.86/100%。不是单独协议消融效果：无“只有switchable prompt且无两种控制”的对照。",
+   "conditions": [
+    "基座Qwen3-VL4B/8B-Instruct已有直接答题、工具格式、文字推理能力",
+    "严格区分虚拟thinking工具与真实crop工具",
+    "从完整格式解析mode，不能将共同的首个<当动作概率",
+    "非法格式应显式登记；其m和最终reward处理未完整给出"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Sec.3.2 p.4; App.B pp.14–15",
+    "quote": "Although written in this form, the mode decision is realized\nimplicitly through the output format and is influenced by the input question, visual information, and\ndecoding context."
+   },
+   "failure_boundary": "公式分解π(m|q)π(o|q,m)不证明一个专用单token实现；prompt仍是不同文本上下文，不能直接迁移为同h精确条件动作分叉。think率下降不是token/latency实测下降；本协议没有多轮crop/recover。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.08572#s2",
+   "object": "训练batch中的两模式使用不平衡",
+   "information": "上一batch的格式有效轨迹数及按模式准确率、当前自然轨迹mode/base reward；不同模式准确率来自不同自选择题目，不是同题causal utility。",
+   "operation": "仅用format-valid轨迹算p_direct和a_direct−a_think；direct更准且p_direct<.20时令B正，think更准且p_direct>.80时令B负，差分deadband .02；think>.98/<.02用extreme safeguard覆盖。下一batch按B符号对不利模式base reward乘η∈(0,1)，当前batch统计再存为后续B。",
+   "output": "延迟一batch的模式相关乘性reward gate，避免同batch奖励/统计循环依赖；不是对偶价格或采样概率硬约束。",
+   "claimed_effect": "Switch-Reasoner*保留global但无sample correction：4B70.79±.68、think85.73%；8B72.00±.24、think30.25%。没有单独去global或去safeguard消融，因此controller独立增益未识别。",
+   "conditions": [
+    "需要至少可解释的valid模式计数；某模式零样本时accuracy fallback未报",
+    "B状态在迭代间持久化、初始化0",
+    "η、Bg/Bf、B判断epsilon、count-ratio safeguard具体阈值/优先级需实现补足",
+    "性能差与使用比必须同时触发普通控制，extreme条件单独触发"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Sec.3.3 p.5; Eqs3–6/13; Algorithm1 p.16",
+    "quote": "This one-batch delayed design avoids circular dependence between the rewards of the\ncurrent batch and the statistics computed from those same rewards, while still providing a coarsegrained routing preference based on empirical performance and mode usage."
+   },
+   "failure_boundary": "不保证使用率一直在阈值内；全单模式组中共同乘η可被GRPO std完全抵消，forced alternatives只打标签不提供主组支撑。不同任务自选择导致的模式平均正确率差有组成混杂；论文没有控制器稳定性/恢复性定理。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2607.08572#s3",
+   "object": "按题的think/direct偏好标签及路由reward",
+   "information": "当前策略对同一道题、两个不同fixed-route prompts各K4自然生成的终答，任务accuracy reward>0二值成功；不使用冻结外部读者。无独立观测必要性标注、无同prompt随机动作干预校准。",
+   "operation": "算s_think−s_direct；Δ≥.5标must-think；s_direct≥.75且Δ≤−.25标safe-direct；其余uncertain。自然主rollout匹配类别加+.03、不匹配−.03、uncertain0；与全局调整后base reward相加，整组mean/std后更新GRPO。",
+   "output": "每题三分类、每自然轨迹带符号的route reward；不是BCE路由头，也不是局部token专属优势。",
+   "claimed_effect": "Table1加sample correction：4B70.79→71.60且think85.73→51.53%；8B72.00→72.22但think30.25→37.73%。Table4 loose safe-direct降低think至13.28/12.55%，score跌至68.32/69.87。",
+   "conditions": [
+    "当前策略支持两个强制prompt及可验证终答",
+    "K4标签粒度.25、阈值是经验规则而非显著性检验",
+    "sample级标签应按题广播到各主rollout；文中i混用题/轨迹需实现区分",
+    "uncertain只取消route reward，仍在base/global/GRPO中"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.5 p.6; Eq16/17; Table1 p.7/Table4 p.18",
+    "quote": "Thus, the route reward is positive when the selected route matches the preferred route,\nnegative when it mismatches, and zero for uncertain samples."
+   },
+   "failure_boundary": "safe-direct要求直答显著优于think，不是直答可靠且think无收益即够：4/4对4/4默认uncertain。原始prompt和tool-followup上下文不相同，标签偏差未校准；未用打乱标签/同think率常数偏置对照证明逐题信号承重；K8不保证更好。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-4B-Instruct / Qwen3-VL-8B-Instruct Vanilla",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO-Thinking / GRPO-Direct",
+   "kind": "method"
+  },
+  {
+   "name": "Switch-Reasoner* (without sample-level correction)",
+   "kind": "method"
+  },
+  {
+   "name": "K2/K8; must-think .25/.75; safe-direct loose/strict; direct-/thinking-favored weights",
+   "kind": "method"
+  },
+  {
+   "name": "Geometry3k / MathVista",
+   "kind": "benchmark"
+  },
+  {
+   "name": "ChartQA / DocVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "RefAdv",
+   "kind": "benchmark"
+  },
+  {
+   "name": "CVBench / DrivingVQA / EmoSet / IconQA / OlympiadBench / PuzzleVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "ACC / Relaxed ACC / ANLS / IoU@0.5 / think rate",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者只展示Qwen3-VL4B/8B这组实验；没有其它adaptive方法的同预算比较。引文是实验范围，后半为读者审计边界。",
+   "quote": "We use Qwen3-VL-4B-Instruct and Qwen3-VL-8B-Instruct as\nvanilla base models (Bai et al., 2025) for RL training. We compare our method with Vanilla model,\nall-thinking and all-direct variants, as well as a variant without sample-level fine-grained correction,\nto evaluate the effects of switchable reasoning and instance-level route supervision.",
+   "locator": "Sec.4.1 p.7"
+  },
+  {
+   "text": "作者直接报告的negative trade-off：宽松safe-direct损害overall。",
+   "quote": "a stronger effect on the accuracy-efficiency trade-off: a loose criterion substantially reduces the\nthinking rate but also hurts overall performance, while a stricter criterion preserves stronger accuracy\nwith a moderate thinking rate.",
+   "locator": "App.E p.18"
+  },
+  {
+   "text": "仅binary switching已测，更丰富工具为未来方向；不等同多轮crop决策。",
+   "quote": "Beyond binary\nswitching, this tool-based formulation may support richer reasoning tools and adaptive allocation of\nthinking resources.",
+   "locator": "Conclusion p.9"
+  }
+ ],
+ "question": {
+  "observed_failure": "固定all-think4B overall70.66、think100%；all-direct65.02、think0%；full71.60、think51.53。global-only4B仍85.73%think，显示全局统计不能替代逐题分配。论文对“accuracy-only自由路由塌缩”的独立数值实验未给。",
+  "load_bearing_assumption": "所有题固定先思考，或只靠终答reward/单一全局mode偏好，就足以学到稳定的逐题思考必要性。",
+  "scope": "Qwen3-VL4B/8B-Instruct，11个异质图像任务，首轮二元虚拟thinking tool，GRPO+EasyR1；不是外部视觉信息获取或多轮工具credit。",
+  "success_criterion": "作者以overall task score和think rate联合衡量；没有预注册非劣界、token/latency终点或独立route utility金标。",
+  "why_open": "early-exit/prune在已经开始思考后缩短输出，不能替代是否开始；adaptive已有方法多阶段/日程复杂，本文把问题限制为异质混合中的route稳定性和sample收益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "quote": "after reward evaluation, we collect format-valid trajectories and compute the number and accuracy of\nThinking Mode and Direct Mode rollouts: nthink , ndirect , athink , and adirect . Their usage ratios are",
+   "locator": "Sec.3.3 p.5",
+   "mapping_note": "实际按valid模式分组统计数量/accuracy并反馈；没有按全对/全错/mixed与token梯度质量细分，匹配限于“分组再计数”。"
+  },
+  {
+   "vocab": "M",
+   "id": "M13",
+   "quote": "For each input qi , we evaluate the current policy under two fixed choices: Direct Mode and Thinking\nMode. Specifically, we construct a direct prompt that forces an answer without invoking the thinking\ntool and a thinking prompt that requires explicit reasoning before the final answer:",
+   "locator": "Sec.3.4 p.5",
+   "mapping_note": "同一原始图/题、当前策略强制两路线比较；不同prompt并非严格相同决策前hidden state，不能称完全满足共享h契约。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "The counterfactual sampling ablation changes K to 2 or 8; the mustthink margin ablation changes δthink to 0.25 or 0.75;",
+   "locator": "App.E p.17; Table4 p.18",
+   "mapping_note": "K2/4/8与must-think margin单参数改变；safe-direct loose/strict同时改两阈值、权重臂同时改两权重，不把这些称完全单变量。"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "On Qwen3-VL-8B, Switch-Reasoner also achieves the best overall score, reaching 72.22 with only\na 37.73% thinking rate.",
+   "locator": "Sec.4.2 p.8; Table1 p.7",
+   "mapping_note": "同时报告score/think率，实际执行性能-效率对照；未完成严格非劣或真实成本评估。"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "role": "primary",
+   "quote": "When the thinking tool is invoked, a follow-up think-tool response switches the model into Thinking\nMode and requires intermediate reasoning before the final answer. Otherwise, the model outputs\nthe answer directly. During rollout, the model first follows the switchable protocol; a tool call\ncontinues the trajectory with the follow-up think-tool response, while a direct answer is treated as\na Direct-answering-mode trajectory. Generation can therefore be viewed as an implicit two-stage\nprocess: mode selection followed by either direct answering or explicit reasoning.",
+   "locator": "Sec.3.2 p.4",
+   "mapping_note": "将固定先思考的生成阶段改为可学习二元设计变量。"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "role": "supporting",
+   "quote": "We therefore\nintroduce Sample-level Fine-grained Optimization to provide counterfactual route supervision for\neach training sample.",
+   "locator": "Sec.3.4 p.5; Eqs7–11",
+   "mapping_note": "用自身双模式rollout制造缺失的route preference标签；仍依赖金答案reward，绝不称label-free correctness supervision。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "must-think indicates that Thinking Mode provides a clear improvement. In contrast,\nsafe-direct is assigned only when Direct Mode is already reliable and Thinking Mode does not\nprovide a sufficient benefit; in our default setting, this requires the empirical thinking gain to fall\nbelow a negative safety margin. For uncertain samples, we impose no strong preference to avoid\nintroducing noisy route supervision.",
+   "locator": "Sec.3.4 p.6",
+   "mapping_note": "按差值与direct可靠性三分样本，给正负或零路由信号；是实际差异处理，不是把全局/局部两模块名称视为分解。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J_{GRPO}=\\mathbb E_{q,o\\sim\\pi_{old}}[G^{-1}\\sum_{i=1}^G f_{\\epsilon}(\\pi_\\theta(o_i\\mid q)/\\pi_{old}(o_i\\mid q),\\hat A_i)]-\\beta D_{KL}[\\pi_\\theta\\Vert\\pi_{ref}],\\quad f_\\epsilon(x,y)=\\min\\{xy,\\operatorname{clip}(x,1-\\epsilon,1+\\epsilon)y\\}",
+    "locator": "Eq1 pp.3–4, source sequence-level notation"
+   },
+   {
+    "latex": "\\bar r=G^{-1}\\sum_ir_i^*,\\quad\\sigma=\\sqrt{G^{-1}\\sum_i(r_i^*-\\bar r)^2},\\quad\\hat A_i=(r_i^*-\\bar r)/\\sigma",
+    "locator": "Sec.3.1 p.4, unnumbered; population std, no epsilon written"
+   },
+   {
+    "latex": "\\pi_\\theta(o,m\\mid q)=\\pi_\\theta(m\\mid q)\\pi_\\theta(o\\mid q,m),\\quad m\\in\\{0,1\\}",
+    "locator": "Eq2 p.4; format-based latent factorization"
+   },
+   {
+    "latex": "p_d=\\frac{n_d}{n_t+n_d},\\quad p_t=\\frac{n_t}{n_t+n_d},\\quad\\Delta a=a_d-a_t",
+    "locator": "Eqs3–4 p.5; valid-format trajectories only"
+   },
+   {
+    "latex": "B=\\begin{cases}+B_g&\\Delta a>\\delta\\land p_d<\\tau_{low}\\\\-B_g&-\\Delta a>\\delta\\land p_d>\\tau_{high}\\\\0&otherwise\\end{cases}",
+    "locator": "Eq5 p.5"
+   },
+   {
+    "latex": "B\\leftarrow\\begin{cases}+B_f&p_t>\\pi_{high}\\\\-B_f&p_t<\\pi_{low}\\end{cases}",
+    "locator": "Eq6 p.5, extreme safeguard; otherwise keep Eq5; count-ratio extra criterion unspecified"
+   },
+   {
+    "latex": "o^d_{i,k}\\sim\\pi_\\theta(\\cdot\\mid q_i,m=0),\\quad o^t_{i,k}\\sim\\pi_\\theta(\\cdot\\mid q_i,m=1),\\quad k=1,\\ldots,K",
+    "locator": "Eq7 p.5; implemented different direct/thinking prompt templates App.B"
+   },
+   {
+    "latex": "s_i^d=K^{-1}\\sum_k\\mathbf1[R_{acc}(q_i,o^d_{i,k})>0],\\quad s_i^t=K^{-1}\\sum_k\\mathbf1[R_{acc}(q_i,o^t_{i,k})>0],\\quad\\Delta_i=s_i^t-s_i^d",
+    "locator": "Eqs8–10 p.6"
+   },
+   {
+    "latex": "c_i=\\begin{cases}must\\mbox{-}think&\\Delta_i\\ge\\delta_{think}\\\\safe\\mbox{-}direct&s_i^d\\ge\\tau_{direct}\\land\\Delta_i\\le-\\delta_{safe}\\\\uncertain&otherwise\\end{cases}",
+    "locator": "Eq11 p.6"
+   },
+   {
+    "latex": "r_i^{base}=(1-\\alpha)r_i^{acc}+\\alpha r_i^{fmt}",
+    "locator": "Eq12 p.6; alpha unreported"
+   },
+   {
+    "latex": "r_i^{global}=r_i^{base}\\eta^{\\mathbf1[(B>\\varepsilon_B\\land m_i=1)\\lor(B<-\\varepsilon_B\\land m_i=0)]},\\quad 0<\\eta<1",
+    "locator": "Eq13 p.6; epsilon renamed epsilon_B by reader to separate control deadband from PPO clip; value not given"
+   },
+   {
+    "latex": "\\gamma_i=\\begin{cases}1&must\\mbox{-}think\\\\-1&safe\\mbox{-}direct\\\\0&uncertain\\end{cases},\\quad\\mu_i=2m_i-1,\\quad r_i^{route}=w_{c_i}\\gamma_i\\mu_i,\\quad r_i^*=r_i^{global}+r_i^{route}",
+    "locator": "Eqs14–17 p.6; source mu piecewise equivalent to 2m-1"
+   },
+   {
+    "latex": "(\\tau_{low},\\tau_{high},\\delta,\\pi_{low},\\pi_{high})=(.20,.80,.02,.02,.98),\\quad K=4,\\quad(\\delta_{think},\\tau_{direct},\\delta_{safe})=(.5,.75,.25),\\quad w_{think}=w_{direct}=.03",
+    "locator": "App.E p.17"
+   },
+   {
+    "latex": "A(C+w\\gamma\\mu)=\\frac{\\gamma(\\mu-\\bar\\mu)}{\\operatorname{std}(\\mu)}\\quad(w>0,\\ \\gamma\\in\\{-1,1\\},\\ \\sigma_\\mu>0)",
+    "locator": "Reader derivation only: equal global base C, label fixed per prompt, and two sampled modes; illustrates route-weight cancellation by std"
+   }
+  ],
+  "signal_routing": "Algorithm1先G条natural switchable rollouts、额外2K forced-route rollouts估s/标签、再给主rollouts算r*和组优势；未写将forced-route轨迹加入GRPO或进行单独SFT/BCE。route信息虽来自首决策比较，最终进入scalar trajectory reward，不是仅首动作token监督、也不是caption/crop/answer局部routing。Eq1只给输出序列比率，未给实际token mask、turn拼接、长度归约、对环境think-tool response的mask；不能自动补常见EasyR1实现。uncertain仅route=0，base/global/KL仍有效。格式无效轨迹只明确从controller计数排除，m和route/global评分fallback未给。",
+  "normalization": "mean+std",
+  "normalization_notes": "Sec3.1明确population std的1/G，未写数值epsilon或zero-variance guard。r_base先乘global gate后加route，再统一减组均值除std；无分通道标准化。式13的epsilon_B阈值不等于std稳定项，PPO clip值与B阈值均未报。K4成功率为.25格点；同题label对主组共享。",
+  "invariance": "无最优策略不变性保证：mode penalty和signed route reward均改目标，不是potential shaping或动作无关baseline。读者推导：同组共同正倍scale与常数shift被严格mean/std消去；仅在两模式的惩罚不同、或base/route相对排序变化时有新方向。等base且route唯一变化时w=.03被std约掉；不表示所有一般组中权重无效。若整组只有同一mode且label固定，则r*=c*r_base+k，标准化与原base相同（σ>0），global与route控制均失去该组新的mode信号。B符号超过epsilon后Bg/Bf绝对幅度不进入Eq13，仅影响门是否开；不是连续强度调节器。",
+  "baseline_or_potential": "组平均最终reward是baseline；ref policy用于KL而非路线成功估值。路线s由当前策略强制prompt抽样MC终答正确性；controller mode平均accuracy来自自选择自然轨迹且有task composition confound。无critic/冻结reader/potential。",
+  "degenerate_cases": "读者推导：所有r*相同则σ=0，原式0/0，实现guard未知；全对组不必无梯度（两模式route/global仍可不同），全错格式合法可由format base或route产生信号，取决于未知alpha。两模式base全0时乘η无效但route仍可能有差。K4下must-think需n_t−n_d≥2，safe-direct需n_d≥3且n_d−n_t≥1；(4,4)/(0,0)均uncertain。uncertain≠不进loss。p≈0/1额外forced branch仍有标签，但主组无缺失动作梯度样本，safeguard不保证恢复；某mode计数0使其accuracy未定义，所有invalid使usage0/0，fallback未报。单轮协议仅一次think选择，不能表达第j次crop必要性/重新观察。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1 full vs SR*测试sample correction在固定global框架上的贡献；Table4改K/margins/weights观察敏感性。Fig3 validation轨迹及Fig4各dataset think率说明不只是全局统一频率。未给同总体think率随机/常数router、打乱route labels、无global/无safeguard或等训练compute对照，不能独立识别每个模块和逐题语义作用。",
+  "controls": [
+   "同Qwen3-VL4B/8B骨干的all-thinking/all-direct/Vanilla/SR*；无Thinkless/AdaCoT等已提及adaptive方法的实验对照。",
+   "Table4 K=2/4/8；must-think .25/.5/.75单参数改变；safe loose(.60,0)/strict(.90,.50)同时改两个阈值；weight实验同时变两weight。",
+   "主结果为最后3个validation步骤均值/std，不是3独立seed，未给独立封存test和训练/验证split规模及样本泄漏核验。",
+   "Table3 mixed metrics：DocVQA ANLS、ChartQA relaxed accuracy、RefAdv IoU@.5、其余任务specific ACC；overall不是统一二项accuracy。",
+   "Fig5–7选例展示route，不能替代随机抽样错误分析或必要性label一致性验证。"
+  ],
+  "negative_results": [
+   {
+    "text": "4B loose safe-direct较默认score71.60→68.32（−3.28），think51.53→13.28；8B72.22→69.87（−2.35），think37.73→12.55。更少思考有实际性能代价。",
+    "quote": "a loose criterion substantially reduces the\nthinking rate but also hurts overall performance, while a stricter criterion preserves stronger accuracy\nwith a moderate thinking rate.",
+    "locator": "App.E p.18; Table4"
+   },
+   {
+    "text": "Table1全方法不在所有类别优于all-think：4B Math71.90→67.23、Ground61.40→60.27；8B Math73.57→68.80、Ground60.13→58.93。下引仅是作者整体主张，反例数字由读者核表。",
+    "quote": "GRPO-Thinking achieves strong performance\nbut requires a 100% thinking rate, while GRPO-Direct eliminates explicit thinking entirely, leading\nto clear performance degradation.",
+    "locator": "Sec.4.2/Table1 p.7"
+   },
+   {
+    "text": "K8没有优于默认K4：4B70.41 vs71.60，8B71.95 vs72.22。权重单调性也未建立：4B direct-favored think74.33%反高于default51.53%。",
+    "quote": "The counterfactual sampling ablation changes K to 2 or 8; the mustthink margin ablation changes δthink to 0.25 or 0.75;",
+    "locator": "App.E p.17; Table4 p.18"
+   }
+  ],
+  "seeds": null,
+  "seeds_notes": "训练seed数/值未报。Table1/4明确last three validation steps mean±std；不是3 seeds、CI或显著性检验。各checkpoint相关，不能据这些±证明非劣。",
+  "statistics_reported": {
+   "four_b": {
+    "all_think_score": 70.66,
+    "all_think_sd_validation_steps": 0.54,
+    "global_only_score": 70.79,
+    "global_only_think_percent": 85.73,
+    "full_score": 71.6,
+    "full_sd_validation_steps": 0.3,
+    "full_think_percent": 51.53
+   },
+   "eight_b": {
+    "all_think_score": 71.86,
+    "all_think_sd_validation_steps": 0.34,
+    "global_only_score": 72.0,
+    "global_only_think_percent": 30.25,
+    "full_score": 72.22,
+    "full_sd_validation_steps": 0.16,
+    "full_think_percent": 37.73
+   },
+   "reader_arithmetic_check": "Using category weights(2,2,1,6)/11 gives4B full71.6009 and8B72.2227, consistent with11-task equal macro-average after rounding; weighting not explicitly formalized. Four-category equal macro-average differs."
+  },
+  "falsifier": "读者提出未执行：同训练/推理预算下，固定/随机router匹配总体及dataset think率若复现full收益，逐题route内容不是承重；打乱标签若同效亦否定sample语义。独立两次K4分叉label不一致则先不能拿作必要性gold。检测所有单mode组的控制项adv变化若恒0可验证退化；对p_direct≈0起点必须自然采样恢复而非只在forced分支可回答。最终需heldout多seed非劣+token/latency而非只think率。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-4B-Instruct / Qwen3-VL-8B-Instruct",
+   "framework": "EasyR1",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "epochs": 20,
+   "max_prompt_tokens": 8192,
+   "hardware": "8 NVIDIA H20 GPUs, 96GB each",
+   "counterfactual_K_per_mode": 4,
+   "counterfactual_modes": 2,
+   "ppo_clip": null,
+   "learning_rate": null,
+   "batch_size": null,
+   "alpha_format": null,
+   "eta_mode_penalty": null,
+   "B_g": null,
+   "B_f": null,
+   "B_epsilon": null,
+   "tau_low": 0.2,
+   "tau_high": 0.8,
+   "controller_accuracy_deadband": 0.02,
+   "pi_low": 0.02,
+   "pi_high": 0.98,
+   "delta_think": 0.5,
+   "tau_direct": 0.75,
+   "delta_safe": 0.25,
+   "w_think": 0.03,
+   "w_direct": 0.03
+  },
+  "setup_notes": "beta KL在Eq1存在但数值未知；group G不能误填成counterfactual K4。Fig3横轴到约220只是可见曲线不是精确updates配置。无单独任务SFT步骤说明，起点是Instruct模型；主协议逻辑仅一require_think调用，精确max_turns/max_response tokens未给。",
+  "cost": "作者报8×H20 96GB、20epochs、max prompt8192；未报GPU·h、时长、总训练token、update数、推理token/latency。读者按Alg1计每题G+2K=G+8条顶层rollout，其中think自然轨迹还有follow-up生成；G未知不能给百分比开销。反事实K8每题额外16条但结果不更好。think率51.53/37.73仅路由频率，不能当节省48.47/62.27%的token、latency或总训练成本。",
+  "pitfalls": [
+   {
+    "text": "controller只计格式可识别轨迹，避免把invalid误作direct；这并未规定invalid的训练reward处理。",
+    "quote": "Only format-valid trajectories are used because malformed outputs cannot reliably reflect the actual\nreasoning-mode decision.",
+    "locator": "Sec.3.3 p.5"
+   },
+   {
+    "text": "延迟一batch更新避免用当前已经调整的reward统计即时反馈；B须可持久化和记录。",
+    "quote": "The updated control signal is stored and used in the next training\niteration.",
+    "locator": "Sec.3.3 p.5"
+   },
+   {
+    "text": "safe-direct默认负安全margin要求直答比思考更好；边界两支一样好不能当safe-direct。",
+    "quote": "safe-direct is assigned only when Direct Mode is already reliable and Thinking Mode does not\nprovide a sufficient benefit; in our default setting, this requires the empirical thinking gain to fall\nbelow a negative safety margin.",
+    "locator": "Sec.3.4 p.6"
+   },
+   {
+    "text": "counterfactual prompt和实际think-tool continuation文本不同，需要自然/forced校准，不能只因公式π(o|q,m)写得一样就默认无混杂。",
+    "quote": "I noticed you tried to call a tool. Please do not call any tools.\nNow You FIRST think about the reasoning process as an internal\nmonologue and then provide the final answer. Put your concise\nreasoning inside <thinking>...</thinking>, and put the final\nanswer inside <answer>...</answer>.",
+    "locator": "App.B p.15; reader calibration implication"
+   }
+  ],
+  "code": "https://github.com/fuyyyyy/Switch-Reasoner",
+  "code_notes": "Paper p.1 supplied URL; repository not fetched, executed or implementation-verified. EasyR1 URL p.7 is framework provenance, not pinned config.",
+  "lesson": "当混合任务把一种模式挤出时，分开记录natural主组与forced测量分支、valid/invalid计数、逐题标签和控制器前后reward；先检查控制项经过std后是否仍有mode梯度。把uncertain当“不加route偏好”而非丢样本，并核对强制prompt标签对自然路由的可迁移性；最后以真实token/latency及独立非劣验证效率。"
+ },
+ "relevance": [
+  {
+   "problem": "P02",
+   "how": "相同4B族的按题思考/直答结果，global+local奖励可作近邻；无crop新信息与严格非劣验证。",
+   "strength": 2
+  },
+  {
+   "problem": "P21",
+   "how": "三分类±route reward经PG而非|Δ|BCE，但主组支撑饱和和共享参数全局偏置未排除。",
+   "strength": 2
+  },
+  {
+   "problem": "P22",
+   "how": "uncertain阈值隔离部分小Δ偏好，但K4无label重采一致性/检验，不自动消除估计偏差。",
+   "strength": 2
+  },
+  {
+   "problem": "P23",
+   "how": "公开完整输出/续接prompt便于解析事件；并未给专用单token或natural/fork校准。",
+   "strength": 2
+  },
+  {
+   "problem": "P29",
+   "how": "一batch延迟极端保护可借鉴监测，但无hard support保证且同mode组std会消掉调节。",
+   "strength": 2
+  },
+  {
+   "problem": "P32",
+   "how": "Fig3显示训练时usage动态，未证明后期稳定/多seed一致；非真正目标率对偶控制。",
+   "strength": 2
+  },
+  {
+   "problem": "P45",
+   "how": "±是validation checkpoint波动而非训练seed，需要避免误读。",
+   "strength": 1
+  },
+  {
+   "problem": "P17",
+   "how": "same original input但不同prompt是必要性估值潜在混杂。",
+   "strength": 2
+  }
+ ],
+ "source_ambiguities": [
+  {
+   "issue": "显式选择不等于专用single-token",
+   "detail": "正文一处tool-call token措辞，但后文明确output format隐式实现，模板为多token XML/JSON。tokenizer/专用token新增与决策span mask皆未报。",
+   "locators": [
+    "Sec3.2 p.4",
+    "App.B pp.14–15"
+   ],
+   "status": "implementation_boundary"
+  },
+  {
+   "issue": "正文“comparable or lower thinking”与8B表值",
+   "detail": "加sample correction8B think30.25→37.73（+7.48pp），score72.00→72.22；应逐模型报告，不一概称更少。",
+   "locators": [
+    "Sec4.2 p.8",
+    "Table1 p.7"
+   ],
+   "status": "prose_overgeneralization"
+  },
+  {
+   "issue": "效率与必要性的证据指标不足",
+   "detail": "think率不是token/latency；table1分组可退化（Math两模型均低于all-think），无非劣界。Fig6答案B正确但推理否认book存在并称无法判相对位置，不能把终答正确当过程已用对视觉证据；未独立标图真值。",
+   "locators": [
+    "Table1 p.7",
+    "Figs5–7 pp.9/18–19"
+   ],
+   "status": "measurement_and_case_boundary"
+  },
+  {
+   "issue": "未给足控制器实现参数/invalid分支",
+   "detail": "alpha/eta/Bg/Bf/epsilon_B/count-ratio criterion、G/KL/clip/LR等未报；invalid m、零mode accuracy与σ0处理未明。Eq6以override解释但具体extra count-ratio优先级未知。",
+   "locators": [
+    "Eqs5–6/12–13 pp.5–6",
+    "Alg1 p.16",
+    "App.E p.17"
+   ],
+   "status": "implementation_specification_gap"
+  },
+  {
+   "issue": "continuous metric与二值route success",
+   "detail": "Eq8–9用1[Racc>0]，DocVQA评测ANLS为continuous similarity。论文没给各任务训练accuracy reward如何映射，不能把非零ANLS直接等同严格答对，也不能自行补exact-match scorer。",
+   "locators": [
+    "Eqs8–9 p.6",
+    "App.D/Table3 pp.16–17"
+   ],
+   "status": "reward_metric_mapping_unknown"
+  },
+  {
+   "issue": "三次validation steps不是重复训练",
+   "detail": "Table1/4明示last three validation steps；seed数量与训练/验证split规模未报，±不能解释成重复训练稳定性或paired confidence interval。",
+   "locators": [
+    "Tables1/4 pp.7/18"
+   ],
+   "status": "statistical_unit"
+  },
+  {
+   "issue": "route偏好权重与频率非单调",
+   "detail": "4B direct-favored w_d.04/w_t.02反而think74.33%高于default51.53%；K8 score70.41低于K4 71.60。结果不支持“多抽样必更好/权重更大必按方向降低使用率”的概括。",
+   "locators": [
+    "App.E/Table4 pp.17–18"
+   ],
+   "status": "empirical_nonmonotonicity"
+  }
+ ],
+ "unknowns": [
+  "G、batch/LR/clip/KL beta/temperature/maxresponse/更新数、seed数值与训练run次数",
+  "alpha/eta/Bg/Bf/epsilon_B、count-ratio safeguard、invalid m/reward以及零variance/零mode样本fallback",
+  "训练混合各dataset规模、sampling比例、train-validation划分、去重/泄漏控制、heldout test",
+  "主loss token mask/length reduction、think-tool环境响应是否mask、counterfactual是否有缓存复用（算法只写打标签）",
+  "真实训练/推理token、wallclock/GPU·h/latency；source code配置未独立核验"
+ ],
+ "visual_verification": {
+  "pages": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19
+  ],
+  "scope": "Eqs1–17逐式，Table1/2/3/4、Alg1、全部prompt templates、Fig2–7与训练/使用率曲线。",
+  "artifacts": [
+   "readings/_evidence/2607.08572/page-03.png",
+   "readings/_evidence/2607.08572/page-04.png",
+   "readings/_evidence/2607.08572/page-05.png",
+   "readings/_evidence/2607.08572/page-06.png",
+   "readings/_evidence/2607.08572/page-07.png",
+   "readings/_evidence/2607.08572/page-08.png",
+   "readings/_evidence/2607.08572/page-09.png",
+   "readings/_evidence/2607.08572/page-14.png",
+   "readings/_evidence/2607.08572/page-15.png",
+   "readings/_evidence/2607.08572/page-16.png",
+   "readings/_evidence/2607.08572/page-17.png",
+   "readings/_evidence/2607.08572/page-18.png",
+   "readings/_evidence/2607.08572/page-19.png"
+  ]
+ },
+ "review_status": "independent_source_audit_complete",
+ "scientific_replication": false
+}

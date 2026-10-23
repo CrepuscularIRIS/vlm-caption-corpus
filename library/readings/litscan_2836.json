@@ -1,0 +1,165 @@
+{
+ "paper_key": "litscan:2836",
+ "title": "Disambiguating Reference in Visually Grounded Dialogues through Joint Modeling of Textual and Multimodal Semantic Structures",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2836.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§2 task definitions",
+   "§3",
+   "§4 Tables2–4 Figures4,6",
+   "Limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用共享文本编码器将共指/谓词论元结构学习迁移到mention–object grounding。",
+  "key_step": "先训练TRR再以同一text encoder初始化MRR；关系类型有独立投影，冻结object detector。",
+  "why_non_obvious": "省略主语/宾语不会在caption里显式出现；只组合phrasegrounding输出不能处理zero reference。",
+  "trigger_condition": "When mentions are ambiguous or omitted, transfer typed textual-reference representations to visual-object matching.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把隐式关系编码到共享表示，再映射至可观测实体。",
+  "abstract_trigger_condition": "When mentions are ambiguous or omitted, transfer typed textual-reference representations to visual-object matching.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "先训练TRR再以同一text encoder初始化MRR；关系类型有独立投影，冻结object detector。",
+  "abstract_why_non_obvious": "省略主语/宾语不会在caption里显式出现；只组合phrasegrounding输出不能处理zero reference。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2836#s1",
+   "object": "dialogue mention–object relations",
+   "information": "Japanese dialogue + image detector proposals; goldcoreference/PAS/BA training relations; no actionreturns",
+   "operation": "TRR预训共享textencoder，再以relation-specific dotproduct训练MRR",
+   "claimed_effect": "J-CRe3 pronoun R@1 .277→.361；overall .342→.348；Flickr .558→.560几乎无增益。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p6; §3.2",
+    "quote": "it considerably outperforms all"
+   },
+   "failure_boundary": "名词可能退步；冻结detector限制召回，日语两人对话范围。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "为跨轮caption代词/省略指向同一图像实体建立独立诊断，需新关系标签。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "entitygrounding可作候选检查但不是crop必要性reward。",
+   "strength": 1
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "MRR-only",
+   "kind": "method"
+  },
+  {
+   "name": "KWJA transfer",
+   "kind": "method"
+  },
+  {
+   "name": "GLIP",
+   "kind": "method"
+  },
+  {
+   "name": "MDETR",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "限日语两人对话，主格/与格对象多为两参与者。",
+   "quote": "are limited to two-party Japanese dialogues.",
+   "locator": "Limitations p9"
+  },
+  {
+   "text": "冻结detector proposal限制grounding召回上限.799。",
+   "quote": "The actual upper bound is",
+   "locator": "§4.2 p6"
+  }
+ ],
+ "question": {
+  "observed_failure": "基线代词R@1=.277、GLIP=.241；显式名词和省略指代能力不同。",
+  "load_bearing_assumption": "独立phrasegrounding足够还原对话所有引用。",
+  "scope": "J-CRe3直接/间接引用",
+  "success_criterion": "相同MRR结构，增加TRR后分词类/关系类型Recall改善。",
+  "why_open": "以往先独立预测再组合难处理zero references。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Tables3–4按pronoun/noun与case分层"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "locator": "§3.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_S=\\sum_l CE(S_l,S_l^{gt}),\\quad L_U=\\sum_l CE(U_l,U_l^{gt})",
+    "locator": "Eq6–7 p4"
+   }
+  ],
+  "signal_routing": "TRR文本关系CE→textencoder；随后MRR关系CE→textencoder/fusion/projection；objectdetector冻结。不是一个标量给整条生成轨迹。",
+  "normalization": "softmax cross entropy over relation candidates; no group-return normalization",
+  "invariance": "非shaping/PBRS，无策略不变性；共享表示迁移可能负迁移。",
+  "baseline_or_potential": "监督关系标签；无critic/potential。",
+  "degenerate_cases": "proposal漏目标时后续关系匹配无从恢复；无歧义单名词时TRR收益可为零；p≈0/1和全对错rollout组不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "MRRbaseline固定，比较coref/PAS+BA/allTRR初始化；按noun/pronoun与indirectcase报告。",
+  "negative_results": [
+   {
+    "text": "Flickr30k-Ent-JP基本无益，directreference MRR未胜baseline；coreference有时损伤indirect。",
+    "locator": "§4.2–4.3 pp6–8"
+   }
+  ],
+  "seeds": "MRR †行3随机seed均值；GLIP/MDETR未同样声明。",
+  "falsifier": "相同实体检测和文本长度下共指分层不再受益，或只提高confidence不提高Recall。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Japanese DeBERTa-v2-large + frozen Detic/Swin",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "TRR/MRR 4×RTX3090约6h；GLIP/MDETR2×A6000约2天；不是相同训练算力。",
+  "pitfalls": [
+   {
+    "text": "训练3utterances、eval单utterance；上下文长度会混入效果。",
+    "locator": "§4.1 p5"
+   }
+  ],
+  "code": "https://github.com/SInadumi/mmrr",
+  "lesson": "当caption含代词或省略时，分开检查实体指向与最终答案；grounder confidence上升不等证据更可靠。"
+ }
+}

@@ -1,0 +1,467 @@
+{
+ "paper_key": "2505.23558",
+ "title": "Qwen Look Again: Guiding Vision-Language Reasoning Models to Re-attention Visual Information",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.23558.pdf",
+  "version": "v2",
+  "sections_read": [
+   "Abstract and §1 Introduction pp1–3; Figs1–3",
+   "§2.1–2.2 Related Works p3",
+   "§3.1 Preliminaries p4, Eqs1–3",
+   "§3.2 BRPO pp4–6, Fig4 and reflection reward",
+   "§3.3 Visual Re-attention p6, Theorems3.1–3.2 and Eqs4–5",
+   "§4.1–4.4 Experiments pp7–9, Tables1–5 and Fig5",
+   "§5 Conclusion p9; §6 Limitations p10",
+   "References pp10–13 (bibliographic context)",
+   "Appendix A BRPO Experimental Details p13, Figs6–7",
+   "Appendix B Cold Start Data Generation p14, Fig8",
+   "Appendix C.1–C.2 Detailed Proof pp14–15, Eqs6–12",
+   "Appendix D Training Details p15",
+   "Appendix E Evaluating Vision-text Reflection pp15–16, Fig9 and Table6",
+   "Appendix F Data Validation p16",
+   "Appendix G Broader Impacts pp16–17",
+   "Appendix H Case Study p17, Fig10"
+  ],
+  "visual_pages_inspected": [
+   2,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   13,
+   14,
+   15,
+   16,
+   17
+  ],
+  "version_note": "Observed local watermark arXiv:2505.23558v2 [cs.CV] 30 May 2025. No claim that this is the latest online version."
+ },
+ "rs": {
+  "innovation_approach": "把显式文字反思与实际视觉重读区分开：先用一次反思冷启动和BRPO学习反思位置/次数，再蒸馏40k轨迹，在SFT与推理时按反思标记复制全部或路由部分原图视觉token。",
+  "key_step": "将<REFLECTION>作为视觉token重插入触发器；VTR按已生成文字对原图token的平均注意力挑top m%，VTC保留全部。",
+  "why_non_obvious": "反思文字出现并不等于模型重读视觉证据。只奖励反思格式/长度也不直接修复视觉忽略，故学习触发和实际重注入分别处理。",
+  "trigger_condition": "When extended reasoning and explicit verbal reflection still underuse available observations, learn revisit triggers and reinsert complete or attention-selected observation representations at those triggers.",
+  "reviewer_praise": [
+   "low_evidence: manifest has no reviews_path; no actual peer reviews were read."
+  ],
+  "reviewer_concern": [
+   "low_evidence: reader caveats below are not attributed to reviewers."
+  ],
+  "acceptance_signal": null,
+  "contribution_type": "methodological",
+  "abstract_strategy": "Learn when to revisit an existing observation and refresh its representation at the revisit boundary.",
+  "abstract_key_step": "Seed the revisit behavior, optimize its occurrence with an output-level signal, then reinsert all or selected observed components at the learned trigger.",
+  "abstract_why_non_obvious": "Saying that an observation was checked does not ensure that its representation influences the next decision.",
+  "abstract_trigger_condition": "When extended processing neglects available evidence despite verbal checking, couple a learned revisit trigger to explicit representation reinsertion."
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.23558#s1",
+   "object": "反思段出现次数、位置与平均长度的训练分布",
+   "information": "可见原图、题目、采样答案、<CONCLUSION>正确答案匹配、段落格式、反思次数Nr与总token数；没有每次反思是否必要的反事实标签。",
+   "operation": "先用2k单反思示范冷启动，随后在10k题上用格式奖励、正则终答奖励和反思平均长度平衡奖励训练GRPO形式的BRPO；再生成并验证/修正40k轨迹用于SFT。",
+   "output": "Qwen-Zero及Qwen-Zero-40k；反思可出现在多个位置。",
+   "claimed_effect": "作者报告Fig6反思次数上升、总反思长度下降；Table4 BRPO而不加VTC/VTR时MMMU58.8、MMStar64.2、CHAIRi8.7，基座分别58.6/63.9/9.4。该消融未隔离冷启动、蒸馏SFT和单个奖励分量。",
+   "conditions": [
+    "Qwen2.5-VL-7B-Instruct已有2k一次反思冷启动",
+    "训练有可规则匹配的终答真值",
+    "Nr>0才能直接计算所写奖励；零次反思处理未说明"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2 p5; §4.4 Table4 p8; Appendix A Fig6 p13",
+    "quote": "w/ BRPO (w/o VTC / VTR) 58.8 64.2 8.7 2308.5"
+   },
+   "failure_boundary": "不提供零反思支持保护、按状态必要性监督或逐段信用；反思奖励聚合权重、数值边界与Nr=0处理未报告。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.23558#s2",
+   "object": "反思开始前的视觉上下文",
+   "information": "可见输入图像的完整视觉token与模型生成的反思起点；没有新像素、外部crop结果或逐次必要性真值。",
+   "operation": "在SFT和推理中检测<REFLECTION>，将输入图像的全部视觉token复制到该标记之前，让反思随后生成。",
+   "output": "Qwen-LA-COPY的视觉加文字反思。",
+   "claimed_effect": "Tables1–3作者报告COPY相对基座MMMU60.3 vs58.6，CHAIRi3.7 vs9.4、CHAIRs9.8 vs37.1、POPE90.2 vs88.7；MMMU时间22.33s vs8.68s，长度1811.4 vs268.5。不能把整套训练增益全部归于复制。",
+   "conditions": [
+    "训练和推理均采用同一重插入协议",
+    "40k蒸馏SFT数据含反思触发器",
+    "有额外上下文和推理预算"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3 p6 VTC; §4.2 Tables1–3 pp7–8; Appendix E Table6 p16",
+    "quote": "Qwen-LA-COPY (ours) 3.7 9.8 90.2 3.82 2330.8"
+   },
+   "failure_boundary": "增加推理开销；只在Qwen2.5-VL上验证。复制旧视觉表征不是提高原图分辨率，不能补回编码时丢失的细节。后一句为读者推论。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.23558#s3",
+   "object": "每个反思起点重插入的视觉token子集",
+   "information": "可见到当前反思前已生成token对各视觉token的注意力均值；没有未来推理、遗漏区域真值或外部裁图证据。",
+   "operation": "按Eq5沿此前生成序列平均视觉注意力，对视觉token排序并将top m%插到反思起点；默认m=50。",
+   "output": "Qwen-LA-ROUTE及可调token数量/推理耗时。",
+   "claimed_effect": "Table3 m50的MMMU59.1、时间18.29s，COPY为60.3/22.33s；Table5 m25反而低于m0（MMMU55.6 vs58.8），故不是越加token就必然提升。Table2 ROUTE的POPE88.5低于基座88.7。",
+   "conditions": [
+    "能够取得此前token对视觉token的注意力",
+    "m=50为主要实验设置；低m可能丢失所需信息",
+    "反思生成与视觉插入协议需在SFT/推理一致"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3 Eq5 p6; §4.4 Table5 p9; Table2 p8",
+    "quote": "Unfortunately, small m, like 25, reduce model accuracy."
+   },
+   "failure_boundary": "注意力高的区域未必是缺失证据区域；25%路由出现实际负结果。跨层/跨头如何聚合用于路由以及重插入位置编码/缓存实现未具体交代。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "Llama-3.2-11B-Vision-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "MiniCPM-o-2.6",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL2.5-8B",
+   "kind": "method"
+  },
+  {
+   "name": "DeepSeek-VL2",
+   "kind": "method"
+  },
+  {
+   "name": "Gemma3-12B-IT",
+   "kind": "method"
+  },
+  {
+   "name": "LLaVA-CoT",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL2.5-8B-MPO",
+   "kind": "method"
+  },
+  {
+   "name": "Kimi-VL-Think",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-R1",
+   "kind": "method"
+  },
+  {
+   "name": "M3ID",
+   "kind": "method"
+  },
+  {
+   "name": "Greedy Decode",
+   "kind": "method"
+  },
+  {
+   "name": "Chain-of-Thought prompting",
+   "kind": "method"
+  },
+  {
+   "name": "OPERA",
+   "kind": "method"
+  },
+  {
+   "name": "VISTA",
+   "kind": "method"
+  },
+  {
+   "name": "ICoT",
+   "kind": "method"
+  },
+  {
+   "name": "PAI",
+   "kind": "method"
+  },
+  {
+   "name": "Text-only reflection",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-only reflection",
+   "kind": "method"
+  },
+  {
+   "name": "MMMU",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMMU-Pro",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMBench-V1.1-En",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVision",
+   "kind": "benchmark"
+  },
+  {
+   "name": "POPE",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMHAL BENCH",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MSCOCO 2014 training subset: 5000 images for hallucination evaluation; separate 500-sample attention analysis",
+   "kind": "dataset"
+  },
+  {
+   "name": "CHAIRi / CHAIRs on final conclusions only",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者承认理论只覆盖将视觉忽略视为重要幻觉成因的设定。",
+   "quote": "While this is a common perspective and analytical approach [8, 53, 13, 18], it may limit the scope of the proof.",
+   "locator": "§6 Limitations p10"
+  },
+  {
+   "text": "重插入增加推理开销，可能不适合即时响应。",
+   "quote": "Additionally, both proposed VTC and VTR increase the inference overhead of VLRM, which may not be acceptable in scenarios requiring instant response.",
+   "locator": "§6 Limitations p10"
+  },
+  {
+   "text": "仅在Qwen2.5-VL基座实施，其他模型的可扩展性是作者主张而非已验证结果。",
+   "quote": "although we only propose our strategies based on Qwen2.5-VL-Instruct due to resource limitations",
+   "locator": "§6 Limitations p10"
+  }
+ ],
+ "question": {
+  "observed_failure": "Fig1–2对500个MSCOCO例展示随生成增长幻觉上升、视觉注意力下降，文字反思未修复；没有给出端点精确数字。可量化对照Table6为text-only MMMU58.8/CHAIRi8.7、vision-only56.1/8.4，vision-text COPY60.3/3.7。",
+  "load_bearing_assumption": "让模型写出反思或再看图的文字，就会实际重新利用视觉证据。",
+  "scope": "Qwen2.5-VL-7B的长推理与反思中的原图视觉token利用；不是高分辨率crop工具策略。",
+  "success_criterion": "作者衡量五个VQA基准准确率、CHAIR/POPE/MMHAL/MME以及MMMU推理时间和长度；未设准确率非劣界或按需反思真值。",
+  "why_open": "已有文字反思不能保证视觉重读；视觉提示或注意力增强常由人为固定触发时机。本方法学习触发并显式重插入，但没有解决每次触发是否必要的辨识。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "guiding the model to explicitly output a reflection process through text-only prompts does not increase the attention weights of visual tokens.",
+   "locator": "§1 p2, Fig2b diagnostic"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "The cold-start data inserts a reflection process between reasoning and conclusion processes",
+   "locator": "§3.2 p5"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "We compare the accuracy, output sequence length, and inference time of different models on MMMU.",
+   "locator": "§4.3 p8"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "role": "primary",
+   "quote": "even when the model is explicitly prompted to review the input image and reflect on earlier reasoning processes, it may not actually re-attend to visual tokens.",
+   "locator": "§1 p2, Figs1–2"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "role": "supporting",
+   "quote": "The number and relative positions of reflection processes are unrestricted but similarly cannot overlap or nest.",
+   "locator": "§3.2 p5",
+   "rationale": "固定→自由的具体组件：冷启动仅含一次、预设位置的反思；BRPO允许策略生成任意数量及相对位置的非嵌套反思，故释放的是反思生成流程的次数/位置，而非泛称SFT后做RL。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=\\frac{r_i-\\operatorname{mean}(\\{r_1,\\ldots,r_G\\})}{\\operatorname{std}(\\{r_1,\\ldots,r_G\\})}",
+    "locator": "§3.1 Eq1 p4"
+   },
+   {
+    "latex": "\\mathcal{L}_{GRPO}(\\theta)=\\frac{1}{G}\\sum_{i=1}^{G}\\left(\\min\\left(\\frac{\\pi_\\theta(o_i\\mid q)}{\\pi_{old}(o_i\\mid q)}A_i,\\operatorname{clip}\\left(\\frac{\\pi_\\theta(o_i\\mid q)}{\\pi_{old}(o_i\\mid q)},1-\\epsilon,1+\\epsilon\\right)A_i\\right)-\\beta D_{KL}(\\pi_\\theta\\Vert\\pi_{ref})\\right)",
+    "locator": "§3.1 Eq2 p4; §3.2 p5 BRPO shares objective"
+   },
+   {
+    "latex": "D_{KL}(\\pi_\\theta\\Vert\\pi_{ref})=\\frac{\\pi_{ref}(o_i\\mid q)}{\\pi_\\theta(o_i\\mid q)}-\\log\\frac{\\pi_{ref}(o_i\\mid q)}{\\pi_\\theta(o_i\\mid q)}-1",
+    "locator": "§3.1 Eq3 p4, printed sample-level expression"
+   },
+   {
+    "latex": "1-\\frac{\\left|\\frac{L_{r_{total}}}{N_r}-\\lambda\\right|}{\\lambda}",
+    "locator": "§3.2 p5 unnumbered reflection balance reward; visually inspected"
+   },
+   {
+    "latex": "\\operatorname{attn}_j=\\frac{1}{L_y}\\sum_{i=1}^{L_y}\\operatorname{attn}_{i,j},\\quad j\\in\\{1,2,\\ldots,L_c\\}",
+    "locator": "§3.3 Eq5 p6"
+   },
+   {
+    "latex": "I(y;c\\mid x)\\sim\\frac{L_c}{L_{total}}H(y\\mid x,c)",
+    "locator": "Appendix C.1 Eq9 p15 (author approximation, not established universal law)"
+   },
+   {
+    "latex": "r^\\prime=\\frac{L_c+k}{L_{total}+k}>\\frac{L_c}{L_{total}}=r,\\quad k>0,\\ L_x+L_y>0",
+    "locator": "§3.3 Theorem3.2 p6 and Appendix C.2 Eqs10–12 p15"
+   }
+  ],
+  "signal_routing": "论文Eq2以整条响应o_i的概率和组级Ai书写，格式/终答/反思平衡是输出级奖励；未明确逐token loss聚合、assistant/视觉token mask或反思专用优势，不能补写。VTC/VTR在后续40k SFT和推理阶段由反思标记触发，不应写成BRPO中已经执行新视觉操作。",
+  "normalization": "mean+std",
+  "invariance": "不是PBRS，不给策略不变保证；反思平均长度目标改变被奖励的行为偏好，视觉重插入改变后续上下文。理论只证明token计数比例增加；上界升高并不证明实际互信息/注意力升高，且比例下降与H(y|x,c)随长度变化的乘积没有单调保证（读者分析）。",
+  "baseline_or_potential": "优势基线是同题G个响应奖励均值并除std，不用critic或势函数；KL用πref，文中未明确其精确checkpoint。",
+  "degenerate_cases": "读者推导：Nr=0奖励未定义且论文未给保护；Nr=1奖励只约束单次反思长度；当平均长度=λ时任意Nr都得1，不是总反思次数成本。所有总奖励相同时std=0，文中无epsilon说明；全对/全错不必零方差，因为格式/长度奖励仍可能不同。p≈0的零反思或某位置未有采样支撑保护。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "作者Table6对text-only、vision-only、vision-text作组件比较，Table5扫m，Fig1–2文字反思诊断与Fig9视觉注意力曲线提供机制线索。Table4去BRPO同时少训练/SFT，不能视为只改奖励的严格单变量实验；没有固定总token/时间的匹配对照。",
+  "controls": [
+   "Table4: base, no BRPO + VTC/VTR, BRPO without visual reinsertion, full COPY/ROUTE",
+   "Table5: m=0/25/50/75/100",
+   "Appendix E Table6: force-end reflection for vision-only versus no-copy text-only versus vision-text",
+   "§4.1: evaluate CHAIR on final conclusion to reduce whole-chain length confound"
+  ],
+  "negative_results": [
+   {
+    "text": "m25的MMMU55.6、MMStar62.1、POPE86.2、MME2290.2均低于m0的58.8/64.2/88.4/2308.5。",
+    "quote": "Unfortunately, small m, like 25, reduce model accuracy.",
+    "locator": "§4.4 Table5 p9"
+   },
+   {
+    "text": "未做BRPO/SFT而直接提示加VTC/VTR，MMMU57.2/57.0低于base58.6。",
+    "quote": "It can be observed that \"w/o BRPO\" shows performance degradation due to unstable outputs without BRPO and SFT.",
+    "locator": "§4.4 pp8–9 and Table4 p8"
+   },
+   {
+    "text": "vision-only MMMU56.1低于text-only58.8；更多视觉token而不给反思文本并非自动更好。",
+    "quote": "Vision-only 56.1 63.3 8.4 2312.1",
+    "locator": "Appendix E Table6 p16"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出、未执行：同checkpoint、同触发位置、匹配总解码预算/插入token数比较真实视觉、无关视觉与额外文本；若真实视觉不优于匹配对照，则实际视觉证据解释不成立。若按需反思不能优于固定次数/固定位置，不能声称学习到必要性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct",
+   "framework": "other: DeepSpeed ZeRO-3 and vLLM reported; specific RL trainer library not reported",
+   "group_size": 8,
+   "rollouts": null,
+   "steps": null,
+   "kl": 0.1,
+   "temperature": 1.0,
+   "max_turns": null
+  },
+  "cost": "Appendix A: BRPO 8×NVIDIA A800-SXM4 80G for48h =384 GPU·h (reader arithmetic). 10k RL problems; 2k cold-start and40k distilled SFT. Total rollout/token counts and SFT GPU-hours not reported. Table3 MMMU base268.5tokens/8.68s; COPY1811.4/22.33s; ROUTE1425.8/18.29s. Hardware/batching equivalence for timing not specified.",
+  "pitfalls": [
+   {
+    "text": "为避免视觉token随图像分辨率增长导致内存爆炸，BRPO图像限制640×480并resize。",
+    "quote": "This is merely to avoid memory explosion, as the number of visual tokens encoded by Qwen2.5-VL-Instruct correlates positively with input image resolution.",
+    "locator": "Appendix A p13"
+   },
+   {
+    "text": "新增反思特殊token时仅开放embedding/head中新增token权重，冻结视觉塔和多模态projector。",
+    "quote": "Due to the addition of extra special tokens (e.g., <REFLECTION>), the embedding layer and head layer are partially unfrozen, optimizing only the weights of newly added special tokens.",
+    "locator": "Appendix D p15"
+   }
+  ],
+  "code": "https://github.com/Liar406/Look_Again",
+  "lesson": "当文字反思不能恢复视觉证据利用时，应分别测量反思生成和实际视觉重读，并用匹配计算预算的控制区分证据增益与多算；这是本文结果启发的读者迁移建议，未在本项目验证。",
+  "additional_reported_setup": {
+   "BRPO": {
+    "learning_rate": 1e-06,
+    "batch_size": 16,
+    "gradient_accumulation": 2,
+    "max_length": 8192,
+    "max_completion_length": 1024,
+    "vllm_max_model_length": 1024,
+    "precision": "bfloat16",
+    "optimizer": "AdamW beta=(0.9,0.95), eps=1e-8",
+    "warmup_ratio": 0.01,
+    "reflection_lambda": 100
+   },
+   "SFT": {
+    "learning_rate": 1e-05,
+    "batch_size": 1,
+    "gradient_accumulation": 8,
+    "epochs": 13,
+    "max_pixels": 262144,
+    "optimizer": "AdamW beta=(0.9,0.999), eps=1e-8",
+    "frozen": "vision tower and multimodal projector; old embedding/head rows frozen",
+    "warmup_ratio": 0.01
+   },
+   "VTR_top_percent": 50
+  }
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "先示范一次反思，RL再扩展次数；支持冷启动行为支撑的设计，但不证明未示范的弃答/不裁能涌现。",
+   "strength": 2
+  },
+  {
+   "problem": "P26",
+   "how": "学习反思位置，但没有校准不确定性或必要性指标；不能作为只在需要时crop已解决的证据。",
+   "strength": 1
+  },
+  {
+   "problem": "P27",
+   "how": "Fig10展示视觉重读后改口案例；缺系统化错→对/对→错率。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "四模型投票筛查后只对被标错样本人工修正；未提供独立随机人工金标审计。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "显式重注入可用于研究长推理视觉忽略，但奖励没有直接约束caption事实性。",
+   "strength": 2
+  },
+  {
+   "problem": "P39",
+   "how": "训练resize限制说明新视觉重插入不能替代分辨率/可读性核对。",
+   "strength": 1
+  },
+  {
+   "problem": "P01",
+   "how": "明确使用mean+std，反思奖励并未解决cost系数标准化问题。",
+   "strength": 1
+  },
+  {
+   "problem": "P68",
+   "how": "这里BRPO全称Balanced Reflective Policy Optimization，不能按缩写自动视为分支基线或逐工具信用方法。",
+   "strength": 1
+  }
+ ]
+}

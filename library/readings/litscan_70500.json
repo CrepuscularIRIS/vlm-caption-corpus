@@ -1,0 +1,138 @@
+{
+ "paper_key": "litscan:70500",
+ "title": "RLvsSFT",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70500.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.1 Eq1",
+   "§4.1–4.2",
+   "§5.1–5.2 Table1",
+   "B.4",
+   "D.5 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "把MLLM偏好训练后的视觉encoder拆出，再冻结并接新LLM测视觉表示迁移。",
+  "why_non_obvious": "终端VQA提升可能来自语言模型；拆出视觉encoder的线性probe与新head隔离了表征改变。",
+  "trigger_condition": "当RL收益被全归因语言推理时，隔离视觉encoder并换head评估。",
+  "contribution_type": "empirical analysis / training recipe",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当RL收益被全归因语言推理时，隔离视觉encoder并换head评估。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "把MLLM偏好训练后的视觉encoder拆出，再冻结并接新LLM测视觉表示迁移。",
+  "abstract_why_non_obvious": "终端VQA提升可能来自语言模型；拆出视觉encoder的线性probe与新head隔离了表征改变。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70500#s1",
+   "object": "MLLM视觉encoder",
+   "information": "同20K MPO preference pair；SFT只用chosen，DPO用chosen+rejected；全参数可更新",
+   "operation": "3M图文预训练后DPO，拆出encoder冻结，接新Qwen1.5B并训练projector/LLM",
+   "claimed_effect": "SigLIP2 giant +SFT平均55.4，+PIVOT56.7；So400m+PIVOT55.6高于未增强giant53.9。",
+   "conditions": [
+    "视觉encoder实际参与偏好更新；新head评估冻结encoder"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5 Table1",
+    "quote": "+ PIVOT                                 40B + 0.003B          56.7       68.5     54.7         54.2        49.3"
+   },
+   "failure_boundary": "主要RL证据为离线DPO，不是GRPO；SFT和DPO信息量不完全匹配。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "区分预训练/SFT/DPO阶段与vision是否可更新，避免把策略能力变化泛称RL。",
+   "strength": 2
+  },
+  {
+   "problem": "P61",
+   "how": "DPO和SFT对视觉表征与域外任务的影响可独立测量。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "same-pair SFT chosen-only",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "DPO多一个rejected监督，信息量不等。",
+   "quote": "still has limitations. From a data-scale perspective, each DPO update uses (It , xt , ytc , ytr ), whereas\nSFT relies only on (It , xt , ytc ), so the amount of supervision per iteration is not perfectly matched.",
+   "locator": "D.5"
+  }
+ ],
+ "question": {
+  "observed_failure": "数据分布偏移80%时SFT平均62.2→53.2；DPO较稳，视觉任务gap17.9点。",
+  "load_bearing_assumption": "比较的信息量和数据分布差异足够受控。",
+  "scope": "Qwen2.5+SigLIP全参数posttrain",
+  "success_criterion": "同信息预算及数据下拆出encoder，冻结换head，量化视觉保留/改善。",
+  "why_open": "DPO额外rejected信息仍未匹配；对冻结vision的GRPO不能直接外推。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_{DPO}=-E\\log\\sigma\\{\\beta[\\log(\\pi_\\theta(y_c|I,q)/\\pi_{ref}(y_c|I,q))-\\log(\\pi_\\theta(y_r|I,q)/\\pi_{ref}(y_r|I,q))]\\}",
+    "locator": "Eq1"
+   }
+  ],
+  "signal_routing": "chosen/rejected序列似然差反传视觉encoder、projector、LLM；评估迁移阶段冻结视觉encoder，只更新新projector/LLM。无tool动作。",
+  "normalization": "other",
+  "invariance": "DPO参考比率与β；无组std、无PBRS，序列长度归一未在Eq1明示。",
+  "baseline_or_potential": "冻结reference模型的chosen/rejected比率。",
+  "degenerate_cases": "视觉冻结时不存在encoder更新机制；偏好相同/噪声会削弱信号；不涉及全对组。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "拆encoder做ImageNet/segmentation；新LLM头验证；B.4 Under30/NoThink偏SFT数据对照。",
+  "negative_results": [
+   {
+    "text": "SFT友好数据缩小DPO优势；监督信息仍不完全匹配。",
+    "locator": "B.4; D.5"
+   }
+  ],
+  "seeds": "分割图报告6随机种子；未把该数推广为全部训练实验seed。",
+  "falsifier": "等chosen/rejected信息量且冻结/可训练vision分层后收益若只在LLM，视觉迁移解释不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5 .5/1.5/3/7B; SigLIP2各规模",
+   "framework": "LLaVA-OneVision",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "PIVOT文中报8H100 18h（1.5B head）；非单独DPO成本。",
+  "pitfalls": [
+   {
+    "text": "标题RL主要操作是DPO，不能写成online GRPO。",
+    "locator": "§3.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当vision tower冻结时，不应套用需要更新视觉encoder的机制解释；要拆模块评估。"
+ }
+}

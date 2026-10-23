@@ -1,0 +1,156 @@
+{
+ "paper_key": "litscan:13743",
+ "title": "Argus: Vision-Centric Reasoning with Grounded Chain-of-Thought",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_13743.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.1–3.2",
+   "§4.1–4.5 Tables1–6",
+   "§5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "将显式ROI新像素重编码替换为按预测框重取缓存patch embeddings；对照两者信息边界。",
+  "why_non_obvious": "重采样保留原空间上下文、减少编码，但只能重排已有信息；小物体常需要实际新像素。",
+  "trigger_condition": "When cached vision tokens retain the needed detail, retrieve ROI tokens instead of re-encoding the crop; otherwise reacquire pixels.",
+  "contribution_type": "method",
+  "abstract_strategy": "architectural_operator_substitution",
+  "abstract_trigger_condition": "When cached vision tokens retain the needed detail, retrieve ROI tokens instead of re-encoding the crop; otherwise reacquire pixels.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "将显式ROI新像素重编码替换为按预测框重取缓存patch embeddings；对照两者信息边界。",
+  "abstract_why_non_obvious": "重采样保留原空间上下文、减少编码，但只能重排已有信息；小物体常需要实际新像素。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:13743#s1",
+   "object": "ROI visual context re-engagement",
+   "information": "语言生成归一化框；re-encoding读取原图新crop；re-sampling仅原MoVE缓存tokens",
+   "operation": "比较隐式attention、仅box文本、真实crop重编码、相交patch token重采样；SFT监督box→visual-context→answer",
+   "claimed_effect": "Table3 V-Star 58.6/63.9/68.1/67.0；TextVQA69.2/71.6/71.4/73.9；Table6重采样492ms vs重编码827ms",
+   "conditions": [
+    "使用高质量初始MoVE特征；统一加速训练设置做消融"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables3,6; §3.2",
+    "quote": "UNITER [10]      81.4     87.0   74.2   75.9    81.5   66.7   74.0   68.7        RoI Re-smp.       67.0      68.2      73.9    72.7"
+   },
+   "failure_boundary": "缓存没有细节就无法靠重复token恢复；V-Star上重编码更强；不是动态决定是否crop的策略。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P39",
+   "strength": 3,
+   "how": "直接区分新像素信息获取和已有特征重新注意。"
+  },
+  {
+   "problem": "P58",
+   "strength": 2,
+   "how": "若原缓存信息足够可减少编码开销，但需以小目标对照守住精度。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "显式训练ROI→视觉上下文→答案协议行为。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Eagle-X3-8B",
+   "kind": "model"
+  },
+  {
+   "name": "Implicit attention / box guidance / RoI re-encoding",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "缓存细节丢失后re-sampling无法恢复。",
+   "quote": "sual and text-based reasoning tasks. The introduction                                sampling. Since re-sampling simply retrieves tokens from\nof the implicit bounding box CoT guidance yields sub-                                the cache, it does not have the opportunity to update visual\nstantial improvements over implicit attention mechanisms,                            token quality. If detail is lost during the initial extraction, re-\nwith explicit CoT reasoning providing even greater perfor-                           sampling struggles to recover it, whereas re-encoding can",
+   "locator": "§4.5.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table3 implicit attention V-Star58.6，box63.9，重编码68.1，重采样67.0。",
+  "load_bearing_assumption": "重看缓存token与重新观察高清局部能够提供同等信息。",
+  "scope": "单次ROI re-engagement视觉推理",
+  "success_criterion": "同训练设置四种路径比较准确率与编码/上下文成本。",
+  "why_open": "编码前信息丢失和编码后注意分配是两种不同瓶颈。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.5 unified schedule"
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "locator": "§3.2"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "预训练更新视觉encoder/projector冻结LLM；SFT更新MoVE、MLP和LLM；训练会话输出ROI文本坐标、用户插visual-context、assistant输出答案。主文未给精确token loss mask/权重。",
+  "normalization": "other",
+  "invariance": "非PBRS；没有奖励或advantage归一化。框坐标按图像尺寸归一到[0,1]。",
+  "baseline_or_potential": "无RL状态baseline；Eagle-X3是模型比较基线。",
+  "degenerate_cases": "全图框重采样近重复全图；空/错框提供无关context；编码已丢信息时重采样无法修复；无全对/全错组。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3四路径同训练schedule；Table4只用CLIP替代MoVE时V-Star重编码−4.2、重采样−11.5，支持缓存质量依赖差异。",
+  "negative_results": [
+   {
+    "text": "重采样加square context时TextVQA下降3.1；re-encoding在V-Star优于重采样。",
+    "locator": "Tables3–4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若在学生低像素预算下缓存重采样不能提高小目标辨认，就不能用其效率替代真实crop证据。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Llama3-8B; CLIP-L/14 448² + ConvNeXt-XXL + EVA02 1024²",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "Table6重编码8710.6GMAC/1024视觉tokens/827ms；重采样4355.3/26/492ms；A100，训练1epoch/stage batch256，总GPU时未知。",
+  "pitfalls": [
+   {
+    "text": "Table1主结果与Table3加速消融schedule不同，不混合数字作单因素因果。",
+    "locator": "§4.5"
+   },
+   {
+    "text": "框坐标三位小数；扩成方形上下文对OCR可能引入干扰。",
+    "locator": "§4.2,4.5"
+   }
+  ],
+  "code": null,
+  "lesson": "当优化视觉计算时，应先分清缺新像素还是缺注意力，再选择重编码或缓存重采样，并用微小对象子集验证。"
+ }
+}

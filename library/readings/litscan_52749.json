@@ -1,0 +1,160 @@
+{
+ "paper_key": "litscan:52749",
+ "title": "VLM-R3",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_52749.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.1–3.3 Eq1–4",
+   "§4.1–4.4 Tables1–3",
+   "§4.5.2; §5",
+   "Appendix A.2–A.3"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "强VLM造视觉交错轨迹，经终答/局部语义/逻辑过滤SFT，再用只对模型动作token的组相对优化。",
+  "why_non_obvious": "环境注入图像应作为状态而非动作；但区域有效奖励并未验证其必要性。",
+  "trigger_condition": "When training interleaved visual actions, seed the protocol with demonstrations and exclude environment-injected image tokens from policy likelihood.",
+  "contribution_type": "method",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "When training interleaved visual actions, seed the protocol with demonstrations and exclude environment-injected image tokens from policy likelihood.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "强VLM造视觉交错轨迹，经终答/局部语义/逻辑过滤SFT，再用只对模型动作token的组相对优化。",
+  "abstract_why_non_obvious": "环境注入图像应作为状态而非动作；但区域有效奖励并未验证其必要性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:52749#s1",
+   "object": "R-GRPO crop policy",
+   "information": "原图、生成推理和bbox，工具crop/zoom真像素返回；终答EM、格式、bbox规则",
+   "operation": "每条轨迹奖励中心化除std；同A用于文字/坐标，屏蔽工具图像token；正确轨迹有效框额外最多0.5",
+   "claimed_effect": "vision-centric平均63.5→70.1；去R-GRPO四任务平均77.8 vs79.3；去VLIR72.1",
+   "conditions": [
+    "11810条VLIR，11105单crop；GRPO G5 KL0 300steps"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables2–3; Eq1–4",
+    "quote": "Full VLM-R3 (Ours)                  70.4          62.2            87.9       96.8      79.3"
+   },
+   "failure_boundary": "奖励有效框不等于必要框，正向crop奖励倾向至少调用一次；不是逐次因果信用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P02",
+   "strength": 3,
+   "how": "答对且有效crop+0.5，直接有推动调用的奖励偏置。"
+  },
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "所有生成token共享轨迹A，名为region-conditioned却未解逐次必要性。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "去VLIR训练退化，SFT几乎全单crop。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Text-only bbox / re-insert full image",
+   "kind": "ablation"
+  },
+  {
+   "name": "SFT only",
+   "kind": "training"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "无VLIR平均72.1低于base74.0；完整79.3。",
+  "load_bearing_assumption": "框有效且终答正确即可证明它贡献了证据。",
+  "scope": "Qwen2.5VL7B交错crop reasoning",
+  "success_criterion": "同架构真crop/只文本框/重插全图对照及无SFT/RL消融。",
+  "why_open": "可辨识语义单位并非当前决策必要观测。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4.4.2"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "§3.1"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=(r_i-mean(r))/std(r)",
+    "locator": "Eq1"
+   },
+   {
+    "latex": "r=r_acc+r_format+r_length+r_region*1[r_acc=1]",
+    "locator": "Eq4"
+   }
+  ],
+  "signal_routing": "全文明确PG只优化文本和bbox命令；图像注入mask。中间规则reward先求总r再共享A，不是每次crop独立A。",
+  "normalization": "mean+std",
+  "invariance": "无PBRS；全对组若仅一项可变，该正比例系数被std消去。region每valid框0.5但episode cap0.5，length每字符.001 cap.25。",
+  "baseline_or_potential": "group mean，reference KL实际β0；Eq2未展示clip或明确token聚合，不能补写标准PPO。",
+  "degenerate_cases": "全对且format/length/region饱和则std0；无epsilon处理说明；全错仍可能格式/长度不同；有效crop奖励只区分0与至少1，不能惩罚冗余。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2文本框、full-image reinsert、text-onlyRL对照；Table3去VLIR和R-GRPO。",
+  "negative_results": [
+   {
+    "text": "无VLIR导致bbox格式跟随失败。",
+    "locator": "§4.4.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若正确轨迹中无增益crop也同获region奖励，则否定其必要性credit解释；需对照去region奖励。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "DeepSpeed; SFT + R-GRPO",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "SFT4A10080G×3epochs；RL6A10080G×300steps；总小时未知。",
+  "pitfalls": [
+   {
+    "text": "VLIR 11105/11810单crop且未报告零crop，不可当充分探索覆盖。",
+    "locator": "§4.2"
+   },
+   {
+    "text": "小VLM只验语义可识别，DeepSeekV3只验文本逻辑，不能保证视觉因果支持。",
+    "locator": "§3.1.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当论文以region-conditioned命名时，应核真实优势是否分步骤，以及有效框奖励是否只是鼓励调用；工具像素必须mask为环境状态。"
+ }
+}

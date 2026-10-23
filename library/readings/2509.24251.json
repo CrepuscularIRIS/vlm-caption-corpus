@@ -1,0 +1,470 @@
+{
+ "paper_key": "2509.24251",
+ "title": "Latent Visual Reasoning",
+ "source": "candidates",
+ "decision": "poster",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2509.24251.pdf",
+  "version": "v2",
+  "version_url": "https://arxiv.org/abs/2509.24251v2",
+  "observed_version_date": "2025-10-05",
+  "latest_version_checked": false,
+  "sections_read": [
+   "Abstract",
+   "1 Introduction",
+   "2 Related Works",
+   "3 Latent Visual Reasoning",
+   "3.1 Method Overview",
+   "3.2.1 Supervised Finetuning, Eqs.1-3",
+   "3.2.2 Reinforcement Learning, Eqs.4-6",
+   "3.3 Decoding Strategies",
+   "4 Experiment",
+   "4.1 Evaluation Benchmarks",
+   "4.2 Baselines",
+   "4.3 Main Results, Table 1",
+   "4.4 RL Results, Table 2",
+   "4.5 Ablation Studies, Table 3",
+   "5 Conclusion",
+   "6 Ethics Statement",
+   "7 Reproducibility Statement",
+   "References (pp.10-15)",
+   "A.1 Usage of LLMs (p.15)"
+  ],
+  "fulltext_path": "2509.24251.txt",
+  "visual_inspection": [
+   "p.5 Eq.1",
+   "p.6 Eqs.2-6",
+   "p.8 Tables 1-2",
+   "p.9 Table 3"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把离散文本或外部图像工具承担的中间推理改为同一语义空间内自回归 hidden-state 传递；用 ROI 视觉嵌入重构监督建立行为，再用文本结果 GRPO 调整。",
+  "key_step": "SFT 收集标注 ROI 对应的现有视觉 token，令 last hidden states 以 MSE 重构它们；推理时将 hidden state 直接作为下一位置 embedding。RL 回放 rollout latent states，仅在文本 token 上计算条件概率比。",
+  "why_non_obvious": "已有视觉投影空间可作为中间推理目标，但连续 latent 无离散 token policy distribution，且何时停止 latent 推理并不能由普通 next-token 预测稳定解决。",
+  "trigger_condition": "When relevant observations already have representations in a shared space but discrete narration loses detail, apply supervised latent reconstruction and hidden-state propagation to achieve more accurate fine-grained responses.",
+  "reviewer_praise": [
+   "历史 review k6pOAB8KA1 肯定两阶段流程与连续空间 GRPO 适配（见 reviews_evidence）。",
+   "历史 review 8mtEpVGGlC 肯定受控实验条件（见 reviews_evidence）。"
+  ],
+  "reviewer_concern": [
+   "历史 review 8mtEpVGGlC 质疑 RL 增益较小、ROI 标注依赖，以及 Eq.5 中回放 latent 的梯度路径。",
+   "历史 review hOXNUlxRPG 指出自适应终止不稳定，仅 fixed-token 方案可靠。",
+   "历史 review eejFQ2rvOT 指出缺少与 Visual CoT 的性能/推理成本直接比较。"
+  ],
+  "acceptance_signal": "本地 OpenReview 元数据：ICLR 2026 Accept (Poster)，meta-review axk2vcGbnG 推荐接收；是历史评审判断，非本文 v2 全部主张的独立验证。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Propagate continuous intermediate representations in the shared input space and supervise them with task-relevant observed components.",
+  "abstract_key_step": "Align intermediate hidden states to selected target representations, then replay recorded intermediates when scoring downstream discrete outputs.",
+  "abstract_why_non_obvious": "Separate supervision of continuous intermediates from likelihood-based optimization of discrete outputs, and recognize that shared representation alone does not supply a reliable termination rule.",
+  "abstract_trigger_condition": "When an output vocabulary discards task-relevant input detail, reconstruct selected input representations before producing the discrete response.",
+  "evidence": [
+   {
+    "quote": "The hidden states\nproduced in this mode are directly propagated as input embeddings to subsequent positions until\na stopping criterion is reached. At that point, the model generate the token < |lvr end| > and\nresumes standard text generation.",
+    "locator": "§3.1 p.5"
+   },
+   {
+    "quote": "The key challenge\nlies in the mismatch between the policy-gradient loss, which is defined over token distributions, and\nthe latent reasoning process, which lacks an explicit token distribution.",
+    "locator": "§3.2.2 p.6"
+   }
+  ]
+ },
+ "signatures": [
+  {
+   "sig_id": "2509.24251#s1",
+   "object": "SFT intermediate latent sequence and inference representation",
+   "information": "训练可见 image/question/answer 与人工 ROI bbox，目标是冻结 vision encoder/projector 提供的同图 ROI embeddings；推理只见输入图和问题，不见 ROI GT、答案或额外高分辨率 crop 返回。",
+   "operation": "Gather ROI-indexed visual embeddings, regress last hidden states to them with MSE plus answer CE, and autoregressively feed hidden states forward inside an LVR segment.",
+   "output": "可插入文本生成的 latent visual thoughts；不产生可读 caption 或执行 crop。",
+   "claimed_effect": "Table 1 p.8: 7B/8 steps V*=81.7, MMVP=71.7 vs same-data SFT 79.1/65.7 and base 78.5/66.7; 4 steps MMVP=72.0. These are author-reported task scores, not replication.",
+   "conditions": [
+    "ROI bbox supervision for SFT; Visual CoT 438k QA",
+    "Frozen vision encoder/projector and shared semantic space",
+    "Fixed 4/8/16 latent steps in reported principal results"
+   ],
+   "evidence": {
+    "quote": "During this stage, we explicitly supervise the reasoning content by forcing the MLLM to use its\nlatent space embeddings (i.e., last hidden states) to reconstruct the ground-truth regions of interest\nfor each image–text pair.",
+    "locator": "§3.2.1 p.5; Table 1 p.8",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "Does not retrieve new visual pixels; benefit conditional on usable original embeddings. Multi-image transfer weak; interpretation as reasoning rather than grounding not established by causal ablations.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2509.24251#s2",
+   "object": "GRPO log-probability context and reward for latent/text hybrid rollout",
+   "information": "Online rollout text and recorded latent hidden states; verified output correctness and start/end-token presence; no ROI annotations in RL and no stepwise necessity labels.",
+   "operation": "Record latent hidden states during rollout, patch them into current/old teacher-forcing passes, and optimize text-token clipped ratios with group-normalized accuracy/format rewards.",
+   "output": "Text-policy update conditioned on the same recorded latent context; format reward preserves LVR activation.",
+   "claimed_effect": "Table 2 p.8: 3B/8 steps V*65.5→67.0 and IQ-Test30.7→32.0 after RL, but MMVP56.0→55.3; 16 steps MMVP56.0→58.0 while JigSaw52.0→50.7. RL effect is mixed and modest.",
+   "conditions": [
+    "LVR SFT cold start",
+    "8 responses/input; mean/std normalization",
+    "Fixed latent budget; rollout context replay",
+    "3B only for RL"
+   ],
+   "evidence": {
+    "quote": "Here, the token-wise importance ratio ri,t (θ) for a text token yi,t is computed using a teacher-forcing\nlog-probability pass, where the latent reasoning hidden states are replayed from the original\nrollout:",
+    "locator": "§3.2.2 p.6 Eq.5; Table 2 p.8",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "No probability ratio over continuous latent emissions; replay tensor detach and gradient propagation are not specified. Removing LVR format triggers reportedly destabilizes training; no quantitative ablation table.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2509.24251#s3",
+   "object": "LVR decoding termination",
+   "information": "Fixed budget counter versus learned latent-end distance or LM end-token prediction; no calibrated uncertainty or observation-necessity estimate.",
+   "operation": "Exit latent mode after a fixed number of steps instead of relying on learned self-termination.",
+   "output": "Stable bounded latent segment followed by text answer.",
+   "claimed_effect": "Table 3 p.9: fixed 8-step LVR V*81.7/MMVP71.7 vs LatentEnd39.8/19.0. Mode Switching Loss collapses to zero LVR steps (§4.5).",
+   "conditions": [
+    "Budgets tested:4,8,16",
+    "Same 7B LVR ablation setting"
+   ],
+   "evidence": {
+    "quote": "Mode\nSwitching Loss failed to encode stopping conditions, collapsing to zero LVR steps.",
+    "locator": "§4.5 p.9; Table 3 p.9",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "Fixed stopping does not learn when evidence is sufficient or when to skip LVR; larger budget is not uniformly better.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "same-data standard SFT",
+   "kind": "method"
+  },
+  {
+   "name": "PAPO",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-R1",
+   "kind": "method"
+  },
+  {
+   "name": "PixelReasoner",
+   "kind": "method"
+  },
+  {
+   "name": "Argus-X3",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o",
+   "kind": "method"
+  },
+  {
+   "name": "Gemini2.5-Pro",
+   "kind": "method"
+  },
+  {
+   "name": "Visual CoT",
+   "kind": "dataset"
+  },
+  {
+   "name": "ViRL",
+   "kind": "dataset"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMVP",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK tasks",
+   "kind": "benchmark"
+  },
+  {
+   "name": "LMMs-Eval",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Single-image training; Relative Reflect gap is attributed by authors to multi-image distribution shift, not demonstrated causally.",
+   "quote": "However, LVR does not achieve top performance on Relative Reflect. We attribute this gap to a\ndistribution shift between training and evaluation data: such task require reasoning over multiple\nimages, whereas LVR was trained exclusively on single-image data.",
+   "locator": "§4.3 p.9"
+  },
+  {
+   "text": "RL not run at 7B because of resources.",
+   "quote": "We do not extend it to the 7B variant due to limited computational resources.",
+   "locator": "§4 p.7"
+  },
+  {
+   "text": "Variable-length stopping unreliable even after multiple distances and thresholds.",
+   "quote": "Despite testing cosine similarity, L1, and L2 distances under\nvarying thresholds, the model often failed to terminate properly and max out generation steps.",
+   "locator": "§4.5 p.9"
+  }
+ ],
+ "question": {
+  "observed_failure": "在相同 7B backbone 的 Table1，PAPO/Vision-R1 V*=36.1/70.2，base=78.5；latent 自停 Table3 V*=39.8 vs fixed81.7。前者为已有模型比较而非隔离 CoT 因果效应，后者为作者消融。",
+  "load_bearing_assumption": "视觉 embedding 已与语言处于共同空间，但中间推理仍必须经离散文字或外部编辑工具表达。",
+  "scope": "Qwen2.5-VL 3B/7B，单图、perception-heavy VQA，ROI监督冷启动与latent/text混合推理。",
+  "success_criterion": "同 backbone、same-data SFT 对照下 V*/MMVP 等精细感知任务提高，并比较 latent 步数及停止方案；没有预设准确率非劣或实测推理成本下降判据。",
+  "why_open": "文本过程可能遮蔽视觉细节、工具依赖预定义操作；连续 latent 没有离散 token distribution，自停也不稳定。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "We begin with supervised fine-tuning (SFT) to instill the basic pattern of latent visual reasoning.",
+   "locator": "§3.2.1 p.5"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "To isolate the effect of training data, we also include a baseline trained with standard supervised\nfine-tuning on the same dataset as LVR, denoted as SFT.",
+   "locator": "§4.2 p.8"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "role": "primary",
+   "quote": "In the LVR phase, the LLM leverages the last hidden state to approximate the question-relevant\nvisual tokens within the visual inputs. During the text generation phase, the model predicts the next\ntext token in sequence. Both phases operate in an auto-regressive manner.",
+   "locator": "§1 p.2"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "the policy gradient loss is computed solely\nfrom the token distribution of the text generation component.",
+   "locator": "§1 p.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L_{\\rm LVR}=\\frac1{T_v}\\sum_{t=1}^{T_v}\\|h_t-v_t\\|_2^2",
+    "locator": "Eq.1 p.5"
+   },
+   {
+    "latex": "\\mathcal L_{\\rm NTP}=-\\frac1{T_y}\\sum_{t=1}^{T_y}\\log p_\\theta(y_t\\mid y_{<t},h_{1:T_v})",
+    "locator": "Eq.2 p.6"
+   },
+   {
+    "latex": "\\mathcal L=\\mathcal L_{\\rm NTP}+\\lambda_{\\rm LVR}\\mathcal L_{\\rm LVR}",
+    "locator": "Eq.3 p.6"
+   },
+   {
+    "latex": "J_{\\mathrm{GRPO}_{latent}}(\\theta)=\\mathbb E_{q,I,o\\sim\\pi_{\\theta_{old}}}[\\frac1{|y|}\\sum_{t=1}^{|y|}\\min(r_t(\\theta)\\hat A_t,\\operatorname{clip}(r_t(\\theta),1-\\epsilon,1+\\epsilon)\\hat A_t)-\\beta D_{KL}(\\pi_\\theta(\\cdot\\mid q,I)\\|\\pi_{ref}(\\cdot\\mid q,I))]",
+    "locator": "Eq.4 p.6; notation transcribed visually"
+   },
+   {
+    "latex": "r_{i,t}(\\theta)=\\frac{\\pi_\\theta(y_{i,t}\\mid q,I,\\widetilde h_i^{latent},y_{i,<t})}{\\pi_{\\theta_{old}}(y_{i,t}\\mid q,I,\\widetilde h_i^{latent},y_{i,<t})}",
+    "locator": "Eq.5 p.6"
+   },
+   {
+    "latex": "\\widetilde R_i=\\frac{R(y_i)-\\operatorname{mean}(R(y_1),\\ldots,R(y_G))}{\\operatorname{std}(R(y_1),\\ldots,R(y_G))},\\quad \\hat A_{i,t}=\\widetilde R_i\\ (\\forall t\\in\\{1,\\ldots,|y_i|\\})",
+    "locator": "Eq.6 p.6"
+   }
+  ],
+  "signal_routing": "SFT: MSE on latent hidden positions averaged by Tv, CE on response tokens averaged by Ty; vision/projector frozen, LLM trainable. RL: same scalar group advantage for every text token, no continuous-latent likelihood term and no ROI reconstruction loss. Replay original hidden states into both policy/old-policy conditional passes. Authors call accuracy supervision indirect; exact gradient path through replay and start/end masking are not specified, so neither detached-only nor full BPTT is assumed.",
+  "normalization": "mean+std across G=8 rollout rewards; 1/|y| mean over each response text tokens; SFT separately averages latent positions and response tokens. Eq.6 does not state numerical epsilon or equal-reward-group handling.",
+  "invariance": "No PBRS or optimal-policy invariance theorem. Replay is claimed to keep conditional text context consistent; it does not establish an unbiased full joint latent/text policy gradient. Format reward explicitly favors invoking LVR and changes the target relative to accuracy-only. Frozen visual projection remains unchanged by training.",
+  "baseline_or_potential": "Group sample mean and std; no critic, MC action forks, learned potential or necessity reader. pi_ref appears in KL, but reference initialization and update policy are not specified.",
+  "degenerate_cases": "Derived from Eq.6, not experimentally checked: equal total-reward groups give 0/0 as written, including all-correct/all-wrong groups only if format rewards also equal; no epsilon/fallback stated. p(start)≈0 gives few LVR rollouts; format reward supports observed activation but no guaranteed exploration. No latent phase reduces to conditional text generation; Mode Switching actually collapsed to zero latent steps. Single latent step has no special simplification beyond one propagated hidden state.",
+  "evidence": [
+   {
+    "quote": "Rewards are derived solely from the text output y. We incorporate two reward types: a format\nreward, which equals 1 if the response contains both < |lvr start| > and < |lvr end| >\ntokens and 0 otherwise, and an accuracy reward, which equals 1 if the answer is correct and\n0 otherwise. The format reward will encourage LVR process in the response while the accuracy\nreward indirectly supervises the latent reasoning process through its impact on text generation.",
+    "locator": "§3.2.2 p.6"
+   },
+   {
+    "quote": "In both\ntraining stages, the visual encoder and multimodal projector are kept frozen, with only the LLM\nparameters updated.",
+    "locator": "§4 p.7"
+   }
+  ],
+  "unknowns": [
+   "lambda_LVR value",
+   "PPO clip epsilon",
+   "number of epochs/minibatch updates per rollout",
+   "reward-type combination weights",
+   "zero-std handling",
+   "pi_ref provenance",
+   "replay detach/BPTT implementation"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1 same-data standard SFT separates added ROI reconstruction/latent architecture from simply using Visual CoT data, but does not isolate ROI-supervision information from latent propagation. Table3 extra MLP/GLU heads and stopping variants test representation alignment/termination. Table2 within-budget 3B SFT vs RL tests added RL, not matched additional-SFT compute.",
+  "controls": [
+   "Same Qwen2.5-VL-7B backbone among open 7B comparisons; documented system prompts retained (§4.2).",
+   "Same Visual CoT data standard SFT baseline (§4.2).",
+   "4/8/16 latent steps (Tables1-2); MLP head and GLU head; LatentEnd (Table3).",
+   "Removing trigger tokens from reward (§4.4) is qualitative negative control, no numeric score supplied."
+  ],
+  "negative_results": [
+   {
+    "text": "Mode Switching collapses to zero latent steps.",
+    "quote": "Mode\nSwitching Loss failed to encode stopping conditions, collapsing to zero LVR steps.",
+    "locator": "§4.5 p.9"
+   },
+   {
+    "text": "Removing start/end trigger reward yields textual-only responses and degraded performance; magnitude unreported.",
+    "quote": "In contrast, removing these trigger tokens from the reward function destabilizes training, re-\nsulting in purely textual responses and degraded performance.",
+    "locator": "§4.4 p.9"
+   },
+   {
+    "text": "LatentEnd often runs to maximum generation steps.",
+    "quote": "Despite testing cosine similarity, L1, and L2 distances under\nvarying thresholds, the model often failed to terminate properly and max out generation steps.",
+    "locator": "§4.5 p.9"
+   },
+   {
+    "text": "RL does not uniformly improve: at8 steps MMVP56.0→55.3; at16 steps JigSaw52.0→50.7.",
+    "quote": "LVR RL (4 | 8 | 16)    65.5 | 67.0 | 66.5     69.6 | 72.2 | 71.3   59.2 | 59.2 | 59.2   55.3 | 55.3 | 58.0   30.7 | 32.0 | 30.0    52.7 | 52.7 | 50.7",
+    "locator": "Table2 p.8; paired SFT row above"
+   }
+  ],
+  "seeds": null,
+  "seed_note": "Number of seeds, repeated runs, confidence intervals and significance tests are not reported; cannot infer single seed solely from absent uncertainty bars.",
+  "falsifier": "Proposed review test, not executed: match backboneROI annotation/training and inference budgets; if shuffled or irrelevant ROI targets give the same gain, or extra plain-SFT compute matches it, ROI-aligned latent-reconstruction mechanism is not isolated. Independent seed/held-out evaluation must preserve gains, and latent interventions must change relevant answer evidence for a causal-reasoning claim."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-3B and7B; RL only3B",
+   "framework": "TRL",
+   "group_size": 8,
+   "rollouts": 8,
+   "steps": {
+    "SFT_7B": 2500,
+    "RL_3B": 1500
+   },
+   "kl": 0.04,
+   "temperature": 0.9,
+   "max_turns": null,
+   "learning_rate": 1e-05,
+   "latent_budget": [
+    4,
+    8,
+    16
+   ],
+   "SFT_effective_batch_per_device": "approximately3.2",
+   "image_pixel_range": [
+    100352,
+    4014080
+   ]
+  },
+  "cost": "§4 p.7: 7B SFT roughly40h for2500steps on4×AMD MI250; derived160 GPU·h if4 devices counted as stated. 3B RL roughly20h/1500steps; RL device count not explicitly restated, so GPU·h unknown. No measured inference latency, token totals or rollout walltime breakdown.",
+  "pitfalls": [
+   {
+    "text": "Variable image/LVR lengths imbalance batches; adaptive multimodal packing gives effective3.2 instances/device.",
+    "quote": "During training, the variable number\nof image tokens and LVR tokens results in imbalanced instance lengths. To address this, we adopt\nthe adaptive multimodal data-packing strategy from Chen et al. (2024), which supports dynamic\nbatching: multiple shorter instances can be packed together, while longer ones are grouped in smaller\nnumbers. On average, this yields an effective batch size of ∼3.2 per device.",
+    "locator": "§4 p.7"
+   },
+   {
+    "text": "Self-termination failed; use fixed latent budget for principal results.",
+    "quote": "Empirically, we find that Fixed Token achieves the best performance, while Mode Switching Loss\nfails to work as intended.",
+    "locator": "§3.3 p.7"
+   }
+  ],
+  "code": "https://github.com/VincentLeebang/lvr",
+  "code_status": "URL extracted from local PDF p.1 hyperlink; repository not opened or executed. §7 promises release, no present release or reproducibility claim made.",
+  "lesson": "当连续中间状态不具离散输出概率时，应先冻结并核对 rollout→打分所见的上下文，再区分文本结果梯度与中间状态更新路径；格式奖励可维持使用行为，但不能替代按需调用和停止的验证。"
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "SFT明确先种latent行为；去掉格式触发奖励后退回文本，提示行为支持需分别验证。不能据此证明crop/abstain可由RL产生。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "直接提供自停失败的负证据：BCE终止塌到零，latent距离终止会跑满；固定latent步数不等于预算感知crop停止。",
+   "strength": 1
+  },
+  {
+   "problem": "P44",
+   "how": "SFT依赖ROI bbox以提供视觉重构目标；RL取消bbox不等于整个方法免标注，现有课题缺框仍是迁移门槛。",
+   "strength": 1
+  },
+  {
+   "problem": "P55",
+   "how": "回放latent上下文再重打分体现 rollout/actor 条件必须一致；可类比多轮图像span账本审计，不是已验证的crop实现。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "Eq6对所有文本token广播同一结果优势，未解决逐次crop必要性归因；latent位置无显式PG分布。",
+   "strength": 1
+  }
+ ],
+ "reviews_source": {
+  "locator": "2509.24251.json",
+  "forum_id": "j84WR5ORsC",
+  "version_relationship": "Historical ICLR2026 official reviews dated2025-10/11 and meta-review2026-01; reviewed PDF revision identifier absent. Do not equate with local arXivv2 or treat author-response claims as present in v2."
+ },
+ "reviews_evidence": [
+  {
+   "note_id": "k6pOAB8KA1",
+   "quote": "Furthermore, the methodology is well-conceived, featuring a logical two-stage training pipeline and a clever technical adaptation of reinforcement learning (GRPO_latent) to handle reasoning in a continuous latent space.",
+   "locator": "reviews[note_id=k6pOAB8KA1].content.strengths",
+   "purpose": "praise",
+   "source": "local_decoded_review_json",
+   "cdate": 1761565307432
+  },
+  {
+   "note_id": "8mtEpVGGlC",
+   "quote": "The experimental results are achieved by carefully controlling the conditions, making the performance advantage convincing.",
+   "locator": "reviews[note_id=8mtEpVGGlC].content.strengths",
+   "purpose": "praise",
+   "source": "local_decoded_review_json",
+   "cdate": 1761839809719
+  },
+  {
+   "note_id": "8mtEpVGGlC",
+   "quote": "Although the training stages incorporates RL, it can not avoid using critical region annotation, as GRPO yields only marginal improvement, while the MSE supervision on latents brings clear advantage over vanilla SFT.",
+   "locator": "reviews[note_id=8mtEpVGGlC].content.weaknesses",
+   "purpose": "concern",
+   "source": "local_decoded_review_json",
+   "cdate": 1761839809719
+  },
+  {
+   "note_id": "8mtEpVGGlC",
+   "quote": "How can the RL process improve the latent generation process? As I see in (5), the latents seem to be used as inputs with no gradients.",
+   "locator": "reviews[note_id=8mtEpVGGlC].content.questions",
+   "purpose": "concern",
+   "source": "local_decoded_review_json",
+   "cdate": 1761839809719
+  },
+  {
+   "note_id": "hOXNUlxRPG",
+   "quote": "The variable-length LVR decoding strategies (LatentEnd Token, Mode Switching Loss) perform inconsistently; only the fixed-token variant works reliably.",
+   "locator": "reviews[note_id=hOXNUlxRPG].content.weaknesses",
+   "purpose": "concern",
+   "source": "local_decoded_review_json",
+   "cdate": 1761449309893
+  },
+  {
+   "note_id": "eejFQ2rvOT",
+   "quote": "However, there’s no head-to-head comparison with Visual CoT models in terms of both performance and inference cost.",
+   "locator": "reviews[note_id=eejFQ2rvOT].content.weaknesses",
+   "purpose": "concern",
+   "source": "local_decoded_review_json",
+   "cdate": 1761991449964
+  },
+  {
+   "note_id": "axk2vcGbnG",
+   "quote": "Therefore, this paper is expected to contribute to the community by proposing a new reasoning paradigm, and the AC recommends acceptance.",
+   "locator": "meta_reviews[note_id=axk2vcGbnG].content.summary",
+   "purpose": "acceptance",
+   "source": "local_decoded_review_json",
+   "cdate": 1767425136252
+  }
+ ]
+}

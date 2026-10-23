@@ -1,0 +1,142 @@
+{
+ "paper_key": "2609.06746",
+ "title": "Reason Through the Latent! Making Latent Visual Reasoning Necessary",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2609.06746.txt",
+  "sections_read": [
+   "Abstract/contributions; §2 diagnostic; §3 Eqs3-5",
+   "Tables1-2/Fig3; AppB settings/depth"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "关闭原图与原多模态KV缓存到答案的旁路，让递归更新后的question latent成为唯一视觉接口。",
+  "key_step": "冻结骨干，保留固定visual rows供共享LoRA转移层反复读取；最终丢弃图像行及原缓存再解码。",
+  "why_non_obvious": "携带视觉信息不意味着答案依赖该latent；普通替换实验可能被旁路掩盖。",
+  "trigger_condition": "When latent reasoning has a visual bypass, remove the bypass and test state interventions.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "通过信息接口约束建立可诊断依赖。",
+  "abstract_trigger_condition": "When auxiliary representations may be ignored, block alternative paths and intervene on the representation.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "先测视觉读取边界，再构造唯一瓶颈。",
+  "abstract_why_non_obvious": "性能改善与中间状态的因果作用不同。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.06746#s1",
+   "object": "视觉question latent与答案缓存接口",
+   "information": "boundary校准用同问题不同图像/答案对；推理只有图和问题，GT仅答案CE",
+   "operation": "native初始化、固定视觉行反复读取、残差更新，解码时移除原视觉前缀",
+   "claimed_effect": "V*81.2 vs base79.6；matched-state swap降至14.0；去visual reread降至69.1",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3; Table1/2; Fig3",
+    "quote": "The backbone and upper decoder remain frozen,"
+   },
+   "failure_boundary": "证明构造的视觉瓶颈被依赖，不证明每次递归都必要，也非工具调用必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "移除旁路和绑定置换可迁移到视觉证据审计，但架构非crop策略。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "native SFT；六个同no-bypass接口latent方法；no reread/native init/learned transition",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "单主要骨干、指定瓶颈接口；MME-RW低于原始模型，未建立广泛优势；未通读全部附录。",
+   "locator": "Table1; reader scope"
+  }
+ ],
+ "question": {
+  "observed_failure": "UniVLR保留多模态旁路时latent替换变化≤0.5pp；CVRR去重读V*−12.1pp。",
+  "load_bearing_assumption": "latent有视觉信息就代表推理依赖它。",
+  "scope": "Qwen2.5-VL7B固定骨干的潜空间视觉推理",
+  "success_criterion": "移除旁路后仍有能力，置换latent显著破坏答案",
+  "why_open": "直接多模态前缀可掩盖中间状态无用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§2"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2/Fig3"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_reversal",
+   "locator": "§3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "h_t=(1-\\beta)h_{t-1}+\\beta P_Q f_\\phi(ReplaceQ(H_1,h_{t-1})),\\quad P_VH_t=v",
+    "locator": "Eq4"
+   },
+   {
+    "latex": "L=-|B|^{-1}\\sum_i|A_i|^{-1}\\sum_{j\\in A_i}\\log p_\\phi(y_{ij}|y_{i,<j},h_{T_i},K_i^{txt})",
+    "locator": "Eq5"
+   }
+  ],
+  "signal_routing": "仅答案CE经冻结upper decoder回传共享LoRA；无latent GT、过程奖励或teacher trace。答案下层仅text-only缓存，上层接最终question states。",
+  "normalization": "other: 每样本答案token均值再batch均值；排除prompt/padding；无组std。",
+  "invariance": "非RL/PBRS；改变信息路径，不声称保持原policy最优解。",
+  "baseline_or_potential": "无critic/potential。",
+  "degenerate_cases": "T1无可训练递归；移除视觉或native init大降；T增大非单调；p≈0/1和全对/错组不适用于CE。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "clean/swap/blank/noise latent与恢复prefix对照；独立重训no-reread及native-init消融。",
+  "negative_results": [
+   {
+    "text": "MME-RW46.7低于base50.8；T6 V*78.5低于T4 81.2。",
+    "locator": "Table1/AppB"
+   }
+  ],
+  "seeds": "AppB seed0；未给跨seed CI。",
+  "falsifier": "若匹配错误latent置换在无旁路接口不降性能，则瓶颈因果作用失败；每步必要性需逐步干预另证。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B，l*=20后共享转移",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "VisualCoT438K；LoRA rank32/alpha16/dropout.01，2.88M参数；3epochs/global128，4×B200180GB；beta=.5。",
+  "pitfalls": [],
+  "code": "https://github.com/dmis-lab/CVRR",
+  "lesson": "当判断视觉latent是否被使用时，先枚举全部KV和图像旁路，再做绑定匹配的状态替换；仅删可见图像不足。"
+ }
+}

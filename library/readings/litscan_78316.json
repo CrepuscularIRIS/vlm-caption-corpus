@@ -1,0 +1,197 @@
+{
+ "paper_key": "litscan:78316",
+ "title": "Context-Aware Reasoner: Enhancing Contextual Reasoning in Multimodal Large Language Models",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78316.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–4 pp3–8",
+   "Tables2–4",
+   "Appendix C p18"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先SFT分析上下文再解答，RL用去上下文的自读验证和跨语义等价上下文的分层优势。",
+  "key_step": "原轨迹产生分析Ta，移除原context只给Ta,Q再答；原答和验证都正确才给额外1分；局部及全变体zscore相加。",
+  "why_non_obvious": "同时区分分析信息可用性与表面context扰动鲁棒性，但读者自洽不是视觉事实真实性。",
+  "trigger_condition": "When demonstrations contain novel rules that models ignore, train explicit analysis and reward its answer sufficiency under context variants.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把隐式上下文吸收变为可读中间物，再用自验证和跨视图基线训练。",
+  "abstract_trigger_condition": "When demonstrations contain novel rules that models ignore, train explicit analysis and reward its answer sufficiency under context variants.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "原轨迹产生分析Ta，移除原context只给Ta,Q再答；原答和验证都正确才给额外1分；局部及全变体zscore相加。",
+  "abstract_why_non_obvious": "同时区分分析信息可用性与表面context扰动鲁棒性，但读者自洽不是视觉事实真实性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78316#s1",
+   "object": "context分析轨迹",
+   "information": "GT答案、生成Ta；验证无原context C",
+   "operation": "r=.5format+accuracy+accuracy×verification_accuracy，二次调用同πθ",
+   "claimed_effect": "context奖励alone34.59 vs vanillaGRPO33.20；全CAR38.14 vsbase16.05",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq5–7/Table4 pp6–8",
+    "quote": "CAR-7B            1.7k   41.00   27.78   13.18   26.20   56.00   26.67   46.67   73.33   13.18   15.25   20.00   35.00    50.00   28.76   42.62   34.00   42.00   52.00   42.67     38.14"
+   },
+   "failure_boundary": "验证可能读到Ta中的答案/先验；没有限定caption token路由，原错误轨迹不享额外奖励。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78316#s2",
+   "object": "跨context优势",
+   "information": "每题N2语义等价context，每变体G8轨迹",
+   "operation": "withinvariant zscore + pooled N×G zscore，同一reward两尺度",
+   "claimed_effect": "全38.14 vs无HAE36.74，净HAE1.40pp；3.55pp还包含augmentation2.15pp",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq8/Table4 pp7–8",
+    "quote": "w/o HAE                     25.07            40.99               41.33               36.74"
+   },
+   "failure_boundary": "Table4该行原文跨栏，引用仅连续方法与数字；全同组std无ε说明，语义等价旋转前提可能不成立。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 3,
+   "how": "移除原视觉context后自读Ta测试充分性，但改变输入且可能泄答。"
+  },
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "分析质量变整轨迹reward，不实现caption/动作分段credit。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "388条SFT建立analyze/solve行为，再RL强化。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Vanilla GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "CAR-SFT",
+   "kind": "method"
+  },
+  {
+   "name": "w/o HAE",
+   "kind": "method"
+  },
+  {
+   "name": "w/o HAE & CSA",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Reader：去context自验证不能排除Ta泄答或问题先验，未证明真实视觉事实性。",
+   "quote": "",
+   "locator": "Eq5–7"
+  },
+  {
+   "text": "Reader：旋转/重排必须保留任务语义，不适用于任意方向关系任务。",
+   "quote": "",
+   "locator": "§3.2.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "base16.05，SFT27.68，CAR38.14；SFT STL35→15退化。",
+  "load_bearing_assumption": "Ta-only正确反映获取context规则且变换保持含义。",
+  "scope": "图文示例诱导与caption信息充分性",
+  "success_criterion": "随机/删关键规则Ta对照降低自验证分，且heldout准确率提升。",
+  "why_open": "泄答和自验证同源偏差未排除。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.1→3.2"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "Eq5–7"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "Eq8语义等价变体"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=.5r_fmt+r_acc+r_c r_acc; r_c=1[A_v=y*], A_v~πθ(T_a,Q)",
+    "locator": "Eq5–7"
+   },
+   {
+    "latex": "A_i^j=(r_i^j−meanR_j)/stdR_j+(r_i^j−meanR_all)/stdR_all",
+    "locator": "Eq8"
+   }
+  ],
+  "signal_routing": "原C,Q→Ta,Ts,A；验证Ta,Q→Tv,Av仅用于r_c。Eq9训练原轨迹，未列验证轨迹loss；不补实现。轨迹ratio裁剪，正文无按token分段mask。",
+  "normalization": "mean+std：局部G与全局N×G各一次，相加无1/2。",
+  "invariance": "公共正仿射reward在非零std下消去；N1两项相同导致2倍标准化A；不是PBRS。",
+  "baseline_or_potential": "跨语义变体与局部组均值；不是动作conditionedbaseline。",
+  "degenerate_cases": "G1/local全同std0、global全同std0未定义，ε未说明；原答错rc无效；Ta泄答可能被奖励。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 stagedablation：33.20→34.59 contextreward，→36.74 augmentation，→38.14 HAE。注意caption把CSA称reward而正文消融解释为contextaugmentation，按正文解释标歧义。",
+  "negative_results": [
+   {
+    "text": "SFT VLT25.40→23.01；STL35→15，未保所有任务。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "固定rollouts把Ta答案短语打乱/删除而保事实，若验证分仅追泄答则拒绝作为caption质量信号。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B-Instruct",
+   "framework": "VLM-R1",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "388SFT样本3epoch；RL250steps,N2,G8,lr1e-6；8A80080GB bf16，maxpixels401408；验证额外生成，实际吞吐未报。",
+  "pitfalls": [
+   {
+    "text": "训练剔除过易/过难样本，收益不能仅归reward；过滤阈值未知。",
+    "locator": "Appendix C"
+   }
+  ],
+  "code": null,
+  "lesson": "当奖励中间文本的可解性时，应保留原答正确门并测泄答；优势消融需分离数据扩增与归一化贡献。"
+ }
+}

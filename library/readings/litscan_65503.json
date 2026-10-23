@@ -1,0 +1,163 @@
+{
+ "paper_key": "litscan:65503",
+ "title": "Learning to Select Visual Tools from Experience (VisTA)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_65503.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.4",
+   "4.1/Table1–2",
+   "4.5/Table4",
+   "4.8/Table5",
+   "5 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "独立工具选择agent以终答收益训练，冻结reasoner消费23种工具输出；多轮用reasoner置信度反馈决定是否继续。",
+  "key_step": "比较冻结reasoner原图与加工具的答对状态，四格奖励指导工具索引组合。",
+  "why_non_obvious": "工具说明难反映实际能力，组合选择可以从结果学；但冻结reasoner效用不等于自身策略crop价值。",
+  "trigger_condition": "When tool capabilities are uncertain, learn selection from a fixed solver’s measured outcomes.",
+  "contribution_type": "tool-selection RL",
+  "abstract_strategy": "Optimize a controller around an unchanged evaluator using outcome comparisons.",
+  "abstract_trigger_condition": "When black-box components vary in reliability and combinations matter.",
+  "abstract_key_step": "Sample tool subsets, execute, compare original and augmented outcomes.",
+  "abstract_why_non_obvious": "Counterfactual comparisons are evaluator-specific and do not identify minimal necessary tools.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:65503#s1",
+   "object": "冻结reasoner工具组合选择",
+   "information": "输入图/题，23工具索引和粗分类，无完整参数；冻结Qwen2.5VL7B原图及加工具答复。",
+   "operation": "G4组合执行；错→对+1、对→错−.5、错→错0、对→对+1；GRPO训练agent；confidence>.9停止、最多3轮。",
+   "claimed_effect": "ChartQA76.4→79.9、OoD62.3→75.8；平均轮数1.1/1.8/1.4/1.5。",
+   "conditions": [
+    "独立固定reasoner",
+    "GT可验证",
+    "工具预封装无需参数"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "Ours (Multi-turn)    QwenVL 7B       QwenVL 7B          79.9"
+   },
+   "failure_boundary": "对→对同样+1不罚冗余；置信停止未校准为必要性；无法构造zoom bbox。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P18",
+   "how": "四情形终答比较可迁移为离线诊断，但错错仍未区分有效探索。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "外部reasoner自报confidence停止，需先检验校准。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "冻结reasoner收益只适用于该reasoner，不能直接转成当前策略信用。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "no tools / training-free Qwen or GPT agent / direct RL reasoner / one vs two vs three turns",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只输出工具索引，未支持bbox等完整参数化调用。",
+   "quote": "modeling the full parameter structure of real-world tool",
+   "locator": "5 Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "训练免调参GPT4o选择工具时Qwen reasoner ChartQA73.0低于无工具76.4。",
+  "load_bearing_assumption": "凭工具描述和通用知识即可选有效组合。",
+  "scope": "23工具黑盒组合与冻结reasoner",
+  "success_criterion": "同reasoner工具前后正确率及多轮次数",
+  "why_open": "同类工具实际能力不同且可能协同"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4 refinement turn count"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "3 separate selection agent/frozen reasoner"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r={+1 if wrong->correct; -0.5 if correct->wrong; 0 if wrong->wrong; +1 if correct->correct}",
+    "locator": "3.4"
+   },
+   {
+    "latex": "A_j=(r_j-mean(r_1,...,r_G))/std(r_1,...,r_G)",
+    "locator": "3.4"
+   },
+   {
+    "latex": "stop if confidence_r>0.9 or r=3",
+    "locator": "3.3 footnote/4.1"
+   }
+  ],
+  "signal_routing": "agent工具选择输出拿GRPO梯度；reasoner及工具输出是观测，token mask排除；reasoner权重固定。公式序列ratio，token reduction/epsilon未给。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS；四格奖励改变选择偏好，成功冗余与真帮助等价。",
+  "baseline_or_potential": "原图reasoner预测是反事实评估参照，GRPO另减组均值；不是当前agent自身价值baseline。",
+  "degenerate_cases": "baseline答对时所有保正确组合均+1→组内优势0，无少工具压力；baseline答错时全失败0→无梯度；confidence误校准会过早停。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "换冻结reasoner为GPT4o不重训agent；固定最大轮数1/2/3，比较多轮反馈。",
+  "negative_results": [
+   {
+    "text": "方法不支持bbox参数；固定reasoner与外部工具扩展计算，非同模型端到端调用必要性。",
+    "locator": "5/3.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：在当前caption+crop策略同前缀直接估计四格并与冻结reasoner标签比一致性；若不一致则不能移植credit。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B agent + frozen Qwen2.5VL7B reasoner",
+   "framework": "GRPO selection-only",
+   "group_size": 4,
+   "max_turns": 3,
+   "kl": null
+  },
+  "cost": "8×A100，1query/GPU，G4，lr5e-5，100iterations；三数据各800例共2400。",
+  "pitfalls": [
+   {
+    "text": "工具黑盒索引化未暴露实参构造，迁移到crop需新增空间动作学习。",
+    "locator": "5"
+   }
+  ],
+  "code": null,
+  "lesson": "当评估器冻结时，应独立记录其可迁移性与置信校准；对→对奖励不能解释为冗余工具受罚。"
+ }
+}

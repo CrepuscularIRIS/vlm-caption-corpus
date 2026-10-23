@@ -1,0 +1,136 @@
+{
+ "paper_key": "litscan:70205",
+ "title": "MMSearchPlus",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_70205.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2.1–2.5",
+   "§3/Table1",
+   "§4 SoM/23-case analysis/lite",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用跨空间时间外推问题堵住直接识图捷径，人工框SoM支持区域搜索与溯源。",
+  "key_step": "图像局部线索→候选事件→网页核验；对比无搜索、单图搜索、完整rollout和SoM。",
+  "why_non_obvious": "更多工具可能令模型省掉必要的一步，而非一律过度搜索。",
+  "trigger_condition": "When whole-image retrieval cannot identify an event, crop human-marked cues and cross-check retrieved sources.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "构造不能靠输入内答案解决的证据链，再分解工具选择失败。",
+  "abstract_trigger_condition": "When a benchmark permits shortcuts, require out-of-input facts and evaluate missing tool steps.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "分离工具可用和工具实际使用。",
+  "abstract_why_non_obvious": "开放工具不意味着模型会调用最有效工具。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70205#s1",
+   "object": "浏览agent的SoM与区域检索",
+   "information": "每图人工核框，Gemini缓存检索摘要；model无答案，evaluator用可接受答案集",
+   "operation": "首轮给原图+框图，模型按索引crop并以子图搜索，跨页核验",
+   "claimed_effect": "o3 full36.0→SoM37.6；Gemini23.8→27.7；Qwen13.5 image-only→6.1 full",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2.5/Table1",
+    "quote": "a list of human-verified bounding boxes per task image"
+   },
+   "failure_boundary": "人工框不是自主定位；缓存summary外部模型参与；不能断言全任务强制视觉。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P21",
+   "strength": 2,
+   "how": "必要取证被错误跳过的工具选择诊断。"
+  },
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "人工框与检索来源绑定可作证据评测。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "No Search / Image Search / Text Search / Full Rollout / +SoM",
+   "kind": "evaluation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "公开web领域/英语偏差，模型知识和检索结果随时间漂移，311题非通用真实部署。",
+   "locator": "§2.2/Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "o3 23题单图搜索正确但full错误；随机看10题中9题full未调image search。",
+  "load_bearing_assumption": "更多工具及更长推理自然包含简单有效策略。",
+  "scope": "固定311题多模态浏览agent",
+  "success_criterion": "同模型模式对照，核实际工具轨迹和错误变化",
+  "why_open": "推理可能误判自己已识图，省略有效取证。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§4十轨迹人工检查"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§4 Easy定义"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "纯benchmark/inference无RL。SoM为人工候选框；Gemini压缩网页和相关图像，agent基于这些观测行动。",
+  "normalization": "other: task accuracy，非训练优势。",
+  "invariance": "非PBRS，无策略不变性。",
+  "baseline_or_potential": "比较不同工具集，不是statevalue。",
+  "degenerate_cases": "无需search可直接答；知识更新使原困难题变easy；搜索为空/摘要错会截断证据链。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同模型去/加search/SoM；239题lite排除所有已测模型无search可答项。",
+  "negative_results": [
+   {
+    "text": "o3 text-only37.0高于full36.0；SoM hard26.9低于full28.1；Qwenfull比image-only低7.4pp。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": "未见重复运行seed/CI；seed42仅30题补充材料抽样。",
+  "falsifier": "自动框或等预算图像搜索能覆盖SoM增益，或后续检索漂移消除差异，则人工框机制迁移需重估。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "o3/GPT5/Gemini2.5Pro/Qwen2.5VL72B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 20,
+   "kl": null
+  },
+  "cost": "top10图检索、top5网页；full20轮，Qwen10；SoM工具上限20；human10–20min/task。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当完整agent输给单工具时，先核轨迹是否漏掉关键调用，别直接归咎工具噪声或长链。"
+ }
+}

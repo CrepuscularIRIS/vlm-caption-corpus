@@ -1,0 +1,169 @@
+{
+ "paper_key": "litscan:59597",
+ "title": "Doc-Vstar",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_59597.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 Tables1–5",
+   "Limitations",
+   "Appendix B–D interaction/training equations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "缩略图全局导航+语义检索未访问页+按页号fetch，工作记忆累积summary，SFT后GRPO优化答案、证据页F-score和格式。",
+  "why_non_obvious": "页面数量并非唯一瓶颈，逐步识别相关证据并记忆可在更少输入页下改善答案。",
+  "trigger_condition": "当长文档高分辨率上下文过大且固定top-k易漏证据时，以粗览和定向取页迭代聚合。",
+  "contribution_type": "视觉文档agent及训练协议",
+  "abstract_strategy": "把全局导航、局部读取和证据保持分开组织。",
+  "abstract_trigger_condition": "证据分散且存在全局低成本布局线索时。",
+  "abstract_key_step": "环境去重+显式证据列表+记忆摘要联合约束获取过程。",
+  "abstract_why_non_obvious": "模型自报相关性与实际看过页面是不同量，评估须区分。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:59597#s1",
+   "object": "多页文档的证据获取轨迹",
+   "information": "缩略图、请求后高分辨率页、历史summary；训练另有答案及GT证据页",
+   "operation": "闭环教师轨迹SFT后，用答案0.6+证据Fβ0.3+有效格式0.1的组标准化奖励训练retrieval/fetch/answer。",
+   "claimed_effect": "LongDocURL37.8(RAG top5)→56.3；ColQwen下MMLong平均输入6.0→5.6页、整体35.5→42.1、Page-F1 30.9→49.7。",
+   "conditions": [
+    "Qwen2.5-VL7B；最多8步",
+    "模型自报relevant_pages用于Page-F1"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 printed45907",
+    "quote": "Doc-V ∗                     5.6     49.7   42.1   54.6   23.5    45.7"
+   },
+   "failure_boundary": "单文档、多页；缓存所有页的预处理并不免费；自报页级证据不是局部像素grounding。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P26",
+   "how": "将后续看图明确为补证据、纠偏的闭环。",
+   "strength": 2
+  },
+  {
+   "problem": "P28",
+   "how": "保留不可答SFT样本仍可能降低不可答表现。",
+   "strength": 2
+  },
+  {
+   "problem": "P30",
+   "how": "环境visited集合避免重复视觉输入，非模型自主学会不重复。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL RAG Top5",
+   "kind": "method"
+  },
+  {
+   "name": "SFT vs GRPO",
+   "kind": "ablation"
+  },
+  {
+   "name": "without thumbnail/analysis/memory",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅单骨干与单文档；跨文档聚合未验证。",
+   "quote": "remains unexplored and requires further study.",
+   "locator": "Limitations printed45909"
+  }
+ ],
+ "question": {
+  "observed_failure": "RAG top5 LongDocURL37.8，agent56.3；静态页面增多后有噪声退化。",
+  "load_bearing_assumption": "缩略布局+可更新证据摘要能引导下一次读取并避免无关输入。",
+  "scope": "OCR-free单文档多页VQA",
+  "success_criterion": "相近平均读页预算下答案及Page-F1提升，同时检查不可答。",
+  "why_open": "固定检索无法随证据更新与纠错。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table2 SIN/MUL/UNA"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Appendix C"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=0.6R_a+0.3R_e+0.1R_f;\\quad R_e=3pr/(2p+r)",
+    "locator": "AppC–D, β²=2"
+   },
+   {
+    "latex": "A_i=(R_i-\\mu)/(\\sigma+\\epsilon);\\quad L=-G^{-1}\\sum_i\\sum_{t\\in agent_i}\\min(\\rho_{it}A_i,clip(\\rho_{it},1-\\epsilon_c,1+\\epsilon_c)A_i)",
+    "locator": "AppC Eq2–3"
+   }
+  ],
+  "signal_routing": "答案/自报证据页集合/格式构成序列奖励，广播所有agent生成think/action；环境页面与回注working-memory tokens只作context而mask，原生成summary仍受loss。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS，新增证据Fβ改变目标。AppC loss为每轨迹token求和、仅除G，未写每轨迹长度除数；Figure2有KL示意但AppC目标未列KL，不补系数。",
+  "baseline_or_potential": "组均值；working memory不是value baseline。",
+  "degenerate_cases": "全同总reward组优势0；全同答案但证据分不同仍有梯度；空GT页召回eps归零，空pred时F公式0/0额外保护未说明；达到8步可NoAnswer。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Tables3–4去thumbnail/analysis/memory及retrieval/fetch；Table2换retriever保持agent。",
+  "negative_results": [
+   {
+    "text": "ColQwen UNA不可答从70.4降至45.7，尽管overall35.5→42.1。",
+    "locator": "Table2"
+   },
+   {
+    "text": "Table3去analysis39.8→35.9实际差3.9，表/正文标4.7，保留原文算术冲突。",
+    "locator": "Table3/§4.5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若在相同页集合及输出长度下去memory无差异，或Page-F1只靠多报页提升，则聚合机制需重审。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B；ColQwen retriever；GPT4o teacher",
+   "framework": "PyTorch BF16",
+   "group_size": 8,
+   "max_turns": 8,
+   "kl": null
+  },
+  "cost": "8A10080GB；9019 SFT、2048 RL（easy/medium/hard10/70/20）；预缓存各页≤1024×768 tokens，thumbnail256²。agent延迟高于RAG、低于allpages，未抄图中精确数。",
+  "pitfalls": [
+   {
+    "text": "Page-F1依据预测相关页，不等于访问页；限制重复输入由环境完成。",
+    "locator": "Figure3/§3.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当采用证据记忆和主动读页时，应拆开报告访问页、预测相关页、不可答表现，以及预编码成本。"
+ }
+}

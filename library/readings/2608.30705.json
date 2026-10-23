@@ -1,0 +1,135 @@
+{
+ "paper_key": "2608.30705",
+ "title": "VisLens: Single-Pass Interpretable Visual Search for Multimodal LLMs",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2608.30705.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 full pipeline and lens KL",
+   "§4 Tables1-7 accuracy,latency,source-layer,crop ablations",
+   "§5.3 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把早层visual token经轻量tuned lens映射到最终词汇分布，用目标词匹配生成框。",
+  "key_step": "冻结backbone，仅训练残差MLP；由noun匹配、8邻域聚类和面积上限构造crop。",
+  "why_non_obvious": "早层内容可定位，但直接unembedding有表征基底失配。",
+  "trigger_condition": "When small objects are diluted, decode early local semantics to construct target crops.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "译出内部局部语义，用它控制后续取证。",
+  "abstract_trigger_condition": "When repeated search is expensive, expose early internal evidence to choose one focused observation.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "蒸馏后层分布到早层局部状态。",
+  "abstract_why_non_obvious": "内部信息存在不等于能被最终读出器直接读取。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.30705#s1",
+   "object": "早层visual-grid token和目标noun",
+   "information": "冻结模型全层分布作训练teacher；推理仅原图和问题，无GT框",
+   "operation": "KL训练早层translator，topK词匹配目标、聚类框裁图并连原图答题",
+   "claimed_effect": "Qwen7B V*64.9→74.3；Thyme8.78s vs .98s（9x）；HR8K65.12 vs65.10非严格超过",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3; Tables1,3",
+    "quote": "The translator thus acquires no new task knowledge,"
+   },
+   "failure_boundary": "object词语局部可定位前提；符号/OCR/global diagram失败。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P30",
+   "strength": 2,
+   "how": "可替换框候选生成，减少小框盲目平移；没有学停止或裁图必要性。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "frozen backbone/Thyme/ZoomEye/UG-Search/final-layer lens",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "patch语义不足以表达图表全局结构、OCR和数学符号；所谓single-pass与crop-and-reprompt表述有实现歧义。",
+   "locator": "§3 full pipeline/§4.1/§5.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen基模型V*64.9，VisLens74.3；反复搜索延迟高。",
+  "load_bearing_assumption": "精准局部搜索需要多次语言模型查询或RL工具轨迹。",
+  "scope": "object-centric高分辨率搜索",
+  "success_criterion": "准确率提升与延迟减少同时报告",
+  "why_open": "早层logit lens不能可靠对齐最终unembedding。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table3"
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "locator": "§3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "g_\\ell(h)=h+MLP_\\ell(h);\\ L=E_{i\\in P_{vis}}D_{KL}(\\phi(h_L^i)\\Vert\\phi(g_\\ell(h_\\ell^i)))",
+    "locator": "§3"
+   }
+  ],
+  "signal_routing": "KL仅visual positions更新translator；backbone/head冻结，非policy梯度；推理crop由确定性词匹配产生。",
+  "normalization": "vocab softmax和visual position期望；无组reward/std；component分数求和、面积cap .2。",
+  "invariance": "保留backbone参数，不保证答案或最优决策不变；不是PBRS。",
+  "baseline_or_potential": "同模型最终层分布是teacher，无Q/价值基线。",
+  "degenerate_cases": "无token匹配只声明synonym fallback；仍无匹配的处理未读到。多目标远离时union会稀释细节。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "早层到晚层定位近似平坦；sep vs union：HR8K65.1 vs62.0，V*74.3 vs75.9。",
+  "negative_results": [
+   {
+    "text": "Qwen通用POPE87.6→87.2,GQA60.7→59.9；论文no degradation不是非劣统计结论。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "若crop收益可由同成本随机/通用检测框完全解释，早层语义匹配不承载增量。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA-OV7B/Qwen2.5-VL7B/InternVL3-8B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "translator约8B模型0.05%参数；具体训练GPUh/数据规模在所读范围未报；延迟包含范围需查实现。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当局部细节跨远处目标时，分开裁框保分辨率；近邻关系任务可合框保上下文。"
+ }
+}

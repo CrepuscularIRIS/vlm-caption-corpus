@@ -1,0 +1,191 @@
+{
+ "paper_key": "litscan:62697",
+ "title": "IBISAgent: Reinforcing Pixel-Level Visual Reasoning in MLLMs for Universal Biomedical Object Referring and Segmentation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_62697.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3 Eq1–3",
+   "§4 Tables1–5",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用可见mask反馈和文本正负click操作替代隐式SEGtoken；模拟纠错轨迹SFT再多项reward GRPO。",
+  "key_step": "GT mask误差区模拟click，教师生成理由；错误动作lossmask；RL融合click位置/IoU进步/长度与最终mask质量。",
+  "why_non_obvious": "把空间选择与冻结外部分割工具分开，能显式纠错；但dense评价最后仍汇总trajectoryreward，并非逐step advantage。",
+  "trigger_condition": "When one-shot segmentation is insufficient, expose intermediate masks and teach corrective clicks with masked erroneous demonstrations.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "显式空间反馈与纠错行为支持",
+  "abstract_trigger_condition": "When one-shot segmentation is insufficient, expose intermediate masks and teach corrective clicks with masked erroneous demonstrations.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "GT mask误差区模拟click，教师生成理由；错误动作lossmask；RL融合click位置/IoU进步/长度与最终mask质量。",
+  "abstract_why_non_obvious": "把空间选择与冻结外部分割工具分开，能显式纠错；但dense评价最后仍汇总trajectoryreward，并非逐step advantage。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:62697#s1",
+   "object": "反思SFT",
+   "information": "GTmask的FP/FN、正确下一click、Gemini/GPT5教师理由",
+   "operation": "模拟错误动作与用户mask不一致，撤回重做；错误动作和工具observation tokens不训练",
+   "claimed_effect": "inhouse SFT53.42IoU→加reflection57.16；SFT+RL68.92→完整72.09。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2; Table4",
+    "quote": "Mcold+reflect         ✓            ✓                 57.16   67.73   74.52"
+   },
+   "failure_boundary": "教师能看GT误差区是特权，学生推理仅看overlay。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:62697#s2",
+   "object": "多项reward与停止",
+   "information": "训练GTmask，MedSAM2结果；推理只原图/当前overlay/history",
+   "operation": "奖励合理正负click、IoU进步和短轨迹，5项平均作GRPO回报",
+   "claimed_effect": "MeCOVQA IoU73.77/11.29步→80.63/3.67步；inhouse68.96/13.44→72.09/4.89。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3; Table5",
+    "quote": "up to a maximum of 20 times of actions."
+   },
+   "failure_boundary": "具体分段阈值和步骤聚合在缺失Appendix C；不能认作严格potential shaping或局部信用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "SFT加入错误动作后纠正行为，并mask错误动作；无需指望RL凭空学修复。"
+  },
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "GT FP/FN点击与IoU进展提供可执行分割过程reward，迁移需目标标签。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "cold SFT",
+   "kind": "method"
+  },
+  {
+   "name": "SFT+reflection",
+   "kind": "method"
+  },
+  {
+   "name": "RL-only",
+   "kind": "method"
+  },
+  {
+   "name": "format+answer reward",
+   "kind": "method"
+  },
+  {
+   "name": "MedSAM2 tool-augmented models",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "多轮推理时延28.70s，明显高于单轮/其它agent3.14–10.42s。",
+   "quote": "its per-case inference time is longer than that of",
+   "locator": "§4.2 Table2"
+  },
+  {
+   "text": "现有PDF没有附录C公式和显式局限节，reward阈值未知。",
+   "quote": null,
+   "locator": "reader access boundary"
+  }
+ ],
+ "question": {
+  "observed_failure": "加入全部reward后步数11.29→3.67且IoU+6.86，但未知step奖励如何汇总到标量。",
+  "load_bearing_assumption": "GT进步/长度奖励组合学到局部纠错和适时停止而非奖励计数。",
+  "scope": "crop后错误观察/撤回重看SFT样本及离线停止诊断。",
+  "success_criterion": "错误动作mask的修复率提高，直答保持；长度降低不损终答正确率。",
+  "why_open": "maskIoU有精确逐步GT而自然VQA没有；不提供动作对比credit。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.2 SFT显式错误点击、撤销、反思支持"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3.2区分错误动作与修复动作，前者mask不学习后者训练"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S=(S_ans+S_format+S_click+S_pseg+S_len)/5; A_i=(S_i-mean(S))/std(S)",
+    "locator": "§3.3 Eq2 context"
+   },
+   {
+    "latex": "L=-E (1/G)sum_i (1/N_i)sum_t min(ratio_i,t*A_i,clip(ratio_i,t)*A_i)",
+    "locator": "Eq2–3"
+   }
+  ],
+  "signal_routing": "SFT平均reasoning/action NLL，mask执行observation和指定错误动作。RL同trajectory Ai广播reasoning/action，N排observation；Eq2t上界T轮而N为tokens，token实现粒度未明。MedSAM2非可微工具，不据此训练decoder。",
+  "normalization": "5reward平均再组mean/std；共同1/5系数被std抵消(无eps理想情况)，相对分量重要；每轨迹1/N_i。",
+  "invariance": "非严格PBRS：进步奖励为IoU增加indicator而非γΦ(s′)−Φ(s)，重复小进步可能积累；长度奖改变最优策略。",
+  "baseline_or_potential": "组均值含自身；无局部counterfactual baseline。",
+  "degenerate_cases": "全同组std0处理未知；反复小进步与length惩罚的平衡取决缺失阈值；正文click reward在执行后Mt算FP/FN可能与成功修正区域消失冲突，不能补成Mt−1。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Tables4–5训练阶段与三reward组合消融。",
+  "negative_results": [
+   {
+    "text": "只有长度奖MeCOVQA74.19/5.94步，质量远低于全reward80.63/3.67；短不是高质。",
+    "locator": "Table5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "将click/进步分量打乱后同等收益，或真实错误区域与预测click错位仍高reward，则局部视觉反馈机制不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B+MedSAM2",
+   "framework": "VERL",
+   "group_size": 4,
+   "max_turns": 20,
+   "kl": 0
+  },
+  "cost": "16A100；456KSFT10epochs lr1e-5 batch256；888KRL12epochs lr1e-6 batch256 context32K；未给总GPUh。",
+  "pitfalls": [
+   {
+    "text": "GPT5理由生成看到正确nextaction与GT FP/FN，推理仅看半透明mask覆盖原图。",
+    "locator": "§3.1–3.2"
+   },
+   {
+    "text": "图2示意进步变差惩罚，正文说未进步无reward；具体公式缺失，不强行统一。",
+    "locator": "Figure2 vs§3.3"
+   }
+  ],
+  "code": "https://github.com/Yankai96/IBISAgent (not inspected)",
+  "lesson": "当用错误轨迹训练修复时，应mask错误动作而保留修复上下文，并检查reward使用的是行动前还是行动后错误区。"
+ }
+}

@@ -1,0 +1,177 @@
+{
+ "paper_key": "litscan:62146",
+ "title": "MGPO: Thinking with Images via Multi-Turn Grounding-Based Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_62146.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3–4 Eq1–3 Algorithm1",
+   "§5 Tables1–6",
+   "Limitations",
+   "Appendix A and C Table7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "固定先grounding后答的两轮rollout，把原图高分辨crop回流，终答二值奖励同时训练两轮生成。",
+  "key_step": "prompt强制首轮输出框；有效框映射原分辨率裁图，无效则回传原图；第二轮可同时参考原图与crop。",
+  "why_non_obvious": "作者明确不是新optimizer；主要改rollout支持和像素可用信息，不能据此证明学会何时crop。",
+  "trigger_condition": "When resolution downsampling hides detail and spontaneous crop rarely occurs, force grounding-first interaction and optimize generated tokens with terminal correctness.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "通过交互协议建立动作支持",
+  "abstract_trigger_condition": "When resolution downsampling hides detail and spontaneous crop rarely occurs, force grounding-first interaction and optimize generated tokens with terminal correctness.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "prompt强制首轮输出框；有效框映射原分辨率裁图，无效则回传原图；第二轮可同时参考原图与crop。",
+  "abstract_why_non_obvious": "作者明确不是新optimizer；主要改rollout支持和像素可用信息，不能据此证明学会何时crop。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:62146#s1",
+   "object": "grounding与回答两轮",
+   "information": "缩放图首轮，原始高分辨crop次轮；只终答0/1",
+   "operation": "同group均值优势乘两轮生成logprob，环境图像/提示不计loss",
+   "claimed_effect": "7B V*76.4 vsGRPO71.2；MME-RW60.5 vs55.1；crop单独可答65.2 vsGRPO50.2。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq2; Fig2; Tables1,5",
+    "quote": "MGPO                        76.4+5.2     60.5+5.4                     86.4         54.0    78.0   46.7               44.0        74.0     69.0       52.7   39.3"
+   },
+   "failure_boundary": "固定两轮强制crop，无直答/crop选择训练；65.2为可答性不等于grounding因果必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P23",
+   "strength": 3,
+   "how": "直接说明强制crop模板与自主触发之间的训练推理任务差。"
+  },
+  {
+   "problem": "P39",
+   "strength": 2,
+   "how": "真实原图裁剪回流提供学生可读细节。"
+  },
+  {
+   "problem": "P26",
+   "strength": 2,
+   "how": "强制先框解决低动作支持但未教停止/直答。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "SFT",
+   "kind": "method"
+  },
+  {
+   "name": "single-turn GRPO with grounding prompt",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5VL7B",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "训练不允许自主决定是否crop。",
+   "quote": "allowing the model to autonomously decide when",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "固定两轮76.4且加第三轮77.2；未测不必要crop比例，3B V*仅66.5→67.0。",
+  "load_bearing_assumption": "固定crop阶段学到的grounding能在自由选择模板保持而不损直答。",
+  "scope": "现有SFT后低支持状态的少量强制crop采样。",
+  "success_criterion": "恢复自由模板后必要crop准确率提高且直答非劣，工具率不塌缩。",
+  "why_open": "原实验没有自由触发与必要性gold，额外回合非自主选择。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "固定两轮训练把定位与回答分开，区别于自主何时调用"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "Fig2把定位交给第一轮、原图裁像素环境、证据回答第二轮"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "grad J=E[(r_g-b) sum_j grad log p_theta(X_a^{j,g}|H^j)]; b=(1/G)sum_g r_g",
+    "locator": "Eq1–2"
+   },
+   {
+    "latex": "bbox_original=bbox_input/S_input*S_original",
+    "locator": "Eq3"
+   }
+  ],
+  "signal_routing": "终答二值reward广播两轮生成的框/推理/答案tokens；输入prompt和返回图像mask。无中间grounding reward；crop函数不可微，框通过policygradient获信号。",
+  "normalization": "正文mean-only无std；Eq2按轮logprob求和；实现token平均/std具体方式未给，不假定标准GRPO。坐标分别按宽高归一。",
+  "invariance": "共同reward平移抵消，缩放保留；非PBRS。全轨迹共享terminalcredit，无动作相对counterfactual。",
+  "baseline_or_potential": "含自身组均值，G8；非LOO。",
+  "degenerate_cases": "全对/全错组A0；无效坐标仍返回原图可答，可能弱化有效grounding信号；固定两轮工具选择概率由模板锁定，非学得。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4控制最大像素640/1280tokens，MGPO在低分辨V*增益8.9pp；Table7额外pointreward81.9vs81.0 OOD、34.9vs35.0ID。",
+  "negative_results": [
+   {
+    "text": "DeepEyes91.3高于MGPO76.4 V*，训练数据/grounding监督不同，非公平算法胜负。",
+    "locator": "Table3"
+   },
+   {
+    "text": "SFT MME-RW58.7高于GRPO55.1；MGPO并非所有子任务优于SFT。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "自由模板丢失效果或匹配随机crop/同像素token预算达到同收益，则不能解释为学得自主grounding必要性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/3B",
+   "framework": "verl/vLLM",
+   "group_size": 8,
+   "max_turns": 2,
+   "kl": null
+  },
+  "cost": "32H100；AdamW1e-6 globalbatch512 minibatch128 clip.2；21,690train，191V*test。无总GPU时。",
+  "pitfalls": [
+   {
+    "text": "必须按输入缩放宽高还原到原图裁剪；无效坐标fallback原图。",
+    "locator": "Eq3;Fig2"
+   },
+   {
+    "text": "作者“worst case no worse”无形式保证：模型参数/上下文已经变化，原图可用不等于性能非劣。",
+    "locator": "§5.4"
+   }
+  ],
+  "code": "https://github.com/EvolvingLMMs-Lab/MGPO (not inspected)",
+  "lesson": "当通过固定模板补动作支持时，应另测自由决策迁移和直接回答保持，不能把强制调用训练结果当自发必要性策略。"
+ }
+}

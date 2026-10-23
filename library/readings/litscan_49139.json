@@ -1,0 +1,147 @@
+{
+ "paper_key": "litscan:49139",
+ "title": "SASHA",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_49139.txt",
+  "sections_read": [
+   "Abstract/contributions; §3.1-3.4/Algorithm1; Tables1-2; §4.6/5",
+   "AppA.2.3/Table7; AppA.3.4/Table12; AppA.6 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先用全分辨率训练层级MIL读者并冻结，再PPO选择有限patch；已看高分辨率特征仅传播至相似未看patch。",
+  "key_step": "HAFED提供固定分类reward，TSU只更新相似区域，PPO学采样顺序而非停止预算。",
+  "why_non_obvious": "与policy同时训练读者不稳；全局传播一次观察会污染不相关区域。",
+  "trigger_condition": "When sparse observations must inform a large state, update only correlated regions and stabilize the reward model first.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先稳住读者，再学低成本信息采集；把真实观察与推断分开。",
+  "abstract_trigger_condition": "When jointly adapting observer and policy is unstable, freeze the observer and train the acquisition policy.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "真patch替换，相关patch预测，其他状态保持。",
+  "abstract_why_non_obvious": "稀疏读取节省推理不意味着训练也稀疏。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:49139#s1",
+   "object": "固定预算WSI patch采样policy",
+   "information": "RL见低res全图和已采样highres；GT slide label仅reward；HAFED/TSU训练可用全部highres",
+   "operation": "冻结读者/TSU，逐步负CE reward训练PPO-GAE，已采样logit设−∞",
+   "claimed_effect": "20%budget CAMELYON accuracy.953±.017 vsRLogist.862；terminalreward.892 vs逐步.953",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table1; AppA.3.4/Table12",
+    "quote": "all other components of SASHA are frozen"
+   },
+   "failure_boundary": "固定10/20%预算，无自适应停止；未观察patch特征来自预测，不能当真实取证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "冻结任务读者支持采样信用，但必须校验读者效用与真实取证。"
+  },
+  {
+   "problem": "P05",
+   "strength": 2,
+   "how": "固定预算采样与学会停止明确不同。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "HAFED100%/ACMIL/DTFD/RLogist/ZoomMIL；random/global/local update；terminal-only reward",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "训练要全highres、预算影响校准、仅固定比例；早停是future work。",
+   "locator": "§5/AppA.6"
+  }
+ ],
+ "question": {
+  "observed_failure": "randompolicy ablation accuracy.516 vsdefault.964；globalupdate.837；20%采样可接近全HAFED.963。",
+  "load_bearing_assumption": "一次高分辨率观察应更新所有patch，或可边学分类边学policy。",
+  "scope": "WSI二分类，稀疏10/20%highres读取",
+  "success_criterion": "同budget更准且校准/总成本可量测",
+  "why_open": "sparse scan难捕捉稀少肿瘤且混合分辨率状态难聚合。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2/12"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "§4.6"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_t=-CE(y,f_C(S_{t+1}));\\ C_t=\\{j:\\cos(S_t(j),S_t(a_t))\\ge\\tau\\}",
+    "locator": "§3.3-3.4 prose; Algorithm1 indexing differs"
+   },
+   {
+    "latex": "S_{t+1}(a_t)=V(a_t);\\ S_{t+1}(j)=f_S([S_t(j),S_t(a_t),V(a_t)])\\quad j\\in C_t\\setminus I",
+    "locator": "Algorithm1"
+   }
+  ],
+  "signal_routing": "负CE仅训练actor/critic(PPO/GAE)，HAFED/TSU冻结；TSU另阶段用全highres真特征MSE。主文称更新后St+1评分，Algorithm1先在St评分再更新，index差异保留未核代码。",
+  "normalization": "other: PPO/GAE非GRPO组std；advantage是否batch标准化所读未明，不能填mean-only。γ1/clip.1/entropy.001。",
+  "invariance": "每步负CE是绝对读者质量奖，不是CE差分或严格PBRS；固定horizon下偏好尽早改善预测。",
+  "baseline_or_potential": "learned critic reward-to-go，非固定读者就是value baseline。",
+  "degenerate_cases": "全部patch同similarity可能近globalupdate污染；无相似patch退化local；预算太小漏稀有肿瘤；无STOP动作，p近0/1不等于停止。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "global/local/targeted stateupdate与random policy；terminal-vs-step reward；10%/20%/100%校准。",
+  "negative_results": [
+   {
+    "text": "10%CAM accuracy.901低于20%.953；低预算ECE较差；训练全highres，非训练节省。",
+    "locator": "Table1/§4.6/5"
+   }
+  ],
+  "seeds": "Table1 mean±SD across3–5seeds（checklist说明）；Table2 default.964与主表mean不同，不混作单变量多seed效应。",
+  "falsifier": "若控制特征读者/预算后random匹配策略，采样收益失败；TSU在相似但异标签组织上的错误传播需检验。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "WSI预训练ViT-S+HAFED+TSU+actorcritic",
+   "framework": "PPO/GAE",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "actorcritic15epochs AdamW lr1e-5；γ1，访问预算N的10/20%；1.7M额外module（不计ViT）；GPUh未读到。",
+  "pitfalls": [],
+  "code": "https://github.com/coglabiisc/SASHA",
+  "lesson": "当冻结读者给逐步信号时，先确认奖励时序、推断状态与真实观察边界，再报告训练全信息成本及固定预算。"
+ }
+}

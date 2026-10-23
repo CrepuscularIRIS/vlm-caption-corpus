@@ -1,0 +1,143 @@
+{
+ "paper_key": "litscan:70604",
+ "title": "MindCube",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70604.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.1–3.3",
+   "Table2",
+   "§4 Tables4–5",
+   "§RL analysis",
+   "Limitations",
+   "F.2; G.1–G.2/Table16"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "先监督生成简洁物体坐标认知图，再生成自由推理；在该SFT上用格式和答案奖励RL。",
+  "why_non_obvious": "有效中间表示本身不够：只造图与只推理均弱于先图后推理，裸RL也难学几何。",
+  "trigger_condition": "当少视图空间推理缺乏可操作表示时，先教结构表示和使用该表示的推理，再优化终局。",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当少视图空间推理缺乏可操作表示时，先教结构表示和使用该表示的推理，再优化终局。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "先监督生成简洁物体坐标认知图，再生成自由推理；在该SFT上用格式和答案奖励RL。",
+  "abstract_why_non_obvious": "有效中间表示本身不够：只造图与只推理均弱于先图后推理，裸RL也难学几何。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70604#s1",
+   "object": "少视图空间推理",
+   "information": "有限观测图、物体/布局标注训练认知图；SFT推理链；RL最终答案",
+   "operation": "生成Plain cognitive map→FFR→answer，SFT warm start后RL",
+   "claimed_effect": "SFT57.81→RL61.33；同结构裸RL50.86；FFR从SFT59.14；图同构率35.33%。",
+   "conditions": [
+    "Qwen2.5VL3B，MindCubeTiny1050题，SFT10000QA"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "RL-Plain-CGMap-FFR-Out (from SFT)        61.33       29.50      69.17      68.00      73.36           35.33"
+   },
+   "failure_boundary": "生成图是内部推测不是新像素；没有crop/stop；图结构正确率不等于答案效用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "显式检验结构SFT对RL能力支持，裸RL显著较弱。",
+   "strength": 3
+  },
+  {
+   "problem": "P40",
+   "how": "中间图质量与答案正确分开，类比caption正确不必然有用。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "FFR-only",
+   "kind": "ablation"
+  },
+  {
+   "name": "RL from scratch",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "只图SFT52.48/54.29，QA52.67，图+推理57.81；裸RL地图同构近零或6.67%。",
+  "load_bearing_assumption": "中间表示必须被后续推理实际使用而非仅形式正确。",
+  "scope": "少视图空间关系的单轮生成",
+  "success_criterion": "同数据图-only/FFR-only/图+FFR和错误图干预，比较结构指标与QA。",
+  "why_open": "地图生成与使用的因果依赖仍需反事实；RL奖励不直接监督几何。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=1[valid\\ format]+5[correct\\ answer]",
+    "locator": "G.1"
+   }
+  ],
+  "signal_routing": "称GRPO/VAGEN，终局格式与答案奖励；本次已读未提供优势公式/token mask，不从名字补std。SFT监督图与推理/答案，RL无几何准确性reward。",
+  "normalization": "other",
+  "invariance": "奖励非PBRS；组归一化实现未知。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "结构valid但错误图仍得1；无SFT不能只靠schema学几何；单turn无工具信息采集；全同reward优势处理未知。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4表示/推理/阶段交叉；Table5固定物体顺序；G.2格式/答案reward消融。",
+  "negative_results": [
+   {
+    "text": "answer-only50.76高于format+answer49.52；格式并非必需收益。",
+    "locator": "Table16"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若置换生成图不影响答案，则map-then-reason机制可能只是额外监督/文本长度。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B",
+   "framework": "VAGEN RL; DeepSpeed SFT",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "SFT2H100，3epochs batch256；RL .5epoch batch32，lr1e-6，512response tokens，实际GPU时间未知。",
+  "pitfalls": [
+   {
+    "text": "G.1列critic学习率但称GRPO，不能推定无critic实现。",
+    "locator": "G.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当结构输出只有语法奖励时，先测结构正确与下游使用，不能靠合法格式断言获得空间能力。"
+ }
+}

@@ -1,0 +1,173 @@
+{
+ "paper_key": "litscan:58852",
+ "title": "AdaTooler-V",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_58852.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3",
+   "§4 Tables1–5",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "adapt_via_conditioning",
+  "key_step": "固定72B教师每题分别有工具/无工具各8次，离线准确率差ΔS调节关于工具次数的高斯reward，再组标准化。",
+  "why_non_obvious": "同一工具次数在不同题上可被奖或罚；但教师差值不代表学生当前策略增益。",
+  "trigger_condition": "当任务混合需要和不需要工具且可离线采样两种解法时，用题级收益估计调制工具奖励。",
+  "contribution_type": "自适应工具奖励与多模态数据",
+  "abstract_strategy": "以反事实策略差异估计为条件，改变资源使用的奖励方向。",
+  "abstract_trigger_condition": "资源收益随样本变化且具可比较的有/无资源参考过程时。",
+  "abstract_key_step": "先计算离线收益差，再按资源用量映射奖励。",
+  "abstract_why_non_obvious": "必要性标签与训练policy不一致、组标准化会消除部分强度信息。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:58852#s1",
+   "object": "图像/视频工具轨迹的工具次数",
+   "information": "固定Qwen2.5-VL72B每题with/without tool各8次准确率；学生轨迹答案、格式与调用次数",
+   "operation": "R=Rout+0.6ΔS exp[-2((ntool−nmax)/nmax)^2]，再mean+std优势优化7B。",
+   "claimed_effect": "SFT+AT-GRPO四任务平均69.9 vs SFT+GRPO67.6；V*89.8 vs87.0。",
+   "conditions": [
+    "100k SFT/300k RL",
+    "CropImg/FrameAt/VideoClip/PathTracer"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p8",
+    "quote": "SFT+AT-GRPO 89.8  74.5      46.7     68.4   69.9"
+   },
+   "failure_boundary": "ΔS>0时奖励在允许范围随次数单调上升，峰值nmax，不表示最少必要调用；ΔS来自固定教师。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P05",
+   "how": "直接给出题级工具收益定义，但不是当前policy及状态级必要性。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "同结果组的工具奖励幅度被std抵消。",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "固定教师收益迁移存在policy失配。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "SFT+GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO without SFT",
+   "kind": "ablation"
+  },
+  {
+   "name": "RL-wo-tool",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者指出仅验证视觉和有限视觉工具，无外部世界知识访问。",
+   "quote": "do not provide access to external world knowledge.",
+   "locator": "Limitations p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "SFT+GRPO平均67.6，AT-GRPO69.9；没有文本可核的tool-call减少率。",
+  "load_bearing_assumption": "72B有/无工具收益符号能指导7B应否用工具。",
+  "scope": "单图/多图/视频四种视觉工具",
+  "success_criterion": "答案提升同时工具次数/延迟下降，需要同预算比较。",
+  "why_open": "现有tool模型无条件调用造成冗余。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "§3.3"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "locator": "Eq1–4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\Delta S(q)=S^+(q)-S^-(q)",
+    "locator": "Eq1"
+   },
+   {
+    "latex": "R_i=R_i^o+\\alpha\\Delta S(q)\\exp[-\\gamma((n_{tool,i}-n_{max})/n_{max})^2],\\quad\\alpha=0.6,\\gamma=2",
+    "locator": "Eq2–3"
+   },
+   {
+    "latex": "A_i=(R_i-\\mathrm{mean}(R))/\\mathrm{std}(R)",
+    "locator": "Eq4"
+   }
+  ],
+  "signal_routing": "离线题级教师差值乘学生序列调用次数函数，和答案/格式相加，再整组优势。Eq5是序列概率比的简化式；未明确token mask、长度归一和实际clip，不补齐GRPO配方。",
+  "normalization": "mean+std",
+  "invariance": "不是PBRS。若同组Rout相等且ΔS≠0，α|ΔS|在std中抵消，只保留符号及次数函数相对形状；非同结果组仍影响奖励排序。",
+  "baseline_or_potential": "组均值；离线teacher ΔS不是state baseline。",
+  "degenerate_cases": "ΔS=0时无tool信号；同调用次数组无法调节选择；全对/全错但次数不同仍有梯度且失去ΔS幅度；σ=0保护未见；正ΔS偏向nmax，负ΔS偏向0；p≈0无探索保护。 ntool=0时工具项仍为ΔS·exp(-2)，不是零成本基线。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3固定SFT对AT-GRPO/GRPO，Table4 α扫0.2–0.8。",
+  "negative_results": [
+   {
+    "text": "α0.8平均69.1低于0.6的69.9；所谓低敏感度缺多seed误差。",
+    "locator": "Table4"
+   },
+   {
+    "text": "Table5基座VSI31.8/MV63.8与Table2各帧设置行不直接对应，不能混用作为严格同配置增益。",
+    "locator": "Tables2/5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "测学生online ΔS与teacher ΔS符号分歧；若正收益题调用靠近nmax且额外调用无益，则必要调用解释不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B；teacher72B",
+   "framework": "verl-tool/vLLM",
+   "group_size": null,
+   "max_turns": null,
+   "kl": 0.04
+  },
+  "cost": "8H10080GB；离线每题16次72B采样；RL max response4096，LR5e-7，batch32；nmax数值已读处未知。",
+  "pitfalls": [
+   {
+    "text": "全同结果组中改α不是可靠降低tool更新幅度的方法。",
+    "locator": "Eq2–4推导"
+   }
+  ],
+  "code": "https://github.com/CYWang735/AdaTooler-V",
+  "lesson": "当用固定教师判必要性并做组std时，应分别检验教师/学生符号一致率和同结果组幅度抵消，不能只看平均准确率。"
+ }
+}

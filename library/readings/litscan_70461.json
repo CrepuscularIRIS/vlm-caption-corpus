@@ -1,0 +1,148 @@
+{
+ "paper_key": "litscan:70461",
+ "title": "RadSCR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70461.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.1–3.4 Eq1–15",
+   "Tables1–3",
+   "§5 Limitations",
+   "A.2 selected hyperparameters"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "用替换异常概念、替换患者图、补充阴性概念三种对照检验区域提案，并折扣检索相似度。",
+  "why_non_obvious": "普通图文相关性无法排除同位置但错误概念或跨患者通用描述；对照直接作用于检索排序。",
+  "trigger_condition": "当区域描述可能依赖泛化先验而非当前图像时，构造概念/图像替换对照降低非特异句子的得分。",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当区域描述可能依赖泛化先验而非当前图像时，构造概念/图像替换对照降低非特异句子的得分。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "用替换异常概念、替换患者图、补充阴性概念三种对照检验区域提案，并折扣检索相似度。",
+  "abstract_why_non_obvious": "普通图文相关性无法排除同位置但错误概念或跨患者通用描述；对照直接作用于检索排序。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70461#s1",
+   "object": "区域异常到报告句子检索",
+   "information": "图像分类标签/配对报告；GradCAM定位；其他患者图；异常概念与报告原型",
+   "operation": "提案P与两替换对照C经triplet训练；检索分数σ(P,s)-α2[σ(Cabn,s)+σ(Cimg,s)]；全胸阴性概念补漏，LLM聚合",
+   "claimed_effect": "MIMIC CheXbert F1 .610、RadGraph complete .367；去全部critique训练/测试为.561/.289。",
+   "conditions": [
+    "训练有异常标签和报告句子；固定医学域"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables1,3; Eq11,14",
+    "quote": "RadSCR          0.574 0.610        0.572     0.744   0.422 0.367     0.440    0.433 0.408"
+   },
+   "failure_boundary": "是表征/检索对照，不是当前策略crop收益；负提案整体胸区不能精确定位漏检。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "检查caption/检索句是否对当前区域特异，防止语言正确却证据不符。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "图像/概念替换对照可作视觉证据诊断，但非现成RL reward。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "MAIRA2",
+   "kind": "model"
+  },
+  {
+   "name": "RadSCR without critiques",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "补漏只在全胸区域，不能指示特定异常局部。",
+   "quote": "located abnormality regions. Limitation The possibly false negative abnormalities are critiqued in\nthe whole chest region on the X-ray images. Thus, the critique results on these critique results might\nnot indicate any specific abnormality region to be localized.",
+   "locator": "§5"
+  }
+ ],
+ "question": {
+  "observed_failure": "去全部critique后RadGraph .367→.289；测试时去全部.231。",
+  "load_bearing_assumption": "替代异常/患者负样本有效隔离真实视觉证据。",
+  "scope": "胸片区域提案与句子检索",
+  "success_criterion": "同图替概念/同概念替图分别测特异性与最终报告错误，不只相似度。",
+  "why_open": "替换患者随机性和疾病混杂可影响负样本；迁移开放域需新标签定义。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\tilde\\sigma(P,s)=\\sigma(P,s)-\\alpha_2[\\sigma(C^{Abn},s)+\\sigma(C^{Img},s)]",
+    "locator": "Eq11"
+   },
+   {
+    "latex": "L=L^{Prop}+\\beta_1L^{Alt}+\\beta_2L^{Neg};\\quad L^{Alt}=(2M)^{-1}\\sum_m[LT(s_m,P_m,C_m^{Abn})+LT(s_m,P_m,C_m^{Img})]",
+    "locator": "Eq13–15"
+   }
+  ],
+  "signal_routing": "梯度更新视觉encoder、异常分类/概念、proposal/sentence表示及prototype；对称contrastive+triplet；LLM检索聚合不是策略RL。",
+  "normalization": "other",
+  "invariance": "LAlt按2M平均；α1=.4 α2=.5 β1=.4 β2=.6；无GRPO/std和PBRS。",
+  "baseline_or_potential": "替换图/概念的相似度对照非动作价值基线。",
+  "degenerate_cases": "M=0时LAlt除数和无阴性概念时AvgPool未说明；整体补漏不能给局部GT；全对组概念不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3训练+测试共同删除 vs仅推理删除各critique；LLM及prototype消融。",
+  "negative_results": [
+   {
+    "text": "MAIRA2在CheXbert .621和RadGraph .379超过RadSCR .610/.367，非全面SOTA。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若换错患者但同疾病仍产生同样得分，当前图像特异性解释不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Swin Transformer; ClinicalBERT; LLM聚合",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "training_epochs": 40,
+   "batch_size": 64,
+   "learning_rate": 5e-05
+  },
+  "cost": null,
+  "pitfalls": [
+   {
+    "text": "补漏U仅在不与阳性Q冲突时入报告，可能压制真正纠错。",
+    "locator": "Eq12后的prompt描述"
+   }
+  ],
+  "code": null,
+  "lesson": "当用反事实视觉对照时固定其他因素，并把表征特异性和最终答案效用分开检验。"
+ }
+}

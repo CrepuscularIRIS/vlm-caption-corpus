@@ -1,0 +1,148 @@
+{
+ "paper_key": "litscan:70458",
+ "title": "VTool-R1",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70458.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.1–3.3 Eq1–3",
+   "§4.3 Tables1–2",
+   "§4 reward design analysis",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "把真实视觉编辑放进rollout，用最终回答正确率训练；工具调用输出不直接优化。",
+  "why_non_obvious": "图像返回改变回答条件，但没有直接工具动作credit；工具能力变化可能来自共享参数而非动作策略梯度。",
+  "trigger_condition": "当视觉编辑的过程验证易被投机时，用终局正确性训练并单独检查工具行为。",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当视觉编辑的过程验证易被投机时，用终局正确性训练并单独检查工具行为。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "把真实视觉编辑放进rollout，用最终回答正确率训练；工具调用输出不直接优化。",
+  "abstract_why_non_obvious": "图像返回改变回答条件，但没有直接工具动作credit；工具能力变化可能来自共享参数而非动作策略梯度。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70458#s1",
+   "object": "最多一次视觉编辑的双阶段推理",
+   "information": "原始图、Python工具模板、实际编辑图；训练judge看答案GT",
+   "operation": "第一轮直答或代码调用，执行返回第二图；只对最终y做GRPO，不对工具y′做直接更新",
+   "claimed_effect": "3B chart51.8直答/24.6prompt工具→64.0；table41.3/24.3→57.9。",
+   "conditions": [
+    "Qwen2.5VL3/7/32B；few-shot格式提示；G5"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1; §3.1–3.3",
+    "quote": "Chart Split        51.8      24.6         64.0      76.2           53.4   80.7         88.0            85.0     86.7"
+   },
+   "failure_boundary": "32B低于纯直答；一次调用不是通用多轮stop；未给工具y′直接梯度。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "明确只训练终答，提供工具调用token直接优化缺失的对照。",
+   "strength": 3
+  },
+  {
+   "problem": "P02",
+   "how": "工具成功bonus会hack，失败penalty会零工具。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "小模型prompt工具表现差，RL后改善；只读到模板而非显式工具SFT。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Pure Run",
+   "kind": "method"
+  },
+  {
+   "name": "Prompt Tool Use",
+   "kind": "method"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "32B chart88.0纯直答→86.7，table86.2→84.5；过程penalty使调用率0。",
+  "load_bearing_assumption": "只优化y的共享参数更新足以改善y′工具决策。",
+  "scope": "最多一次工具的图表/表格",
+  "success_criterion": "控制rollout条件，比较终答only vs联合动作优化的准确率、调用率及失败率。",
+  "why_open": "论文没有该联合目标消融，无法分解共享参数/动作credit。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=(R_i-\\mathrm{mean}(R))/\\mathrm{std}(R)",
+    "locator": "§3.2"
+   },
+   {
+    "latex": "J=E[G^{-1}\\sum_i|y_i|^{-1}\\sum_t(\\min(\\rho_{it}A_i,\\mathrm{clip}(\\rho_{it},1-\\epsilon,1+\\epsilon)A_i)-\\beta KL)]",
+    "locator": "Eq3"
+   }
+  ],
+  "signal_routing": "GRPO loss只在最终回答y；工具调用y′不直接优化，返回图像作为条件，不是生成目标；不得补上动作logprob的全轨迹梯度。",
+  "normalization": "mean+std",
+  "invariance": "组内常数平移不变、统一正尺度（std非零）消去；非PBRS。",
+  "baseline_or_potential": "组均值；reference KL .01。",
+  "degenerate_cases": "全对/全错std0处理未给；工具分支y′无直接PG；直答第一轮就是最终y，路由训练不对称。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1纯直答/提示工具/训练工具跨规模；过程奖励方向对照仅定性，不补数值。",
+  "negative_results": [
+   {
+    "text": "惩罚失败→调用率零；正确答案且成功工具bonus→验证器hack。",
+    "locator": "§4 Reward Design"
+   },
+   {
+    "text": "32B均低于纯直答。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若固定工具输出仅训练回答同样改善，则不能单凭结果声称动作credit学会何时用工具。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3/7/32B",
+   "framework": "VeRL",
+   "group_size": 5,
+   "max_turns": 2,
+   "kl": 0.01
+  },
+  "cost": "3B/7B用8/16 H100；32B 8H200；lr1e-6，chart batch256/table32，约50steps收敛。",
+  "pitfalls": [
+   {
+    "text": "工具success仅执行并返回Pillow image，不保证语义有效。",
+    "locator": "§4 tool-use success analysis"
+   }
+  ],
+  "code": null,
+  "lesson": "当工具成功验证只看可执行时，正负过程奖励都可能诱导退化，应分开看终答和真实工具效用。"
+ }
+}

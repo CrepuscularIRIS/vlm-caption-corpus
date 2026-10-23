@@ -1,0 +1,163 @@
+{
+ "paper_key": "litscan:63893",
+ "title": "ARM-Thinker: Reinforcing Multimodal Generative Reward Models with Agentic Tool Use and Visual Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_63893.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.3",
+   "PDF p5 Eq5 (text extraction missing)",
+   "Table2–5",
+   "5.5/Figure4 discussion",
+   "6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "生成式偏好评审器以think-act-observe取证；工具轨迹SFT后两阶段GRPO，先鼓励尝试再条件化正确性与成功工具奖励。",
+  "key_step": "将静态评审变成可取证的策略，分开工具启动与准确判断优化。",
+  "why_non_obvious": "固定工具奖金可过用，纯准确性可欠用；正确信号仍不能自动识别工具因果贡献。",
+  "trigger_condition": "When static judging misses evidence, train an evidence-gathering judge with staged tool incentives.",
+  "contribution_type": "agentic reward model training",
+  "abstract_strategy": "Separate acquisition of an interaction behavior from optimization of its task utility.",
+  "abstract_trigger_condition": "When a useful behavior is absent and success rewards are sparse.",
+  "abstract_key_step": "Cold-start valid actions, then condition bonuses on task success.",
+  "abstract_why_non_obvious": "Conditional success is easier to observe than causal action necessity.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:63893#s1",
+   "object": "两阶段工具评审训练",
+   "information": "图像/候选回答与GT偏好；工具含crop、文档检索、19个格式验证器。",
+   "operation": "困难样本过滤（5次全对删除）及有效正确工具轨迹SFT；阶段1尝试奖，阶段2按答对与成功调用分段奖励。",
+   "claimed_effect": "ARMBench46.1→64.6；ARM自身无工具59.2→工具64.6；基模加工具46.1→44.3。",
+   "conditions": [
+    "有工具执行环境",
+    "可验证偏好标签",
+    "冷启动轨迹覆盖"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5",
+    "quote": "w/ tool               64.6 +5.4"
+   },
+   "failure_boundary": "成功工具定义未读到；只看答对不足以证明必要调用，固定奖金仍可能推高调用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "冷启动先种有效工具行为，再RL优化可迁移。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "奖励含条件工具奖金但未给std实现，需先核是否复制代价缩放失效。",
+   "strength": 1
+  }
+ ],
+ "baselines": [
+  {
+   "name": "accuracy+format only / fixed tool reward / tools disabled",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Eq5遗漏Ra=0且tool_calls=0分支；正文未定义succ_calls的可操作验证标准，不能补成反事实必要性。",
+   "locator": "3.3 Eq5/PDF p5",
+   "quote": "when tool usage directly contributes to a correct prediction"
+  }
+ ],
+ "question": {
+  "observed_failure": "基模开启工具ARMBench46.1→44.3、V*75.4→50.3。",
+  "load_bearing_assumption": "给模型工具接口即可有效取证。",
+  "scope": "视觉/文档/格式核验偏好评审",
+  "success_criterion": "相同模型有无工具准确率及调用数",
+  "why_open": "静态RM缺证据获取能力"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "3.3 SFT cold start followed by RL"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "5.5 reward alternatives/tool toggle"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "3.1 active judging loop"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_tool=R_f+R_try*1[tool_calls>0]",
+    "locator": "Eq4"
+   },
+   {
+    "latex": "R_acc={R_f+R_try if R_a=0 and tool_calls>0; R_f+R_a if R_a>0 and succ_calls=0; R_f+R_a+R_succ if R_a>0 and succ_calls>0}",
+    "locator": "Eq5, visual reading PDF p5"
+   }
+  ],
+  "signal_routing": "轨迹终奖励进入GRPO；具体token mask、优势广播、KL和成功工具判定未在正文报告，不自动补标准实现。",
+  "normalization": null,
+  "invariance": "非PBRS：直接奖励工具行为与成功条件，改变目标；未给potential差分或不变性保证。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "无工具答错分支公式未定义；全对/全错是否因工具奖励有组内差异、std处理均未知；首次工具概率近0仍依赖SFT/尝试奖。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "固定模型工具开关；准确性/固定工具奖/条件奖励三臂比较。",
+  "negative_results": [
+   {
+    "text": "纯准确性约0.7调用、77.5%；固定工具奖约1.15调用、78.5%；本文约1.12调用，不能称已达最小必要次数。",
+    "locator": "5.5/Figure4 discussion"
+   },
+   {
+    "text": "Table2总体ARM64.0低于GPT4o64.9；正文说surpasses GPT4o overall不符合该列。",
+    "locator": "Table2/5.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：同前缀分直答/工具，统计对→对冗余比例并在等准确率条件比调用，而非仅成功轨迹tool奖。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "SFT + two-stage GRPO",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "正文未给GPU、步数、batch及reward数值。",
+  "pitfalls": [
+   {
+    "text": "困难过滤删除5次全对题并贯穿后续阶段，改变训练分布。",
+    "locator": "3.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当成功工具定义不清时，条件工具奖金仍可奖励冗余；应先固定判定规则和遗漏分支。"
+ }
+}

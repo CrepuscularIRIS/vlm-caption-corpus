@@ -1,0 +1,158 @@
+{
+ "paper_key": "litscan:77846",
+ "title": "REAL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77846.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.2 p3",
+   "§4.2–4.3 pp5–6",
+   "Tables1–8 pp6–8",
+   "§5.5/limitations p9",
+   "AppB.3 p16"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把冲突归到推理链必要实体/关系pivot，SFT抽取pivot后对对应词表subword做双路logit干预。",
+  "why_non_obvious": "实体不同或同属性关键词不一定逻辑冲突；需定位同一个逻辑槽。",
+  "trigger_condition": "多跳视觉RAG外部文本矛盾，整句判别泛化弱。",
+  "contribution_type": "冲突数据/判别SFT/contrastive decoding",
+  "abstract_strategy": "从整体不一致转成任务关键槽冲突，以定位结果限制解码干预。",
+  "abstract_trigger_condition": "局部信息冲突可抽取且有视觉锚点。",
+  "abstract_key_step": "patchshuffle构建冲突主导logits，投影+tokenwise门减去相关方向。",
+  "abstract_why_non_obvious": "干预对象是subwordID集合而非语义span时刻，可能误伤同词其他用法。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77846#s1",
+   "object": "知识冲突pivot及答案logits",
+   "information": "image/query+top5retrievedparagraphs；RPA-SFT预测pivot；同模型shufflepatch分支",
+   "operation": "训练问句/段落pivot抽取→冲突二分类；推理对pivot词表ID提高gate，减去std在conf logits上的投影。",
+   "claimed_effect": "Qwen3VL8B SFT-only InfoSeek38.7/E-VQA38.1→full44.1/41.4；randomguidance40.3/39.3，uniform39.0/38.1。",
+   "conditions": [
+    "REAL-VQA4149train/629test",
+    "EVA-CLIP8B检索top5"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table6 p8",
+    "quote": "Stage 1 Signal(Ours)    43.1     45.1     44.1      45.4      41.4"
+   },
+   "failure_boundary": "需要可靠pivot；shuffle不是保证仅改变冲突的因果干预；logit投影非天然语义分解。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "caption/检索证据冲突可按任务关键实体关系定位，需改造为视觉自证。",
+   "strength": 2
+  },
+  {
+   "problem": "P20",
+   "how": "局部tokenID gate避免全输出统一干预，但语义位置归属不保证。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "RPA-SFT only / full RPGD",
+   "kind": "ablation"
+  },
+  {
+   "name": "uniform/random pivot / patchshuffle removal / projection removal",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "受检索质量/pivot抽取精度限制，稀疏偏置证据仍失败。",
+   "locator": "Limitations p9",
+   "quote": "sparse, biased,"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen3 zero-shotREAL-VQA F169.9、RPA99.1；外部MMKC仍74.8，域外不完美。",
+  "load_bearing_assumption": "patchshuffle分支比正常分支更暴露外文冲突，检测pivot可聚焦有效干预。",
+  "scope": "retrieval知识型VQA",
+  "success_criterion": "pivot/冲突F1与答案增益及正常证据不伤害分别测。",
+  "why_open": "全局对比减logit容易伤有效语义。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M02",
+   "locator": "§3.2"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables6–8"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "c=\\langle L_{std},L_{conf}\\rangle/(\\|L_{conf}\\|^2+10^{-6});\\quad L_{final}=L_{std}-\\alpha\\odot(cL_{conf});\\quad\\alpha_v=.1+.2\\sigma(.1L_{conf,v})\\ (v\\in K)",
+    "locator": "Eq2–5/AppB.3"
+   }
+  ],
+  "signal_routing": "RPA-SFT三个阶段输出监督；RPGD不训练，gate作用词表subword logits，非GRPOcredit；非pivot也有.1基线抑制。",
+  "normalization": "other",
+  "invariance": "读者推导：rawlogit投影不对softmax平移不变；逐tokenα非统一1时residual一般不正交，不能把GramSchmidt称严格解耦冲突。非PBRS。",
+  "baseline_or_potential": "shufflepatch同模型参考logits，非价值baseline。",
+  "degenerate_cases": "K空仍全词表.1干预；c可负，减投影不一定逐token降logit；相同subword既是pivot又出现在其他语义角色时也被gate；缺证据不能创造事实。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table6精准/随机/统一gate；Table8原图/blank/blur/shuffle。",
+  "negative_results": [
+   {
+    "text": "blankimage InfoSeek37.4低于original38.7；LLaVA RPA E-VQA MCC37.7低于普通SFT38.4，非各指标无条件增益。",
+    "locator": "Tables3/8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：对两个分支加不同常数验证logit gauge敏感性，再用相同subword不同语义位置测误抑制；显式不冲突集测非劣。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VL2B/8B、InternVL3.5-8B、LLaVA1.5-7B",
+   "framework": "RPA-SFT+dualforward RPGD",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8H20；作者称per-token延迟≤1.3×greedy，非完整检索端到端；cutoffτ数值未核。",
+  "pitfalls": [
+   {
+    "text": "pivot最小必要性定义假设zero-priorknowledge，不是当前模型的证据必要性实测。",
+    "locator": "§3.2"
+   },
+   {
+    "text": "shuffling保留patch值但破坏空间结构，不保证信息可用性或纯冲突方向。",
+    "locator": "§4.3"
+   }
+  ],
+  "code": null,
+  "lesson": "局部冲突检测与答案模型分开评估；不要把几何logit投影等同语义噪声去除。"
+ }
+}

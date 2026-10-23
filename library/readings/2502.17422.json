@@ -1,0 +1,415 @@
+{
+ "paper_key": "2502.17422",
+ "title": "MLLMs Know Where to Look: Training-free Perception of Small Visual Details with Multimodal LLMs",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2502.17422.pdf",
+  "version": "v1",
+  "sections_read": [
+   "Abstract (p.1)",
+   "1 Introduction (pp.1–2; Figure 1)",
+   "2 Related Works (pp.2–3)",
+   "3 MLLMs’ Sensitivity to the Size of Visual Concepts (pp.3–4; Table 1)",
+   "4 Do MLLMs Know Where to Look? (pp.4–6; Figures 2–3)",
+   "5 Automatic Visual Cropping (ViCrop) (pp.6–8; Figure 4; all unnumbered equations)",
+   "6 ViCrop Method Analysis (pp.8–10; Figure 5; Tables 2–4)",
+   "7 Conclusion; Limitations and Future Work (p.10)",
+   "Acknowledgments; References (pp.11–14)",
+   "Appendix A Implementation Details (p.15)",
+   "Appendix B Dataset Statistics (p.15; Table 5)",
+   "Appendix C Prompt Format for Zero-Shot Inference (p.16)",
+   "Appendix D Orthogonal Benefits to LLaVA-NeXT (p.16; Table 6)",
+   "Appendix E Comparison with the V* Method (SEAL) (p.16; Table 7)",
+   "Appendix F External Tools ViCrop (p.17)",
+   "Appendix G Additional Examples on Model’s Predictions (pp.18–20; Figures 6–8)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先把答错拆成定位不到与细节看不清两种解释，用同题GT裁图干预和内部注意力定位测量检查；再用冻结的答题模型自身注意力/输入梯度定位一个补充视图，拼接原图与裁图的视觉token，无须更新权重。这里的冻结仅指推理参数不更新，不是额外冻结读者。",
+  "key_step": "将真实问题的答案起始位置→图像注意力逐元素除以通用描述问题的注意力，压低通用寄存器/全局信息响应；或用当前最高概率首token的正梯度加权注意力。对重要性图做多尺度滑窗，以最优窗口相对相邻位置的和差选择尺度，然后放大单个局部并保留原图。",
+  "why_non_obvious": "答错不必意味着模型不知道目标在哪。Figure 3中答对、答错两组的GT区域相对注意力均可高于同尺寸随机位置基准；但是注意力集中只支持定位倾向，不能当成答案正确性、裁图必要性或因果证据利用的金标。",
+  "trigger_condition": "When 目标细节在固定分辨率输入中难以辨认但内部状态仍能定位相关区域, apply 自身重要性图引导的单次放大并保留全局视图 to achieve 不训练的细节问答改进。",
+  "reviewer_praise": [
+   "low_evidence: 未取得实际OpenReview审稿文本。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 作者自述局限与本次读者核对不冒充审稿意见。"
+  ],
+  "acceptance_signal": "low_evidence: MANIFEST decision=null，照录null；PDF页眉自述Published as a conference paper at ICLR 2025，只记录这一来源陈述，不推断Oral/Spotlight/Poster，也未核验会议元数据。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先区分找不到与看不清，再利用执行器自身的局部敏感性选择补充输入，并保留原始上下文。",
+  "abstract_key_step": "用任务条件下的内部响应除以通用条件下的响应，或按当前输出的正敏感性加权；选择一个局部强且相对邻域突出的窗口，放大后追加到原输入。",
+  "abstract_why_non_obvious": "输出错误可以与内部定位正确同时发生；增大相关输入的可辨性可能优于重新训练定位器，但内部响应不是必要性证明。",
+  "abstract_trigger_condition": "When 有限输入带宽损失局部细节而内部响应仍含定位线索, apply 局部重采样并保留全局上下文 to achieve 无参数更新的输出改善。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2502.17422#s1",
+   "object": "真实问题条件下、答案起始位置到原图空间patch的注意力图。",
+   "information": "可访问当前答题MLLM的LLM注意力和连接器注意力、同一原图及问题，以及固定通用指令的额外前向；MLP连接器用单位映射。推理无需GT框、正确答案或外部定位器；选择层用了TextVQA小留出集，其大小和确切选择协议未报告。",
+   "operation": "跨头平均并组合答案→图像token及token→patch注意力；将真实问题图逐元素除以通用描述图；选层或全层平均，按共享滑窗规则裁一个方形区域、缩放后将其视觉token追加到原图token。",
+   "output": "rel-att重要性图、一个候选裁图及原图+裁图条件下的新答案。",
+   "claimed_effect": "作者报告Table 2：LLaVA-1.5 TextVQA 47.80→55.17、V* 42.41→62.30；InstructBLIP TextVQA 33.48→45.44。Table 4 LLaVA GPU裁图开销1.16秒。均非本次复现。",
+   "conditions": [
+    "能读出模型内部注意力并把token映射到空间patch；Qwen3-VL并未实验。",
+    "相关细节原始像素仍存在；V*极高分辨率需另用分块重要性图。",
+    "单个区域足以提供关键证据，模型能使用额外视觉token。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.4 Relative Attention p.5; Sec.5 Relative Attention ViCrop p.7; Table 2 p.9; Table 4 p.10",
+    "quote": "we propose to normalize the answer-to-image attention of an image-question pair (x, q) by its value on a generic instruction"
+   },
+   "failure_boundary": "通用指令分母过小的数值处理未报告；注意力不是必要性或答案真值；关系/计数多区域问题受限；附录有答对→答错例。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2502.17422#s2",
+   "object": "当前预测首答案token对注意力的局部敏感性。",
+   "information": "可访问当前模型首答案位置logits、LLM/连接器attention及其梯度；目标是模型自己的argmax token，不用正确答案、不用第二个通用问题前向；错预测也可能被强化。",
+   "operation": "对v=log softmax(z)的argmax-token概率反传；注意力乘以非负梯度，再组合答案→token及token→空间映射；沿用rel-att所选层及同一滑窗裁图/拼接步骤。",
+   "output": "grad-att重要性图、一个额外局部视图及重答结果。",
+   "claimed_effect": "Table 2：LLaVA-1.5 TextVQA 47.80→56.06，V* 42.41→57.07；InstructBLIP TextVQA 33.48→45.71，但VQAv2 76.25→76.08。Table 4 LLaVA GPU额外0.89秒。",
+   "conditions": [
+    "需要反向传播并保留注意力计算图；不是黑盒API方法。",
+    "当前最高概率首token的敏感性需与题目相关区域相关。",
+    "正梯度截断被作者视为去除降低当前确定性的干扰，但不保证保留纠错证据。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.5 Gradient-Weighted Attention ViCrop p.7; Table 2 p.9; Table 4 p.10",
+    "quote": "We remove negative gradients because they correspond to tokens that if attended to will reduce the model certainty, hence often distracting locations"
+   },
+   "failure_boundary": "错误且饱和的首token可使梯度很小；反证可能被正梯度截断丢弃，这是读者机制推断而非作者实测。高分辨率分块使InstructBLIP V*由42.41降至37.70（Table 3）。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2502.17422#s3",
+   "object": "当前预测首token对图像像素的输入梯度。",
+   "information": "需要输入梯度与原像素，但不依赖Transformer注意力接口；无GT框/答案。重要性来自当前输出置信，不代表真实因果需求。",
+   "operation": "对输入图像反传最高概率首token的对数概率；沿颜色通道取梯度L2范数；用3×3高通、3×3中值滤波和空间中位数阈值生成边缘掩码，逐元素门控后平均池化到N×N patch，再执行相同滑窗裁图和原图拼接。",
+   "output": "pure-grad边缘强调的重要性图、裁图和新答案。",
+   "claimed_effect": "Table 2：LLaVA-1.5 TextVQA 47.80→51.67，InstructBLIP 33.48→42.23；InstructBLIP DocVQA反而9.20→8.99。Table 4 LLaVA GPU额外2.36秒，三种内部方法中最慢。",
+   "conditions": [
+    "模型对输入可微；细节需在原图中存在。",
+    "依赖边缘掩码抑制纯色高梯度假响应；无标签阈值不保证正确目标均被保留。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.5 Input Gradient ViCrop p.7; Table 2 p.9; Table 4 p.10",
+    "quote": "gradients sometimes show high values in entirely constant-color regions (e.g., blue skies)."
+   },
+   "failure_boundary": "梯度图可在非细节处出现伪高值；首token梯度饱和和全零掩码未给回退策略；InstructBLIP的DocVQA和高分辨率分块消融出现负向结果。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2502.17422#s4",
+   "object": "整图降采样时相关细节消失的高分辨率V*输入。",
+   "information": "能访问原始高分辨率图及问题；各块单独通过同一MLLM获得重要性图，然后重新拼接。没有GT目标框；块内前向不保留整图跨块关系。",
+   "operation": "先切成小于1024×1024、近方形的不重叠块，对每块生成重要性图并拼回原图坐标；在拼接图上做多尺度滑窗，选择局部总重要性相对邻位最突出的尺度；只将最终裁图和原图一起重答。",
+   "output": "适用于大图的一张重要性图及单个局部补充视图。",
+   "claimed_effect": "Table 3 V*：LLaVA rel-att有分块62.30、无分块47.64（+14.66pt），grad-att57.07 vs49.74；InstructBLIP rel-att42.41 vs38.74，但grad-att37.70 vs42.41、pure-grad37.17 vs42.41，不能宣称分块普遍有效。",
+   "conditions": [
+    "相关概念在整图缩放后丢失，但块级缩放保留。",
+    "原图高分辨率像素可访问；模型处理多个块的额外成本可承受。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.5 High-Resolution Visual Cropping pp.7–8; Table 3 p.9",
+    "quote": "we divide images into non-overlapping blocks of smaller than 1024 × 1024 with an aspect ratio close to 1, compute the importance map separately for each block according to the ViCrop methods, and then re-attach the blocks back together."
+   },
+   "failure_boundary": "只在V*采用该策略；跨块关系、块间重要性校准及随块数扩大的完整成本未充分隔离；InstructBLIP两种梯度方法反向下降。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "no cropping（同一MLLM原图问答）",
+   "kind": "method"
+  },
+  {
+   "name": "human-CROP（人工标注GT区域方形裁图+原图）",
+   "kind": "method"
+  },
+  {
+   "name": "CLIP ViCrop（0.9比例四方向裁图，20轮）",
+   "kind": "method"
+  },
+  {
+   "name": "YOLOv8+CLIP ViCrop（COCO预训练，置信度>0.25）",
+   "kind": "method"
+  },
+  {
+   "name": "SAM+CLIP ViCrop",
+   "kind": "method"
+  },
+  {
+   "name": "SEAL / V* method（附录as-is比较，非相同训练预算）",
+   "kind": "method"
+  },
+  {
+   "name": "TextVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "POPE",
+   "kind": "benchmark"
+  },
+  {
+   "name": "DocVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "AOKVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "GQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "VQAv2",
+   "kind": "benchmark"
+  },
+  {
+   "name": "VQA-score（除GQA外；GQA用官方accuracy）",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者：关系和计数问题特别难以从单区域裁图获益；不构成多步搜索/停止方法。",
+   "quote": "questions concerning relations and counting are particularly difficult for ViCrop methods to help answer.",
+   "locator": "Sec.7 Limitations and Future Work p.10"
+  },
+  {
+   "text": "作者：额外耗时和视觉token是成本；量化、可变视觉上下文等优化留待未来。",
+   "quote": "Another limitation of the proposed methods is their time overhead and the addition of visual tokens.",
+   "locator": "Sec.7 Limitations and Future Work p.10"
+  },
+  {
+   "text": "诊断样本经人工标框且排除了目标多实例；4370样本上的定位结论不能自动外推到多对象歧义。",
+   "quote": "This effort resulted in a refined set of 4370 question-image pairs, where there is only one instance of the subject of the question in the image.",
+   "locator": "Appendix B p.15"
+  },
+  {
+   "text": "作者承认SEAL训练多个网络、ViCrop不训练，因此附录直接性能比较不公平，只作即用系统比较。",
+   "quote": "SEAL requires substantial training and finetuning of several neural networks, whereas our methods are completely training-free, so a direct comparison would not be fair.",
+   "locator": "Appendix E p.16"
+  }
+ ],
+ "question": {
+  "observed_failure": "TextVQA人工单目标子集4370题（small773、medium2411、large1186）：Table 1 BLIP-2小/大目标准确率12.13/36.32；LLaVA-1.5为39.38/50.65。相同问题加human-CROP后小目标分别55.76和69.95。Figure 3错误组仍对GT区域有高于同尺寸位置均值的相对注意力，说明答错与未定位不能等同。",
+  "load_bearing_assumption": "被检查的前提：模型容量大且预训练图像多样，就能使识别对目标大小近似不变；以及小目标答错主要是定位失败。作者用局部放大干预和错误组注意力测量反驳这两点。",
+  "scope": "单轮图像问答的小细节感知；五模型用于敏感性研究，四模型用于注意力研究，主方法七基准两模型，附录加LLaVA-NeXT。无RL、无caption→决策→多轮工具协议。",
+  "success_criterion": "作者使用细节敏感基准VQA分数提升、常规基准不显著损害及推理额外秒数衡量；没有预注册非劣界、按需调用率或必要裁图真值。",
+  "why_open": "作者指出高分辨率训练增加patch和自注意力成本，已有定位器/多代理需外部模型或额外训练；此前尺寸相关现象未区分定位与细节读取。论文将模型自身内部定位信息用于无需训练的重采样。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "quote": "The limitation in perceiving small visual concepts can have two primary reasons: 1) they are hard to locate in the larger image, and 2) their small details are hard to perceive correctly.",
+   "locator": "Sec.4 p.4：先区分定位与读取，核对对模型能力的假设。"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "we first utilize the attention maps computed inside the Transformer layers of an MLLM to quantify its spatial attention over the image and then compare the total amount of this attention inside the ground-truth bounding box to other bounding boxes of the same size.",
+   "locator": "Sec.4 p.4：先测量内部定位信号，再构造裁图方法。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "we compare the accuracy of ViCrop methods with and without this high-resolution strategy",
+   "locator": "Sec.6 High-Resolution ViCrop ablation p.9：对是否分块做单变量消融；并不等于所有混杂都排除。"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "we report the average inference-time overhead of the proposed visual cropping methods on GPU",
+   "locator": "Sec.6 Inference Time Overhead p.10：报告推理耗时，明确baseline按答案token计。"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "role": "primary",
+   "quote": "we might reasonably expect the MLLM’s answer to be invariant to the size of the object",
+   "locator": "Sec.1 p.1；结合Sec.3同题human-CROP干预/Table 1，实际反驳尺寸不变假设。"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "quote": "this number shows the true perception ability of LLaVA-1.5 on TextVQA, not confounded by the ability of an external OCR model.",
+   "locator": "Appendix A p.15：移除外部OCR文本以隔离模型视觉感知，并补有OCR条件对照。"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "role": "supporting",
+   "quote": "extend the original image tokens by concatenating the visually cropped image tokens",
+   "locator": "Sec.5 pp.6–7：不改参数，追加局部输入条件；非训练监督信号工程。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S=\\frac{A_{bb}}{A_{total}}",
+    "locator": "Sec.3 p.3，无编号公式；Table 1按S<0.005、0.005≤S<0.05、S≥0.05分层。"
+   },
+   {
+    "latex": "\\hat A_{st}=\\frac{1}{H}\\sum_{h=1}^{H}A_{st},\\quad\\hat A_{ti}=\\frac{1}{H_c}\\sum_{h=1}^{H_c}A_{ti},\\quad A_{si}^{mk}(x,q)=\\hat A_{st}^{m}(x,q)\\hat A_{ti}^{k}(x)",
+    "locator": "Sec.4 pp.4–5，无编号公式；MLP连接器的hat A_ti设为单位张量。"
+   },
+   {
+    "latex": "A_{rel}(x,q)=\\frac{A_{si}(x,q)}{A_{si}(x,q^{\\prime})}",
+    "locator": "Sec.4 Relative Attention p.5，无编号公式、逐元素除法；q′固定为Write a general description of the image."
+   },
+   {
+    "latex": "v=\\log\\operatorname{softmax}(z(x,q))_{t^*},\\quad t^*=\\arg\\max_t z_t",
+    "locator": "Sec.5 Gradient-Weighted Attention ViCrop p.7，无编号公式；只取答案起始位置。"
+   },
+   {
+    "latex": "\\tilde A_{st}=A_{st}\\odot\\sigma(\\nabla_{A_{st}}v),\\quad\\tilde A_{ti}=A_{ti}\\odot\\sigma(\\nabla_{A_{ti}}v),\\quad\\sigma(w)=\\max(0,w),\\quad\\tilde A_{si}=\\tilde A_{st}\\otimes\\tilde A_{ti}",
+    "locator": "Sec.5 Gradient-Weighted Attention ViCrop p.7，无编号公式；正文未完全展开梯度版张量乘积的跨头归约实现。"
+   },
+   {
+    "latex": "G(x,q)=\\|\\nabla_x v(x,q)\\|_2",
+    "locator": "Sec.5 Input Gradient ViCrop p.7，无编号公式；L2沿颜色通道，随后边缘掩码与patch平均池化。"
+   }
+  ],
+  "signal_routing": "无训练损失/优势路由。rel-att从答案起始位置的注意力经连接器路由到图像patch；grad-att和pure-grad仅将当前最高概率首答案token的对数概率向注意力或像素反传以选框，不更新参数。裁图token与原图token一起输入最终答题；不会对多轮caption、动作token或调用收益分配信用。",
+  "normalization": "other：跨头均值；真实问题注意力除以通用问题注意力；定位诊断将GT框内相对注意力和除以所有同尺寸框的平均和。grad-att仅正梯度截断乘权；pure-grad颜色L2与空间平均池化；均不是GRPO组内std、RLOO或reward归一化。",
+  "invariance": "作者没有策略最优性不变或势函数塑形定理；权重和问题文本不变但观测与视觉token数量改变，答案允许改变。读者代数推论：同一位置真实/通用注意力同时乘相同正因子会在比值中约掉；对整张重要性图乘统一正数，在无并列且裁图候选固定时不改变最大和及邻位差的argmax。此不等于概率校准或不改变策略分布。",
+  "baseline_or_potential": "不是价值基线/critic/势函数。q′同图通用描述attention是问题相关性的参照；同尺寸框平均是空间定位参照；邻位窗口和是尺度选择启发式。梯度目标是当前预测首token置信而不是GT正确性。",
+  "degenerate_cases": "n/a：无rollout组，全对组/全错组没有优势退化；方法本来是一次额外crop后重答。读者推断：首token概率趋近1可使log-softmax梯度饱和；rel-att分母趋近0可产生极值（论文未给epsilon）；常量/全零重要性图令邻位差并列（未给tie-break）；全部目标跨区域或块边界会挑战单框。模型已能直答时仍执行裁图，没有skip/stop门控，故不能保证少裁或保留正确答案。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Sec.3对同一图问改变GT裁图可辨性，并按目标相对大小分层；Sec.4比较GT框与所有同尺寸位置，分答对/答错验证定位信号；Sec.6比较内部/外部定位、层选择/层平均、有无高分辨率分块；App.A有无外部OCR对照。能区分若干定位/读取解释，但human-CROP同时增加视觉token并提供GT位置，未用等token随机框/重复原图控制，不能严格把全部增益归因于尺寸单变量。",
+  "controls": [
+   "五种MLLM原图vs同题human-CROP；标注4370单目标题，Table 1各尺度组。",
+   "TextVQA/GQA等七基准的无裁图基线；TextVQA主表禁用外部OCR。App.A有OCR时LLaVA 59.8→63.95。",
+   "Table 3层选择vs全层平均；有无高分辨率分块。",
+   "Table 4用CLIP/YOLO/SAM提供外部定位对照，同样保留原图+裁图。",
+   "App.D LLaVA-NeXT：TextVQA65.17→68.65，V*58.11→61.78；说明并非只在两种主模型报告。",
+   "App.E SEAL同100个TextVQA样本同A6000平均4.44 vs1.88秒；作者承认训练不匹配，不能作算法公平性结论。"
+  ],
+  "negative_results": [
+   {
+    "text": "高分辨率分块对InstructBLIP梯度方法负向：grad-att有/无37.70/42.41，pure-grad37.17/42.41。",
+    "quote": "it declines the performance of grad-att and pure-grad for InstructBLIP.",
+    "locator": "Sec.6 High-Resolution ViCrop ablation; Table 3 p.9"
+   },
+   {
+    "text": "InstructBLIP pure-grad DocVQA9.20→8.99；grad-att VQAv2 76.25→76.08。这是Table 2的实际反例，弱于正文“all methods significantly improve”的泛称。",
+    "quote": "pure-grad 42.23 37.17 86.84 8.99 61.60 50.08 76.71",
+    "locator": "Table 2 p.9，InstructBLIP pure-grad行（列依次TextVQA/V*/POPE/DocVQA/AOKVQA/GQA/VQAv2）；grad-att负值亦核对同表。"
+   },
+   {
+    "text": "附录LLaVA V*最后一例原先黄色降落伞答B正确，裁图聚焦右侧海面后答A错误；展示加视图会伤害已有答案。",
+    "quote": "Success (first 3) and failure (last) examples of LLaVA-1.5 (rel-att)",
+    "locator": "Appendix G Figure 6 p.18，最后一行；已看原图/框/答案颜色。"
+   },
+   {
+    "text": "ViCrop在V*不及SEAL：62.30 vs75.30，非公平训练匹配比较。",
+    "quote": "We observe that our method outperforms SEAL except on the V* benchmark.",
+    "locator": "Appendix E p.16; Table 7"
+   }
+  ],
+  "seeds": "未报告重复实验种子数或主准确率表的置信区间，不能推定single或多种子。Figure 3有按TextVQA样本平均的95% CI，但具体计算法未说明，非独立训练种子区间。VQAv2随机50K子集、SEAL速度随机100题的抽样种子未报告。",
+  "falsifier": "读者拟定的最小反证，未执行：在固定学生视图/等视觉token与相同推理预算下，用随机同尺寸框和重复原图对照；若内部重要性选框不优于这些对照，或错误组的空间定位优势在独立标注样本上消失，就不能支持“自身定位线索带来放大收益”的迁移解释。若原本直答正确样本损失超预设非劣界，则不满足本课题效率目标；原文未验证这个目标。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "主方法LLaVA-1.5(Vicuna-7B，336×336，N=24,m=14)与InstructBLIP(Vicuna-7B，224×224，N=16,m=15,k=2)；诊断另含BLIP-2(FlanT5XL)、Qwen-VL(Qwen-7B)、GPT-4o；附录LLaVA-NeXT(Mistral-7B)。",
+   "framework": "other: Hugging Face transformers 4.29.1, torch 2.1.2, python 3.10.6",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null
+  },
+  "cost": "training-free：无训练更新/GPU·h报告。Table 4 GPU RTX A6000：LLaVA每答案token基线0.17s，rel-att/grad-att/pure-grad额外1.16/0.89/2.36s；InstructBLIP基线0.06s/token，额外0.28/0.29/0.60s。CPU分别2.26s/token与14.43/11.33/29.86s，0.66s/token与4.35/3.78/7.04s。注意基线按token、裁图开销按输入例，不能直接当同单位速度倍率。原图+一张裁图使对应视觉token序列增加；V*块级前向另依赖块数，未提供完整按分辨率成本曲线。",
+  "pitfalls": [
+   {
+    "text": "直接输入梯度会在蓝天等常量颜色处虚高，作者用高通+中值滤波产生边缘掩码再池化。",
+    "quote": "gradients sometimes show high values in entirely constant-color regions (e.g., blue skies).",
+    "locator": "Sec.5 Input Gradient ViCrop p.7"
+   },
+   {
+    "text": "大图先整体缩放可能把目标完全抹掉；先逐块产生重要性再拼图。但对InstructBLIP并非总有益。",
+    "quote": "the resized input image provided to the MLLM might completely lose the visual concept of interest for a question.",
+    "locator": "Sec.5 High-Resolution Visual Cropping p.7"
+   },
+   {
+    "text": "只看局部可能丢全局关系，作者保留原图并追加裁图token。",
+    "quote": "some questions might need to have a global view of the image.",
+    "locator": "Sec.5 p.6; Figure 4"
+   },
+   {
+    "text": "TextVQA外部OCR会混入外部感知能力；主实验去掉，补充有OCR实验而非直接与原论文数值混比。",
+    "quote": "we do not provide any OCR extracted tokens to MLLMs when applying them to TextVQA",
+    "locator": "Appendix A p.15"
+   }
+  ],
+  "code": "https://github.com/saccharomycetes/mllms_know",
+  "lesson": "当学生输入缩放后读不清但其内部定位仍有信号时，原图+局部放大可改善感知；应先核学生实际像素和内部定位，并分别报告选框开销、额外视觉token及答对→答错风险，不能把高注意力直接变成工具必要性奖励。"
+ },
+ "relevance": [
+  {
+   "problem": "P39",
+   "how": "直接提供“原图缩放后细节不可读”的诊断与分块/放大控制，适合核对教师可见但学生受像素预算损失的现象；未研究教师学生蒸馏，也未在Qwen3-VL上验证。",
+   "strength": 2
+  },
+  {
+   "problem": "P30",
+   "how": "多尺度窗口+邻位差是选框尺度机制，可作候选框诊断对照；没有多轮历史记忆或重复框惩罚，不能解决重复裁图。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "提供当前模型内部空间线索，能帮助问“裁到了哪里”，但没有训练过程奖励或取证因果检验；attention ratio依赖GT框，仅诊断用，不能直接作为必要性奖励。",
+   "strength": 1
+  },
+  {
+   "problem": "P44",
+   "how": "自动推理选框无需GT，但验证定位时实际依赖人工GT；最大当前置信的梯度可能偏好错误证据，转奖励需另证抗hack。",
+   "strength": 1
+  },
+  {
+   "problem": "P05",
+   "how": "论文所有样本追加单框，无按需选择、非劣界或少裁目标；提供提升准确率的推理基线，不回答必要裁图真值。",
+   "strength": 1
+  },
+  {
+   "problem": "P53",
+   "how": "跨BLIP/LLaVA/Qwen-VL家族的诊断及LLaVA-NeXT补充实验；没有Qwen3-VL动态分辨率与8K完整证据，迁移需重核attention空间映射。",
+   "strength": 2
+  },
+  {
+   "problem": "P67",
+   "how": "同题放大与定位诊断可帮助区分分支收益来自像素可辨性还是定位，但原文未等token/等算力随机框控制，不能直接把human-CROP收益当学生自然策略需求。",
+   "strength": 2
+  },
+  {
+   "problem": "P58",
+   "how": "给出固定首token内部读数而非完整分支续写的成本例子；内部梯度仍需要额外前后向，不是MC价值估计替代的验证。",
+   "strength": 1
+  }
+ ]
+}

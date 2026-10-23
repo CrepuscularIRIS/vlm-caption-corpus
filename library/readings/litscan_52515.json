@@ -1,0 +1,163 @@
+{
+ "paper_key": "litscan:52515",
+ "title": "Multi-Step Visual Reasoning with Visual Tokens Scaling and Verification (VTS)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_52515.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.1–3.4",
+   "§4.1–4.2",
+   "§5 Tables1–3",
+   "§6",
+   "Appendix A.3/A.4 conditions; B Table4"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "reasoner生成工具规划，独立DPO verifier按累计log-ratio增量决定停止。",
+  "why_non_obvious": "工具生成与判断继续收益分开训练，但偏好分不是环境真实信息增益。",
+  "trigger_condition": "When tool reasoning needs a stopping criterion, separate action generation from preference-based continuation scoring.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When tool reasoning needs a stopping criterion, separate action generation from preference-based continuation scoring.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "reasoner生成工具规划，独立DPO verifier按累计log-ratio增量决定停止。",
+  "abstract_why_non_obvious": "工具生成与判断继续收益分开训练，但偏好分不是环境真实信息增益。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:52515#s1",
+   "object": "VTS stop verifier",
+   "information": "历史、多工具观测；DPO正确与人工诱导错误轨迹；推理当前reasoner和独立verifier",
+   "operation": "SFT reasoner；DPO verifier/ref比值对planning+action累加；执行下一步后若增量<epsilon则停",
+   "claimed_effect": "Qwen2BLINK48.01→38.54未SFT接VTS，SFT后52.19；GPT4o62.25→69.15",
+   "conditions": [
+    "需要有效工具行为SFT；315K SFT/301K DPO；观测由工具实际返回"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1; Algorithm1",
+    "quote": "Qwen2VL-7B + VTS-V      49.19   67.83     57.05    15.72        17.56       42.74    43.33   12.90     49.59   30.83    32.84   29.55   51.85   38.54"
+   },
+   "failure_boundary": "当前步增量公式只含动作/规划概率，无该次返回像素直接评分；不能当真正取证收益。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "strength": 3,
+   "how": "明确正阈值停止与独立verifier，不含剩余预算。"
+  },
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "无SFT接工具显著掉点，LLaMA无法有效调用。"
+  },
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "DPO verifier likelihood变化不是当前reasoner可答价值。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "same base without VTS / without verifier",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "未SFT的工具增强会伤害模型。",
+   "quote": "For instance, applying VTS-V to Qwen2VL-7B drops performance from 48.01% to 38.54%, and\nLLaMA3.2-11B fails to output any valid tool-use actions. This behavior contrasts with GPT-4o,",
+   "locator": "§5.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "无SFT Qwen2从48.01跌38.54；LLaMA3.2无法生成有效工具动作。",
+  "load_bearing_assumption": "偏好模型逐步log-ratio能代表继续看图的收益。",
+  "scope": "多视觉工具推理与外部停止",
+  "success_criterion": "按同reasoner比较有无verifier，独立统计准确率和调用预算。",
+  "why_open": "最终偏好训练不天然保证局部信息价值校准。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§5.2 no-SFT ablation"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_phi(tau)=eta*sum_h log(V_phi(t_h|s_h)/V_0(t_h|s_h))+eta*sum_h log(V_phi(a_h|t_h)/V_0(a_h|t_h))+Q(s_1)",
+    "locator": "§3.3"
+   },
+   {
+    "latex": "stop iff r_phi(s_{h+1})-r_phi(s_h)<epsilon",
+    "locator": "§3.4; Algorithm1"
+   }
+  ],
+  "signal_routing": "reasoner SFT规划和动作，不预测工具observation；verifier DPO对轨迹规划+动作log-ratios。返回oh影响后续状态，但该步增量只对产生oh前规划/动作评分。",
+  "normalization": "other",
+  "invariance": "SFT按H+1平均；DPO累计logratio，不是GRPO std。差分用于停止非PBRS训练，不能宣称最优策略不变。",
+  "baseline_or_potential": "Q(s1)仅初始状态常数，差分抵消；V0为reference。",
+  "degenerate_cases": "高分错误动作可继续；低分必要探索可早停；算法先执行一步再判停；无工具零步样本在数据过滤中被去除。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1未SFT工具增强的反例；Table3同reasoner去verifier；定理仅条件下a.s.有限，不是固定有限预算/最佳stop保证。",
+  "negative_results": [
+   {
+    "text": "Qwen2.5 MathVista67.5→66.5，训练后仍非全项改善。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同前缀改变返回图而保持规划动作时检查停止分数；若不变则不能用作即时视觉增益。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2/Qwen2.5-VL7B/LLaMA3.2-11B; verifier Qwen2.5-VL7B",
+   "framework": "LLaMA-Factory SFT; TRL DPO LoRA8",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8A800，1epoch，cutoff65536；完整调用/训练时未知。",
+  "pitfalls": [
+   {
+    "text": "定理要求verifier期望受限及相对base更接近reasoner的逐状态KL条件；未经真实rollout验证。",
+    "locator": "Appendix A.4"
+   },
+   {
+    "text": "Lemma3.1省略eta，阈值应按eta重标；不默认为任意eta严格同阈值等价。",
+    "locator": "§3.3–3.4"
+   }
+  ],
+  "code": "https://vts-v.github.io/",
+  "lesson": "当把偏好logratio用于停止时，应核其是否读取新观测，并测必要但低即时分的恢复状态，不能把有限终止证明当效率保证。"
+ }
+}

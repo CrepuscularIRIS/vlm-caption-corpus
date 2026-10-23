@@ -1,0 +1,158 @@
+{
+ "paper_key": "litscan:75170",
+ "title": "TVDRNet: Text-driven Viewpoint Optimization via Differentiable Rendering for 3D Reasoning Segmentation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75170.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3",
+   "Tables1–3",
+   "4.3.1–4.3.3",
+   "Conclusion",
+   "Impact Statement"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "adapt_via_conditioning",
+  "key_step": "文本与点云全局特征共同预测相机方位/仰角/焦距，可微渲染后融合用于分割",
+  "why_non_obvious": "每个查询改变可观察视角而非只改变语言解码，监督梯度能回传到视角参数",
+  "trigger_condition": "When a 3D query specifies a target part, condition rendering parameters on its semantics",
+  "contribution_type": "task-conditioned visual acquisition",
+  "abstract_strategy": "把任务表示接入可微观测生成算子",
+  "abstract_trigger_condition": "已知3D场景可渲染且任务依赖观察视角",
+  "abstract_key_step": "文本+场景→受界相机参数→图像→分割loss",
+  "abstract_why_non_obvious": "提供新的任务条件表示以适配观测；不是仅格式prompt",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75170#s1",
+   "object": "3D scene views",
+   "information": "text instruction + full point cloud",
+   "operation": "预测8个自适应视角并联合MGL融合训练",
+   "claimed_effect": "Reason3D Acc@.5 42.13 vs fixed16 39.29；base23.68",
+   "conditions": [
+    "3D point cloud available",
+    "segmentation supervision",
+    "differentiable renderer"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "4.3.2",
+    "quote": "39.29%. This 2.84% improvement"
+   },
+   "failure_boundary": "需完整3D及可微renderer；不是离散crop RL/停止；正文另称最终6views有矛盾",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P26",
+   "how": "查询条件化观测位置可迁移crop proposal但须替换renderer/监督",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "监督分割驱动where-to-look依赖GT，与无框策略条件不同",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "fixed8/12/16 views",
+   "kind": "ablation"
+  },
+  {
+   "name": "no AVPL / no MGL",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "读者：主实验称8views峰值，随后却称6views用于所有后续，配置不确定。",
+   "quote": "6 views offer the optimal balance",
+   "locator": "4.3.2"
+  },
+  {
+   "text": "读者：完整3D点云与分割loss的信息不能在单图无GT框crop任务直接取得。",
+   "locator": "3.1–3.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "fixed16 Acc@.5 39.29低于adaptive42.13",
+  "load_bearing_assumption": "任务条件观测优于单纯更多固定视角",
+  "scope": "固定视角数的query-conditioned crop proposal",
+  "success_criterion": "同像素预算正确率提高且不增加无用crop",
+  "why_open": "3D可微监督不能证明单图离散决策有效"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "locator": "Eq1–3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 AVPL/MGL ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "u=N_{vp}([\\mathrm{Norm}(T),\\mathrm{Norm}(\\mathrm{Mean}(F_p))]);\\ (u_a,u_e,u_f)=(a_b,e_b,f_b)\\odot\\sigma(\\mathrm{Chunk}(u,3));\\ M=R(u_a,u_e,u_f,S)",
+    "locator": "Eq1–3"
+   },
+   {
+    "latex": "S=ZZ^\\top;\\ s_i={\\sum_{j\\ne i}S_{ij}\\over M-1};\\ \\tilde s_i={s_i-\\min(S)\\over\\max(S)-\\min(S)}",
+    "locator": "Eq4–6 literal S notation"
+   }
+  ],
+  "signal_routing": "作者称分割loss经render回传camera predictor；LoRA MLLM生成SEG hidden解码mask；具体language/mask loss权重未知。",
+  "normalization": "feature L2；pairwise similarity均值；Eq6标min(S)/max(S)，正文称scores minmax存在记号歧义；group内与间softmax。",
+  "invariance": "不是奖励shaping/PBRS；正尺度feature在L2后消失；camera sigmoid受边界360/360/12约束。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "相似度范围为0 Eq6未示epsilon；空group处理未知；view过少2下降5.14点，16下降2.36点；单图无法凭空获得遮挡外新证据。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3双因素AVPL/MGL及Fig4固定vsadaptive views；均值/种子未报告。",
+  "negative_results": [
+   {
+    "text": "adaptive16比8低2.36 Acc@.5，作者归因冗余但无独立证明。",
+    "locator": "4.3.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：同数视角随机或query-shuffle条件同样好，则语义条件化必要性解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5-7B + Sparse3D U-Net",
+   "framework": "differentiable rendering + LoRA",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "4×L20 48GB;100epochs;lr2e-4",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当where-to-look由监督loss学习时，应明确可获得的场景与标签，不能把全3D查询渲染视为单图工具决策。"
+ }
+}

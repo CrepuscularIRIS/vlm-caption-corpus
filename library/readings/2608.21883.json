@@ -1,0 +1,760 @@
+{
+ "paper_key": "2608.21883",
+ "title": "VIG: Visual Information Gain as a Reward Signal for Multimodal Chain-of-Thought Compression",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.21883.pdf",
+  "version": "v2",
+  "version_evidence": "PDF p.1 margin: arXiv:2608.21883v2 [cs.CV] 27 Aug 2026",
+  "pages": 20,
+  "sections_read": [
+   "Abstract; §1 Introduction pp.1–3",
+   "§2 Related Work pp.2–4",
+   "§3 Method, §3.1 VIG Eq1–2, §3.2.1 aggregation Eq3, §3.2.2 two-pass, §3.2.3 reward Eq4–6 pp.4–6",
+   "§4.1 setup; §4.2 main results and non-math; §4.3 ablations; §4.4 visualization pp.6–9",
+   "§5 Conclusion and Limitations p.9",
+   "Appendix A multimodal CoT and GRPO Eq7–9 p.12",
+   "Appendix B two-pass and Algorithm1 pp.12–13",
+   "Appendix C population/estimator non-negativity Eq10 p.13",
+   "Appendix D training and evaluation data pp.13–14",
+   "Appendix E implementation and checkpoint selection p.14",
+   "Appendix F.1–F.3 signal controls, deletion, scope pp.14–15",
+   "Appendix G training cost and amortization pp.16–17",
+   "Appendix H qualitative examples pp.17,19–20",
+   "Appendix I licenses and J AI-use declaration pp.17–18",
+   "Tables1–7; Figures1–9; references scanned pp.9–12"
+  ],
+  "extraction": "Unmodified pdftotext -layout saved to readings/_fulltext/2608.21883.txt; separate -raw reading aid in _evidence. Figure4/5 font extraction is malformed; actual charts were visually inspected. Quotes only match original layout extraction."
+ },
+ "rs": {
+  "innovation_approach": "用同一在线策略对固定已生成推理前缀进行有图/去视觉span两次teacher-forced前向，以全词表Shannon熵差制造视觉依赖奖励；取think-block均值并clip后与格式、终答正确性相加，训练压缩链。",
+  "key_step": "把token层的两条件熵差平均成一个序列reward，而不是按token重要性删链或做局部token优势；用confidence-only与删除反例界定信号。",
+  "why_non_obvious": "低视觉依赖不等于无用：代数可从文本预测却对答案必要，VIG训练后最低分句子的删除损伤最大；收益来自训练分布塑形，不能解释为可删token发现器。",
+  "trigger_condition": "When verbose outputs contain weakly observation-dependent filler and observation spans can be removed consistently, apply an online paired uncertainty reward to increase average observation dependence, while retaining an outcome reward and testing indispensability separately.",
+  "reviewer_praise": [
+   "low_evidence: manifest没有reviews_path，本轮无独立审稿材料。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 不把读者的熵差/因果性检查伪装成审稿意见。"
+  ],
+  "acceptance_signal": "low_evidence；manifest decision=null、venue=arXiv，照录，不根据代码仓描述推断EMNLP接收。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Measure a generated sequence under paired observed and observation-stripped conditions; optimize its mean uncertainty contrast together with outcome quality.",
+  "abstract_key_step": "Reuse the same parameters and generated prefix, average masked distribution-entropy differences, and feed the detached scalar to a relative policy update.",
+  "abstract_why_non_obvious": "Distinguish sensitivity from correctness and indispensability: low-sensitivity computation can remain essential even when a high-sensitivity style reward improves average outputs.",
+  "abstract_trigger_condition": "When redundant sequences are expensive and paired conditioning is implementable, reward average observation sensitivity and validate it against confidence-only and deletion controls."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.21883#s1",
+   "object": "当前策略生成链的每个think位置的下一token全词表预测分布；不是采样token的log-probability。",
+   "information": "输入同一问题、同一已生成text prefix；vision pass含原图视觉spans，text pass删去全部视觉spans，二者同权重。无图前缀仍由看图策略生成，可携带先前视觉信息；不是从无图策略重采样的替代链。打分不需要gold，但终答reward另用gold。看不到真实视觉事实、每次crop干预价值或独立人类必要性标签。",
+   "operation": "计算Htxt(t)−Hvis(t)，用相同文本位置对齐两遍熵；只在think mask内保留差值，参数与reward计算停止梯度。",
+   "output": "逐位置视觉依赖熵差，再供序列聚合；纯显式文本链，无latent reasoning/crop像素工具。",
+   "claimed_effect": "作者称其刻画视觉信息密度；Fig6视觉读数句+1.16/+0.73、关键代数句约+.01；Fig7错误量角器读数也为正，故作者不主张正确性保证。",
+   "conditions": [
+    "视觉span能被干净删除且位置对齐。",
+    "同一策略两遍共享权重、相同文本前缀，非冻结外部reader。",
+    "熵基于所有词表候选而非selected-token surprisal；使用nats。",
+    "理论CMI关系需要真实一致的条件分布/相应期望；论文无图前向只是经验代理。"
+   ],
+   "evidence": {
+    "quote": "Both passes share the same weights—no auxiliary",
+    "locator": "§3.2.2 p.5; Appendix B pp.12–13",
+    "kind": "author_claim"
+   },
+   "failure_boundary": "Appendix C承认模型误设、无图输入OOD和数值误差导致负分；高分幻觉不被排除，低分代数仍必要。逐图熵差≡条件互信息/几乎处处非负并未由正确的总体不等式推出，见reader_inferences。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.21883#s2",
+   "object": "GRPO的序列标量reward及组标准化优势。",
+   "information": "已采样完整response、think mask、格式tag与gold终答正确性；本操作不看逐次crop的真实/反事实图对，也不获得当前策略直答/裁图对比回报。",
+   "operation": "对think熵差求均值、clip到[-1,1]，形成R=.1 Rformat+Racc+RVIG；按组mean/std得到一个优势，按Eq8–9对整条response的token做PPO clip更新并加KL。",
+   "output": "视觉密度偏好的策略；答题和格式token不参与RVIG计算，但仍收到这个序列reward导出的优势。",
+   "claimed_effect": "Table1 8B：VIG AvgACC64.92、AvgTLen1524.3、AvgEff52.42；GRPO62.88/1975.4/36.44；ThinkPrune62.55/1921.4/37.60。主表步数不全匹配，不能把全部差异纯归因reward。",
+   "conditions": [
+    "已有Qwen3-VL-Thinking行为支持；作者直接RL、无额外SFT warmup。",
+    "G=8、KL=.04、训练温度1.0；think非空，空mask fallback未报告。",
+    "w_f=.1,w_a=1,w_v=1；VIG不按正确性门控。",
+    "当前总reward变化必须经GRPO std审计，不能把wv解释为线性有效力。"
+   ],
+   "evidence": {
+    "quote": "task-specific supervision enters through the scalar",
+    "locator": "Appendix A.2 Eq7–9 p.12; §3.2.3 Eq4–6 p.6",
+    "kind": "author_claim"
+   },
+   "failure_boundary": "不是token级credit routing。全对/全错且format相同但VIG不同仍有优势；wv可被组std抵消；无直答采样保护。正确性不构成约束。MathVision精度不占优，2B受截断混杂。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.21883#s3",
+   "object": "VIG信号的来源、句子可删性和测量适用域。",
+   "information": "同seedGRPO链的逐句分数及删除后强制前缀重解码。包含gold用于事后准确率评价；不提供在线当前策略的真实必要性标签。",
+   "operation": "将RVIG替换为−Hvis隔离置信度；按base无图是否答对分层；分别删除最低/随机/最高VIG句子的固定比例并重解码，比较两类已训练链。",
+   "output": "奖励机制对照及反例：对生成分布有利的分数不等于后验可删性分数。",
+   "claimed_effect": "Table5(a)五基准VIG71.37/1297、confidence-only68.21/1441、GRPO69.33/1751；Table6 VIG链删除50%最低VIG句ACC72.36、随机77.41、最高80.75；GRPO链则最低80.00、最高75.92。",
+   "conditions": [
+    "Table5是5基准macro，不能直接替代Table1的6基准64.92；五基准具体组成未明列。",
+    "删除固定句子比例而非等token预算；低VIG句更长。",
+    "base无图失败不证明题目对当前策略必需视觉；可能是base知识/推理失败。",
+    "Greedy重解码固定前缀本身改变分布，with-image版本允许重新获取被删事实。"
+   ],
+   "evidence": {
+    "quote": "the lowest-VIG sentences is the most damaging",
+    "locator": "Appendix F.2 p.15; Table6 p.16",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "论文明确不适合post-hoc pruning；删除率对token预算不匹配，with/without-image重解码并未提供完整独立数值矩阵；仍不形成逐步crop必要性金标。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-Thinking Base (2B/4B/8B)",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO format+accuracy",
+   "kind": "method"
+  },
+  {
+   "name": "L1 length-target RL",
+   "kind": "method"
+  },
+  {
+   "name": "TALE dynamic budget prompting",
+   "kind": "method"
+  },
+  {
+   "name": "ThinkPrune iterative token-limit RL",
+   "kind": "method"
+  },
+  {
+   "name": "Confidence-only reward −Hvis",
+   "kind": "method"
+  },
+  {
+   "name": "VPPO released Qwen3-VL-8B-Instruct checkpoint (unmatched)",
+   "kind": "method"
+  },
+  {
+   "name": "WeMath",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMMU",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVision",
+   "kind": "benchmark"
+  },
+  {
+   "name": "DynaMath",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMK12",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Geo3K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "R1-Onevision-Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "RealWorldQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "OCRBench",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明确VIG是视觉依赖，不是视觉正确性或反事实必要性；高分也可来自自信幻觉。",
+   "quote": "dence, which is neither visual correctness nor",
+   "locator": "Limitations p.9; Figure7(b) p.17"
+  },
+  {
+   "text": "低分删除在已压缩链更有害，信号适合训练分布塑形而非后验pruning。",
+   "quote": "during training, but not to post-hoc pruning.",
+   "locator": "Limitations p.9; Appendix F Table6"
+  },
+  {
+   "text": "跨架构泛化未解决；只在Qwen3-VL-Thinking静态图像任务测试。",
+   "quote": "cross-architecture generality as unresolved: a",
+   "locator": "Limitations p.9"
+  },
+  {
+   "text": "无图前向对同一多模态网络可能是OOD，经验熵不受总体不等式保证。",
+   "quote": "trained network on an out-of-distribution input—",
+   "locator": "Appendix C p.13"
+  },
+  {
+   "text": "2B有53%生成触及4096 token上限，不能承载强准确率增益主张。",
+   "quote": "53% of 2B generations hit the 4,096-token limit",
+   "locator": "§4.2 p.7; Appendix F.3"
+  },
+  {
+   "text": "链均值可能压低只依赖一个小视觉细节的长推导；不等于每条高分都重要。",
+   "quote": "that hinges on one small visual detail can be",
+   "locator": "Appendix F.3 p.15"
+  }
+ ],
+ "question": {
+  "observed_failure": "动机Fig2：同一几何题base823 thinking tokens仍错，L1 412 tokens正确，VIG105正确；Table1 8B base2248.5平均tokens、ACC58.54。作者认为文本长度压力无法区分视觉读数与语言性冗余；单个案例不是普遍因果证据。",
+  "load_bearing_assumption": "把所有长链token视为同质成本、只惩罚长度即可得到有效压缩的默认假设；替换为视觉依赖密度目标，但作者同时否认视觉依赖=不可删性。",
+  "scope": "已有Qwen3-VL-Thinking单图显式think-chain的RL压缩，2B/4B/8B；不涉及交互crop或多轮新观测。",
+  "success_criterion": "同评测协议下提高/保持ACC并降低TLen、提升ACC/1k tokens；confidence-only不能解释全部收益；难题、2B、非数学场景分别报告。论文未预注册正式准确率非劣界。",
+  "why_open": "纯长度/预算/文本entropy方法缺少视觉条件对照；VPPO是整体视觉依赖重加权且已发布checkpoint不同backbone/data，仍未完成同配方对照。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "action": "作者将visual dependence、correctness、counterfactual necessity区分，删除反例说明单位不可混用。",
+   "quote": "dence, which is neither visual correctness nor",
+   "locator": "Limitations p.9"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "action": "confidence-only与VIG同data/seed/step，只改变visual term，检查置信度而非视觉对照能否解释收益。",
+   "quote": "pipeline, data, seed, and step count of VIG, with",
+   "locator": "Appendix F.1 p.14"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "action": "同时报告准确率与token效率，而不是只追求短链。",
+   "quote": "efficiency Eff = ACC/TLen × 1000 (↑), which",
+   "locator": "§4.1 Metrics p.6"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "action": "以同8×H20、500步给出s/it、wallclock与GPUh成本账。",
+   "quote": "VIG (Ours) 37.2",
+   "locator": "Appendix G Table7 p.16"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "role": "primary",
+   "action": "从同一策略两种conditioning的熵构造无需外部过程标注的reward；终答correctness仍有监督。",
+   "quote": "Both passes share the same weights—no auxiliary",
+   "locator": "§3.2.2 p.5"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "action": "confidence-only隔离entropy/简短偏好；句子删除与链状态对照否定直接token重要性解释。",
+   "quote": "the reward’s visual term replaced by −Hvis",
+   "locator": "Appendix F.1 p.14"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "H(t_\\tau\\mid q,t_{<\\tau})=H(t_\\tau\\mid q,I,t_{<\\tau})+I(t_\\tau;I\\mid q,t_{<\\tau})",
+    "locator": "Eq1 p.4",
+    "interpretation": "作者总体熵分解；不能直接当成固定图像的逐样本等式。"
+   },
+   {
+    "latex": "\\mathrm{VIG}(t_\\tau)=H_{\\mathrm{txt}}(t_\\tau)-H_{\\mathrm{vis}}(t_\\tau),\\quad H=-\\sum_v p_v\\log p_v",
+    "locator": "Eq2 p.5; Appendix B p.12",
+    "interpretation": "同一网络有/无视觉spans的词表分布熵，nats；非选中token surprisal/概率比。"
+   },
+   {
+    "latex": "R_{\\mathrm{VIG}}=\\operatorname{clip}\\left(\\frac{1}{|T|}\\sum_{t\\in T}\\mathrm{VIG}(t),-1,1\\right)",
+    "locator": "Eq3 p.5; Algorithm1 p.13"
+   },
+   {
+    "latex": "R(o)=w_fR_{\\mathrm{format}}(o)+w_aR_{\\mathrm{acc}}(o,a^*)+w_vR_{\\mathrm{VIG}}(o),\\quad (w_f,w_a,w_v)=(0.1,1,1)",
+    "locator": "Eq4 p.6"
+   },
+   {
+    "latex": "R_{\\mathrm{format}}=\\begin{cases}0&\\text{both tags present}\\\\-0.5&\\text{only answer tag}\\\\-1&\\text{otherwise}\\end{cases},\\quad R_{\\mathrm{acc}}=\\mathbf 1[A(o)=a^*]",
+    "locator": "Eq5–6 p.6"
+   },
+   {
+    "latex": "\\hat A_i=\\frac{r_i-\\operatorname{mean}_j r_j}{\\operatorname{std}_j r_j}",
+    "locator": "Eq7 p.12",
+    "interpretation": "论文式无epsilon/零方差分支；不能补写常见实现。"
+   },
+   {
+    "latex": "J=\\mathbb E\\left[\\frac1G\\sum_i\\frac1{|o_i|}\\sum_t\\left(\\min(\\rho_{it}\\hat A_i,\\operatorname{clip}(\\rho_{it},1-\\epsilon,1+\\epsilon)\\hat A_i)-\\beta D_{KL}(\\pi_\\theta\\Vert\\pi_{\\mathrm{ref}})\\right)\\right]",
+    "locator": "Eq8–9 p.12"
+   },
+   {
+    "latex": "H(t_\\tau\\mid q,I,t_{<\\tau})\\le H(t_\\tau\\mid q,t_{<\\tau})",
+    "locator": "Eq10 p.13",
+    "interpretation": "作者Appendix C说明是population条件熵不等式；仍不是对每个已固定I的pointwise保证。"
+   }
+  ],
+  "signal_routing": "两遍score forward不反传；think mask排除format/answer/pad是reward计算mask。该均值进入一个序列reward，经Eq7同组mean/std，再由Eq8向所有response token（含终答/格式）广播同一优势；无仅caption/decision token梯度路由。Appendix A.1“leaving format and answer portions unaffected”只能按score计算范围理解，否则与Eq8冲突。奖励随在线策略改变但在每次更新内detach，不能当可微熵正则直接求导。未读代码实现，position shift/真实actor mask/score refresh频率unknown。",
+  "normalization": "先词表softmax+Shannon entropy(nats)，think内token平均，序列clip[-1,1]，加权合成reward，再每prompt组mean+std，最后每条response长度均值及组均值PPO。没有leave-one-out或独立VIG advantage通道；std计算样本/总体约定、eps、clip epsilon未报告。",
+  "invariance": "不是PBRS、不是只减状态baseline，不保持最优策略。均值密度奖励对插入低于现有均值的token会下降，即使没有显式length budget也改变内容偏好；重复高依赖描述或省略必要代数是可能reward hack（读者风险，未测）。无图输入和有图生成前缀不是中性“去掉真实证据”的反事实。正仿射总reward在理想组std下不改优势（epsilon例外）。格式/正确性同值组内，r=c+w_v v，w_v>0时A=(v−mean v)/std(v)，wv消失；混合组会改变相对尺度而非普遍相消。",
+  "baseline_or_potential": "GRPO组奖励均值作相对基线、除std；无critic/势函数。VIG由在线策略自身两遍估计，KL参考πref具体初始化未在论文细化。Table5分层用untrained base无图预测，不是当前策略必要性truth。",
+  "degenerate_cases": "p(direct/crop)≈0或1：本单轮方法没有force/exploration机制，不恢复缺失行为。全对或全错且format同：只要VIG不同仍有VIG梯度，权重尺度可被std消掉；若总reward全等，Eq7除零，实际fallback未报告。无think/|T|=0均值未定义、空mask处理unknown。平均VIG全饱和clip相同可使信号消失；单个关键视觉细节被长代数稀释；无图/图无额外影响时熵差可≈0但不证明文本链可删。非负总体理论不排除经验负值；[-1,1]clip并不强制非负。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Appendix F confidence-only同data/seed/step把visual term换−Hvis；Table4移除VIG、换50%masked image、wv扫.5/1/2；Table6最低/随机/最高VIG删除在VIG链与GRPO链上对比。这些区分entropy、conditioning和后验重要性；Table1主表未完全匹配训练步数。",
+  "controls": [
+   "Base / format+accuracy GRPO / L1 / TALE / ThinkPrune。",
+   "Table4 no-image vs50%masked image：64.92/1524.3/52.42 vs62.98/1885/38.70。",
+   "Table5(a)五基准同seed1297。",
+   "Table5(b)六基准base无图可答/不可答分层：VIG−GRPO +1.49/+2.82pt；只是base-relative分层，不是实际necessity。",
+   "Table6以句子数量比例删除，有token budget混杂，且重新解码可利用原图。",
+   "VPPO对照不同Instruct/Thinking底座与训练数据，仅indicative；未完成matched replication。"
+  ],
+  "negative_results": [
+   {
+    "text": "VIG链50%删除最低VIG句72.36，最高80.75；直接否定低分=可删。",
+    "quote": "lowest-VIG      80.92   79.94   78.22   75.17   72.36                                +0.04           There are three paths: A,",
+    "locator": "Table6(a) p.16"
+   },
+   {
+    "text": "GRPO链删除50%最高VIG句75.92，最低80.00，排序相反；分数重要性依赖训练后链状态。",
+    "quote": "highest-VIG   80.46    75.92",
+    "locator": "Table6(b) p.16"
+   },
+   {
+    "text": "MathVision 8B VIG32.20低于ThinkPrune32.57/TALE32.50；4B30.95低于L1 31.71。",
+    "quote": "ThinkPrune (32.57) and TALE (32.50) edge past",
+    "locator": "Appendix F.3 p.15; Table1 p.5"
+   },
+   {
+    "text": "2B53%命中4096预算，精度优势不显著；8B31.5%，不能用2B支持普遍精度提升。",
+    "quote": "the 4,096-token limit (versus 31.5% at 8B) with a",
+    "locator": "Appendix F.3 p.15"
+   },
+   {
+    "text": "wv从1增到2：8B AvgACC64.92→64.30、TLen1524.3→1546.0，权重更大未再压短。",
+    "quote": "2.0",
+    "locator": "Table4 p.7"
+   },
+   {
+    "text": "低VIG句更长，所以定句数删除并非等token删除。",
+    "quote": "confound is worth stating explicitly: low-VIG",
+    "locator": "Appendix F.2 p.15"
+   }
+  ],
+  "seeds": "single/unreplicated training evidence：没有报告独立训练seed数或跨seed区间；F.1称各arm同seed。每checkpoint单次greedy temperature0；作者称10k item paired bootstrap并叙述显著性/噪声，但PDF所读表格没有具体置信区间上下界。greedy无sampling noise不等于无训练方差。",
+  "falsifier": "若匹配data/seed/step/compute后confidence-only或打乱图配对能复现全部收益，则视觉特异性主张受损；若等token删除下低VIG依然更伤，则再次否定必要性解释（作者现结果已给此方向反例）。目标迁移须先验证真实crop/匹配伪crop对caption事实的区分，不通过就不能作P43训练信号。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-2B/4B/8B-Thinking；直接full-parameter GRPO，无额外SFT warm-up",
+   "framework": "other: paper reports GRPO + DeepSpeed ZeRO-2; trainer library未在正文指定，本轮不读取/执行外部代码",
+   "group_size": 8,
+   "rollouts": null,
+   "steps": 500,
+   "kl": 0.04,
+   "temperature": 1.0,
+   "max_turns": null,
+   "batch_size_per_device": 1,
+   "gradient_accumulation": 4,
+   "learning_rate": 1e-06,
+   "warmup_steps": 10,
+   "gradient_checkpointing": true,
+   "checkpoint_selection": "VIG400；2B/8B baselines500；4B baselines400。选择标准/独立验证集未详述。",
+   "eval_temperature": 0,
+   "eval_max_tokens": 4096,
+   "training_max_tokens": null,
+   "rollouts_note": "每prompt G=8；累计rollout数和训练token总量未给。max_turns不适用单轮静态图像。",
+   "train_data": "2948：MMStar validation、MathVista testmini、LogicVista test；各源精确计数未给，训练使用这些公开split不是对同split的独立泛化。"
+  },
+  "cost": "Table7作者报告8×H20、500steps：GRPO31.8s/it、4h25m、35.3GPUh；L1 33.5s/37.2GPUh；ThinkPrune32.3s/35.8GPUh；VIG37.2s/it、5h10m、41.3GPUh=1.17×。所选VIG400step与此统一500step成本口径不同。实际训练token/总rollout数未知。Appendix G估算额外6GPUh、454 token/query节省、假设1000tok/s/GPU→约48K请求回本；不是实测吞吐/部署收益。",
+  "pitfalls": [
+   {
+    "text": "去图span必须干净并保持同文本位置对应；仅score mask，不把answer token误称无RL梯度。",
+    "quote": "<|vision_end|> markers; the text-only pass",
+    "locator": "Appendix E p.14; Appendix B p.12"
+   },
+   {
+    "text": "无图OOD与数值误差导致负VIG；作者称<约1%think tokens负，绝大多数绝对值<.05；clip[-1,1]是有界化不是非负修复。",
+    "quote": "centrated near zero (less than ∼1% of think-block",
+    "locator": "Appendix C p.13"
+   },
+   {
+    "text": "主表checkpoint不一致可能影响方法比较；Appendix F增加同step控制但仅特定口径。",
+    "quote": "ments; baselines use step 500 for",
+    "locator": "Appendix E p.14"
+   }
+  ],
+  "code": "https://github.com/chaser682/vig",
+  "lesson": "当用有图/去图熵差给链做平均奖励时，低依赖的必要计算会被均值稀释、且整链优势仍会改写终答；应分别审计score mask与actor loss mask，并以confidence-only、等token删除、当前策略匹配反事实和分层准确率验证信号，不能直接删除低VIG句或置零crop信用。",
+  "lesson_evidence": [
+   {
+    "quote": "the lowest-VIG sentences is the most damaging",
+    "locator": "Appendix F.2 p.15"
+   },
+   {
+    "quote": "task-specific supervision enters through the scalar",
+    "locator": "Appendix A.2 p.12"
+   }
+  ]
+ },
+ "relevance": [
+  {
+   "problem": "P41",
+   "how": "直接回答测量边界：可测视觉依赖，却不能充当单句caption价值/不可删性；作者删除反例推翻强解释。",
+   "strength": 3
+  },
+  {
+   "problem": "P42",
+   "how": "对在线中间文本加视觉依赖reward提供机制线索，但幻觉可高分，不能认证caption事实性。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "没有逐次crop评分，只有whole-image条件熵差；迁移需新图vs旧图/伪图对齐、真实标签验证。",
+   "strength": 1
+  },
+  {
+   "problem": "P01",
+   "how": "标量VIG reward进入组mean/std，等正确性/格式组内wv被归一化消掉的代数仍成立。",
+   "strength": 2
+  },
+  {
+   "problem": "P35",
+   "how": "MathVision及单小细节长推导说明密度压力可能剪去有用搜索；无正式非劣约束。",
+   "strength": 2
+  },
+  {
+   "problem": "P45",
+   "how": "item bootstrap和greedy不替代跨训练seed方差。",
+   "strength": 1
+  },
+  {
+   "problem": "P55",
+   "how": "视觉span删除与文本token位置对齐是工程前提；未实现多轮mRoPE/图像账本。",
+   "strength": 1
+  }
+ ],
+ "reported_results": {
+  "table1": {
+   "locator": "p.5",
+   "2B": {
+    "base": [
+     37.09,
+     3154.2,
+     12.71
+    ],
+    "GRPO": [
+     41.52,
+     2975.9,
+     15.29
+    ],
+    "ThinkPrune": [
+     42.26,
+     2745.5,
+     17.17
+    ],
+    "VIG": [
+     42.81,
+     2631.3,
+     18.52
+    ]
+   },
+   "4B": {
+    "base": [
+     52.61,
+     2769.6,
+     20.46
+    ],
+    "GRPO": [
+     58.64,
+     2435.5,
+     26.37
+    ],
+    "L1": [
+     59.39,
+     2304.4,
+     28.4
+    ],
+    "ThinkPrune": [
+     59.07,
+     2327.2,
+     27.97
+    ],
+    "VIG": [
+     62.15,
+     1426.5,
+     54.79
+    ]
+   },
+   "8B": {
+    "base": [
+     58.54,
+     2248.5,
+     29.54
+    ],
+    "GRPO": [
+     62.88,
+     1975.4,
+     36.44
+    ],
+    "ThinkPrune": [
+     62.55,
+     1921.4,
+     37.6
+    ],
+    "VIG": [
+     64.92,
+     1524.3,
+     52.42
+    ]
+   },
+   "columns": [
+    "AvgACC(%)",
+    "AvgTLen",
+    "AvgEff=mean benchmark ACC/TLen*1000"
+   ]
+  },
+  "table2": {
+   "locator": "p.6",
+   "VIG_overall": [
+    56.79,
+    2190.0,
+    29.19
+   ],
+   "GRPO_overall": [
+    53.29,
+    2583.1,
+    22.62
+   ],
+   "VIG_subject_ACC": [
+    65.47,
+    54.13,
+    60.45,
+    68.57,
+    23.47
+   ],
+   "subjects": [
+    "Physics278",
+    "Mathematics327",
+    "Biology134",
+    "Chemistry105",
+    "Deduction98"
+   ],
+   "caveat": "Biology and Deduction are not best; do not turn overall winner into all-task dominance."
+  },
+  "table3": {
+   "locator": "p.7",
+   "VIG_4B_RealWorldQA": [
+    68.63,
+    374
+   ],
+   "VIG_4B_OCRBench": [
+    78.3,
+    201
+   ],
+   "base_RealWorldQA": [
+    67.84,
+    784
+   ],
+   "base_OCRBench": [
+    77.7,
+    587
+   ],
+   "caveat": "作者将精度解释为within noise；压短收益而非已证精度提升。"
+  },
+  "table4": {
+   "locator": "p.7",
+   "noVIG": [
+    62.88,
+    1975.4,
+    36.44
+   ],
+   "masked50": [
+    62.98,
+    1885.0,
+    38.7
+   ],
+   "wv_05": [
+    63.06,
+    1676.1,
+    45.04
+   ],
+   "wv_1": [
+    64.92,
+    1524.3,
+    52.42
+   ],
+   "wv_2": [
+    64.3,
+    1546.0,
+    50.76
+   ]
+  },
+  "table5": {
+   "locator": "p.15",
+   "five_benchmark_controls": {
+    "GRPO": [
+     69.33,
+     1751
+    ],
+    "confidence_only": [
+     68.21,
+     1441
+    ],
+    "VIG": [
+     71.37,
+     1297
+    ]
+   },
+   "six_benchmark_strata": {
+    "text_solvable": [
+     83.18,
+     81.69,
+     1.49
+    ],
+    "vision_required": [
+     56.01,
+     53.19,
+     2.82
+    ]
+   },
+   "caveat": "five-benchmark controls differ from Table1 six benchmarks; excluded benchmark未明确列名。"
+  },
+  "table6": {
+   "locator": "p.16",
+   "VIG_deleted_percent": [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   "VIG_low": [
+    80.92,
+    79.94,
+    78.22,
+    75.17,
+    72.36
+   ],
+   "VIG_random": [
+    81.84,
+    80.92,
+    80.06,
+    79.25,
+    77.41
+   ],
+   "VIG_high": [
+    82.07,
+    81.95,
+    81.78,
+    81.32,
+    80.75
+   ],
+   "GRPO_deleted_percent": [
+    25,
+    50
+   ],
+   "GRPO_low": [
+    81.21,
+    80.0
+   ],
+   "GRPO_random": [
+    80.57,
+    79.48
+   ],
+   "GRPO_high": [
+    80.46,
+    75.92
+   ],
+   "caveat": "sentence fractions, not matched removed token counts; image retained for table."
+  },
+  "table7": {
+   "locator": "p.16",
+   "GRPO_GPUh": 35.3,
+   "VIG_GPUh": 41.3,
+   "same_steps": 500,
+   "GPUs": "8xH20",
+   "overhead": 1.17
+  }
+ },
+ "reader_inferences": [
+  {
+   "type": "mathematical_boundary_not_author_result",
+   "locator": "Eq1–2/10; Appendix C",
+   "text": "条件互信息非负要求按真实一致joint分布的相应条件期望。即使模型是真实条件，固定某I后的entropy可以高于未看I的边缘entropy；不是只有OOD/数值误差才会负。反例：I均匀二值，P(T=1|I=0)=.5、P(T=1|I=1)=1，P(T=1)=.75；对I=0，H(.75)−H(.5)≈−.1308nats，而对I平均CMI≈.2158≥0。这里是读者纸面代数反例，未执行外部代码。模型去视觉span得到的分布也不保证是对图像真实边缘化。故不把本文每条VIG当非负MI。"
+  },
+  {
+   "type": "score_vs_gradient_boundary",
+   "locator": "Appendix A.1 vs A.2 Eq8 and Appendix B",
+   "text": "A.1说format/answer unaffected应限于score测量，不能按actor梯度解读；Eq8每个response token都收scalar advantage。"
+  },
+  {
+   "type": "causal_boundary",
+   "locator": "§4.4.2; Appendix F.1–F.2",
+   "text": "相关性控制length/difficulty后correctness–VIG partial r≈0；删除probe还有句子长度与强制prefix干预。不能由依赖或相关给caption价值/crop必要性金标。"
+  },
+  {
+   "type": "cost_arithmetic_boundary",
+   "locator": "Appendix G pp.16–17",
+   "text": "作者6GPUh×3600×1000tok/s/GPU÷454≈47577queries与约48K一致；但随后“faster serving stack shortens break-even”方向与所写公式不一致。在保持训练额外GPUh、每请求省token固定时，N_break=C·throughput/Δtokens，throughput越快每token省的GPU时越少，回本请求数反而更大。此为读者单位分析，非作者报告。"
+  },
+  {
+   "type": "figure_text_discrepancy",
+   "locator": "Figure5 p.8 vs §4.4.2 p.9",
+   "text": "视觉图中Q5柱标91.6，正文写91.7；记录小差异，不自行统一。图表描述性关系不改本文因果边界。"
+  }
+ ],
+ "visual_verification": {
+  "pages": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   12,
+   13,
+   15,
+   16,
+   17,
+   19,
+   20
+  ],
+  "files": [
+   "readings/_evidence/2608.21883/page-03.png",
+   "readings/_evidence/2608.21883/page-04.png",
+   "readings/_evidence/2608.21883/page-05.png",
+   "readings/_evidence/2608.21883/page-06.png",
+   "readings/_evidence/2608.21883/page-07.png",
+   "readings/_evidence/2608.21883/page-08.png",
+   "readings/_evidence/2608.21883/page-12.png",
+   "readings/_evidence/2608.21883/page-13.png",
+   "readings/_evidence/2608.21883/page-15.png",
+   "readings/_evidence/2608.21883/page-16.png",
+   "readings/_evidence/2608.21883/page-17.png",
+   "readings/_evidence/2608.21883/page-19.png",
+   "readings/_evidence/2608.21883/page-20.png"
+  ],
+  "checked": "Eq1–10、Algorithm1、Tables1–7及Figures2–9布局/方向/数字。Fig1在p.1文字和plot定位已读但未单独渲染，未据其像素读新数字。Figures4/5乱码不能作为引文，实际PNG核。"
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "audit_status": "pending_independent_source_audit",
+ "runtime_verified": false,
+ "scientific_replication": false
+}

@@ -1,0 +1,157 @@
+{
+ "paper_key": "litscan:77236",
+ "title": "PerceptJudge",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77236.txt",
+  "sections_read": [
+   "Abstract",
+   "3.1–3.4",
+   "Table1–3",
+   "A Limitations",
+   "C.2 hyperparameters"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将看错与看对但被答案锚定分解，用最小文本感知扰动造训练对照",
+  "key_step": "同一图像构造correct、仅感知错、感知+推理错三响应，GRPO学习全序",
+  "why_non_obvious": "自动judge会在自己答对视觉探针时仍偏好流畅错答案；仅测感知准确率不够",
+  "trigger_condition": "当视觉judge偏好合理叙事时，以仅感知扰动及分级排序约束审判行为",
+  "contribution_type": "method",
+  "abstract_strategy": "将看错与看对但被答案锚定分解，用最小文本感知扰动造训练对照",
+  "abstract_trigger_condition": "当视觉judge偏好合理叙事时，以仅感知扰动及分级排序约束审判行为",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "同一图像构造correct、仅感知错、感知+推理错三响应，GRPO学习全序",
+  "abstract_why_non_obvious": "自动judge会在自己答对视觉探针时仍偏好流畅错答案；仅测感知准确率不够"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77236#s1",
+   "object": "多模态judge",
+   "information": "相同图像问题、chosen响应和合成错误响应；人类判断用于评价",
+   "operation": "感知属性文字替换保留推理，另造双错版本；格式门控排序reward",
+   "claimed_effect": "Flex judge总体错误23.5%→14.3%，看对仍错排14.1%→7.6%；不是完全可靠",
+   "conditions": [
+    "PPJD 3k主训练；MMPR来源",
+    "Flex7B/Qwen3VL4B"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "Perception-Judge-Flex-7B (Ours)   85.7%      6.7%       7.6%      14.3%                                     Mind2Web                                                    Mind2Web"
+   },
+   "failure_boundary": "合成三元组的预设全序不是每例独立人工金标；未证明真实crop价值校准",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P52",
+   "how": "AI看图不等于可靠独立视觉核验，需拆感知与判决错误",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "评价者与策略不等价且响应锚定另成误差",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Flex-Judge-VL",
+   "kind": "model"
+  },
+  {
+   "name": "MMPR/PPJD pairwise reward",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "难例仍落后专家人工",
+   "locator": "A",
+   "quote": "expert human annotators in certain challenging scenarios.               current multimodal judges often exhibit visual perception"
+  }
+ ],
+ "question": {
+  "observed_failure": "Flex judge14.1%样本自身感知正确却错误排序",
+  "load_bearing_assumption": "最小文本感知扰动能隔离视觉证据使用，并且预设correct>感知错>双错合理",
+  "scope": "judge训练与偏差诊断",
+  "success_criterion": "独立人工评价下排序一致性改善，分开报告感知错和锚定错",
+  "why_open": "训练金序由扰动流程产生，不能取代人工视觉核验"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§3.2 mode decomposition"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§3.3 perception-only perturbation"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R(o)=R_{Format}(o)R_{Batch}(o);\\quad R_{Batch}=1-d_{Lev}(\\hat\\pi,\\pi^*)/\\|\\pi^*\\|",
+    "locator": "Eq5–8"
+   },
+   {
+    "latex": "\\hat A_i=(R(o_i)-\\mu(R))/\\sigma(R)",
+    "locator": "§2 GRPO"
+   }
+  ],
+  "signal_routing": "对judge生成的reasoning+ranking verdict给同一序列奖励，训练judge而非被评VLM；输入响应和图像不作为生成目标。按三种响应的排列给1,2/3,1/3,0；Eq6称weighted Levenshtein，权重细节未核，不自行等同普通编辑距离。",
+  "normalization": "mean+std",
+  "invariance": "格式乘门不是PBRS；rank reward改变judge行为但没有策略最优不变定理。",
+  "baseline_or_potential": "同prompt五个judge verdict组均值；三条被比较响应不是GRPO组大小。",
+  "degenerate_cases": "全格式无效或全同序则std0处理未见；全序监督不处理真正同质ties；单轮judge无crop停止。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3同10k预算：MMPR Pair score .454、PPJD Pair .458、PPJD Batch .476；Batch edit .515/.513/.500。",
+  "negative_results": [
+   {
+    "text": "Table2 Flex pair-with-tie仅.514→.520，仍有任务下降；Table3配置与Table2主数据规模不同不可混用。",
+    "locator": "Tables2–3"
+   }
+  ],
+  "seeds": "每项judge输出采样3次均值；训练种子未见",
+  "falsifier": "人工真实错误上不改善、仅合成错文改善，或打乱视觉仍同样有效，则grounding解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Flex-Judge-VL-7B / Qwen3-VL-4B-Thinking",
+   "framework": "verl/PyTorch",
+   "group_size": 5,
+   "max_turns": 1,
+   "kl": 0.01
+  },
+  "cost": "Flex8H100/Qwen3 8H200；一epoch、batch512、max response24576；时长未见",
+  "pitfalls": [
+   {
+    "text": "chosen当correct及自动答案一致性过滤不等于每条视觉事实人工验证；模型生成监督有闭源依赖。",
+    "locator": "§3.3/A"
+   }
+  ],
+  "code": "https://github.com/kaist-cvml/perception-judge",
+  "lesson": "当AI看图审计给出合理结论时，仍要分别测它是否看对与看对后是否按证据判；不能用同一模型自洽代替人工gold。"
+ }
+}

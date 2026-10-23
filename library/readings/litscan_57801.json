@@ -1,0 +1,165 @@
+{
+ "paper_key": "litscan:57801",
+ "title": "Omni-R1",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_57801.txt",
+  "sections_read": [
+   "Abstract/Introduction contributions",
+   "§3–4",
+   "§5 Tables 2–4",
+   "Limitations",
+   "Appendix D Table 6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "unify_into_shared_representation",
+  "key_step": "把 zoom、标记、辅助线及状态预测统一为中间图像生成；PeSFT 对齐冻结视觉码本，PeRPO 用码本 TV 平滑度附加奖励。",
+  "why_non_obvious": "图像生成的视觉连贯性可以作为无中间答案标注的奖励，但它不等于信息正确性。",
+  "trigger_condition": "当统一图文生成模型缺少可靠中间视觉表征时，以码本几何稳定生成并联合答案奖励。",
+  "contribution_type": "训练目标与统一生成推理",
+  "abstract_strategy": "用冻结表征空间的结构统计量给中间生成物提供低成本反馈。",
+  "abstract_trigger_condition": "中间生成物没有逐步标签而存在可计算结构先验时。",
+  "abstract_key_step": "局部监督学习生成格式，再将结构一致性汇成序列奖励。",
+  "abstract_why_non_obvious": "感知质量代理可改善下游答案，但存在平滑且错误的退化解。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:57801#s1",
+   "object": "图文交错输出中的图像 token",
+   "information": "训练答案、格式可解析性、冻结码本相邻嵌入距离；无生成图与真实证据的逐例因果比较",
+   "operation": "先 CE+码本投影 MSE，再对 accuracy+format+perception 标量奖励做组标准化 PPO；图像段 TV 分数取均值。",
+   "claimed_effect": "Anole Omni-Bench 0.081→0.153；Zero 0.159，去 perception reward 降至0.130，去 PeRPO 0.113。",
+   "conditions": [
+    "Anole/Bagel 原生图文生成",
+    "800例四类任务，样本加权平均"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 4, PDF p7",
+    "quote": "w/o PeReward           0.330    0.150       0.085           0.080     0.130"
+   },
+   "failure_boundary": "不能将生成图当成来自真实环境的新观测；TV 可奖励常量图。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "中间视觉质量代理奖励可参考，但不检查真实 grounding。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "Zero 仍先用合成图文轨迹 SFT 激活行为。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Anole/Bagel base",
+   "kind": "backbone"
+  },
+  {
+   "name": "Zebra-CoT",
+   "kind": "method"
+  },
+  {
+   "name": "w/o PeReward",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "生成中间图像增加推理成本；Zero 图像抽象化会降低可解释性。",
+   "quote": "latency in certain settings.",
+   "locator": "Limitations p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "Anole base Omni-Bench仅0.081，去掉感知奖励Zero从0.159降到0.130。",
+  "load_bearing_assumption": "码本局部平滑度与任务有用视觉表征正相关。",
+  "scope": "能原生生成图像token的模型",
+  "success_criterion": "同骨干下答案率与去感知奖励消融比较。",
+  "why_open": "单一工具模式难覆盖多种视觉操作，图文标注昂贵。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4 two-stage pipeline"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "locator": "§3–4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_{PeSFT}=L_{CE}+|\\Omega|^{-1}\\sum_{t\\in\\Omega}\\|Wh_t-E[c_t]\\|_2^2",
+    "locator": "Eq1–3"
+   },
+   {
+    "latex": "E_{2D}=(E_h+E_v)/D;\\quad R_{Pe}=|S|^{-1}\\sum_{r\\in S}(1+E_{2D,r}/\\tau)^{-1}",
+    "locator": "Eq7–11"
+   },
+   {
+    "latex": "R=\\alpha R_{Acc}+\\beta R_{Fmt}+\\gamma R_{Pe};\\quad A_i=(R_i-\\mu_G)/(\\sigma_G+\\delta)",
+    "locator": "Eq12–14"
+   }
+  ],
+  "signal_routing": "CE 覆盖全部生成token，MSE仅图像token；RL合成序列奖励广播到response mask指定位置，按每条有效response长度Li归一再组均值；不是局部图像动作独立优势。",
+  "normalization": "mean+std",
+  "invariance": "不是PBRS；TV奖励改变目标。整体奖励正比例缩放在delta可忽略时基本被std消去，改变单分量权重仍改变排序。",
+  "baseline_or_potential": "同prompt奖励组均值；冻结码本提供先验而非状态value。",
+  "degenerate_cases": "总奖励σ=0组过滤；全对/全错仍可能有format/TV差异，不能等同过滤全部二元同结果组；无图像段或1维网格分母处理正文未说明。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4固定Zero去PeReward/去整个PeRPO。",
+  "negative_results": [
+   {
+    "text": "Zero RL步数10/20/30的general平均45.73/50.19/45.16，更多步数并非单调改善。",
+    "locator": "Tables2–3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若常量/语义错图同样获高TV分且答案不受图像替换影响，则不能证明视觉证据机制。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Anole-7B；Bagel-7B",
+   "framework": null,
+   "group_size": 16,
+   "max_turns": null,
+   "kl": 0.003
+  },
+  "cost": "额外图像token生成；无统一walltime量化。",
+  "pitfalls": [
+   {
+    "text": "σ>0条件针对综合奖励，不能直接称作答案混合组；Table3均分对MME指标另行缩放。",
+    "locator": "Eq13/Table3"
+   }
+  ],
+  "code": null,
+  "lesson": "当中间图像质量代理独立于语义真值时，应测空白/错误图退化并保留答案与证据验证。"
+ }
+}

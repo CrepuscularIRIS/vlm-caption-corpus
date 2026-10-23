@@ -1,0 +1,180 @@
+{
+ "paper_key": "litscan:64855",
+ "title": "Scaling Agentic Reinforcement Learning for Tool-Integrated Reasoning in VLMs (VISTA-Gym)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_64855.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3–5/Eq GRPO and rewards",
+   "Table2",
+   "6.4 stages/reward/tool diversity/tail patch",
+   "6.5/7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "统一26工具与13数据集环境；正确专家轨迹经长rationale补全做SFT，再以重复/格式/终答reward进行多轮GRPO。",
+  "key_step": "环境统一执行反馈、工具服务与轨迹记录，使不同视觉工具可在同一策略训练。",
+  "why_non_obvious": "工具暴露本身会降低性能；格式熟练与证据使用需要分阶段训练，但工具服务器亦提供额外能力。",
+  "trigger_condition": "When heterogeneous visual tools cannot be coordinated reliably, standardize their interfaces and train interleaved trajectories.",
+  "contribution_type": "environment and SFT-RL recipe",
+  "abstract_strategy": "Provide executable feedback with a common action interface before optimizing multi-step policies.",
+  "abstract_trigger_condition": "When capability exists across tools but the policy lacks reliable orchestration.",
+  "abstract_key_step": "Teach tool syntax, train on verifiable outcomes, then focus on hard-but-solvable cases.",
+  "abstract_why_non_obvious": "A unified interface does not make outcome supervision resolve step credit.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:64855#s1",
+   "object": "多工具GRPO训练环境",
+   "information": "图像/题目/工具列表；工具含外部视觉模型和符号求解，非只有原图crop。",
+   "operation": "GPT5正确轨迹筛选，Qwen3VL235B补推理；SFT后组内均值std GRPO，工具返回结构化文本供续写。",
+   "claimed_effect": "InternVL3-8B总均分57.49→71.14；无工具训练推理63.66；SFT+3.46、RL再+10.19。",
+   "conditions": [
+    "可执行多工具服务",
+    "GT终答verifier",
+    "SFT行为覆盖"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "VISTA-R1 (InternVL3-8B)          91.92"
+   },
+   "failure_boundary": "工具/算力不等同原始模型对照；无过程因果信用或最少调用保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "SFT工具语法和多任务覆盖再RL可直接作构造配方对照。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "奖励与std缩放提供反例：相对工具价格仍需单独检验。",
+   "strength": 2
+  },
+  {
+   "problem": "P38",
+   "how": "较长专家示范与teacher能力混杂，不能仅据长度扩充轨迹。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SFT only / no tools train+test / PPO / DAPO / dense-sparse-difficulty rewards / single-tool mixture",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Verifier只强调终答和结构有效，缺更丰富逐步语义。",
+   "quote": "emphasize terminal correctness and structural validity",
+   "locator": "7"
+  },
+  {
+   "text": "格式有效但答错时按所列Rformat=+1、Rcorrect=0仍正奖励，与only ... correct得正奖叙述不一致；优先级分支未完整数学化。",
+   "locator": "5.2",
+   "quote": "only to generations that are repetition-free, structurally"
+  }
+ ],
+ "question": {
+  "observed_failure": "仅工具增强可降基模性能，InternVL3-8B无RL版本48.40低于基模57.49。",
+  "load_bearing_assumption": "现成模型知道如何选/串联外部视觉工具。",
+  "scope": "11视觉QA基准多工具交互",
+  "success_criterion": "阶段消融准确率、工具错误率、训练成本",
+  "why_open": "调用语法和结果整合都需行为先验"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "5.1 BC then RL"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "6.4 reward/algorithm variants"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "4 unified executable interfaces and structured feedback"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i,k=(R_i-mean_j R_j)/std_j R_j",
+    "locator": "5.1 GRPO"
+   },
+   {
+    "latex": "L=(1/G) sum_i (1/|tau_i|) sum_k min(r_i,k*A_i,k,clip(r_i,k,1-eps,1+eps)*A_i,k)",
+    "locator": "5.1 GRPO"
+   },
+   {
+    "latex": "R_rep in {-3,-2,-1.5,0}; R_format=2*(1[all turns valid]-0.5); R_correct=1[yhat=y]; R=R_rep+R_format+R_correct",
+    "locator": "5.2; prose gates repetition first and correctness on valid format"
+   }
+  ],
+  "signal_routing": "轨迹reward同一标准化优势施于各token；公式每轨迹token均值再组均值。工具观测是否mask未知；不得把全轨迹记号当观测也受监督。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS；格式/重复改变目标。相同正仿射reward缩放理论上被std抵消（读者推断，忽略epsilon）。",
+  "baseline_or_potential": "组均值baseline，非潜能。",
+  "degenerate_cases": "全同reward组分子0、std0；epsilon/分支未写，无法凭保留该组声称有PG监督。p≈0动作靠SFT，格式不同可能产生奖励差但非终答信用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "SFT/RL/no-tools，GRPO/PPO/DAPO与奖励设计消融；previous-checkpoint pass rate .125–.375 tail-patch。",
+  "negative_results": [
+   {
+    "text": "作者把GRPO优于DAPO归因保留all-correct/all-wrong，但若reward完全相同，其A为0，与有用监督说法需区分格式差异。",
+    "locator": "6.4 RL algorithm"
+   },
+   {
+    "text": "14B MathVista基模71.67→68.00；收益非所有任务。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：按完整reward向量而非仅答对标签统计全同组实际梯度；匹配tool服务和token预算比较阶段配方。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "InternVL3 2B/8B/14B; Qwen2.5VL7B",
+   "framework": "Verl-Tool/Ray/FastAPI",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8×H200 141GB；工具模型独立常驻GPU、轻量工具CPU共享，batch/epochs未读到。",
+  "pitfalls": [
+   {
+    "text": "API教师GPT5短rationale被另一235B模型扩展；长轨迹消融混有教师能力/内容差异。",
+    "locator": "5.1/6.4"
+   },
+   {
+    "text": "服务按trajectory id和image path组装请求，串错图像会破坏信号绑定。",
+    "locator": "4.3"
+   }
+  ],
+  "code": "https://github.com/Lucanyc/VISTA-Gym",
+  "lesson": "当工具包含大模型能力时，应同时报告工具调用成本和无工具训练推理对照；标准化全同组必须检查零梯度。"
+ }
+}

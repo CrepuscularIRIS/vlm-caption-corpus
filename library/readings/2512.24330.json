@@ -1,0 +1,441 @@
+{
+ "paper_key": "2512.24330",
+ "title": "SenseNova-MARS: Empowering Multimodal Agentic Reasoning and Search via Reinforcement Learning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2512.24330.pdf",
+  "version": "v2",
+  "version_evidence": "Cover: arXiv:2512.24330v2 [cs.CV] 25 Jan 2026; manuscript cover separately says Date: January 27, 2026. Observed local revision, not a claim that this is latest online.",
+  "sections_read": [
+   "pp.1–4 Abstract, Introduction and Related Works §§2.1–2.3",
+   "pp.5–8 Method §§3.1–3.4, Fig.3–5, Eqs.1–4 and unnumbered sequence ratio",
+   "pp.8–12 Experiments §§4.1–4.3, Tables1–4, Figs6–7, Conclusion",
+   "pp.13–15 References",
+   "p.16 Appendix A.1–A.2 complete training-data details",
+   "pp.16–19 Appendix B.1–B.2 complete evaluation-data details and Figs8–9",
+   "pp.19–20 Appendix C.1–C.4 complete judge, workflow, search-pipeline and metric details",
+   "p.20 Appendix D and Fig10",
+   "pp.20–24 Appendices E–F and complete success/failure cases Figs11–15",
+   "pp.25–27 complete prompts Figs16–20"
+  ],
+  "visual_inspection": [
+   "p.6 Eqs1–2 and sequence ratio",
+   "p.7 Eqs3–4, Fig4",
+   "p.8 training hyperparameters and reward",
+   "p.11 Tables3–4",
+   "p.16 data counts",
+   "p.20 Fig10 tool proportions, absolute counts and training trend",
+   "p.26 Fig17 complete agentic schema",
+   "p.9 Table1 complete direct/zero-shot/trained blocks",
+   "p.10 Table2 and metric definition",
+   "p.24 Figs14–15 failures, query/receipt/answer/GT"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在统一多轮工具协议下组合检索与局部视觉查看；7B先用困难题合成轨迹冷启动，再用先组内、后优化器minibatch标准化的序列级BN-GSPO训练；Qwen3系8B/32B省略SFT。",
+  "key_step": "把每条完整交互轨迹的正确性+格式奖励先做组内mean/std，再对该优势做minibatch mean/std，以长度归一化序列重要性比裁剪更新。",
+  "why_non_obvious": "作者将多工具轨迹的长度/奖励/难度异质性视为GSPO不稳定来源；但第二次标准化何时提供额外信息取决于minibatch组构成和零方差处理，论文没有给出这些实现细节。后半句为读者推断。",
+  "trigger_condition": "When a policy must interleave external retrieval and local inspection with heterogeneous tool trajectories, apply a shared interaction protocol and group-then-minibatch normalized sequence optimization to train coordinated tool use.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null copied exactly; no review source located in the local manifest/candidate/inventory context. This reading makes no acceptance inference.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Train a shared sequential controller over complementary information sources, then normalize sequence feedback at two aggregation levels.",
+  "abstract_key_step": "Standardize each local comparison group, restandardize the resulting signals within an optimizer batch, and clip a length-normalized sequence likelihood ratio.",
+  "abstract_why_non_obvious": "Separate access to complementary evidence sources does not itself teach coordinated control; a second normalization also requires checking whether the first has already removed the variation it targets.",
+  "abstract_trigger_condition": "When heterogeneous interaction paths destabilize a shared controller, normalize their feedback at the declared aggregation levels and verify which variation survives each stage."
+ },
+ "signatures": [
+  {
+   "sig_id": "2512.24330#s1",
+   "object": "完整多轮轨迹的优势与policy-ratio优化粒度",
+   "information": "同题G条当前旧策略rollout的标量正确性/格式reward、当前与旧策略的轨迹log-prob、optimizer minibatch内已组标准化的优势、冻结reference；没有逐次crop必要性、反事实动作价值或过程奖励。",
+   "operation": "对reward按题组减均值除std，再对所得优势按optimizer minibatch减均值除std；用几何平均token-ratio得到的sequence ratio进行clipped目标更新并加reference KL。",
+   "output": "每条序列一个两级标准化优势和一个clipped更新权重。",
+   "claimed_effect": "作者Table3在无SFT的Qwen2.5-VL-7B纯RL消融中报告BN-GSPO在MMSearch/V*/HR4K为56.72/79.05/69.12，GRPO为50.88/67.54/61.38，GSPO为53.80/53.93/44.50；未报告种子/置信区间，不等于已验证机制因果。",
+   "conditions": [
+    "标量序列reward",
+    "按题采样G条（G数值未披露）",
+    "要区分完整prompt group与optimizer minibatch",
+    "Table3纯RL消融与Table4冷启动配方分开"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.6 §3.2; Eqs2–4 pp.6–7",
+    "quote": "To address this issue, we propose BN-GSPO, which applies a two-stage normalization to the advantage estimates."
+   },
+   "failure_boundary": "[redacted: project-internal]",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2512.24330#s2",
+   "object": "Qwen2.5-VL-7B的工具使用冷启动训练轨迹",
+   "information": "原始QA、base模型8次rollout是否正确、Gemini生成的工具交互轨迹和GPT-4o质量审核；没有人工逐crop必要性真值或当前学生反事实收益。",
+   "operation": "将8次最多正确1次的题标为hard，用Gemini-2.5-Flash合成工具轨迹，GPT-4o核验格式、逻辑与答案合理性，保留约3315条用于3epoch SFT，再在搜索/感知混合题池RL。",
+   "output": "具备text search/image search/crop调用格式与多轮示范支撑的7B模型。",
+   "claimed_effect": "Table4 SFT基线MMSearch/HR-MMSearch/V*为53.80/29.80/82.20，混合数据RL后59.06/38.52/83.84；该差值是后续混合RL结果，不是孤立证明合成筛选步骤的收益。",
+   "conditions": [
+    "适用于Qwen2.5-VL-7B冷启动分支",
+    "Qwen3-VL-8B/32B仅RL，不能归因于本SFT步骤",
+    "teacher和审核模型可用",
+    "小型专家轨迹200条"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.7 §3.3",
+    "quote": "We then filter this pool using 8 rollouts from Qwen2.5-VL-7B-Instruct, marking a sample as hard if the model answers it correctly one time or fewer."
+   },
+   "failure_boundary": "质量审核为模型判定，非独立视觉金标；hard筛选不保证保留直答/弃答/纠偏。没有独立冷启动有无的严格同配方消融。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2512.24330#s3",
+   "object": "多轮agent的工具分派与训练/推理检索回执接口",
+   "information": "初始图像和问题、完整交互历史、检索摘要和crop图；外部摘要模型只压缩检索结果，无当前策略的动作价值真值。",
+   "operation": "每轮先输出think，再选择一个search/crop或final answer；将回执追加历史。训练文本检索用本地Wikipedia，推理用Serper；两者均先逐篇摘要top5再整体摘要，统一返回接口。",
+   "output": "可交错局部视觉观察与外部知识检索的有界多轮轨迹。",
+   "claimed_effect": "整套系统8B的7项search平均51.52→64.20（相对Qwen3-VL-8B agentic）；32B为69.74。作者AppD报告7B训练内平均调用约4→2，但Fig10同benchmark模型对比的总调用数反而增加，不能据此声称相对base少调工具。",
+   "conditions": [
+    "最多10轮、每轮一个有效动作",
+    "crop允许引用已见图像的image_index",
+    "训练/推理检索内容分布不同但摘要格式一致",
+    "静态网页可抽取"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.19 Appendix C.3",
+    "quote": "Crucially, in both the training and inference phases, the top 5 retrieved passages are first summarized individually by Qwen3-32B [49]. Following the individual summaries, a final, holistic summary of all 5 passages is then generated."
+   },
+   "failure_boundary": "不能读取依赖JavaScript的网页；检索噪声和错误query grounding仍导致错误。工具组合/摘要/BN的各自贡献未被完全分离。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "GSPO",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B-Instruct pure RL without cold start",
+   "kind": "method"
+  },
+  {
+   "name": "SenseNova-MARS-7B-SFT and search-only/perception-only/mixed RL",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-8B/32B direct and zero-shot agentic workflows",
+   "kind": "method"
+  },
+  {
+   "name": "MMSearch-R1",
+   "kind": "method"
+  },
+  {
+   "name": "DeepMMSearch-R1",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyesV2",
+   "kind": "method"
+  },
+  {
+   "name": "Visual-ARFT",
+   "kind": "method"
+  },
+  {
+   "name": "Pixel-Reasoner / DeepEyes / Mini-o3 / Skywork-R1V4",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-5.2 / Gemini-3-Pro / Gemini-3-Flash",
+   "kind": "method"
+  },
+  {
+   "name": "MMSearch / HR-MMSearch / FVQA-test / InfoSeek / SimpleVQA / LiveVQA / MAT-Search",
+   "kind": "benchmark"
+  },
+  {
+   "name": "V* Bench / HR-Bench 4K and 8K / MME-RealWorld",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Pass@1; Avg@8 Exact Match",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者承认检索文本中相近属性会混淆，Fig14把based in误当born in。",
+   "quote": "SenseNova-MARS occasionally fails to distinguish between semantically similar but distinct attributes (e.g., conflating “based in” with “born in”) within retrieved snippets.",
+   "locator": "p.20 Appendix F; Fig14 p.24"
+  },
+  {
+   "text": "作者承认视觉实体未进入检索参数，Fig15泛化query遗漏区域实体。",
+   "quote": "This indicates a gap in cross-modal alignment during the tool parameter generation phase.",
+   "locator": "p.21 Appendix F; Fig15 p.24"
+  },
+  {
+   "text": "静态HTML抽取无法处理依赖JS的网页。",
+   "quote": "The trade-off is that the system cannot read webpages that depend on JavaScript.",
+   "locator": "p.19 Appendix C.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "AppD/Fig10报告Qwen2.5-VL-7B调用中96.2%为text search、3.7%为image search，crop近乎不用；V*总工具调用7次，trained 7B为341次。Table3标准GSPO在V*/HR4K仅53.93/44.50，而BN-GSPO为79.05/69.12。前者是工具偏置观察，后者是算法对比，未证明同一因果链。",
+  "load_bearing_assumption": "把search能力、image manipulation能力分开训练或仅给工具，再沿用标准序列优化，足以形成稳定的跨工具协调策略。作者挑战这一工程默认，未提出不可能性定理。",
+  "scope": "有search、image search与crop的多轮图文问答，涉及外部知识和高分辨率感知；主要为Qwen系列7B/8B/32B。",
+  "success_criterion": "search与高分辨率perception多benchmark准确率、无SFT算法对照及数据组成消融；调用次数是描述性指标，未预设准确率非劣+最少crop判据。",
+  "why_open": "search-only忽略细小局部实体；crop-only缺外部知识；异质轨迹下标准GSPO作者认为不稳定，未独立测量其归因中的reward-scale variance。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "In the first stage, we perform cold-start SFT to bootstrap the model’s basic ability to learn multi-tool invocations.",
+   "locator": "p.6 §3.2; only 7B branch"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "To isolate the influence of SFT, this comparison uses a pure RL setup where all models are initialized from Qwen2.5-VL-7B-Instruct [2] without a cold-start.",
+   "locator": "p.11 §4.3 Table3"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "role": "primary",
+   "quote": "At each turn, the model first generates a reasoning step, then selects one of four actions:",
+   "locator": "p.6 §3.1 Action Space; four actions listed immediately below; Fig2 p.3 shows crop/text-search/image-search subtask routing"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L_{\\mathrm{SFT}}=-\\sum_{(x_i,y_i)\\in\\mathcal D_{\\mathrm{SFT}}}\\log\\pi_\\theta(y_i\\mid x_i)",
+    "locator": "p.6 Eq1"
+   },
+   {
+    "latex": "s_{b,g}(\\theta)=\\left(\\frac{\\pi_\\theta(y_{b,g}\\mid x_b)}{\\pi_{\\theta_{\\mathrm{old}}}(y_{b,g}\\mid x_b)}\\right)^{1/|y_{b,g}|}=\\exp\\left(\\frac1{|y_{b,g}|}\\sum_{t=1}^{|y_{b,g}|}\\log\\frac{\\pi_\\theta(y_{b,g,t}\\mid x_b,y_{b,g,<t})}{\\pi_{\\theta_{\\mathrm{old}}}(y_{b,g,t}\\mid x_b,y_{b,g,<t})}\\right)",
+    "locator": "p.6 unnumbered sequence-ratio equation before Eq2"
+   },
+   {
+    "latex": "\\bar A_{b,g}=\\frac{r_{b,g}-\\operatorname{mean}(\\{r_{b,g\\prime}\\}_{g\\prime=1}^G)}{\\operatorname{std}(\\{r_{b,g\\prime}\\}_{g\\prime=1}^G)}",
+    "locator": "p.6 Eq2"
+   },
+   {
+    "latex": "\\tilde A_{b,g}=\\frac{\\bar A_{b,g}-\\operatorname{mean}(\\{\\bar A_{b\\prime,g\\prime}\\}_{b\\prime\\in\\mathcal B,g\\prime\\in\\mathcal G})}{\\operatorname{std}(\\{\\bar A_{b\\prime,g\\prime}\\}_{b\\prime\\in\\mathcal B,g\\prime\\in\\mathcal G})}",
+    "locator": "p.7 Eq3"
+   },
+   {
+    "latex": "J(\\theta)=\\mathbb E_{x_b,\\{y_{b,g}\\}}\\left[\\frac1G\\sum_{g=1}^G\\min\\left(s_{b,g}(\\theta)\\tilde A_{b,g},\\operatorname{clip}_{\\epsilon_{\\mathrm{low}}}^{\\epsilon_{\\mathrm{high}}}(s_{b,g}(\\theta))\\tilde A_{b,g}\\right)\\right]-\\beta D_{\\mathrm{KL}}(\\pi_\\theta\\Vert\\pi_{\\mathrm{ref}})",
+    "locator": "p.7 Eq4; clip notation copied as displayed; actual clipping interval not spelled out here"
+   },
+   {
+    "latex": "R(\\tau)=R_{\\mathrm{acc}}(\\tau)+R_{\\mathrm{format}}(\\tau),\\quad R_{\\mathrm{acc}}\\in\\{0,1\\},\\ R_{\\mathrm{format}}\\in\\{0,0.5\\}",
+    "locator": "p.7 Reward Modeling unnumbered; numeric reward levels p.8 §4.1"
+   }
+  ],
+  "signal_routing": "正确性和格式分相加后仅产生序列级优势，作用于整个序列ratio；没有逐轮/逐crop差分、反事实信用或caption独立信号。由ratio公式，参与求和的log-prob共享同一优势并受1/|y|长度缩放（读者推导）。论文把trajectory描述为含observations，但未给出assistant/observation/vision-token loss mask或length计数契约，故不能认定工具返回token被训练或被mask。KL对reference策略；token聚合/估计方式未给出。",
+  "normalization": "mean+std within each prompt group (Eq2), then mean+std over optimizer minibatch advantages (Eq3); length-normalized sequence likelihood ratio. NOT batch normalization instead of group std; NOT RLOO or mean-only.",
+  "invariance": "不是PBRS，也没有最优策略不变性证明。读者代数推断：对每个非零方差group，reward的正仿射变换r→a_b r+c_b在Eq2后不变（忽略未说明的epsilon）；全对且格式恒定时引入λ crop成本会同样被组std约掉，Eq3无法恢复已消失的λ。若batch正好由等大完整非退化groups组成且均用总体std，Eq3为恒等变换；若样本std则可为统一有限样本尺度因子。零方差组、group拆分、mask或epsilon均会改变这一结论，论文未报告足够实现细节。",
+  "baseline_or_potential": "baseline为同题G条rollout的reward均值，含自身，非leave-one-out；第二层中心为minibatch的group-normalized advantage均值。无critic、MC状态fork或势函数。外部裁判训练身份正文/附录冲突（GPT-4o vs Qwen2.5-VL-72B）；π_ref冻结但具体checkpoint未指明。",
+  "degenerate_cases": "按印刷公式，同reward组（全对且格式相同、全错且格式相同、G=1）std=0使Eq2未定义；论文未写epsilon/跳过规则，不能填为已实现zero。全对/全错但格式不同仍可有仅格式学习信号。若实现约定常数组优势为0且完整groups批均值0，此类组不获得正确性信用；若minibatch拆组其再中心化可能改变零值（条件性推断）。p(action)≈0时无强制采样或显式支持保护；Clip-Higher只可能影响已采样动作，非支撑保证。单轮仍是sequence ratio目标，不退化为crop必要性信号。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "作者Table3在相同Qwen2.5-VL-7B起点、不做SFT下比较GRPO/GSPO/BN-GSPO，是最接近隔离归一化改动的实验。尚缺训练预算、G、minibatch构成、种子和有效梯度尺度，不能将准确率差独立归因为跨prompt reward-scale校正。",
+  "controls": [
+   "Table3 pure RL: GRPO vs GSPO vs BN-GSPO; same stated base, no cold-start.",
+   "Table4: 7B-SFT baseline versus search-only, perception-only and hybrid RL data. Hybrid V*=83.84 is below perception-only85.24, so hybrid is not best on every metric.",
+   "Tables1–2: direct answer and agentic workflows; models, tool permissions and benchmark metrics must remain separate.",
+   "No reported random-region intervention, crop necessity labels, forced first-action support, constant-logit-bias control or accuracy noninferiority test.",
+   "AppendixD Fig10: training call-frequency trend and cross-model benchmark absolute counts are different comparisons."
+  ],
+  "negative_results": [
+   {
+    "text": "作者描述perception-only RL对search相对SFT大幅下降，但Table4实际MMSearch54.09>53.80、HR-MMSearch33.11>29.80；只能确认其低于hybrid59.06/38.52。原文矛盾，不能把这个负结论当已证实。",
+    "quote": "This boosts V* Bench performance to 85.24 but causes a major drop on search-oriented tasks compared to the SFT baseline.",
+    "locator": "p.12 §4.3 continuation; contrast Table4 p.11"
+   },
+   {
+    "text": "失败样例Fig14检索噪声导致地点属性混淆；预测Ballari，GT Guntur，仅个案非发生率。",
+    "quote": "Error Analysis: Reasoning Hallucination triggered by Noise.",
+    "locator": "p.24 Fig14"
+   },
+   {
+    "text": "失败样例Fig15未保留图中区域实体的query得到错答案62.5%，GT34.21%；无频率统计。",
+    "quote": "Error Analysis: Ineffective Tool Usage.",
+    "locator": "p.24 Fig15"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出而非作者执行：先在保存的同一reward batch上核对Eq2→Eq3是否只有恒等/全局尺度变化，明确group拆分与零方差约定；再在匹配token/rollout预算及多种子下比较GSPO与BN-GSPO。若正确对齐后优势无额外变化或收益不能复现，则否定“额外跨group标准化解释性能收益”的因果归因。若降低调用只来自提前错答，则不支持本课题非劣效率目标。",
+  "unreported": "训练种子数、训练重复次数及置信区间未报告。Avg@8是每题八次评估而不是八个训练种子；Appendix C.4同时说全评估temperature=0和用Avg@8降低sampling-temperature方差，随机来源未解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "SenseNova-MARS-7B: Qwen2.5-VL-7B-Instruct, SFT→RL. SenseNova-MARS-8B/32B: Qwen3-VL-8B/32B-Instruct, RL only.",
+   "framework": "LLaMA-Factory (SFT); veRL (RL)",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": 0.0001,
+   "temperature": null,
+   "max_turns": 10,
+   "global_batch_size": 128,
+   "learning_rate_sft": 1e-05,
+   "sft_epochs": 3,
+   "learning_rate_rl": 1e-06,
+   "clip_epsilon_low": 0.2,
+   "clip_epsilon_high": 0.28,
+   "max_tokens_per_turn": 8192,
+   "max_tokens_per_trajectory": 32768,
+   "sft_freezing": "language model trained; vision encoder and multimodal projector frozen",
+   "eval_temperature": 0.0,
+   "judge_temperature_appendix_C1": 0.0
+  },
+  "cost": "实际训练tokens、更新次数、GPU·h、API费用、总rollout数均未报告。Fig10画到约80 step不能当所有尺寸总步数。数据：SFT约3315（1115 FVQA+约2000 Pixel-Reasoner+200专家）；RL 3695 FVQA+4000 DeepEyes-4K+5729 Visual-Probe=13424（后者为读者加总）。图像检索预缓存top5 titles/thumbnails，文本检索训练用本地20250901 Wikipedia/E5，推理Serper；Qwen3-32B逐篇和总摘要引入未量化成本。",
+  "pitfalls": [
+   {
+    "text": "标准GSPO在多工具异质轨迹上表现不均，作者以两级归一化处理，但实现边界未提供。",
+    "quote": "Different prompts or tool interactions within the same batch can result in varying outcome lengths, reward scales, and difficulty levels, which may bias the learning signal and destabilize training.",
+    "locator": "p.6 §3.2"
+   },
+   {
+    "text": "作者为避免在线搜索训练成本改成本地检索，并保持与推理相同摘要接口；省钱幅度未报告。",
+    "quote": "During RL training, we avoid the prohibitive cost of live web searches by using a locally hosted Wikipedia knowledge base built from the 20250901 dump file (enwiki-20250901-pages-articles.xml.bz2).",
+    "locator": "p.19 Appendix C.3"
+   }
+  ],
+  "code": "https://github.com/OpenSenseNova/SenseNova-MARS",
+  "lesson": "当多轮工具RL更改优势归一化时，应先记录group→optimizer minibatch的映射、有效token mask与零方差约定；否则两次标准化可能仅改变全局梯度尺度，且不能恢复已被第一层组std消去的成本系数。此为读者从Eq2–4推导的工程检查，并非作者已做实验。"
+ },
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "直接核对候选迁移假设：先group std再batch std，不能作为规避λ被约掉的已有解法。",
+   "strength": 2
+  },
+  {
+   "problem": "P08",
+   "how": "sequence比率使用1/|y|几何平均，与token-mean loss不同；可作归一化对照，但长度与工具返回mask未给出，非固定分母无偏修复。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "同题结果/格式优势仍作用于整个轨迹，未提供逐crop必要性或区别冗余与有效调用的信用信号。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "7B用困难题工具轨迹SFT启动行为；8B/32B依赖基座工具能力而省略SFT。可迁移行为覆盖审计，不证明所有新行为都必须SFT。",
+   "strength": 2
+  },
+  {
+   "problem": "P32",
+   "how": "AppD有训练内tool calls约4→2的趋势，但只描述7B且没有多种子/长程漂移或非劣效率检验。",
+   "strength": 1
+  },
+  {
+   "problem": "P48",
+   "how": "提供V*全191、HR4K/8K各800、MME-RW23599的评测口径及Avg@8/Pass@1区别；HR-MMSearch包含外部检索任务，不能直接替换我们的crop-only任务。",
+   "strength": 2
+  },
+  {
+   "problem": "P65",
+   "how": "搜索/感知混合训练数据消融表明任务配比影响跨域性能，但不是按当前策略crop收益分层。",
+   "strength": 1
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "source_gaps": [
+  {
+   "issue": "Training judge identity conflict",
+   "locators": [
+    "p.8 §4.1 Training Rewards",
+    "p.19 Appendix C.1; p.25 Fig16"
+   ],
+   "status": "unresolved",
+   "detail": "Main text says GPT-4o for both rewards; Appendix says Qwen2.5-VL-72B-Instruct in all RL experiments. Evaluation GPT-4o is separately specified."
+  },
+  {
+   "issue": "Data-ablation prose conflicts with Table4",
+   "locators": [
+    "p.11 Table4",
+    "p.12 §4.3"
+   ],
+   "status": "unresolved",
+   "detail": "Perception-only search scores exceed SFT, contradicting prose major-drop claim; hybrid is also worse than perception-only on V*."
+  },
+  {
+   "issue": "FVQA remaining count arithmetic",
+   "locators": [
+    "p.16 A.1–A.2"
+   ],
+   "status": "unresolved",
+   "detail": "4849−1115=3734, while remaining is stated3695; difference39 not explained. Do not silently repair author counts."
+  },
+  {
+   "issue": "Image-search arguments",
+   "locators": [
+    "p.9 §4.1 image search description",
+    "p.26 Fig17"
+   ],
+   "status": "unresolved",
+   "detail": "Main text says image index argument; prompt image_search schema has empty properties and says no arguments. Crop index schema is explicit and supports previous crop images."
+  },
+  {
+   "issue": "Normalization and token routing implementation",
+   "locators": [
+    "pp.6–7 Eqs2–4"
+   ],
+   "status": "unresolved",
+   "detail": "G, epsilon, sample/population std, complete-vs-split optimizer groups, masks, ratio length counting, optimizer epochs/reuse and reference initialization missing."
+  },
+  {
+   "issue": "Evaluation sampling uncertainty",
+   "locators": [
+    "p.19 C.4",
+    "p.20 C.4 continuation"
+   ],
+   "status": "unresolved",
+   "detail": "All evaluations temperature0 versus eight independent attempts described as reducing temperature variance; no stochasticity source or seed count given."
+  },
+  {
+   "issue": "Detailed hyperparameter appendix pointer",
+   "locators": [
+    "p.8 §4.1",
+    "pp.16–27 Appendices"
+   ],
+   "status": "unresolved",
+   "detail": "Main text promises detailed appendix hyperparameters, but no additional G/train-temperature/full-step-count table found in complete appendix."
+  }
+ ],
+ "benchmark_design": {
+  "name": "HR-MMSearch",
+  "size": 305,
+  "images": "4K 2025 images from Reuters, AP and CNBC, eight domains; questions target subjects smaller than 5% image area.",
+  "annotation": "Three bachelor-level annotators; three additional master-level-or-above experts cross-verify labels and answers (Appendix B.1).",
+  "difficulty": "Qwen2.5-VL-7B-Instruct agentic pass@8:188 hard (zero successful attempts),117 easy (at least one success);17 hard questions reportedly require all three tools. This is model/protocol-relative empirical difficulty, not intrinsic crop necessity.",
+  "leakage_boundary": "Authors intend recent-event filtering to reduce pretraining leakage; no independent contamination audit or model-specific training-cutoff proof reported.",
+  "locator": "pp.7–8 §3.4; pp.16–17 Appendix B.1, Fig8"
+ }
+}

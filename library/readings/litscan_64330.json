@@ -1,0 +1,162 @@
+{
+ "paper_key": "litscan:64330",
+ "title": "GTR-Turbo: Merged Checkpoint is Secretly a Free Teacher for Agentic VLM Training",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_64330.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.4/Eq1–7",
+   "4.1",
+   "Table2–4",
+   "4.3 guidance/merge/KL ablations",
+   "5 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在线RL历史checkpoint经TIES合并成同源teacher，以thought SFT或thought logprob差指导PPO。",
+  "key_step": "无需外部正确器，使用历史策略集成提供不断更新的过程约束。",
+  "why_non_obvious": "历史平均可能优于当前退化策略，但无法凭空提供基础模型缺少的能力。",
+  "trigger_condition": "When long-horizon PPO collapses and external teachers are costly, merge previous checkpoints and constrain thoughts.",
+  "contribution_type": "online self-distillation",
+  "abstract_strategy": "Use an aggregate of past learners as a moving guidance source.",
+  "abstract_trigger_condition": "When a current learner forgets or destabilizes but earlier states preserve useful behavior.",
+  "abstract_key_step": "Merge historical weights and guide reasoning while preserving action exploration.",
+  "abstract_why_non_obvious": "Teacher agreement can stabilize learning without proving task truth.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:64330#s1",
+   "object": "历史checkpoint教师PPO",
+   "information": "同源历史参数；学生同样观测与自己生成thought，教师没有额外GT/未来状态。",
+   "operation": "TIES修剪/选符号/平均；SMA默认或EMA；thought-only KL按token平均，负估计截断；从PPO优势减去该量。",
+   "claimed_effect": "Points24 Table2成功率22.0 SFT→53.5 KL，GTR44.5；ALFWorld峰值.15 vs GTR.16。",
+   "conditions": [
+    "初始策略具可学习成功支撑",
+    "历史模型可存储/合并",
+    "额外教师GPU"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "GTR-Turbo (KL)                53.5         2.39"
+   },
+   "failure_boundary": "初始成功<5%作者称可能失败；自教师不是外部真值，ALF仅峰值且仍略低GTR。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "缺失行为不能靠自蒸馏保证补齐，作者明确弱底座失败。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "thought-only约束可迁移caption稳定性，但分布贴近不保证事实正确。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "RL4VLM / GTR external teacher / static KL reference / rejection SFT / full-response guidance / no TIES",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "初始成功率不足5%可能无法自提升，需要更强外部教师。",
+   "quote": "rate of <5%), self-improvement approaches can fail.",
+   "locator": "5"
+  }
+ ],
+ "question": {
+  "observed_failure": "RL4VLM Points24最终3.5%，SFT22%，显示RL塌缩。",
+  "load_bearing_assumption": "仅稀疏终奖足以稳定长链thought与动作。",
+  "scope": "Points24与视觉ALFWorld",
+  "success_criterion": "成功率与相同训练步预算、额外teacher成本",
+  "why_open": "外部教师昂贵且不能持续从本地学习"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "4.3 thought-only/full-response and TIES ablations"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "3.2–3.4 historical teacher"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "theta_teacher(k)=TIES(theta_1,...,theta_(k-1)); SMA weights=1/(k-1)",
+    "locator": "3.2/Eq3–4; parameter interpretation, paper notation pi"
+   },
+   {
+    "latex": "K1_l=log pi_student(th_l|th_<l)-log pi_teacher(th_l|th_<l); KL_clip=max(K1,0)",
+    "locator": "Eq7"
+   },
+   {
+    "latex": "A_prime=A_pi(o,a)-RevKL(pi_student,pi_teacher;th); RevKL=mean_l K1_l",
+    "locator": "Eq6; clipping discussed in text/Eq7"
+   }
+  ],
+  "signal_routing": "SFT版本thought监督损失加PPO；KL版本thought分数作为辅助惩罚进入PPO动作优势。不是直接模仿动作标签；Eq6仅显示action ratio，完整token mask/stop-gradient及clip在token均值前后未明。",
+  "normalization": "other: thought-token mean KL; PPO advantage normalization unspecified",
+  "invariance": "非严格PBRS：教师KL依赖生成thought且改变偏好目标，无potential差分。",
+  "baseline_or_potential": "动态TIES教师非价值baseline；环境PPO优势估计细节未给。",
+  "degenerate_cases": "学生等教师KL=0；有符号采样K1可负，直接负KL奖会鼓励远离，截断引偏；p≈0成功无法自举；全对/错组非GRPO。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "固定底座比较静态reference/历史合并；thought-only vs thought+action；signed/clip/abs/K3估计与无TIES。",
+  "negative_results": [
+   {
+    "text": "全response指导较差；极高/低EMA alpha退化，alpha.5与SMA接近。",
+    "locator": "4.3"
+   },
+   {
+    "text": "成本表排除agent本体训练；ALF SFT额外$152.22反高于GTR$145.76，非所有版本都节省。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：同caption状态下比较静态KL、SMA/TIES与等计算EMA，若收益只来自额外regularization而非合并能力则收窄。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B LoRA",
+   "framework": "PPO + thought SFT or KL",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2×40GB GPU，一教师一学生；Points24 30K步/ALF20K；KL耗时89h/78h vs GTR191h/164h，成本仅额外开销。",
+  "pitfalls": [
+   {
+    "text": "Table3报训练峰值而非最终checkpoint；Table4GTR P24四舍五入41与Table2 44.5不同，指标上下文需保留。",
+    "locator": "Table2–4"
+   }
+  ],
+  "code": null,
+  "lesson": "当采样logprob差当KL奖励时，负估计会反向激励偏离；应记录截断位置及teacher更新频率，勿把对齐当真值。"
+ }
+}

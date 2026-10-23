@@ -1,0 +1,53 @@
+{
+ "paper_key": "litscan:1607",
+ "title": "A Neural Divide-and-Conquer Reasoning Framework for Image Retrieval from Linguistically Complex Text (NDCR)",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_1607.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.2–3.3,3.5–3.6",
+   "§4.1–4.5 Tables1–3",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "decompose_and_delegate",
+  "key_step": "BART把复杂文本拆成简单命题；图文交互器分别匹配候选图，神经逻辑模块结合命题及其否定，再融合得到检索结果。",
+  "why_non_obvious": "分解命题可能丢全局语境，需原复合文本的modifier修正；逻辑组合不是简单平均。",
+  "trigger_condition": "When a complex description contains multiple conditions, evaluate simple propositions then combine them with global contextual correction.",
+  "contribution_type": "method",
+  "abstract_strategy": "decompose_and_delegate",
+  "abstract_trigger_condition": "When a complex description contains multiple conditions, evaluate simple propositions then combine them with global contextual correction."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:1607#s1",
+   "object": "complex-text image retrieval",
+   "information": "复合描述和10候选图；MinWikiSplit分解预训练，IMAGECODE目标图标签",
+   "operation": "预训练proposition generator，再冻结BART/CLIP/OFA编码器训练交互器、negation/conjunction及融合模块；分类loss+negation KL margin",
+   "claimed_effect": "原test准确率34.1 vsCLIP†29.9；重标test full32.8，System1 31.6，去modifier19.3",
+   "conditions": [
+    "max10 propositions；否定分布用KL margin0.2分离正命题；不是布尔完备性保证"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables1–2; §3.6",
+    "quote": "NDCR (ours)              34.1     26.1     64.3"
+   },
+   "failure_boundary": "原test和人工重标test指标不同；核心是静态检索组合，没有多轮crop/stop或动作信用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "strength": 1,
+   "how": "已有视觉/文本事实需正确组合，与caption到答案映射同类，但专用检索网络难直接移到生成策略。"
+  }
+ ],
+ "scientific_replication": false
+}

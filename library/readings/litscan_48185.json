@@ -1,0 +1,142 @@
+{
+ "paper_key": "litscan:48185",
+ "title": "AIRS",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_48185.txt",
+  "sections_read": [
+   "Abstract/contributions; §3.1-3.4 Eqs1-9; Tables1/3",
+   "AppC.1 reward; AppD.1-D.2 Table7-8; AppE limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在FPN层次树中用Q值加epistemic uncertainty选择细看区域，用随训练加大的深度成本鼓励停止下探。",
+  "key_step": "NIG网络给Q均值/方差，uncertainty bonus随训练递减；GT正anchor数量rank决定下探reward。",
+  "why_non_obvious": "高recall检测过多小假阳性，早期探索与后期精细成本需要不同强度。",
+  "trigger_condition": "When exhaustive fine-region processing adds false positives, use uncertainty-guided hierarchical selection.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "探索价值与已知任务价值分开，再逐步转向利用。",
+  "abstract_trigger_condition": "When early uncertainty and late cost conflict, anneal exploration separately from resource penalties.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "用层次动作空间减少搜索范围。",
+  "abstract_why_non_obvious": "不确定性可信才有益；对象密度并不等于问句相关证据。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:48185#s1",
+   "object": "FPN patch树的下探/返回Q policy",
+   "information": "训练GT框产生DIoU正anchor与层内rank；测试只看features/Q，不见GT",
+   "operation": "Q采样加epistemic bonus选择未访问patch，下探以rank减进度×深度成本奖励，上返0",
+   "claimed_effect": "COCO AP48.3 vsGFocal45.0，小目标32.1 vs27.2；adaptiveλ48.3 vsfixed1为46.8",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eqs4/8; Tables1/8",
+    "quote": "For upward\nmovement, the reward is simply set to 0"
+   },
+   "failure_boundary": "非VLM问答，reward需要密集GT检测框，uncertainty不校准会误导探索。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P30",
+   "strength": 2,
+   "how": "探索bonus与逐步加成本可作为crop探索机制候选，但需替换检测GT奖励。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GFocal/DINO/YOLO；fixed λ与adaptiveλ；RL检测基线",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "不确定性校准依赖、FPN结构限制；theorem需Bellman平滑/函数类及分布覆盖假设，非任意神经网络无条件收敛。",
+   "locator": "§3.3/AppE"
+  }
+ ],
+ "question": {
+  "observed_failure": "GFocal COCO小物体AP27.2，AIRS32.1；额外小框假阳性。",
+  "load_bearing_assumption": "全部低层细节都值得用来维持高recall。",
+  "scope": "密集检测FPN树，4down+1up动作",
+  "success_criterion": "改善小目标precision/recall并计搜索开销",
+  "why_open": "静态anchor选择难适应复杂背景。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Tables1/8"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table3"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "Eqs4/8"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "q\\sim N(\\gamma,\\beta/(\\alpha-1));\\ q^e=q+\\lambda\\beta/[\\nu(\\alpha-1)]",
+    "locator": "Eqs3-4"
+   },
+   {
+    "latex": "r_{down}=g(s,a)-(n_{epoch}/N_{epoch})P^l_{s,a};\\ r_{up}=0;\\ L=(q-[r+\\gamma E\\max q_{next}])^2",
+    "locator": "Eqs7-8"
+   }
+  ],
+  "signal_routing": "reward更新feature extractor/RNN/evidential Q经off-policy replay；GT只在训练构造reward。uncertainty bonus用于动作选择，Bellman Eq7目标是q而非qe；无语言token路由。",
+  "normalization": "other: g按同层positive anchor数percentile映射.25/.5/.75/1；不做GRPOstd。",
+  "invariance": "非PBRS；进度/深度惩罚改变任务目标且训练非平稳，不能据上返0保证不损召回。",
+  "baseline_or_potential": "Q Bellman critic；无势能telescoping。",
+  "degenerate_cases": "无正anchor时rank的tie规则所读未明确；坏校准使uncertainty高而无益；λ末期0回到Q选择；访问mask Eq5乘0若合法Q负需额外排除规则，所读未核实现。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "固定/退火λ与GFocal基线、不同大小object切片；独立报告FPS。",
+  "negative_results": [
+   {
+    "text": "COCO总体48.3低于YOLOv7 49.8；FPS20.7低于GFocal21.8，不能称无额外延迟。",
+    "locator": "Tables3/7"
+   }
+  ],
+  "seeds": "AppD.1三随机seed；Table7 AIRS48.3±.58，所读未明确±定义，不能当CI。",
+  "falsifier": "若去uncertainty仅层次mask同效，探索解释失败；rank仅偏好密集对象可能损少量关键证据。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "ResNet50 FPN+RNN+NIG Q",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "Table3 32M/165GFLOPS/20.7FPS；baseline GFocal32M/168GFLOPS/21.8FPS；训练GPUh未读到。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当把搜索成本加入Q reward时，先定义正例信息和阶段依赖，分别量测总体/小目标召回与端到端时延，别由FLOPs替代FPS。"
+ }
+}

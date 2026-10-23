@@ -1,0 +1,137 @@
+{
+ "paper_key": "litscan:4355",
+ "title": "Fast-or-Slow",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_4355.txt",
+  "sections_read": [
+   "Abstract/contributions; §2.1-2.3; Tables1-2/Fig4; §3.2/5 limitations; AppB.1 Tables4-5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以三次高温answerable判断选择直答或问句条件的对象定位/分割，再以精简visual markers回答。",
+  "key_step": "只有3次全Answerable走FI，否则GPT3.5提关键对象+GroundedSAM走DT。",
+  "why_non_obvious": "所有对象都做标记会干扰；不确定不总由视觉不足导致。",
+  "trigger_condition": "When visual marking can hurt easy questions, use confidence-gated selective object grounding.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先判需不需要额外感知，再选择目标。",
+  "abstract_trigger_condition": "When an intervention has heterogeneous effects, gate its use and target relevant content.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "将是否执行与执行范围分开。",
+  "abstract_why_non_obvious": "路由器自身也有成本，低置信可能需要知识而非看图。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:4355#s1",
+   "object": "推理时FI/DT路由",
+   "information": "同一VLM见原图问题三次回答Answerable；不见GT，外部GPT3.5只提对象",
+   "operation": "三次一致可答才直答，其他用GroundedSAM任务相关细标记",
+   "claimed_effect": "13B ScienceQA74.4 vsFI71.6/DT72.2；TextVQA63.6 vs61.3/61.6；相对SoM时间47%–68%",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2/Table4/Fig4",
+    "quote": "we set N to three."
+   },
+   "failure_boundary": "自报answerability不等于补看收益；仍需外部提取/分割和额外3次判别调用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P21",
+   "strength": 2,
+   "how": "可迁移为是否补看的离线路由基线，但非训练模型自己的crop决策。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "OnlyFI/OnlyDT；SoM；FI+SoM；二值语义熵",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "依赖外部工具；不能仅后处理解决根本视觉幻觉；复杂度判断会受知识不足影响。",
+   "locator": "§3.2/5"
+  }
+ ],
+ "question": {
+  "observed_failure": "OnlyDT ScienceQA72.2低于混合74.4，说明强制增强非最优；三次判别标注准确81% vs一次59%。",
+  "load_bearing_assumption": "所有问题/对象都需视觉标记。",
+  "scope": "单轮VQA前的推理路由，5类MLLM",
+  "success_criterion": "混合优于两个固定臂，且扣除路由成本后效率提高",
+  "why_open": "对象全标注增加噪声，能力不确定性无法简单转视觉需求。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table4"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Fig4"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "g=FI\\iff\\bigwedge_{j=1}^3[r_j=Answerable];\\quad s_i=S(I,k_i),\\ I_{proc}=\\sum_{i\\in K}s_i",
+    "locator": "§2.2/Eqs2-3"
+   }
+  ],
+  "signal_routing": "无训练loss/advantage；控制推理流程。DT仍把处理后的图和原问题送原VLM，外部LM+segmentation参与。",
+  "normalization": "other: 三次逻辑AND，无reward或组std。",
+  "invariance": "非PBRS；改变推理输入，非最优policy不变保证。",
+  "baseline_or_potential": "FI/DT固定臂是实验对照非value baseline。",
+  "degenerate_cases": "全部判可答退化FI；一个不可答即DT可能过多触发；对象漏提/分割错会删除关键证据；无RL全错组概念。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同13B FI/DT/mix与FI+SoM区分路由和目标标记；人工复核GPT4V判断的100题比较N。",
+  "negative_results": [
+   {
+    "text": "只DT弱于混合；100题标签来自GPT4V+人工review，另100挑战集按FI/DT错对选择，不能当无偏总体校准。",
+    "locator": "AppB.1/§3.2"
+   }
+  ],
+  "seeds": "未报告主实验跨seed；黑盒仅250随机ScienceQA样本。",
+  "falsifier": "随机同调用率路由或相同预算多次直答若等效，置信门控价值未立；外部知识不足样本可能误触发。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5 7B/13B,MiniGPT4V2,InstructBLIP,GPT4V,GeminiPro",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "每题3次高温二值判断，DT另GPT3.5+GroundedSAM；Fig4相对SoM时间53/47/68/57%，绝对硬件/完整API成本未在所读定位。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用自报置信路由视觉工具，应分别校准视觉不足和知识不足，并用同调用率随机路由对照。"
+ }
+}

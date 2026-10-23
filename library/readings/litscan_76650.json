@@ -1,0 +1,135 @@
+{
+ "paper_key": "litscan:76650",
+ "title": "SSL4RL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_76650.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3",
+   "§4.1 Table1",
+   "§4.2 Table7",
+   "§5 Conclusions"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "把已知图像变换的自监督标签转为可验证终局RL奖励，不依赖开放题人工答案。",
+  "why_non_obvious": "旋转/位置等任务有自动GT，但任务可解性和下游迁移不等价，简单混合反而变差。",
+  "trigger_condition": "当视觉任务没有可靠语义judge时，先选可自动标注且与能力匹配的视觉pretext任务。",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当视觉任务没有可靠语义judge时，先选可自动标注且与能力匹配的视觉pretext任务。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "把已知图像变换的自监督标签转为可验证终局RL奖励，不依赖开放题人工答案。",
+  "abstract_why_non_obvious": "旋转/位置等任务有自动GT，但任务可解性和下游迁移不等价，简单混合反而变差。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76650#s1",
+   "object": "视觉pretext后训练",
+   "information": "随机旋转/拼图/双view/patch位置对应的变换标签",
+   "operation": "VLM预测变换类别或位置，以正确性奖励GRPO，再评未训练的VQA",
+   "claimed_effect": "3B平均53.36→Position60.39；MMBench单任务最佳80.38、混合78.77、分阶段82.14。",
+   "conditions": [
+    "Qwen2.5VL3/7B；自动变换GT"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables1,7; §3",
+    "quote": "offer a more robust solution that systematically outperforms                                      Stage-wise Combination                             82.14                       89.26"
+   },
+   "failure_boundary": "这训练视觉pretext而非给原QA每步密集credit；对crop必要性无直接证据。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "无答案标注时用可核视觉任务获得训练信号，需单独验证迁移。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "可在工具RL前做视觉能力诊断/训练，但非行为SFT替代。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5VL base",
+   "kind": "model"
+  },
+  {
+   "name": "naive multi-task",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "四任务混合MMBench78.77<最佳80.38；contrastive平均54.11仅略高53.36。",
+  "load_bearing_assumption": "pretext成功真正强化下游视觉证据使用。",
+  "scope": "旋转/位置/拼图/对比的独立RL训练",
+  "success_criterion": "固定数据/算力比较单任务、混合、分阶段以及下游视觉幻觉和答案准确。",
+  "why_open": "任务迁移预测未解决；没有直接动作必要性优化。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=1[\\hat y=y];\\quad J=E[R(\\tau)-\\beta KL(\\pi_\\theta\\Vert\\pi_0)]",
+    "locator": "§3 Eq1及task定义"
+   }
+  ],
+  "signal_routing": "变换目标对应模型回答的trajectory reward；论文仅描述组归一化和clippedPG，所读未给mean/std具体公式或token mask。不是原任务caption/crop逐步credit。",
+  "normalization": "other",
+  "invariance": "具体组尺度公式未知，不按GRPO名字补std；非PBRS。",
+  "baseline_or_potential": "reference policy KL .01；组baseline细节未知。",
+  "degenerate_cases": "过易对比可饱和，过难拼图可能无信号；全对/全错组处理未说明；对称图旋转可歧义，变换标签已知不保证视觉唯一解。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table7单任务/混合/分阶段；Table1四种pretext同训练配置迁移。",
+  "negative_results": [
+   {
+    "text": "naive组合不增益，contrastive部分任务低于base（MMBench69.27<72.99）。",
+    "locator": "Tables1,7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若打乱原图而保留边框/编码痕迹仍完成pretext，则奖励可能学习捷径而非视觉能力。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B/7B",
+   "framework": "GRPO",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "8A800 batch512/context2048；具体训练时长未读到。",
+  "pitfalls": [
+   {
+    "text": "自监督目标不是无需GT，而是GT由变换自动生成；下游caption评测仍用judge。",
+    "locator": "§3; §4.1 captioning"
+   }
+  ],
+  "code": null,
+  "lesson": "当选自动视觉奖励时，先测难度与迁移，不能把多个可验证任务直接平均视为更强监督。"
+ }
+}

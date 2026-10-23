@@ -1,0 +1,69 @@
+{"id": "P01", "category": "OBJ 目标/奖励设计"}
+{"id": "P02", "category": "OBJ 目标/奖励设计"}
+{"id": "P03", "category": "OBJ 目标/奖励设计"}
+{"id": "P04", "category": "OBJ 目标/奖励设计"}
+{"id": "P05", "category": "OBJ 目标/奖励设计"}
+{"id": "P06", "category": "ADV 优势/基线估计"}
+{"id": "P07", "category": "ADV 优势/基线估计"}
+{"id": "P08", "category": "ADV 优势/基线估计"}
+{"id": "P09", "category": "ADV 优势/基线估计"}
+{"id": "P10", "category": "ADV 优势/基线估计"}
+{"id": "P11", "category": "CRED 信用分配"}
+{"id": "P12", "category": "CRED 信用分配"}
+{"id": "P13", "category": "CRED 信用分配"}
+{"id": "P14", "category": "CRED 信用分配"}
+{"id": "P15", "category": "CRED 信用分配"}
+{"id": "P16", "category": "CRED 信用分配"}
+{"id": "P17", "category": "CRED 信用分配"}
+{"id": "P18", "category": "CRED 信用分配"}
+{"id": "P19", "category": "CRED 信用分配"}
+{"id": "P20", "category": "CRED 信用分配"}
+{"id": "P21", "category": "DEC 首决策/动作监督"}
+{"id": "P22", "category": "DEC 首决策/动作监督"}
+{"id": "P23", "category": "DEC 首决策/动作监督"}
+{"id": "P24", "category": "DEC 首决策/动作监督"}
+{"id": "P25", "category": "COV SFT 行为覆盖"}
+{"id": "P26", "category": "COV SFT 行为覆盖"}
+{"id": "P27", "category": "COV SFT 行为覆盖"}
+{"id": "P28", "category": "COV SFT 行为覆盖"}
+{"id": "P29", "category": "EXP 探索"}
+{"id": "P30", "category": "EXP 探索"}
+{"id": "P31", "category": "STOP 停止/预算/recover"}
+{"id": "P32", "category": "STOP 停止/预算/recover"}
+{"id": "P33", "category": "STOP 停止/预算/recover"}
+{"id": "P34", "category": "STOP 停止/预算/recover"}
+{"id": "P35", "category": "STOP 停止/预算/recover"}
+{"id": "P36", "category": "TRAJ 轨迹构造质量"}
+{"id": "P37", "category": "TRAJ 轨迹构造质量"}
+{"id": "P38", "category": "TRAJ 轨迹构造质量"}
+{"id": "P39", "category": "TRAJ 轨迹构造质量"}
+{"id": "P40", "category": "CAP Caption 与证据利用"}
+{"id": "P41", "category": "CAP Caption 与证据利用"}
+{"id": "P42", "category": "CAP Caption 与证据利用"}
+{"id": "P43", "category": "PERC 感知/过程奖励"}
+{"id": "P44", "category": "PERC 感知/过程奖励"}
+{"id": "P45", "category": "EVAL 评测"}
+{"id": "P46", "category": "EVAL 评测"}
+{"id": "P47", "category": "EVAL 评测"}
+{"id": "P48", "category": "EVAL 评测"}
+{"id": "P49", "category": "EVAL 评测"}
+{"id": "P50", "category": "EVAL 评测"}
+{"id": "P51", "category": "EVAL 评测"}
+{"id": "P52", "category": "EVAL 评测"}
+{"id": "P53", "category": "EVAL 评测"}
+{"id": "P54", "category": "ENG 工程"}
+{"id": "P55", "category": "ENG 工程"}
+{"id": "P56", "category": "ENG 工程"}
+{"id": "P57", "category": "ENG 工程"}
+{"id": "P58", "category": "ENG 工程"}
+{"id": "P59", "category": "ENG 工程"}
+{"id": "P60", "category": "ENG 工程"}
+{"id": "P61", "category": "FORG 遗忘/稳定性"}
+{"id": "P62", "category": "FORG 遗忘/稳定性"}
+{"id": "P63", "category": "FORG 遗忘/稳定性"}
+{"id": "P64", "category": "DATA 数据"}
+{"id": "P65", "category": "DATA 数据"}
+{"id": "P66", "category": "DATA 数据"}
+{"id": "P67", "category": "MEAS 测量与研究方法"}
+{"id": "P68", "category": "MEAS 测量与研究方法"}
+{"id": "P69", "category": "MEAS 测量与研究方法"}

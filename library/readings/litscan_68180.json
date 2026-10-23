@@ -1,0 +1,150 @@
+{
+ "paper_key": "litscan:68180",
+ "title": "CARE",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_68180.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.5 Eqs1–5",
+   "Tables1–8",
+   "§5–6",
+   "AppD.5.5/Table12"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "医学实体proposal、分割、证据VQA分开训练；coordinator选择证据并复核推理答案一致性。",
+  "key_step": "GT实体最优匹配软相似度避免binary稀疏，mask低置信拒绝，保留global fallback。",
+  "why_non_obvious": "更强模型未必提好实体；协调器也会误改正确答案。",
+  "trigger_condition": "When generic grounding fails, delegate entity localization to specialists and retain global fallback.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "异质分解并用显式证据接口连接专家。",
+  "abstract_trigger_condition": "When one model couples incompatible subtasks, separate specialized modules.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "证据生成、答案、复核分开。",
+  "abstract_why_non_obvious": "多模块不自动可靠，要报告每个接口与误覆盖。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:68180#s1",
+   "object": "医学证据专家链",
+   "information": "训练实体GT/分割GT/答案；部署coordinator无GT，分割置信由entropy",
+   "operation": "2B提实体→专用分割→8BVQA，三视图或coordinator选视图/复核",
+   "claimed_effect": "Flow74.91，Coord77.54；planning-only74.8 vsFlow74.9；review带来主要增量",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.5/Table2",
+    "quote": "we call the\nEG-VQA model three times"
+   },
+   "failure_boundary": "更少tool不等于更低延迟；真实临床可靠性未验证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "证据真伪与答案收益分别计量。"
+  },
+  {
+   "problem": "P27",
+   "strength": 2,
+   "how": "复核修复与错误覆盖四情形可迁移。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "InternVL3/Lingshu/Flow/单视图/无review/弱coordinator/GRPO",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "公开研究benchmark，非临床部署；强协调器成本与误覆盖；未见独立Limitations节。",
+   "locator": "§4.2/6/Table12"
+  }
+ ],
+ "question": {
+  "observed_failure": "正确→错误覆盖3.05%，错误→正确4.84%；SLAKE净−.38pp。",
+  "load_bearing_assumption": "专用grounding和强reviewer必然提高所有答案。",
+  "scope": "医学VQA专家链",
+  "success_criterion": "ID/OOD答案准确、实体/分割指标与延迟分别报告",
+  "why_open": "mask正确不代表答案逻辑正确，reviewer也可能误覆盖。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table8四情形计数"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table12"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_{sim}=\\frac{1}{\\min(P,Q)}\\sum_{(i,j)\\in KM}cos(e_i,e_j);R_{entity}=R_{sim}+1[0<P\\le5]+1/(r+1)+R_{format}",
+    "locator": "Eqs1–2"
+   },
+   {
+    "latex": "R_{VQA}=R_{acc}+R_{format}+.25\\min(1,|y|/L),\\quad A_i=(R_i-mean(R))/std(R)",
+    "locator": "Eqs4–5"
+   }
+  ],
+  "signal_routing": "实体和VQA各自独立RFT，标量组优势广播输出token；非全链联合credit；SFT先注入视觉线索格式。",
+  "normalization": "mean+std，DAPO token总数归一化；Eq5排版clip分支未见优势乘子，不擅自补成原文公式，实际实现未知。",
+  "invariance": "非PBRS，长度奖励偏好更长推理，不是效率目标。",
+  "baseline_or_potential": "组均值；MiniLM相似度是语义代理非policyvalue。",
+  "degenerate_cases": "全同reward std零处理未读；P=0时Rsim分母零处理未知；长度≥200饱和；有效mask全丢退global。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table6 KM+soft与greedy/binary对照；Table2 planning/review；Table8误改统计。",
+  "negative_results": [
+   {
+    "text": "弱coordinator低于Flow；mask+zoom推理74.4低于zoom74.9；GPT5工具2.5次但43.51s远高Flow7.22s。",
+    "locator": "Tables4/12"
+   }
+  ],
+  "seeds": "AppD seed42，单seed未见CI。",
+  "falsifier": "同预算单专家复采样/复核即可覆盖增益，或独立真实病例无法验证证据，则accountability主张须收窄。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "InternVL3 2B实体+8BVQA；GPT5 coordinator",
+   "framework": "DeepSpeed SFT/DAPO",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "VQA SFT4A10080G 1–2h；RL约1.5天；coordinator成本另算。",
+  "pitfalls": [
+   {
+    "text": "不overlay原医疗像素以免改变灰度物理意义；mask单独输入，τC=.7。",
+    "locator": "§3.3/§4"
+   }
+  ],
+  "code": null,
+  "lesson": "当多模块声称效率时，同时列tool count和端到端延迟；当review改善均值时，单列正确被改错。"
+ }
+}

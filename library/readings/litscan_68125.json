@@ -1,0 +1,151 @@
+{
+ "paper_key": "litscan:68125",
+ "title": "ERGO",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_68125.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs1–4",
+   "Tables2–4/6",
+   "§5.3",
+   "AppA Algorithm1",
+   "AppB/Table7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "低分辨率定位、高分辨率单次裁图；奖励用只看crop的冻结reader答对GT，加区域面积阈值和actor正确性。",
+  "key_step": "移除reward reader的原图输入，堵住靠原图答题的捷径。",
+  "why_non_obvious": "crop-only充分性会鼓励裁整图，因此另加宽松面积阈值而非连续缩小。",
+  "trigger_condition": "When low-resolution localization fails, train task-sufficient region selection with crop-only verification.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "限制判别器可见信息以对齐局部证据目标，再约束平凡解。",
+  "abstract_trigger_condition": "When a verifier can bypass the selected evidence, remove its bypass input.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "裁图充分性与面积约束相加。",
+  "abstract_why_non_obvious": "更直接的连续效率奖励反而导致过度缩框。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:68125#s1",
+   "object": "单次crop定位策略",
+   "information": "actor看低分辨率原图和crop；冻结72B仅看crop/query并按GT匹配",
+   "operation": "TCE=reader正确+.5面积≤.6，另加actor正确和格式，总reward组标准化GRPO",
+   "claimed_effect": "V*81.7 vs原模型77.0；vision1025 vs4471；latency1.61 vs4.89秒",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eqs1–4/Tables3–4",
+    "quote": "evaluated using only the cropped region and the query, without access to the original image."
+   },
+   "failure_boundary": "reader充分性不等于actor需要，也不代表最小证据；单次固定流程不学习零crop。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P30",
+   "strength": 2,
+   "how": "面积成本与任务充分性组合可作为效率对照。"
+  },
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "控制judge信息集避免原图绕过crop。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DeepEyes/PixelReasoner/MGPO/VisionThink/MiniO3/racc-only/rregion-only",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "固定单次crop；72B冻结reader代理；未见独立局限节，边界来自方法和消融。",
+   "locator": "§3/5.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "region-only51.4低于base52.4；线性面积奖励51.0低于step58.4。",
+  "load_bearing_assumption": "低分辨率仍能精确框目标；越小crop越有效率。",
+  "scope": "Qwen2.5VL7B低分辨率单次crop",
+  "success_criterion": "固定pixel预算提升准确率并测真实token/latency",
+  "why_open": "小目标不可见且reader可走原图捷径。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Tables3–4"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table6"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=1[RM(crop,q)=GT]+0.5\\,1[Area(crop)/Area(orig)\\le .6]+1[actor=GT]+1[format]",
+    "locator": "Eqs1–4"
+   },
+   {
+    "latex": "A_g=(R_g-\\bar R)/(\\epsilon+\\sqrt{G^{-1}\\sum_j(R_j-\\bar R)^2})",
+    "locator": "AppA Algorithm1"
+   }
+  ],
+  "signal_routing": "整条oregion+oacc收同一组合标量优势；未给工具/答案token单独credit mask；无效框全部奖励0。",
+  "normalization": "mean+std: AppA明确组均值与population std。",
+  "invariance": "非PBRS；面积阈值改变目标。整组仅面积变时β会被std近似约掉，不能称保准确率。",
+  "baseline_or_potential": "组均值baseline；冻结reader二值结果非actorvalue。",
+  "degenerate_cases": "总reward相同A=0；只有面积差时系数约消；rbox不区分阈值以下大小；固定onecrop不学直答；仅region奖励趋向整图。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table6对比region-only、加box、调权、加actoracc；连续缩框反例51.0。",
+  "negative_results": [
+   {
+    "text": "线性面积奖励导致缩框捷径；α1β2平均54.3劣于α1β.5的58.4。",
+    "locator": "Table6/§5.3"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "冻结reader可答但actor不能答的样本占主导，或等成本匹配基线消除增益，则迁移失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B+冻结72B",
+   "framework": "vLLM inference",
+   "group_size": null,
+   "max_turns": 2,
+   "kl": null
+  },
+  "cost": "4H100约150GPU小时；250steps batch128；§4/Table7称G8，AppB prose称16，冲突未决。",
+  "pitfalls": [
+   {
+    "text": "半batch长rollout；G8/16自相矛盾，不猜实现。",
+    "locator": "AppB"
+   }
+  ],
+  "code": null,
+  "lesson": "当crop-only reader训练选框时，先检查整图与微小框两个捷径，并分开reader充分性和actor能力。"
+ }
+}

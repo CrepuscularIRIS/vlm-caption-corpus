@@ -1,0 +1,640 @@
+{
+ "paper_key": "2606.00562",
+ "title": "DeepLatent: Think with Images via Parallel Latent Visual Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.00562.pdf",
+  "version": "v1",
+  "version_evidence": "p.1 margin: arXiv:2606.00562v1 [cs.CV] 30 May 2026. Only local pinned version verified; latest remote version not checked.",
+  "pages": 13,
+  "sections_read": [
+   "pp.1–2 Abstract, §1 Introduction, Figure1",
+   "pp.2–3 §2.1–2.2 Related Work",
+   "pp.3–4 §3/§3.1 SFT1/§3.2 SFT2, Eqs1–8, Figure2",
+   "pp.5–6 §3.3 Reinforcement Learning, Eqs9–11; §3.4 DeepLatent-180K, Figure3",
+   "pp.6–7 §4.1 Setup and §4.2 Results, Tables1–3",
+   "pp.7–8 §4.3 Ablation, Tables4–6, Figures4–5",
+   "p.8 §5 Conclusion",
+   "pp.9–11 References",
+   "pp.11–12 Appendix A.1 Implementation Details, Tables7–9",
+   "pp.12–13 Appendix A.2 Additional RL Details, Figure6, Eqs12–16"
+  ],
+  "visual_pages": [
+   3,
+   4,
+   5,
+   7,
+   8,
+   12,
+   13
+  ],
+  "extraction": "pdftotext default reading-order extraction; initial layout extraction used for exploration, canonical file re-extracted mechanically and never hand edited."
+ },
+ "rs": {
+  "innovation_approach": "把串行自回归视觉latent生成改为上下文调制的二维query网格，以self/cross-attention并行重读原图特征；先蒸馏教师assistant-image隐状态，再把调制后的张量定义成Gaussian连续动作，与文本/触发token联合GRPO。",
+  "key_step": "冻结已蒸馏的LatentFormer，缓存rollout调制输出，用当前Gaussian密度重打分，直接优化LLM和两组调制MLP；Z本身不是RL动作。",
+  "why_non_obvious": "增加AR latent数量可能放大latent-to-latent依赖而不是图像证据；把动作定义在冻结构造器之前的随机调制输出，才能写出连续动作概率与KL，同时保留蒸馏出的视觉表示构造。",
+  "trigger_condition": "When serial latent generation loses spatial evidence and text-only RL cannot improve latent states, generate image-grounded latent grids in parallel and optimize stochastic modulation actions while freezing the distilled latent constructor.",
+  "reviewer_praise": [
+   "low_evidence: manifest无reviews_path，本次无独立OpenReview审稿。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 未将作者结论或读者限制冒充审稿意见。"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null、venue=arXiv；无接收信息，不从作者SOTA措辞推断评审认可。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Replace serial intermediate-state generation with parallel evidence-conditioned construction and optimize stochastic controls of a fixed constructor.",
+  "abstract_key_step": "Score stored continuous control outputs under the current distribution, reuse outcome-relative advantages, and preserve the learned construction map.",
+  "abstract_why_non_obvious": "Recognize that more serial states may amplify dependence on previous states rather than on source evidence; choose a probabilistically defined control output as the trainable action.",
+  "abstract_trigger_condition": "When sequential intermediate representations drift from their source and discrete-only optimization is ineffective, construct them in parallel from the source and optimize their stochastic controls."
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.00562#s1",
+   "object": "由<latent>触发的视觉latent块构造",
+   "information": "当前LLM前缀、原问题图像已编码特征I0、learnable2D query网格、三种上下文hidden states；推理时没有assistant-image真值、新crop像素、外部编辑结果。",
+   "operation": "触发后插入es/el/ei，预测网格尺度和query/image仿射调制；2D-RoPE self-attention后cross-attend原图特征，整块Z并行插入LLM，再恢复文字生成。",
+   "output": "H_z×W_z个连续latent输入，最大16×16=256，最多5块；不是一串新生成的真实图像。",
+   "claimed_effect": "Table3 200样本的一步visual thought：86.1ms vs Monet227ms，1.0 vs34.9ms/latent token，82.7 vs6.5 token/block；该表不是端到端问答延迟。Table5去LatentFormer HR4K76.4→74.8、VisuLogic24.8→22.7。",
+   "conditions": [
+    "原图特征保留所需细节",
+    "需要定制LatentFormer与连续embedding插入",
+    "经SFT1/SFT2蒸馏",
+    "默认1层LatentFormer"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.3 §3",
+    "quote": "These latents are inserted jointly into the reasoning\nsequence as internal visual states, so the LLM can\nprocess the full grid in a single forward pass rather\nthan one token at a time."
+   },
+   "failure_boundary": "重读的是原图feature，不是从更高分辨率crop获得新像素；初始编码已丢失的细节无保证可恢复。SFT2 GT尺寸 vs推理预测尺寸、训练噪声 vs推理零噪声的差异无单独校准实验。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.00562#s2",
+   "object": "显式assistant-image教师与latent学生的SFT轨迹",
+   "information": "有中间图像的完整教师轨迹、冻结缓存的多层hidden states、assistant-image网格尺寸及正确回答；部署时不具有这些中间图像。",
+   "operation": "SFT1对带assistant images轨迹做NTP并缓存教师hidden states；SFT2去掉图像换latent块，联合CE、跨层跨位置cosine alignment和grid-size CE训练。",
+   "output": "以原图/上下文重构教师中间视觉状态的latent接口，之后用于RL初始化。",
+   "claimed_effect": "Table4 Interleaved CoT含蒸馏V*84.3/HR4K76.4，去distill82.1/73.4，Text-only81.3/72.3，Visual-only80.7/71.1。比较支持蒸馏部件贡献，非独立必要性金标。",
+   "conditions": [
+    "中间图像及网格可作为监督",
+    "λAlign=4.0、λScale=0.5",
+    "selected alignment layers D及position mapping P实现细节未完整披露"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.3 §3.1",
+    "quote": "After\ntraining, we perform a forward pass over the same\ntrajectories and cache the LLM hidden states corresponding to each assistant image. These cached\n“teacher visual states” will supervise the latent distillation in SFT Stage 2."
+   },
+   "failure_boundary": "教师状态可含学生原图缩放后不可见细节；训练/推理网格与像素预算不同。隐状态相似不代表正确的局部视觉证据或省操作策略。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.00562#s3",
+   "object": "混合离散token与连续调制输出的RL策略",
+   "information": "采样的文本/latent触发token、调制输出Ltilde/Itilde、当前/old/SFT-reference Gaussian参数、轨迹终答/格式奖励；无逐次latent反事实收益和局部必要性标签。",
+   "operation": "冻结视觉encoder、LatentFormer和scale head；对已采样调制张量求Gaussian联合log-density/ratio和closed-form KL，按全动作平均的clipped GRPO同时更新LLM与latent/image modulation MLP。",
+   "output": "同一组内结果优势覆盖离散与连续动作，优化when与how；Z为冻结构造器的确定性输出，不直接算其概率。",
+   "claimed_effect": "Table6 Joint GRPO相对SFT V*84.3→84.8、HR4K76.4→76.8、MMStar63.6→65.0、VisuLogic24.8→25.3；Text-only GRPO83.8/76.5/63.4/24.6。",
+   "conditions": [
+    "σ>0使Gaussian密度/KL有定义",
+    "可缓存原rollout连续动作并重算当前概率",
+    "reference固定为SFT2",
+    "不同动作类型使用各自密度与KL"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.5 §3.3",
+    "quote": "The sampled\nmodulations are then deterministically mapped to\nthe latent block Z by the frozen latent module.\nHence, Z itself is not treated as an RL action."
+   },
+   "failure_boundary": "仍是终局优势广播，未解决有用/冗余latent信用区分；高维Gaussian log-density求和对尺寸与σ敏感，numerical safeguards未报告；scale head冻结不等于上游LLM变化后scale预测恒定。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2606.00562#s4",
+   "object": "DeepLatent-180K数据的自动筛选",
+   "information": "Qwen3-VL-32B生成/质量判定、Thyme-7B工具轨迹、Qwen2.5-VL-7B无assistant-image作答；不是训练后策略的同前缀有/无证据配对估值。",
+   "operation": "先删错答或逻辑有误轨迹，再核assistant图像与文字一致/足以支持终答，最后删除Qwen2.5-VL-7B不看assistant images仍答对的interleaved样本；另保留single-image组成。",
+   "output": "约180K含single-image、visual search、visual synthesis的语料；Fig3约31K single-image、102K crop。",
+   "claimed_effect": "作者称确保需要中间视觉推理；全文没有人工必要性真值、重复采样置信区间或单独过滤消融来验证这个强结论。",
+   "conditions": [
+    "外部模型质量判断可靠",
+    "无assistant-image的probe格式/采样可比，但这些细节未给",
+    "V*来源图像与评测去重需要额外核查"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.6 §3.4",
+    "quote": "We\nevaluate whether Qwen2.5-VL-7B can correctly\nanswer the question without access to the assistant\nimages. If correct, we discard these simple samples."
+   },
+   "failure_boundary": "冻结base答错不证明当前策略必须补看，答对可能是猜测；逐图sufficiency过滤可能排掉合理的失败搜索与纠偏轨迹。不能把其necessity标签直接用于我们裁图信用。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL3-8B",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme-7B",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Pixel-Reasoner-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Monet-7B",
+   "kind": "method"
+  },
+  {
+   "name": "LVR-7B",
+   "kind": "method"
+  },
+  {
+   "name": "CoVT-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Mirage-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Text-only CoT",
+   "kind": "method"
+  },
+  {
+   "name": "Visual-only CoT",
+   "kind": "method"
+  },
+  {
+   "name": "Interleaved CoT w/o distillation",
+   "kind": "method"
+  },
+  {
+   "name": "Text GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "Joint GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HRBench4K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HRBench8K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "VisualProbe-Hard",
+   "kind": "benchmark"
+  },
+  {
+   "name": "OCRBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "ChartQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar",
+   "kind": "benchmark"
+  },
+  {
+   "name": "RealWorldQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "VisuLogic",
+   "kind": "benchmark"
+  },
+  {
+   "name": "TreeBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BabyVision",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK-Jigsaw",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK-Multi-view",
+   "kind": "benchmark"
+  },
+  {
+   "name": "VSP",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "训练—推理设计边界：SFT2使用assistant-image GT网格、推理使用预测网格；该差异为作者明确描述，偏差大小未知。",
+   "locator": "p.4 §3.2",
+   "quote": "To decouple scale learning from latent construction,\nwe use the ground-truth (GT) grid size (Hz∗ , Wz∗ ),\nderived from the assistant image feature dimensions, for latent generation during training, and use\nthe predicted size (Ĥz , Ŵz ) at inference."
+  },
+  {
+   "text": "更频繁latent调用不保证有效；附录报告invocation奖励会产生无意义latent块。",
+   "locator": "p.12 Appendix A.2",
+   "quote": "Although the latent\ninvocation reward encourages more frequent latent\nusage, it does not lead to actual performance improvement. Instead, it often causes the model to\ngenerate multiple meaningless latent blocks within\na single sampled response."
+  }
+ ],
+ "question": {
+  "observed_failure": "作者引言述latent方法HRBench落后工具最高约5%；§4.3/Fig4 AR latent约16 tokens达峰、继续增大下降，而parallel到256趋饱和、576仍稳定。Table6 Text GRPO的4项结果没有一致提升。",
+  "load_bearing_assumption": "把二维视觉表示作为一维因果latent序列生成、且仅优化离散文字/触发token就足以优化中间视觉状态。",
+  "scope": "Qwen2.5-VL-7B、固定原图编码、二维latent构造与其连续调制；180K SFT、Thyme-RL10K、最多5latent块。",
+  "success_criterion": "比较高分辨率/通用/视觉推理准确率、不同latent预算曲线、同硬件visual-thought生成时延、text vs joint RL；不等于真实crop数非劣目标。",
+  "why_open": "AR后续latent更多依赖前latent而非原图，并存在空间结构不匹配；离散GRPO不直接为随机连续调制定义概率动作。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "p.7 Table3 caption",
+   "quote": "Thought\nTime measures one visual thought step: a tool call or\ncomplete latent block generation time."
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "p.8 §4.3",
+   "quote": "Text GRPO applies\nGRPO only to text and <latent> tokens, while\nJoint GRPO additionally optimizes continuous latent modulation."
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "p.3 §3",
+   "quote": "In\nSFT Stage 1, the model is trained on image-text interleaved data with assistant images, and the corresponding LLM hidden states are cached as teacher\nvisual states."
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "p.7 §4.2",
+   "quote": "We compare visual\nthought generation efficiency in Tab. 3 under the\nsame hardware and configuration."
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "role": "primary",
+   "locator": "p.3 §3",
+   "quote": "DeepLatent employs a dedicated LatentFormer for parallel latent generation,\nbypassing autoregressive latent prediction inside\nthe LLM."
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "role": "supporting",
+   "locator": "p.2 §1",
+   "quote": "It initializes learnable 2D latent queries and refines them through\nmulti-layer cross-attention over image features."
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "locator": "p.5 §3.3",
+   "quote": "categorical probabilities and\nstandard KL divergence for discrete tokens, and\nGaussian densities and closed-form KL for continuous modulations."
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L_{S1}=-\\sum_{t\\in\\mathcal T}\\log p_\\theta(y_t\\mid y_{<t},q,I_0,I_{1:N})",
+    "locator": "p.3 Eq1"
+   },
+   {
+    "latex": "\\hat p_H=\\mathrm{MLP}_h(h_s),\\ \\hat H_z=\\arg\\max\\hat p_H;\\quad\\hat p_W=\\mathrm{MLP}_w(h_s),\\ \\hat W_z=\\arg\\max\\hat p_W",
+    "locator": "p.3 Eq2"
+   },
+   {
+    "latex": "\\tilde L=\\gamma_l\\odot L+\\beta_l+\\sigma_l\\odot\\epsilon_l,\\quad\\tilde I=\\gamma_i\\odot I_0+\\beta_i+\\sigma_i\\odot\\epsilon_i,\\quad\\epsilon_l,\\epsilon_i\\sim\\mathcal N(0,1)",
+    "locator": "p.4 Eq3"
+   },
+   {
+    "latex": "Z^{\\prime}=Z^{(k-1)}+\\mathrm{SelfAttn}(R_{2D}(Z^{(k-1)})),\\quad Z^{(k)}=Z^{\\prime}+\\mathrm{CrossAttn}(R_{2D}(Z^{\\prime}),R_{2D}(\\tilde I),\\tilde I)",
+    "locator": "p.4 Eq4; Z^(0)=Ltilde"
+   },
+   {
+    "latex": "\\mathcal L_{CE}=-\\sum_{t\\in\\mathcal T}\\log p_\\theta(y_t\\mid y_{<t},q,I_0,Z_{1:N})",
+    "locator": "p.4 Eq5"
+   },
+   {
+    "latex": "\\mathcal L_{Align}=\\frac1{|D||P|}\\sum_{d\\in D}\\sum_{p\\in P}[1-\\cos(h^T_{d,p},h^S_{d,p})],\\quad\\mathcal L_{Scale}=\\mathrm{CE}(\\hat p_H,H_z^*)+\\mathrm{CE}(\\hat p_W,W_z^*)",
+    "locator": "p.4 Eqs6–7"
+   },
+   {
+    "latex": "\\mathcal L_{S2}=\\mathcal L_{CE}+4.0\\mathcal L_{Align}+0.5\\mathcal L_{Scale}",
+    "locator": "p.4 Eq8 and following weight values"
+   },
+   {
+    "latex": "\\log\\pi_\\theta(\\tilde L_{old})=\\log\\mathcal N(\\tilde L_{old};\\mu^l_\\theta,(\\sigma^l_\\theta)^2),\\quad\\log\\pi_\\theta(\\tilde I_{old})=\\log\\mathcal N(\\tilde I_{old};\\mu^i_\\theta,(\\sigma^i_\\theta)^2)",
+    "locator": "p.5 Eq9; means γ_l L+β_l and γ_i I0+β_i"
+   },
+   {
+    "latex": "A^{(g)}=\\frac{R^{(g)}-\\operatorname{mean}(\\{R^{(j)}\\}_{j=1}^G)}{\\operatorname{std}(\\{R^{(j)}\\}_{j=1}^G)}",
+    "locator": "p.5 Eq10; no stabilizing epsilon printed"
+   },
+   {
+    "latex": "J(\\theta)=\\mathbb E_{I_0,q,o\\sim\\pi_{old}}\\frac1G\\sum_{g=1}^{G}\\frac1{|\\mathcal M^{(g)}|}\\sum_{t\\in\\mathcal M^{(g)}}[\\min(r_{g,t}A^{(g)},\\operatorname{clip}(r_{g,t},1-\\epsilon,1+\\epsilon)A^{(g)})-\\beta_{KL}D_{KL}(\\pi_\\theta\\Vert\\pi_{ref})]",
+    "locator": "p.5 Eq11; maximize; action-type-specific ratios and KL"
+   },
+   {
+    "latex": "R=0.9R_{Acc}+0.1R_{Format}",
+    "locator": "p.12 Eq12; invocation reward excluded from final model"
+   },
+   {
+    "latex": "\\pi_\\theta(a)=\\mathcal N(a;\\mu_\\theta,\\sigma_\\theta^2),\\quad r_t(\\theta)=\\exp[\\log\\pi_\\theta(a^{old})-\\log\\pi_{old}(a^{old})],\\quad\\log\\pi(a)=\\sum_j\\log\\mathcal N(a_j;\\mu_j,\\sigma_j^2)",
+    "locator": "pp.12–13 Eqs13–15"
+   },
+   {
+    "latex": "D_{KL}(\\pi_\\theta\\Vert\\pi_{ref})=\\frac12\\sum_j\\left[\\log\\frac{\\sigma_{ref,j}^2}{\\sigma_{\\theta,j}^2}+\\frac{\\sigma_{\\theta,j}^2}{\\sigma_{ref,j}^2}+\\frac{(\\mu_{\\theta,j}-\\mu_{ref,j})^2}{\\sigma_{ref,j}^2}-1\\right]",
+    "locator": "p.13 Eq16"
+   }
+  ],
+  "signal_routing": "SFT1监督完整显式图像轨迹文本；SFT2 CE只在离散文字和<latent>位置，Z作conditioning，另用选层/位置cosine loss对齐teacher隐藏状态、CE监督H/W。RL同一A_g广播所有策略动作：文字、<latent>和连续调制张量；Z本身不作RL动作。RL冻结encoder/LatentFormer/scale head，更新LLM及两调制MLP；不能把冻结模块参数理解成阻断上游所有梯度。未披露混合图中各stop-gradient细节。",
+  "normalization": "mean+std: Eq10组均值/标准差，无ε或零std处理披露；Eq11每轨迹除动作数|M|再组平均。Gaussian log-density与KL均在张量全部维度求和（非维度平均）；KL随后按连续动作位置和样本平均。Alignment按|D||P|平均；没有单独效率/调用代价通道。",
+  "invariance": "Eq6 cosine对正比例范数缩放不敏感（读者数学解释），不保证恢复幅值。2D-RoPE为空间结构先验，不是已证明空间不变性/等变性定理。最终RL为accuracy+format与KL正则，既无PBRS又无最优策略不变证明；冻结构造器保留参数不等于保留整个策略分布。",
+  "baseline_or_potential": "组内平均reward为baseline，同组std定尺度；π_old用于ratio，π_ref固定SFT2并用于离散/连续KL；无critic/answer-now fork/势函数。",
+  "degenerate_cases": "读者推导未运行：全组accuracy和format相同则std=0，Eq10原式0/0，实现如何mask/ε未知；若正确性相同但format不同则仍有format优势。p(<latent>)≈0时无连续action样本，无法只靠continuous GRPO恢复触发；p≈1时无direct support保障。σ→0密度/KL退化且σ下界未给；尺寸增大使联合log-density/KL求和维数增加。单latent块仍含两调制类型和离散动作，不退化为真实crop；无latent时只剩离散文本路径。",
+  "gradient_analysis": "对Gaussian动作，在固定a_old、σ>0且ratio未clip时，读者推导∇_μ logπ=(a_old−μ)/σ²、∇_logσ logπ=(a_old−μ)²/σ²−1；GRPO按A_g r和动作平均加权，仍为同一终局反馈。SFT Eq3有重参数化噪声；RL的密度surrogate不等同于对奖励做pathwise可微图像反传。全维sum的ratio/KL尺度与离散token不同，无dimension normalization或数值保护报告。",
+  "protocol_alignment": "<latent>是离散词表token且有实际中断/插embedding/LatentFormer/恢复生成协议；连续action是rollout采下的Ltilde/Itilde，不是最终Z。训练应按实际动作类型重算概率。SFT2用GT H/W、推理argmax预测H/W；推理去掉调制噪声；RL阶段网格选择方式未单独说明，不能自动等同GT或预测。",
+  "observation_boundary": "SFT1看显式assistant images，SFT2/推理靠原图feature蒸馏/构造Z，无新的crop像素返回。Table7 Stage1原图max6000×28²，Stage2/RL2500×28²，Table9 eval16384×28²；这显著不同于我们589824像素预算，不能直接迁移高分辨率成绩。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 text-only/visual-only/interleaved±distill区分模态与蒸馏；Fig4匹配latent预算比较parallel/AR和dynamic/fixed；Table5移除LatentFormer/两调制；Table6 text vs joint GRPO及冻结/解冻LatentFormer。支持部件解释，但没有同计算预算/多seed置信区间、数据过滤真值或像素预算交叉消融。",
+  "controls": [
+   "Table4四种CoT/distillation条件",
+   "Fig4 latent规模0到576、parallel/AR、dynamic/fixed",
+   "Table5 0/1/2层及无latent/image modulation",
+   "Table6 text/joint GRPO、LatentFormer冻结与否",
+   "Appendix A.2/Fig6有无latent invocation奖励",
+   "Table3同硬件配置、200样本visual-thought时间"
+  ],
+  "negative_results": [
+   {
+    "text": "Text GRPO未一致提升；解冻LatentFormer又降低表现，Table6 text unfrozen四项83.2/75.3/63.1/23.6。",
+    "locator": "p.8 §4.3/Table6",
+    "quote": "Text GRPO brings no consistent\nimprovement, and updating LatentFormer further\ndegrades performance by 1.0% on average, suggesting that learning latent construction with standard\nGRPO may disrupt learned latent visual semantics."
+   },
+   {
+    "text": "调用奖励约25→40次/100样本，但无性能提升且产生多无意义块。",
+    "locator": "p.12 Appendix A.2/Fig6",
+    "quote": "Although the latent\ninvocation reward encourages more frequent latent\nusage, it does not lead to actual performance improvement. Instead, it often causes the model to\ngenerate multiple meaningless latent blocks within\na single sampled response."
+   },
+   {
+    "text": "AR latent约16tokens达峰，继续增加恶化；parallel到576稳定。",
+    "locator": "p.8 §4.3/Fig4",
+    "quote": "Autoregressive generation peaks near 16 tokens,\nbut additional tokens rapidly degrade performance,\nwhereas parallel generation remains stable even\nwith 576 tokens."
+   }
+  ],
+  "seeds": "unknown: 无seed次数/方差/CI；单点表格不证明实际仅单seed。",
+  "falsifier": "读者提出未执行：保持SFT语料、初始图像预算、latent数/算力与RL奖励一致，若parallel在源图特征打乱/移除时仍有同样收益，否定image-grounded机制解释；若continuous actions置换但保持Gaussian尺度达到同样收益，否定调制内容贡献；若无assistant-image筛选标签对人工/当前策略反事实不一致，否定其必要性解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B",
+   "framework": "TRL (SFT), verl (RL); VLMEvalKit evaluation",
+   "group_size": 8,
+   "group_size_source": "Table8 rollout size=8; total realized rollout count not provided",
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": 0.5,
+   "max_turns": 5,
+   "max_turns_unit": "maximum latent blocks, NOT crop calls or general conversation turns",
+   "epochs_each_stage": 1,
+   "rl_training_samples": 10000,
+   "rl_learning_rate": 1e-06,
+   "rl_batch_size": 64,
+   "sft_learning_rate": 1e-05,
+   "sft_batch_size": 1,
+   "sft_gradient_accumulation": 16,
+   "weight_decay": 0.01,
+   "max_response_length": 2048,
+   "latentformer_layers": 1,
+   "max_latent_grid": [
+    16,
+    16
+   ],
+   "alignment_weight": 4.0,
+   "scale_weight": 0.5,
+   "hardware": "8×NVIDIA A800 GPUs",
+   "accuracy_threshold": 0.6,
+   "accuracy_threshold_semantics": null,
+   "clip_epsilon": null,
+   "sft1_max_question_pixels": 4704000,
+   "sft2_rl_max_question_pixels": 1960000,
+   "eval_max_image_pixels": 12845056,
+   "eval_top_p": 0.5,
+   "eval_top_k": 5,
+   "eval_temperature": 0.5
+  },
+  "cost": "3 stages各1epoch，SFT1 full180K、SFT2 full或visual-search子集、RL10K Thyme-RL；未报告实际更新次数、总训练token、GPU小时、teacher cache大小/生成成本。Table3仅200样本的一步visual thought：DeepLatent86.1ms/block、82.7tokens/block、1.0ms/token；Monet227ms/6.5/34.9ms，Thyme2375ms、DeepEyes3324ms。不可外推端到端问答加速或训练效率。",
+  "pitfalls": [
+   {
+    "text": "直接更新构造器可能破坏蒸馏视觉语义；Joint GRPO冻结构造器更稳定。",
+    "locator": "p.8 §4.3",
+    "quote": "Freezing LatentFormer during\nJoint GRPO yields more stable gains."
+   },
+   {
+    "text": "用调用奖励增加触发并无性能增益，最终移除。",
+    "locator": "p.12 Appendix A.2",
+    "quote": "Therefore, we do not\nadopt the latent invocation reward in the final RL\nsetting."
+   }
+  ],
+  "code": "https://github.com/ludc506/DeepLatent",
+  "code_status": "URL from paper; repository not fetched or executed",
+  "lesson": "当目标是提高中间视觉表示质量时，应区分触发次数与有效内容；先保留蒸馏的表示构造器并单独检验连续调制更新，不能用额外调用奖励把次数增长当能力增长；迁移前还须核对训练/推理像素与网格预算。",
+  "lesson_evidence": [
+   "p.8 Table6",
+   "p.12 Appendix A.2/Fig6",
+   "Tables7–9"
+  ]
+ },
+ "relevance": [
+  {
+   "problem": "P02",
+   "how": "附录调用奖励提高调用但不增性能并产生无意义块，是不能把多用工具当目标的直接相关负例；latent不是实际crop。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "连续/离散动作仍共享终局A，未做逐次必要性信用；可作路由边界参照。",
+   "strength": 1
+  },
+  {
+   "problem": "P23",
+   "how": "明确触发token到连续动作插入的端点，有助事件账本；未验证我们caption后多token分叉，且SFT2 GT/预测网格不同。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "两阶段显式图像到latent蒸馏先种行为，不能省去冷启动。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "用固定Qwen2.5-VL-7B无assistant-image答题过滤不等于训练后策略的需要，不能迁移作冻结读者necessity标签。",
+   "strength": 2
+  },
+  {
+   "problem": "P37",
+   "how": "每个assistant-image consistency/sufficiency过滤可能排除合理但未命中探索，需保留该边界。",
+   "strength": 2
+  },
+  {
+   "problem": "P39",
+   "how": "教师显式图像与学生原图latent的信息/像素预算不同，是可直接检查的监督可读性风险。",
+   "strength": 2
+  },
+  {
+   "problem": "P49",
+   "how": "数据生成图像来源包含V*，评测也含V*；全文没有来源隔离/去重细节，实际重叠unknown。",
+   "strength": 2
+  },
+  {
+   "problem": "P58",
+   "how": "latents并行生成降低单个视觉思考步骤时间，但替换真实tool需改模型与SFT，非现成rollout节流。",
+   "strength": 1
+  }
+ ],
+ "reported_results": [
+  {
+   "locator": "p.7 Table1",
+   "columns": [
+    "V*",
+    "HR4K",
+    "HR8K",
+    "VisualProbe-H",
+    "MMStar",
+    "VisuLogic",
+    "TreeBench",
+    "BabyVision"
+   ],
+   "rows": {
+    "base": [
+     76.5,
+     68.8,
+     65.3,
+     23.9,
+     61.9,
+     20.0,
+     37.0,
+     12.9
+    ],
+    "SFT": [
+     84.3,
+     76.4,
+     73.6,
+     35.0,
+     63.6,
+     24.8,
+     37.9,
+     14.4
+    ],
+    "RL": [
+     84.8,
+     77.3,
+     74.0,
+     38.7,
+     65.0,
+     25.3,
+     39.0,
+     16.2
+    ]
+   },
+   "status": "author_reported_not_replicated"
+  },
+  {
+   "locator": "p.8 Table6",
+   "columns": [
+    "V*",
+    "HR4K",
+    "MMStar",
+    "VisuLogic"
+   ],
+   "rows": {
+    "SFT": [
+     84.3,
+     76.4,
+     63.6,
+     24.8
+    ],
+    "Text GRPO": [
+     83.8,
+     76.5,
+     63.4,
+     24.6
+    ],
+    "Text GRPO unfrozen": [
+     83.2,
+     75.3,
+     63.1,
+     23.6
+    ],
+    "Joint GRPO": [
+     84.8,
+     76.8,
+     65.0,
+     25.3
+    ],
+    "Joint GRPO unfrozen": [
+     84.3,
+     76.1,
+     64.7,
+     24.9
+    ]
+   },
+   "status": "author_reported_not_replicated"
+  }
+ ],
+ "source_integrity_notes": [
+  "Table1 RL HR4K77.3，Table6 Joint GRPO HR4K76.8，差异设置/seed未解释；分别保留，不自行调和。",
+  "p.7称Jigsaw比best compared高16.0，但Table2 Pixel-Reasoner52.7到68.0实际15.3pp；16.0对应52.0基线。",
+  "Appendix A.2说final reward in Eq.(1)，实际公式是Eq12，保持定位并记录源内引用错误。",
+  "Fig6图上横轴Step到约80000，Table8却只给1epoch/10000samples；不能把图轴直接当优化器更新次数。",
+  "Table8 accuracy threshold0.6未说明作用，RL correctness judge只写large VLM且未指名，不填成Qwen3-VL-32B。",
+  "训练数据来源列V*且报告V*测试，未给split/去重细节，actual contamination unknown。",
+  "Gaussian密度按全部维度求和、KL按position/sample平均，不得补成每维归一化；标准差最小值/ratio稳定化和零组std处理未报告。"
+ ],
+ "validation": {
+  "status": "pending_independent_source_audit",
+  "scientific_replication": false,
+  "quote_method": "Every quote recursively checked with repository normalise exact substring against mechanically extracted canonical fulltext; no fuzzy acceptance",
+  "recursive_exact_quotes": 18,
+  "fulltext_reextraction_byte_identical": true
+ }
+}

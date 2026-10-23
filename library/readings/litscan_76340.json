@@ -1,0 +1,136 @@
+{
+ "paper_key": "litscan:76340",
+ "title": "MIND",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_76340.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs1–8",
+   "Tables1/4",
+   "§4.2/4.5",
+   "AppD limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "生成多正确与语义反转错误rationale；先多正例生成再训练辨错/纠错，并加hardrationale margin对齐。",
+  "key_step": "阶段II同时输入好/坏rationale，目标仍是正确答案与正确解释。",
+  "why_non_obvious": "仅模仿正例未必抵抗错误上下文，必须明确训练坏输入后的正确输出。",
+  "trigger_condition": "When models follow misleading rationales, train correction from controlled negative rationales.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "扩大正例表达并显式教错误输入恢复。",
+  "abstract_trigger_condition": "When imitation lacks recovery behavior, add counterfactual corrupted inputs with valid targets.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "负rationale为输入而不是生成目标。",
+  "abstract_why_non_obvious": "错误内容出现在哪里决定学到复述错误还是纠正错误。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76340#s1",
+   "object": "两阶段rationale生成/纠错模型",
+   "information": "训练合成器知GT答案、原rationale/caption；部署模型接phaseI rationale",
+   "operation": "P2CL-I正例CE+margin；II正/负rationale条件生成正确答案与解释",
+   "claimed_effect": "ScienceQA基线90.29→92.29；仅MCA90.36，增益主要非单独对比loss",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table4",
+    "quote": "When the input rationale is negative, the model is required to"
+   },
+   "failure_boundary": "合成逻辑反转非真实错crop观测；小T5需强冻结caption模型。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "可迁移错误caption/暂答后修正的SFT数据构造。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "MultimodalCoT/noP2CL/noMCA/InfoNCE/different generators",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "离线RAD构造成本；只VQA；原rationale质量限制、细粒度视觉仍错。",
+   "locator": "AppD"
+  }
+ ],
+ "question": {
+  "observed_failure": "单MCA90.36仅+0.07，完整92.29+2.00。",
+  "load_bearing_assumption": "单一正确rationale监督能自动教会逻辑纠错。",
+  "scope": "T5base223M/large738M VQA",
+  "success_criterion": "好/坏rationale输入下保正确并修错，阶段/contrast消融",
+  "why_open": "负上下文可能牵引模型沿错推理。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_I=L_{pos}+\\alpha ReLU(\\bar s^-_{TopK}+m-\\bar s^+_{BottomK});\\ L_{II}=-E_{Rcond}\\sum_t\\log p([A,R^+]_t|I,Q,O,C,Rcond)",
+    "locator": "Eqs3–8"
+   }
+  ],
+  "signal_routing": "阶段I语言正例CE和embedding对比；阶段II负rationale只作条件，正确答案/解释作监督；无RL credit。",
+  "normalization": "other: hard正负相似度各均值，m=.2 α1，无组std。",
+  "invariance": "非PBRS，监督目标改变。",
+  "baseline_or_potential": "无value baseline。",
+  "degenerate_cases": "错误负标签会压正确语义；相似度margin已满足无对比梯度；没教视觉重取证不能补错crop信息。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4分开P2CL/MCA；AppD失败限制；单MCA几乎不改善。",
+  "negative_results": [
+   {
+    "text": "MCA单独仅+0.07；细粒度视觉语义理解仍可能失败。",
+    "locator": "Table4/AppD"
+   }
+  ],
+  "seeds": "固定seed42，未见多seedCI。",
+  "falsifier": "真实模型错rationale或错crop上下文不能被修复，则合成反转恢复迁移失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "FLAN-Alpaca T5 223M/738M；BLIP2视觉+Qwen2.5VL72Bcaption冻结",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8H20 96G，batch8，ScienceQA200epochs/其他400，512输入长度；合成另计。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当教纠错时，把错误文本放在输入条件，确认输出监督指向正确解释；用真实失败检验合成负例迁移。"
+ }
+}

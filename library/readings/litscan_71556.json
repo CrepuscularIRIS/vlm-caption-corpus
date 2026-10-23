@@ -1,0 +1,155 @@
+{
+ "paper_key": "litscan:71556",
+ "title": "GEODPO",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_71556.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 Tables2–5",
+   "§6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "unify_into_shared_representation",
+  "key_step": "将自然语言几何描述经独立NL2DSL translator转为关系集合，用最优匹配F1评分生成DPO偏好，保持policy输出自然语言。",
+  "why_non_obvious": "绕开DSL顺序等价引起token监督差异，但评分仍受translator能力约束。",
+  "trigger_condition": "当语言表述多样而事实有可比结构标签时，先映射公共结构再选偏好。",
+  "contribution_type": "合成benchmark及结构评分偏好学习",
+  "abstract_strategy": "把自由表达投影为可比较事实集合。",
+  "abstract_trigger_condition": "存在可靠结构GT但序列表达不唯一时。",
+  "abstract_key_step": "逐类别最大匹配再排名建偏好对。",
+  "abstract_why_non_obvious": "结构不变性有助评分一致，转换误差可能重排偏好。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:71556#s1",
+   "object": "几何图的自然语言描述",
+   "information": "合成图及GT GeoDSL；训练好的文本translator只接NL",
+   "operation": "reference每图采10描述，translator评分，前后半序列配对且分差>0.3，离线DPO。",
+   "claimed_effect": "Qwen7B perception57.96→66.19，OOD58.14→60.28；MathVista203题30.05→40.39。",
+   "conditions": [
+    "points/lines/circles/constraints各0.25",
+    "LoRA rank8一epoch"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p9",
+    "quote": "w/ GeoDPO     40.39       40.39     33.50"
+   },
+   "failure_boundary": "translator总体89.2、circleF1仅74.6，不能视作精确事实oracle；SFT比较同时变输出表示与目标。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "caption事实可结构化核对，但需适用DSL及独立转换器校准。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "把感知描述质量与后续推理解耦测量。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "raw VLM",
+   "kind": "backbone"
+  },
+  {
+   "name": "direct GeoDSL SFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "translator复杂圆形准确较低，语法有效不等于语义准确。",
+   "quote": "performance degrades gracefully",
+   "locator": "§5.2 p8"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen原始感知57.96，translator circleF1 74.6限制评分可靠性。",
+  "load_bearing_assumption": "translator误差足够小以可靠区分分差>0.3的描述。",
+  "scope": "标号Euclidean几何图描述",
+  "success_criterion": "独立感知结构分及下游203题准确率提高。",
+  "why_open": "答案评测混淆感知和推理，DSL序列监督不处理等价。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "locator": "§1/3"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "locator": "§4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Score(G,\\hat G)=\\tfrac14\\sum_{c\\in\\{P,L,C,R\\}}F1_c;\\ F1_c=2S_c/(m_c+n_c)\\text{ if }P_cR_c>0",
+    "locator": "Eq1–3"
+   },
+   {
+    "latex": "L_{DPO}=-\\mathbb E\\log\\sigma\\!\\left(\\beta\\log\\frac{\\pi_\\theta(S_w|D)}{\\pi_{ref}(S_w|D)}-\\beta\\log\\frac{\\pi_\\theta(S_l|D)}{\\pi_{ref}(S_l|D)}\\right)",
+    "locator": "Eq4"
+   }
+  ],
+  "signal_routing": "结构分仅生成离线winner/loser标签；DPO更新整条自然语言描述概率比，translator不在policy更新链中，无局部token信用。",
+  "normalization": "other",
+  "invariance": "不是PBRS；集合assignment对literal排列不变，点名匹配依赖标签；DPO无组std，分值幅度经阈值筛选后不直接进入损失。",
+  "baseline_or_potential": "固定原始VLM reference对数概率；非state-value。",
+  "degenerate_cases": "无分差>0.3不产偏好；缺元素类双方为空按Eq2该类F1=0；translator错误可颠倒胜负，单一最高分不代表图上全部事实对。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2独立translator测试，Table3/4三骨干raw/SFT/DPO，Table5下游迁移。",
+  "negative_results": [
+   {
+    "text": "Qwen circleF1 DPO48.7低于SFT57.56；并非逐类别都优于SFT。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "在人核NL事实或oracle转换器评测下若优势消失，说明主要优化翻译器可识别表达。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B/InternVL3-8B/LLaVA-Next7B；translator Qwen2.5-7B",
+   "framework": null,
+   "group_size": 10,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "4H800；translator/main各10k；policy rank8,1epoch,batch32,LR2e-5。DPOβ未读到具体值。",
+  "pitfalls": [
+   {
+    "text": "+26.46/+8/+39均为相对增幅，不是百分点；语义canonical不等于像素几何唯一重建。",
+    "locator": "Tables3–5/§3"
+   }
+  ],
+  "code": "https://github.com/Longin-Yu/GeoPerceive",
+  "lesson": "当用转换器核自由文本事实时，应先测转换误差及偏好翻转，再比较同输出表示下的优化目标。"
+ }
+}

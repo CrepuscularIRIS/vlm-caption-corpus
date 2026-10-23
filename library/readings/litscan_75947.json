@@ -1,0 +1,138 @@
+{
+ "paper_key": "litscan:75947",
+ "title": "VaLR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_75947.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3",
+   "Tables1–3/6",
+   "§4.4",
+   "AppA/Table7",
+   "AppB frame selection",
+   "AppC3/λ/K ablations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "每个推理阶段前生成latent tokens，并训练其hidden state对齐冻结视觉encoder的patchfeatures。",
+  "key_step": "先CoT SFT再latent+REPA；多视图训练用GPT4o看完整GTCoT匹配目标frame。",
+  "why_non_obvious": "latent本身不保视觉，额外encoder监督比仅扩展内部计算更关键。",
+  "trigger_condition": "When long textual reasoning loses visual detail, supervise intermediate latent features against selected visual targets.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "在中间表征加观测保持约束。",
+  "abstract_trigger_condition": "When repeated transformations dilute input evidence, align intermediate states with an input-derived target.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "latent模式回馈hiddenstate并加patchcosine loss。",
+  "abstract_why_non_obvious": "内部视觉回忆不等于获得新观测。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75947#s1",
+   "object": "MLLM latent模式训练",
+   "information": "冻结原视觉塔/teacherencoders；训练目标frame可由完整GTCoT选择，推理无teacher",
+   "operation": "每阶段K16 latent，MLP上采样对齐patch，LCE+.5平均多encoder负cosine",
+   "claimed_effect": "VSI33.0→S41.5/M52.9；无视觉对齐34.0；V*S86.4 vsbase76.4",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table1/3",
+    "quote": "the alignment is applied only during training"
+   },
+   "failure_boundary": "oracle训练frame相关性非当前policy必要性；推理latent无新图像信息。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "视觉证据保持可用辅助loss对照，需修改模型。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "vanillaSFT/LVR/CoVT/Monet/noVA/nativeencoder/externalencoder",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "450kCoT与外部视觉teacher；额外latent推理成本；未见独立局限节。",
+   "locator": "§4.1/AppA/C3"
+  }
+ ],
+ "question": {
+  "observed_failure": "VSI latent基线LVR18.4/Monet14.0劣于base33.0；无VA34.0。",
+  "load_bearing_assumption": "更多latent步骤自然保存视觉内容。",
+  "scope": "7B CoT/latent视觉QA",
+  "success_criterion": "同数据去对齐/换encoder，准确率和wallclock分别测",
+  "why_open": "长推理可能稀释视觉；但按长度分组不能单独证明因果稀释。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table10"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L=L_{CE}+\\lambda M^{-1}\\sum_m L_{REPA,m};\\ L_{REPA}=-\\frac1{NP}\\sum_{i,p}cos(\\psi(Upsample(F_{MLLM}^{i}))[p],\\phi(I^i)[p])",
+    "locator": "§3.2–3.3"
+   }
+  ],
+  "signal_routing": "CE监督语言/controltokens，REPA只监督latent中间特征及MLP；视觉teacher和nativeencoder冻结；无RL reward/advantage。",
+  "normalization": "other: cosine+patch/stage/encoder均值；非GRPO。",
+  "invariance": "非PBRS，辅助表征loss改训练目标。",
+  "baseline_or_potential": "冻结视觉teacher不是actorvalue。",
+  "degenerate_cases": "λ0无VA，K1容量有限；固定K新增计算，即使图不需重看仍可能运行；错误frame绑定会监督不相关特征。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "noVA/nativeQwen/DINOv3对齐；λ0/.5/1，K1/16/25；同生成长度分组只作相关分析。",
+  "negative_results": [
+   {
+    "text": "无VA V*75.9低于base76.4；λ1比.5差；32view latency1.55高于base1.21。",
+    "locator": "Tables3/10/11"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "随机targetframe或等参数辅助loss一样有效，则特定视觉对齐解释不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/DINOv3+SigLIPv2+π3",
+   "framework": "DeepSpeedZero2",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "450k×两stage各1epoch，4A100；K16λ.5；推理batch1单A100。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当监督latent视觉回忆时，记录targetframe如何由GTCoT选出，测试不要把隐空间计算写成新观测。"
+ }
+}

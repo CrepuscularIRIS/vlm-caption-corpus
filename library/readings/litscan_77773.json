@@ -1,0 +1,175 @@
+{
+ "paper_key": "litscan:77773",
+ "title": "LongGT",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77773.txt",
+  "sections_read": [
+   "Abstract",
+   "§2 pp3–5",
+   "§3 pp6–8 Tables2–5",
+   "A.7 Tables10–13 pp21–22",
+   "A.8 initial validation pp21–22"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "用densecaption+GroundedSAM框/标签按对象生成QA，再合成多个同图QA；VLM初答接文本reasoner长CoT扩展。",
+  "why_non_obvious": "caption-only大规模会重复；metadata扩大问题覆盖，而richCoT质量比简单增加长度重要。",
+  "trigger_condition": "视觉推理SFT缺复杂回退/验证轨迹且caption-only问题饱和。",
+  "contribution_type": "百万级问题/轨迹及offline-online后训练比较",
+  "abstract_strategy": "分离问题多样性、组合难度和行为丰富度三个数据轴。",
+  "abstract_trigger_condition": "RL受基础行为支持和问题难度双重限制。",
+  "abstract_key_step": "stage1约750k+stage2约251k；DPO按正确性优先，再在都正确时偏好短原轨迹。",
+  "abstract_why_non_obvious": "偏好保留错误前缀被正确续写修复的轨迹，而不是过滤所有错误步骤。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77773#s1",
+   "object": "caption桥接视觉CoT及偏好对",
+   "information": "人标DOCCI densecaption、预测框标签；textreasoner见caption，训练student只见image；初始CoT正确性由终答案近似",
+   "operation": "VLM生成z1，textreasoner扩展z2；正确扩展胜错误z1，若z1已正确则偏好更短z1；SFT后DPO或GRPO。",
+   "claimed_effect": "Table11 ours SFT.716；+DPO129k.740；+GRPO70k.757、129k退至.746；Table12短CoT CV.714低于无CoT.787。",
+   "conditions": [
+    "Qwen2.5-VL7B语言decoder训练",
+    "主表judge评估/消融rulematching分开"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table12 p22",
+    "quote": "+ SFT (Short CoT)                  0.714           0.540"
+   },
+   "failure_boundary": "终答案对不保证z1对；caption teacher信息非student视觉观测，字面回退频率非真实纠错机制验证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "同recipe中无richSFT的RL不能随数据稳定扩展。",
+   "strength": 3
+  },
+  {
+   "problem": "P38",
+   "how": "错误前缀+正确续写与正确短轨迹并存，适合恢复行为数据。",
+   "strength": 3
+  },
+  {
+   "problem": "P39",
+   "how": "caption只teacher可见，学生图像信息边界。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "LPT vs grounded metadata synthesis",
+   "kind": "ablation"
+  },
+  {
+   "name": "No/Short/Full CoT",
+   "kind": "ablation"
+  },
+  {
+   "name": "SFT/DPO/GRPO data scaling",
+   "kind": "diagnostic"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "初始reasoning不逐步核验，以答案正确性代替；人工质量只20样本。",
+   "locator": "§2.4 p5",
+   "quote": "we do not explicitly verify whether z1"
+  }
+ ],
+ "question": {
+  "observed_failure": "LPT纯RL从10k .695到100k .669；ours SFT .716；GRPO129k低于70k；简短低质量CoT低于无CoT。",
+  "load_bearing_assumption": "可操作的复杂行为需先SFT支持，高质量caption/对象metadata可扩展多样性。",
+  "scope": "vision-centricMCQ生成与后训练",
+  "success_criterion": "固定base/数据轴对照、分布外与跨模态能力分别量化。",
+  "why_open": "“更多RL”不能自动补SFT中缺失的行为。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.4/Table11"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table12"
+  },
+  {
+   "vocab": "M",
+   "id": "M12",
+   "locator": "§2.1–2.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "(z_1^-,z_2^+,a_2^+)\\succ(z_1^-,a_1^-);\\quad(z_1^+,a_1^+)\\succ(z_1^+,z_2^+,a_2^+);\\quad R_{GRPO}=1[correct]+.1\\,1[think\\ tags]",
+    "locator": "§2.4/§3.3"
+   }
+  ],
+  "signal_routing": "DPO β1+SFTloss权重.5，偏好整个序列；在线LLMjudge终答案+格式序列reward；GRPO完整std/length/G未给。",
+  "normalization": null,
+  "invariance": "非PBRS；compactness偏好仅两条都正确，不是无条件短文本奖；长度和teacher质量共同改变数据，未隔离因果。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "都正确短轨迹偏好可保direct；无正确扩展则无chosen修复；all-correct格式相同组无答案差异；teacher与student观测不一致可产生伪回看。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table11阶段/规模；Table12 CoT复杂度；Table4跨域暴露RL负迁移。",
+  "negative_results": [
+   {
+    "text": "SFT+GRPO NiEH39.10低于base47.55、SFT48.24及DPO56.34；MMLU-Pro47.00低于SFT50.82，不能把SFT跨域收益归于所有RL。",
+    "locator": "Table4"
+   },
+   {
+    "text": "主表MMVP base74.67而GRPO72.00/DPO72.33；SFT RealWorld65.49低于67.84。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：同总token/相同teacher对照显式回退与长度匹配线性CoT；真实错误纠正率而非词语计数，并测无图/错caption影响。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B；stage1 teacher7B+R1distill32B，stage2 72B/R1-671B/Qwen3-235B",
+   "framework": "LLaMAFactory/verl",
+   "group_size": null,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "SFTbatch256 LR8e-6 stage2减半、512²/maxlen1024(stage1)；DPO≤6epoch LR6e-6；GRPObatch128 maxresponse8192 LR1e-6；未给统一GPUh。",
+  "pitfalls": [
+   {
+    "text": "guided regex禁止teacher引用caption措辞并不消除caption信息优势；学生从未见caption。",
+    "locator": "§2.3"
+   },
+   {
+    "text": "人工20/LLM300验证不足自动代表百万数据；相关质量分布未全部读。",
+    "locator": "A.8"
+   }
+  ],
+  "code": null,
+  "lesson": "分开核问题难度、行为质量、长度；SFT与RL的跨域收益必须按checkpoint报告，不能混写最优值。"
+ }
+}

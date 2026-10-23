@@ -1,0 +1,190 @@
+{
+ "paper_key": "litscan:74330",
+ "title": "3ViewSense",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74330.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3 pp3–6",
+   "Tables1–5 §4–6 pp6–9",
+   "AppendixC2–3 pp13–14 training/probe"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先监督单图生成front/left/top结构化视图，再teacher view-grounded reasoning SFT和终答GRPO；结构化视图为文本中间表示，不新增图像观测。",
+  "key_step": "OMS19.5K合成正投影监督→VGR21K三视图推理→30K RL；strict二值或slack误差分级reward。",
+  "why_non_obvious": "合成数据筛三视图可唯一确定堆叠；却不等于一张egocentric图能唯一恢复三视图。结构化描述既减少推理漂移也可能固定错误。",
+  "trigger_condition": "遮挡计数/相对方向中缺稳定空间中间表示，且能获取合成投影标签。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先学可验证结构描述，再学从描述推理，最后优化终答。",
+  "abstract_trigger_condition": "遮挡计数/相对方向中缺稳定空间中间表示，且能获取合成投影标签。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "OMS19.5K合成正投影监督→VGR21K三视图推理→30K RL；strict二值或slack误差分级reward。",
+  "abstract_why_non_obvious": "合成数据筛三视图可唯一确定堆叠；却不等于一张egocentric图能唯一恢复三视图。结构化描述既减少推理漂移也可能固定错误。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74330#s1",
+   "object": "view-grounded reasoning warm start",
+   "information": "单ego图→推断的三视图文本；训练几何GT和Gemini3Flash正确终答筛选",
+   "operation": "OMS/VGR分阶段SFT，RL从VGR起步而非仅OMS",
+   "claimed_effect": "two-stage SFT ID78.6/OOD49.5 vsVGR70.3/46.6；RLslack外部MindCube38.9 vsbase27.2",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3 pp5–6; Table5 p8",
+    "quote": "Two-stage SFT (OMS→VGR) 78.6 49.5 34.9 34.4"
+   },
+   "failure_boundary": "无真实新视角生成/工具调用；GT hint诊断不能证明policy自己能可靠产生hint。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74330#s2",
+   "object": "near-correct outcome feedback",
+   "information": "GT整数或离散方向",
+   "operation": "计数max(0,1−.2abs error)，方向exact1/共享轴.5/其它0，整responseGRPO",
+   "claimed_effect": "OOD block38.7 slack vsstrict33.2、base21.2；IDstrict95.0 vsslack94.4",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3 p6; Tables1–2 pp6/8",
+    "quote": "strict and slack, matching the definitions in Section 3.3."
+   },
+   "failure_boundary": "几何接近不等价可靠推理，中间描述RL未直接约束。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "只有OMS格式SFT直接RL不稳定，需要VGR行为warm-start。"
+  },
+  {
+   "problem": "P42",
+   "strength": 2,
+   "how": "结构化caption有SFT监督但终答RL不验证其每个事实，需另测漂移。"
+  },
+  {
+   "problem": "P39",
+   "strength": 2,
+   "how": "probe可读与teacher hint不能证明学生自己能生成可读正确视图。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen3VL4B",
+   "kind": "method"
+  },
+  {
+   "name": "OMS-only",
+   "kind": "method"
+  },
+  {
+   "name": "VGR-only",
+   "kind": "method"
+  },
+  {
+   "name": "Direct QA SFT",
+   "kind": "method"
+  },
+  {
+   "name": "strict/slack GRPO",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "三正投影不覆盖物理support、affordance和dynamics；view induction不可靠时退化。",
+   "quote": null,
+   "locator": "§6 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "baseblockcount6.2；SFT33.4→strictRL95.0，但OODstrict33.2。",
+  "load_bearing_assumption": "模型能从ego图可靠推导任务充分的正投影视图，而非从训练prior猜隐变量。",
+  "scope": "合成唯一性筛选堆叠和单平面对象位置。",
+  "success_criterion": "推断视图一致性与终答在OOD同时升，结构描述优于同数据answer-only。",
+  "why_open": "直接QA在ID80.3高于reasoning70.3但外部崩，未完全区分协议遗忘和空间表示。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Fig5两个RL初始化对照"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "locator": "§3把ego图映入规范三视图描述"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "P(a|I,q)=Σ_V P(a|V,I,q)P(V|I,q); Vhat=argmax_V Pθsim(V|I,q)",
+    "locator": "Eq2–4 p3"
+   },
+   {
+    "latex": "Rcount=max(0,1-.2|yhat-y|); Rdir∈{1,.5,0}",
+    "locator": "§3.3 p6"
+   },
+   {
+    "latex": "A_i=(R_i-μR)/(σR+δ); J=E[mean_i min(r_iA_i,clip(r_i)A_i)-β KL]",
+    "locator": "Eq6 p6"
+   }
+  ],
+  "signal_routing": "context含I/Q/Vhat；整completion sequence ratio，文中未展开token实现；仅终答math reward，不给每视图独立credit。",
+  "normalization": "group mean/std+δ G8；β.01；seq ratio公式与verl实际token实现未核。",
+  "invariance": "整体reward平移/正比例近似不变；slack非PBRS、改变目标为偏好近错。",
+  "baseline_or_potential": "组均值，无view potential。",
+  "degenerate_cases": "三视图歧义不在筛选ID出现但OOD可出现；view错误被后续推理锚定；count错≥5全0；全同reward组0。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：同学生同题对比predicted/GT/shuffled三视图，保持长度和答案不可见；统计view事实正确但答案错与view错仍答案对，区分结构收益和label泄露。",
+  "negative_results": [
+   {
+    "text": "SFT OODobjectcount32.4低于base50.9；CV2D74.3低于77.9；DirectQA外部1.3/7.2。",
+    "locator": "Tables2/4 p8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若predicted views无增益、仅GT hint有效，不能宣称policy空间接口已解决。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VL4BInstruct",
+   "framework": "LLaMAFactory SFT; verl RL",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "SFT1epochbatch1acc8 maxpixels262144；RL5epochs batch512 lr1e-6 context8192 response16384；GPUtime未知。",
+  "pitfalls": [
+   {
+    "text": "teacher只按最终答正确筛trace可能保留错视图；noactualcrop，projection为文本字段。",
+    "locator": "§3.3 p5"
+   }
+  ],
+  "code": "https://github.com/Jasaxion/3ViewSense",
+  "lesson": "当用结构化caption作推理接口，分别核验生成该描述与使用正确描述的能力；不能用GT hint效果代替端到端证据。"
+ }
+}

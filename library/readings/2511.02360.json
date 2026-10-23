@@ -1,0 +1,338 @@
+{
+ "paper_key": "2511.02360",
+ "title": "LaRe: Latent Refocusing for Multimodal Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.02360.pdf",
+  "version": "v4",
+  "observed_version_date": "2026-05-26",
+  "version_basis": "Visible arXiv stamp on PDF p.1; latest remote version not checked because local full text was available.",
+  "sections_read": [
+   "Abstract; 1 Introduction; 2 Related Work",
+   "3.1 Latent Refocusing; 3.2 Semantic Augmentation; Eqs.1–8",
+   "4.1–4.6 Experiments; Tables 1–5; Figures 1–5",
+   "5 Conclusion; Limitations; Ethical Considerations; References",
+   "Appendix A Implementation Details; Algorithm 1; Table 6; Figure 6",
+   "Appendix B.1 More Ablations; Tables 7–11",
+   "Appendix B.2 More Analysis; Tables 12–18; Eq.9; Figure 7",
+   "Appendix B.3 Generalization; Table 19",
+   "Appendix C Case Study; Figure 8; D Discussion; E Usage of LLMs"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用动态隐状态查询原图视觉 token，在连续 latent 中反复聚焦；以去噪视觉重建辅助监督压缩后的视觉证据。",
+  "key_step": "每步从 LLM 各层抽取隐藏表示，经两层 self-attention/cross-attention Extractor 查询固定原图 VT，追加 Z(k)；K=4 后再解码回答。训练时用全部 Z 条件化 U-Net 预测噪声。",
+  "why_non_obvious": "显式重看通常增加图像 token；已有 latent 推理则可能仅传播静态视觉初始化。本方法将重查询原视觉特征与 latent 更新绑定，同时用重建约束信息保留。",
+  "trigger_condition": "When iterative evidence access is useful but explicit observation tokens dominate decoding cost, apply state-conditioned latent refocusing with reconstruction supervision to retain evidence while shortening generated text.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest has no review source or decision; local arXiv v4 is not acceptance evidence.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Replace repeated explicit intermediate observations with a compact state that repeatedly queries the original evidence.",
+  "abstract_key_step": "Use the evolving internal state to query fixed evidence, append the fused state, and train the accumulated states to reconstruct corrupted source features.",
+  "abstract_why_non_obvious": "Preserve dynamic evidence access while compressing its representation; avoid treating compression as a one-time loss of access.",
+  "abstract_trigger_condition": "When repeated explicit intermediates are costly but static compression loses relevant detail, repeatedly condition a compact update on source evidence and supervise its reconstructability."
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.02360#s1",
+   "object": "LLM reasoning-time intermediate representation and visual reread operator",
+   "information": "Current question, original encoded visual tokens VT, historical latent blocks, hidden state from each LLM layer. No new high-resolution crop pixels, external tool result, gold region or ground-truth answer at inference.",
+   "operation": "Repeat K times: extract layer-aligned hidden states, run self-attention then cross-attention to VT, pass through GLU/FFN, append new latent tokens; bracket accumulated latents with bot/eot and decode answer.",
+   "output": "K latent blocks of l tokens followed by autoregressive final text; K=4 and l=number of LLM layers.",
+   "claimed_effect": "Author-reported Table 3 (4B): full 74.7% / 65.0 output tokens versus without Extractor 69.3% / 89.1. Table 7 fixed-query variant 72.9% / 67.5; this isolates dynamic query relative to learned fixed queries, but does not by itself prove attention is causal.",
+   "conditions": [
+    "Original encoder must retain necessary visual information; refocusing cannot create absent pixels.",
+    "Architecture must expose per-layer hidden states and support recurrent latent-input blocks.",
+    "K fixed and all steps executed; visual encoder/projector described as frozen."
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.4.6, p.7; Table 3",
+    "quote": "Meanwhile, discarding the Extractor leads to a 5.4% drop in accuracy and a massive\nsurge in token consumption (+24.1), demonstrating that the iterative refocusing mechanism is vital\nfor pinpointing reasoning-relevant visual cues and\npreventing the model from generating verbose, redundant outputs."
+   },
+   "failure_boundary": "Fixed K may waste compute or underthink (p.9); Table 8 heuristic halting underperforms. No crop-selection or recover policy is learned. Architectural/configuration inconsistencies noted below.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2511.02360#s2",
+   "object": "Supervision on the full accumulated latent reasoning sequence",
+   "information": "Training image represented by KL-16 image tokenizer; sampled Gaussian noise and timestep; all latent Z; final target text for separate NTP loss. No labeled necessity/causal region or per-step crop value.",
+   "operation": "Corrupt image features with a diffusion noise schedule, predict injected noise with a latent-conditioned U-Net, and add its squared-error loss to final-text cross entropy with lambda_rec=1.",
+   "output": "Latent states encouraged to preserve reconstructable visual information; denoiser omitted at inference.",
+   "claimed_effect": "Author-reported Table 4 on MMStar/MMMU-Pro/MMVP: feature-denoising 62.9% average; no reconstruction 56.6%; feature regression 60.4%; pixel denoising 61.5%; pixel regression 58.9%. Table 3 across seven benchmarks removing semantic augmentation gives 67.2% versus 74.7%. Source inconsistency (visually checked p.7 Table4): no-reconstruction cells 68.5,54.6,51.8 average to58.3, not the printed/prose56.6. Preserve56.6 as author-reported only; it cannot support a reconstructed6.3pp ablation effect. Row-derived full mean62.933 minus58.3 is about4.63pp, pending clarification of aggregation/erratum.",
+   "conditions": [
+    "Need image-feature reconstruction targets and additional trainable denoiser during training.",
+    "Reconstruction target tokenizer and loss weight matter; KL-16 beats four alternatives in Table 9.",
+    "Gradient-path implementation not released in the supplied artifact; module updates not fully consistent across prose and Table 13."
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.4.6, p.7; Table 4",
+    "quote": "Experimental results indicate that the removal of\nthe reconstruction loss Lrec leads to a significant\nperformance decline across all benchmarks, where\nthe average accuracy drops from 62.9% to 56.6%."
+   },
+   "failure_boundary": "Reconstructability is not a per-action necessity label or proof of correct evidence use; no reward hacking or multi-round credit experiment.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Standard CoT",
+   "kind": "method"
+  },
+  {
+   "name": "MM-CoT",
+   "kind": "method"
+  },
+  {
+   "name": "CCoT",
+   "kind": "method"
+  },
+  {
+   "name": "ICoT",
+   "kind": "method"
+  },
+  {
+   "name": "Chain-of-Focus (CoF)",
+   "kind": "method"
+  },
+  {
+   "name": "MCOUT",
+   "kind": "method"
+  },
+  {
+   "name": "Latent Visual Reasoning (LVR)",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-R1",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme",
+   "kind": "method"
+  },
+  {
+   "name": "CapImagine",
+   "kind": "method"
+  },
+  {
+   "name": "Visual-CoT",
+   "kind": "dataset"
+  },
+  {
+   "name": "MMBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMVP",
+   "kind": "benchmark"
+  },
+  {
+   "name": "ScienceQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "POPE",
+   "kind": "benchmark"
+  },
+  {
+   "name": "V*",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMMU-Pro",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Fixed iteration count cannot allocate computation by instance need; both redundant and insufficient computation are possible.",
+   "locator": "Limitations, p.9",
+   "quote": "A primary limitation of the current LaRe framework is its reliance on a predefined, static number\nof reasoning iterations K. While our empirical\nanalysis identifies an optimal saturation threshold\nfor performance, this \"one-size-fits-all\" approach\ndoes not account for the varying complexity across\ndifferent multimodal tasks. For relatively straightforward visual queries, a fixed number of latent\niterations may introduce redundant computational\noverhead and unnecessary latency. Conversely, for\nexceptionally intricate logical reasoning tasks, the\nmodel’s performance may still be constrained by\nthe preset iteration limit."
+  }
+ ],
+ "question": {
+  "observed_failure": "Authors identify expensive explicit visual refocusing versus static latent context. Table 1 4B CoF uses 271.1 tokens on V* at 83.7%; LaRe reports 93.5 at 87.0%. This is a reported baseline gap, not an independent diagnosis or controlled causal comparison (CoF uses original post-training).",
+  "load_bearing_assumption": "Effective visual refocusing must appear as explicit tokens; a continuous latent loop can instead retain access to the original image features.",
+  "scope": "Visual-CoT-supervised latent reasoning on seven image QA/perception benchmarks, mainly Qwen3-VL-2B/4B and 8B comparison; no multi-turn crop RL.",
+  "success_criterion": "Improve answer accuracy with fewer generated output tokens and lower complete inference latency; authors do not predefine statistical noninferiority bounds.",
+  "why_open": "Prior latent approaches compress or initialize visual information without equivalent dynamic evidence access and reconstruction supervision; explicit tool/image reasoning incurs token overhead."
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "full LaRe configuration achieves the most competitive performance, striking a superior balance\nbetween reasoning accuracy (74.7%) and inference\nefficiency (65.0 tokens).",
+   "locator": "Sec.4.6, p.7; Table 3",
+   "note": "Performance/efficiency jointly measured, but no formal noninferiority test."
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "investigate the architectural design of the Extractor through a series of ablation experiments on a\n4B parameter backbone, as summarized in Table\n7.",
+   "locator": "Appendix B.1, p.14; Table 7",
+   "note": "Component ablations isolate self-attention, dynamic versus fixed query, and simpler projection/pooling alternatives."
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "role": "primary",
+   "quote": "Specifically, latent refocusing does not rely on\nexplicit image tokens for refocusing. Instead it\nintroduces a set of iteratively evolving latent representations.",
+   "locator": "Sec.1, p.2",
+   "note": "Replaces explicit refocusing representation with compact dynamic latents; performance preservation is empirical, not a proved equivalence. Other taxonomy labels omitted: no assumption theorem, no property-exclusive pretext guarantee."
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "H_T^{(k)}=H_{\\mathrm{LLM}}^{(k)}([V_T;T;Z^{(1:k-1)}])",
+    "locator": "Eq.1, p.4"
+   },
+   {
+    "latex": "Z^{(k)}=\\operatorname{Extractor}(H_T^{(k)},V_T)",
+    "locator": "Eq.2, p.4"
+   },
+   {
+    "latex": "L_{SA}^{(i)}=\\operatorname{SelfAttn}(\\operatorname{Norm}(\\operatorname{Linear}(L^{(i-1)})))+L^{(i-1)}",
+    "locator": "Eq.3, p.4"
+   },
+   {
+    "latex": "L_{CA}^{(i)}=\\operatorname{CrossAttn}(\\operatorname{Norm}(L_{SA}^{(i)}),V_T)+L_{SA}^{(i)}",
+    "locator": "Eq.4, p.4"
+   },
+   {
+    "latex": "Z^{(k)}=\\operatorname{FFN}(\\operatorname{GLU}(L_{CA}^{(N)}))",
+    "locator": "Eq.5, p.4"
+   },
+   {
+    "latex": "\\mathcal L_{rec}=\\mathbb E[\\|\\epsilon-\\epsilon_\\theta(\\sqrt{\\bar\\alpha_t}I_0+\\sqrt{1-\\bar\\alpha_t}\\epsilon,t,Z)\\|_2^2]",
+    "locator": "Eq.6, p.4"
+   },
+   {
+    "latex": "\\mathcal L_{ntp}=-\\sum_{i=1}^{|Y|}\\log P(y_i\\mid V_T,T,Z,y_{<i})",
+    "locator": "Eq.7, p.5"
+   },
+   {
+    "latex": "\\mathcal L_{total}=\\mathcal L_{ntp}+\\lambda_{rec}\\mathcal L_{rec}",
+    "locator": "Eq.8, p.5"
+   },
+   {
+    "latex": "\\mathrm{VAED}=\\frac{1}{K-1}\\sum_{k=2}^{K}|H(\\alpha^{(k)})-H(\\alpha^{(k-1)})|",
+    "locator": "Eq.9, p.16; diagnostic only, not training loss"
+   }
+  ],
+  "signal_routing": "NTP supervises target response tokens after the full latent chain. Reconstruction uses all Z as U-Net conditioning; gradients are intended to shape the shared latent representation, not assign distinct signed credit to a crop/stop action. Encoder/projector described frozen. No RL advantage, per-turn reward or caption/action token mask. Exact detach/update paths are not specified and Sec.4.2 only-LLM wording conflicts with trainable module counts in Table 13.",
+  "normalization": "other: Eq.7 sums over response positions; Eq.6 expects squared L2 noise error. No GRPO std, group centering or leave-one-out. Loss-reduction conventions across feature dimensions/batch are unspecified. Extractor has Norm; diagnostic attention is normalized; probe representations are L2 normalized, none is reward normalization.",
+  "invariance": "No policy-optimality invariance theorem or potential-based shaping. Architecture and SFT objective change; original image VT reused across steps and denoiser removed at inference. Lower output tokens is not invariant total compute.",
+  "baseline_or_potential": "No critic/value/potential baseline. Reconstruction target is encoded image plus known injected Gaussian noise; NTP target is supervised text. Appendix D RL reward/halting is future work.",
+  "degenerate_cases": "p≈0/1, all-correct/all-wrong groups: n/a to this SFT method. lambda_rec=0 is ablated (Table4 prints56.6%, while its three cells average58.3%; unresolved source arithmetic, not a verified6.3pp effect). K=1 retains one latent refocus but no interstep diagnostic; Eq.9 undefined at K=1. K=0 not tested. If image encoder loses small details, re-querying VT cannot recover new high-resolution pixels (reader inference). Identical entropy across spatially permuted attention maps yields VAED=0 although attention can move; Top-5 Jaccard helps but is not a semantic correctness label."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table 7 dynamic versus fixed query, self-attention removal, linear/pooling substitutions; Table 4 denoising versus regression and feature versus pixel targets; Table 12 MCOUT+Cross-Attn without reconstruction. Table 15 masks top-20%, bottom-20%, random-20% patches, plus all-steps condition; on MMStar drops 11.4/1.1/5.3/13.9 points. Table 17 step-1 deletion costs 6.3 points versus step-4 1.1. These support intervention sensitivity; attention selectivity alone cannot prove purposefulness or rule out parameter/training confounds.",
+  "controls": [
+   "Same Qwen3-VL backbones and Visual-CoT SFT for most Table 1 arms; CoF and LVR retain original post-training so not completely matched.",
+   "Fixed learned query vs evolving hidden-state query; no-Extractor/no-semantic-loss/both; feature/pixel regression/denoising; multiple tokenizers.",
+   "Low-attention and random same-fraction mask controls; all-step mask and latent-step ablations. No reported shuffled-semantic/parameter-and-compute-matched refocus control.",
+   "Probe: 1000 balanced pairs, negatives from different-question/same-image, different-image/same-question, random batch; stratified 70/30 split; five-fold training CV. Not seed replication of model training.",
+   "K=1..6 per benchmark, N=1,2,4,8,10,12; Table 14 total latent-plus-decoding latency."
+  ],
+  "negative_results": [
+   {
+    "text": "Heuristic adaptive halting is worse than fixed K=4: cosine averages 5.9 steps / 74.5%; L1 2.8 / 73.1%; L2 2.9 / 74.2%, versus 4 / 74.7% (Table 8); generated tokens also rise to 67.8/71.3/70.5 from 65.0.",
+    "locator": "Appendix B.1, p.15; Table 8",
+    "quote": "While adaptive stopping potentially mitigates redundancy and excessive computation, it results in a slight decline in\noverall performance metrics."
+   },
+   {
+    "text": "Extractor depth beyond 4 has marginal gains under 0.5 point while latency grows; default N=2.",
+    "locator": "Appendix B.2, p.18; Figure 7",
+    "quote": "Specifically, increasing N beyond 4 yields\nmarginal improvements of less than 0.5%, whereas\ninference latency continues to grow."
+   }
+  ],
+  "seeds": null,
+  "uncertainty": "Number of training/evaluation seeds and accuracy confidence intervals not reported. Table 5 attention-distribution tests report p-values, not training-seed uncertainty; no basis to assert single seed as fact.",
+  "falsifier": "Reader-proposed: under matched backbonecompute budgets, state-conditioned attention must outperform fixed or shuffled queries; masking its high-attention regions must hurt more than matched random/saliency regions. Failure would weaken dynamic evidence-selection claim. Recompute latency including all K*l latent tokens/forward passes; if savings vanish, token count alone fails efficiency claim."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-2B/4B-Instruct; 8B comparisons; supplementary LLaVA-1.5-7B and InternVL2.5-8B",
+   "framework": "other: DeepSpeed ZeRO-3; PyTorch named for probing",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": 4,
+   "max_turns_semantics": "Fixed latent iterations K, not tool dialogue turns",
+   "batch_size": 128,
+   "optimizer": "AdamW beta1=.9 beta2=.95 weight_decay=.05",
+   "precision": "FP16",
+   "hardware": "8 NVIDIA A100 80GB",
+   "gradient_accumulation": 4,
+   "micro_batch_per_gpu": 4,
+   "extractor_layers": 2,
+   "extractor_heads": 12,
+   "extractor_hidden_dim_reported": 1536,
+   "lambda_rec": 1.0,
+   "diffusion_steps": 1000,
+   "diffusion_schedule_reported": "linear beta from 1e-4 to .02; B.1 prose favors cosine but Table 10 ties 74.7",
+   "training_data": "Visual-CoT; sample count/main training epochs and learning rate not stated"
+  },
+  "cost": "Table 13: 2B full 1.77B trainable params, 2.88 s/iter, 13h30m, 26.08GB versus CoT 1.72B, 2.62s, 12h17m, 24.25GB. 4B full 4.08B, 4.96s/iter, 23h29m, 41.20GB versus CoT 4.02B, 4.59s, 21h44m, 38.15GB. GPU-memory aggregation scope not explicit. Table 14 average total inference 0.54s (2B) and 0.82s (4B), versus LVR .60/.90 and CoT 1.15/2.09. Training token/update counts absent. Reconstruction visualization U-Net separately fine-tuned 5 epochs on ImageNet-1K; do not confuse with main SFT epochs.",
+  "pitfalls": [
+   {
+    "text": "Fixed latent iterations create latency even on easy tasks; adaptive convergence thresholds were not a successful fix.",
+    "quote": "For relatively straightforward visual queries, a fixed number of latent\niterations may introduce redundant computational\noverhead and unnecessary latency.",
+    "locator": "Limitations, p.9"
+   }
+  ],
+  "code": null,
+  "lesson": "当把显式视觉重看压到连续状态时，应同时验证表示是否保留证据、遮蔽干预是否依赖这些证据，并计入所有 latent 前向与解码耗时；固定迭代减少文本不等于学会按需停止。"
+ },
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "Fixed-K latent iteration and failed cosine/L1/L2 adaptive stopping give a boundary case; no trained remaining-budget crop stopper.",
+   "strength": 1
+  },
+  {
+   "problem": "P42",
+   "how": "Image reconstruction auxiliary supervision suggests preserving evidence in intermediate representations; caption faithfulness and RL drift are not tested and require different targets/gradient routing.",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "Table 15 high/low/random visual masking can inform evidence-use diagnostics; reconstruction/attention is not a per-crop reward or necessity truth.",
+   "strength": 2
+  },
+  {
+   "problem": "P53",
+   "how": "2B/4B/8B and supplementary two model families offer architecture-transfer evidence within authors setup; no verification of 8K input or our crop protocol.",
+   "strength": 1
+  },
+  {
+   "problem": "P58",
+   "how": "Reported training overhead and total latency distinguish latent compute from generated token savings; method requires architecture change rather than cheaper fork estimation.",
+   "strength": 1
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": []
+}

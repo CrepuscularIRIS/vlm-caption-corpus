@@ -1,0 +1,210 @@
+{
+ "paper_key": "litscan:74487",
+ "title": "ProgEvi: A Progressive Evidence Localization Framework Based on Wasserstein Gradient Flows for Document Visual Question Answering",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74487.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 pp3–9",
+   "Tables1–2/Figs3–4",
+   "Appendix A.2 p15 proof assumptions",
+   "Appendix B.2 pp21–22 training; Table6 p23"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用可学习密度更新把文档证据定位写为Wasserstein梯度流，再以稀疏专家解码答案。",
+  "key_step": "证据页与问题编码冻结；6步密度更新用潜势、负熵、到GT证据的运输损失，末步KL监督与答案CE联合训练。",
+  "why_non_obvious": "把区域更新解释为最优运输而非一次bbox回归；但负熵与潜势参数化产生未消除的退化，理论解释不等于神经实现保证。",
+  "trigger_condition": "When a known document page contains diffuse answer evidence, iteratively concentrate a learned evidence density and condition answer decoding on it.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将定位轨迹改写为带监督终点的连续分布演化。",
+  "abstract_trigger_condition": "When a known document page contains diffuse answer evidence, iteratively concentrate a learned evidence density and condition answer decoding on it.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "证据页与问题编码冻结；6步密度更新用潜势、负熵、到GT证据的运输损失，末步KL监督与答案CE联合训练。",
+  "abstract_why_non_obvious": "把区域更新解释为最优运输而非一次bbox回归；但负熵与潜势参数化产生未消除的退化，理论解释不等于神经实现保证。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74487#s1",
+   "object": "证据密度/答案",
+   "information": "给定证据页、问题；训练GT证据分布和答案",
+   "operation": "冻结ColQwen3编码器，6步密度更新，4专家取2专家解码，联合区域KL与答案CE",
+   "claimed_effect": "DocVQA EM43.2/F155.8/ANLS62.7/mAP79.6；DocVXQA对应40.5/52.6/59.8/72.1",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p7; §3.3–3.4",
+    "quote": "Ours          43.2    55.8    62.7           79.6   45.8   59.4       67.3        53.4      42.1    57.6    66.5       62.8"
+   },
+   "failure_boundary": "已知证据页，不验证多页检索；GT区域监督不是在线无标注crop效用。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74487#s2",
+   "object": "分布优化的理论保证",
+   "information": "紧凸域、绝对连续测度、位移凸V及γ>0",
+   "operation": "以含−λ∫ρlogρ的能量构造JKO，并声称严格位移凸/唯一最小点",
+   "claimed_effect": "作者声称唯一极限及支持最小充分；读者反例表明这些条件不足以推出下界/凸性。",
+   "conditions": [],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "Eq6, Proposition3.5; A.2 p15",
+    "quote": "Since γ > 0, E is strictly displacement convex."
+   },
+   "failure_boundary": "读者数学检查：有界紧域、常数V、均匀µ*，均匀小块密度收缩时负熵→−∞而W2有界；因此原命题缺少限制。不是实测神经训练发散。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P44",
+   "strength": 3,
+   "how": "证据面积/集中度代理与语义充分性之间缺少已成立的桥梁；GT监督及能量退化都影响迁移。"
+  },
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "提供逐步视觉密度监督的结构，但依赖证据标注且非生成token credit。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "DocVXQA",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL",
+   "kind": "method"
+  },
+  {
+   "name": "uniform/linear/exponential update weights",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Reader limitation：给定证据页和GT区域训练，未验证无GT的工具必要性/多页检索。",
+   "quote": "",
+   "locator": "§3.1; §4.1"
+  },
+  {
+   "text": "Reader limitation：负熵能量可能无下界；A.2假定下界和凸性不足；神经网络更新未证明等于精确JKO。",
+   "quote": "",
+   "locator": "Eq6/23; A.2"
+  },
+  {
+   "text": "Reader limitation：Table6固定α权重写法与sum α=1约束不一致，是否再归一化未知。",
+   "quote": "",
+   "locator": "Eq19; Table6 p23"
+  }
+ ],
+ "question": {
+  "observed_failure": "1步mAP40.2→6步79.6，7–9步回落79.3/78.8/78.4；迭代收益不自动证明梯度流。",
+  "load_bearing_assumption": "所定义能量有下界且实现近似其受控下降。",
+  "scope": "固定证据页上的6步密度定位",
+  "success_criterion": "比较同参数无运输/改正熵符号及标准监督迭代，在同预算下证据精度与答案准确率均保持。",
+  "why_open": "负熵反例、可学习势能自由偏置及α归一化未明确。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "Proposition3.5及A.2前提审查"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Fig3步数/超参，Table6更新权重"
+  },
+  {
+   "vocab": "rs",
+   "id": "relax_discrete_search_to_continuous",
+   "locator": "§3.2–3.3"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "locator": "读者检查Eq6/11与A.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "E(µ)=∫Vdµ−λ∫ρlogρdx+γW₂²(µ,µ*)",
+    "locator": "Eq6"
+   },
+   {
+    "latex": "µₖ₊₁=argminµ [(1/(2τ))W₂²(µ,µₖ)+E(µ)]",
+    "locator": "Eq9"
+   },
+   {
+    "latex": "ρ_θ=exp(−f_θ)/Z_θ; Lₖ=E_µθ[fθ]+Ŵ₂²(µθ,µk)/(2τ)+λ(E_µθ[fθ]+logZθ)+γŴ₂²(µθ,µ*)",
+    "locator": "Eq10–11"
+   },
+   {
+    "latex": "L_total=ΣₖαₖLₖ+β KL(µ*||µ_T)+η CE(answer); Σₖαₖ=1",
+    "locator": "Eq16–19"
+   }
+  ],
+  "signal_routing": "无rollout advantage/reward mask。GT区域进入运输到µ*及最终KL，GT答案进入CE；编码器冻结，密度更新模块/专家及步权重训练。推理为已学更新和解码，不执行真实crop环境动作。潜势V依赖答案的理论定义与实际fθ近似差异保留。",
+  "normalization": "other：密度exp(−f)/Z；α声明sum1但Table6基线是否归一未知；TopK2专家权重除选中权重和，权重正值保证未明确。",
+  "invariance": "不是严格PBRS，无γΦ(s′)−Φ(s)轨迹奖励。f→f+c不改变ρθ、运输或E[f]+logZ熵项，却使Eq11首项增加c；自由偏置c→−∞可降低损失，若未约束offset则退化（读者推导）。",
+  "baseline_or_potential": "V=−logp(A|x,Q)为定位能量，不是动作无关value baseline。",
+  "degenerate_cases": "λ>0时负熵偏好集中；紧域常数V、ρ为边长ε小块均匀分布时E中熵=λdlogε→−∞，W₂项有界。纯空区域/门控和0、GT区域分布构造细节未在已读段确定。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig3步数/λ/τ；Table6固定或学习步权重：uniform73.2、linear75.8、exponential77.4、learned79.6；不能区分理论正确性与网络容量。",
+  "negative_results": [
+   {
+    "text": "超过6步下降；λ=2,τ=.05时mAP63.2低于λ=1,τ=.1的79.6。",
+    "locator": "Fig3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "静态能量反例已经反驳无额外条件的全局下界推论；神经实现另需固定离散分辨率/offset并记录能量与区域准确率，若标准监督迭代同效则WGF解释非必要。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "frozen ColQwen3 visual/text encoders; 6 updater steps; 4 experts top2",
+   "framework": "PyTorch2.7.1",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "6×RTX4090；batch16 accumulation2 effective32；Adam1e-4 wd1e-5 clip1 BF16；cosine30epochs而训练最多100earlystop，调度外推未说明。4专家top2报告158ms。",
+  "pitfalls": [
+   {
+    "text": "不要把理论精确JKO等同Eq23 learned softmax update；距离场构造/数值运输细节仍有未知。",
+    "locator": "Eq9/23"
+   },
+   {
+    "text": "固定α基线是否满足sum1未知，可能混入总loss尺度差。",
+    "locator": "Table6"
+   }
+  ],
+  "code": null,
+  "lesson": "当连续分布势能替代离散证据选择时，先检查熵符号、常数偏置和归一化，再把收敛定理迁入奖励设计。"
+ }
+}

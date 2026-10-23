@@ -1,0 +1,171 @@
+{
+ "paper_key": "litscan:63279",
+ "title": "GeoViS: Geospatially Rewarded Visual Search for Remote Sensing Visual Grounding",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_63279.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3 Eq1–8",
+   "§4 Tables1–5 Figure4",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先解析对象/位置/关系，再用受监督VisualRAG提供搜索评分与3×3 zoom动作，最终global+local grounding。",
+  "key_step": "MCTS10模拟/深度5，以QA符合比例和预测框对虚拟中心框IoU加权评分；统一模型SFT学4类原子任务，无RL。",
+  "why_non_obvious": "rIoU用预测框和候选区域中心框，不用测试GT；评分是搜索启发，非策略梯度reward。",
+  "trigger_condition": "When small objects require both local detail and distant spatial relations, search a local cue while retaining global context for final grounding.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "局部搜索与全局关系联合条件化",
+  "abstract_trigger_condition": "When small objects require both local detail and distant spatial relations, search a local cue while retaining global context for final grounding.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "MCTS10模拟/深度5，以QA符合比例和预测框对虚拟中心框IoU加权评分；统一模型SFT学4类原子任务，无RL。",
+  "abstract_why_non_obvious": "rIoU用预测框和候选区域中心框，不用测试GT；评分是搜索启发，非策略梯度reward。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:63279#s1",
+   "object": "空间搜索+条件grounding",
+   "information": "globalimage、当前region、结构化query；VisualRAG自判语义/预测框",
+   "operation": "zoom-in3×3选格、zoomout扩区，UCT和QA+central-IoU引导；最佳区域与全图联合输出globalbox",
+   "claimed_effect": "DIOR原子任务消融69.5→74.5 Pr@.5；全训练79.8；VRSBench68.5。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq3–8; Tables1,4",
+    "quote": "Full model ✓ ✓ ✓ 74.5"
+   },
+   "failure_boundary": "global+local oracle实验82.9不是自动search实际79.8；中心框IoU可偏好位置/大小而非真目标。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "用可预测QA验证与虚拟中央框IoU评价局部区域，作为搜索信号而非已实现RL过程奖励。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "先SFT原子验证/定位/zoom能力再做树搜索，迁移需保留各子行为支持。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "global-only SFT",
+   "kind": "method"
+  },
+  {
+   "name": "zero-shot atomic operations",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5VL3B",
+   "kind": "method"
+  },
+  {
+   "name": "LQVG/LPVA specialists",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "未找到显式局限节；奖励依赖同一模型自判，训练细节不足以重建原子标签生成。",
+   "quote": null,
+   "locator": "reader limitation, §3.4/4.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "RSVG-HR Pr@.5 51.5低于specialist87.4；虚拟中心proxy仍可能选错。",
+  "load_bearing_assumption": "预测框贴候选中心与语义Yes比例能够指示目标区域。",
+  "scope": "离线分析caption关系约束下global+crop输入。",
+  "success_criterion": "对重复实例和跨区关系错误率降低，且matched错实例不获同等搜索分。",
+  "why_open": "同模型reward/action/grounding耦合，缺独立定位真值评价其搜索评分校准。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§3.4区分search node heuristic reward与RL梯度；原子任务用SFT"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "§3.2/3.4 global-local树搜索与四个atomic tasks分工"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=.1*r_QA+.9*IoU(predicted_target_box,central_half_width_half_height_box)",
+    "locator": "Eq7;§3.2.3;§4.3"
+   },
+   {
+    "latex": "a*=argmax[Q(s,a)+c sqrt(logN(s)/(N(s,a)+eps))]",
+    "locator": "Eq3"
+   }
+  ],
+  "signal_routing": "搜索reward回传树节点统计；训练是VisualRAG四任务监督全参数finetune，没有on-policy RL/advantage。具体loss/masks/任务权重未披露，不补标准实现。",
+  "normalization": "QA正答数/语义检查数；IoU∈[0,1]；加权和非组std；UCT探索项。",
+  "invariance": "非PBRS；中心先验改变search偏好，无策略不变性。统一缩放框坐标保持IoU但相对候选中心位移改变reward。",
+  "baseline_or_potential": "UCT平均return与visitcount，不是policygradient baseline。",
+  "degenerate_cases": "错误对象被预测到中心也能高rIoU；多个同类目标依赖关系QA；3×3分割可能截断对象；zoomout比例λ/空候选/停止细节未给。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4冻ViT逐步替换训练atomic模块；Table3global/local提供oracle候选；Table5跨dataset。",
+  "negative_results": [
+   {
+    "text": "专用模型RSVG-HR87.4 vsGeoViS51.5；非“全部方法SOTA”。",
+    "locator": "Table2"
+   },
+   {
+    "text": "Table5 OPT零样本29.4/32.1与Table2OPT24.4/25.5不一致，保留报告边界。",
+    "locator": "Tables2,5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "将中心IoU换等面积错误实例后仍高分，或搜索不胜同计算随机region，则地理评分无鉴别力。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B全参数VisualRAG",
+   "framework": "LLaMAFactory",
+   "group_size": null,
+   "max_turns": 5,
+   "kl": null
+  },
+  "cost": "8A800,1epoch,batch8,AdamW1e-5 wd.01 warmup.1 clipnorm1 context8192；MCTS10模拟，GPUh/延迟未给。",
+  "pitfalls": [
+   {
+    "text": "表4冻ViT快速消融与主表全参数训练不同，74.5不能直接当主表79.8的去组件对照。",
+    "locator": "§4.6"
+   },
+   {
+    "text": "奖励所谓IoU不是真值IoU，而是virtualcenter框。",
+    "locator": "§3.2.3"
+   }
+  ],
+  "code": "https://github.com/Zhang-Peirong/GeoVis (not inspected)",
+  "lesson": "当模型同时生成框并给搜索评分时，应检查几何proxy是否奖励错误实例居中，并保留全图关系上下文。"
+ }
+}

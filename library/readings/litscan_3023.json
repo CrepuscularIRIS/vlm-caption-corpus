@@ -1,0 +1,187 @@
+{
+ "paper_key": "litscan:3023",
+ "title": "Improving Medical Large Vision-Language Models with Abnormal-Aware Feedback",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3023.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3 Eq1–11",
+   "§4 data provenance",
+   "§5 Tables2–9",
+   "Limitations",
+   "Appendix C hyperparameters",
+   "PDF p4 Eq9 denominator visual check"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用已标异常类别与框构造解释型SFT，再加入位置IoU和视觉attention奖励。",
+  "key_step": "同题候选分别按max归一化ALR/VRR，加relevance进入PPO式训练。",
+  "why_non_obvious": "正确诊断和正确定位并非同一监督；已有框可提供比终答更细信号，但公式存在退化。",
+  "trigger_condition": "When trustworthy region labels exist, separate localization supervision from answer relevance and inspect the reward definition before training.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用局部标注补全结果监督，但先检验分数是否真依赖所需信息。",
+  "abstract_trigger_condition": "When trustworthy region labels exist, separate localization supervision from answer relevance and inspect the reward definition before training.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "同题候选分别按max归一化ALR/VRR，加relevance进入PPO式训练。",
+  "abstract_why_non_obvious": "正确诊断和正确定位并非同一监督；已有框可提供比终答更细信号，但公式存在退化。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3023#s1",
+   "object": "diagnosis response with anomaly box",
+   "information": "gold anomaly category+bbox用于GPT4V造解释；PPO可用GTbox和abnormalpatch；不是无监督自发现",
+   "operation": "MAU supervised tuning后加IoU/maxIoU及attention/maxattention与LLMrelevance",
+   "claimed_effect": "MAU均值.75 vs SFT.67、SFT&PPO.69；去VRR .71、去ALR .72。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2; Tables2,6",
+    "quote": "we individually normalize these"
+   },
+   "failure_boundary": "Eq9按字面会退化为异常词数，attention收益的实现机制未确认；缺GT框无法照搬。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "独立GT框奖励的条件与定义可借鉴，但VRR不应直接复用。"
+  },
+  {
+   "problem": "P44",
+   "strength": 3,
+   "how": "attentionreward分母退化和max归一化尺度问题直接提示需先做代数信息依赖检查。"
+  },
+  {
+   "problem": "P36",
+   "strength": 2,
+   "how": "teacher拿到诊断和框是特权解释生成，不证明自主诊断能力。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "MedVInt",
+   "kind": "method"
+  },
+  {
+   "name": "MedVInt SFT",
+   "kind": "method"
+  },
+  {
+   "name": "MedVInt SFT&PPO",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4V with/without bbox",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者称算力不足未测更大模型。",
+   "quote": "Our study’s limitation is the limited computational",
+   "locator": "Limitations p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "MAU MedVInt .17，SFT .67，普通PPO .69，AAR .75。",
+  "load_bearing_assumption": "理解异常描述等于能定位异常。",
+  "scope": "有GT异常bbox的医疗解释生成",
+  "success_criterion": "相同SFT下ALR/VRR消融有增益，分数对region相关信息非退化。",
+  "why_open": "一般detector不覆盖罕见医疗异常。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3 two-stage SFT/PPO"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table6 component removal"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3.2 separatesrelevance/location/attention"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r^{loc}=IoU(B_{pred},B_{gt})",
+    "locator": "Eq8"
+   },
+   {
+    "latex": "r^{att}=\\sum_{i\\in N}\\sum_{j\\in\\bar N}\\frac{\\exp(Q_iK_j^T/\\sqrt d)}{\\sum_{k\\in\\bar N}\\exp(Q_iK_k^T/\\sqrt d)}=|N|\\quad(\\bar N\\ne\\varnothing)",
+    "locator": "Eq9; last equality reader derivation confirmed denominator in PDF p4"
+   },
+   {
+    "latex": "r=r^{\\pi,V,LLM}+r^{loc}/\\max r^{loc}+r^{att}/\\max r^{att},\\quad r^{\\pi,V,LLM}=A+r^{LLM}",
+    "locator": "Eq5,10"
+   }
+  ],
+  "signal_routing": "作者说combinedreward进PPO，又Eq11在clippedobjective外加c1*r；是否detach、是否直接attention梯度及哪token信用未说明。不得改写成标准GAE或逐patchmaskloss。SFT Eq2对response CE求和。",
+  "normalization": "per-query per-component maximum; no epsilon/floor specified; no groupstd in stated formula Separate max normalization does not guarantee equal contribution of the two channels.",
+  "invariance": "非PBRS；IoU/attention改变目标；max缩放取消分量正系数但不保optimalpolicy。Eq9固定N时对attention分布不敏感。",
+  "baseline_or_potential": "learnedV；Eq6–7另写max-next-action Qlearning，和PPO具体拼接unknown；不是已定义potential。",
+  "degenerate_cases": "异常patch非空时Eq9内部和1，reward变成异常token数；固定N时恒定，变长时鼓励更多异常词。空patch集/全零IoU分母未定义；同组全同分量无鉴别；缺GTbox不可直接迁移。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table6分别removeALR/VRR；§5.4注入不同IoU框，IoU>.6改善平台。",
+  "negative_results": [
+   {
+    "text": "没有randomregion/constantVRR对照排除Eq9退化；noGTbbox场景未被本文方法解决。",
+    "locator": "§3.2/§5.3–5.4 (reader evidence gap)"
+   }
+  ],
+  "seeds": "未给独立训练seed或区间。",
+  "falsifier": "固定N而替换attention分布ratt不变即可否定字面式定位奖励解释；如实现实际分母全patch，应以代码证据纠正文稿，当前unknown。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "MedVInt initialized UMed-LVLM",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": null,
+   "kl": null,
+   "gamma": 0.99,
+   "temperature": 0.9,
+   "top_p": 0.9
+  },
+  "cost": "SFT4epochs lr1e-5 batch128；AAR1epoch lr1e-6 batch16，NVIDIAH800，GPUh未给。",
+  "pitfalls": [
+   {
+    "text": "bbox符号写[x1,y1,x2,y2]但明确后两者为width/height；不要按xyxy算IoU。",
+    "locator": "Fig2 p5"
+   },
+   {
+    "text": "GTdiagnosis+box辅助造解释、三医学博士生审查纠13样本，不能视teacher独立诊断准确。",
+    "locator": "§4 p6"
+   }
+  ],
+  "code": null,
+  "lesson": "当reward被描述为attentionmass时，必须看softmax分母覆盖全集还是目标集合；只在目标集归一化后再求和会变常量。"
+ }
+}

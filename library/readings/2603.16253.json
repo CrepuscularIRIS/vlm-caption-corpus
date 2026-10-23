@@ -1,0 +1,544 @@
+{
+ "paper_key": "2603.16253",
+ "title": "Grounding the Score: Explicit Visual Premise Verification for Reliable Vision-Language Process Reward Models",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2603.16253.pdf",
+  "version": "v2",
+  "version_observed": "PDF p1 arXiv:2603.16253v2 [cs.CV] 9 May 2026; latest online version not checked",
+  "pages": 32,
+  "sections_read": [
+   "Abstract",
+   "1 Introduction",
+   "2 Related Work",
+   "3.1 Problem Setup",
+   "3.2 EVPV (3.2.1–3.2.3)",
+   "3.3 Judge-Agnostic Step Rewards (3.3.1–3.3.2)",
+   "3.4 Trajectory Scoring",
+   "3.5 Training and Inference",
+   "4.1 Benchmarks, Protocol, and Baselines",
+   "4.2 Exp-1",
+   "4.3 Exp-2",
+   "4.4 Exp-3",
+   "4.5 Exp-4",
+   "5 Discussion",
+   "6 Conclusion and Limitations",
+   "References",
+   "Appendix A Structured Visual Constraint Schema",
+   "Appendix B Checklist–Constraint Matching (B.1–B.4)",
+   "Appendix C Training Details (C.1–C.4)",
+   "Appendix D Complete Prompts (D.1–D.5)",
+   "Appendix E Alternative Aggregation",
+   "Appendix F Checklist Completeness Audit",
+   "Appendix G Constraint Fidelity",
+   "Appendix H Efficiency and Cost",
+   "Appendix I Complete Ablations",
+   "Appendix J.1–J.3 Qualitative Cases",
+   "Equations 1–21",
+   "Tables 1–13",
+   "Figures 1–10"
+  ]
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "把视觉前提是否可信与推导步骤是否正确拆开：策略显式声明每步视觉依赖，独立抽取器一次预测结构化事实；匹配产生候选级可靠度，再按视觉依赖缩放步奖励用于重排。",
+  "key_step": "将所有非null视觉声明与numeric/relation/structure约束分别匹配，用平滑几何均值聚合支持度r，使用σ(10(r−0.5))仅缩放视觉步骤的基分，再用幅度敏感几何均值重排候选。",
+  "why_non_obvious": "低步分可能来自视觉前提错误或逻辑错误；增加推理不能修复错误前提。将可复用证据与评分解耦可省去逐步工具，但全局r会跨步骤传播局部错误，且乘正gate不能改变零阈值二分类。",
+  "trigger_condition": "When step judgments entangle unreliable premises with reasoning correctness, apply independent structured premise extraction and reliability-aware magnitude calibration to improve candidate selection under reusable evidence.",
+  "reviewer_praise": [
+   "low_evidence: manifest无reviews_path；未取得独立审稿意见。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 不把本次读者审计或作者局限当成审稿意见。"
+  ],
+  "acceptance_signal": "low_evidence; decision=null原样复制manifest，venue=arXiv不是接收证据。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Separate premise support from derivation validity and calibrate judgments with independently collected reusable evidence.",
+  "abstract_key_step": "Match declared dependencies against typed evidence, aggregate support, and rescale only dependent judgments before magnitude-sensitive selection.",
+  "abstract_why_non_obvious": "Distinguish an unreliable premise from an invalid deduction; avoid treating confidence shrinkage as a change in classification or evidence of action necessity.",
+  "abstract_trigger_condition": "When shared prerequisite uncertainty contaminates local judgments, extract evidence once, match declared prerequisites, and calibrate dependent scores before selection."
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.16253#s1",
+   "object": "约束抽取器E_phi的训练标签与参数",
+   "information": "训练teacher可见图I、题q、schema和参考正确解步骤；产生pseudo-gold而非人工gold。学生E_phi输入只有I,q。测试不见参考解、真实答案或gold constraints。",
+   "operation": "从26,454图题对蒸馏JSON事实作SFT，再对5,832 teacher重写偏好对做文中称DPO的偏好训练；每个测试图题仅抽取一次C并跨候选缓存。",
+   "output": "可缓存numeric/relation/structure事实及模型confidence。",
+   "claimed_effect": "Table11：600抽样中534有效实例，P=.8216/R=.9151/F1=.8659；relation F1=.8037低于structure .9169。非独立复现。",
+   "conditions": [
+    "训练集中图题与解可用",
+    "schema覆盖任务，抽取输出有效",
+    "teacher伪标签需人审"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App G p22; Table11 p28",
+    "quote": "After filtering instances with missing/invalid outputs, 534\ninstances remain."
+   },
+   "failure_boundary": "66/600无效/缺失被排除；无效项端到端性能未报告；teacher看参考解有训练期特权信息；Eq20无标准DPO参考比项，不自行补写。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.16253#s2",
+   "object": "每条完整候选的visualdependency清单与支持度",
+   "information": "策略I,q→整条步骤及每步声明；matching看声明和预测C，不看GT答案。全局r用候选全部声明，故早期步的最终gate可依赖未来声明；base judge本身只看s_≤t。",
+   "operation": "把非null声明分类成数值/关系/结构，以数值容差或token Jaccard加confidence求p_j；无法解析置.5，已解析无匹配置0；用几何均值得r。",
+   "output": "候选级r和每步ν_t；不是每次裁图反事实价值。",
+   "claimed_effect": "Table10：415 traces/1780 steps，1305应视觉，77遗漏，completeness94.1%；8B遗漏10.60%、38B1.16%。",
+   "conditions": [
+    "策略遵从显式依赖格式",
+    "轻量分类器能解析声明",
+    "实体词汇及关系schema匹配"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App F p21; Table10 p22",
+    "quote": "We perform a human-verified audit on 415 sampled solution traces (1,780 total steps) drawn\nfrom the same benchmark family used in our downstream evaluation."
+   },
+   "failure_boundary": "声明漏报可绕过gate；已解析但抽取缺事实被当unsupported，不等于原图事实为假；M=0处理未规定；词袋重合未检验关系方向/附件拓扑。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.16253#s3",
+   "object": "概率步验证器V_theta的监督损失",
+   "information": "训练用VisualPRM400K参考trace派生逐步二值标签；预测u_t输入I,q,s_≤t，不可见future步骤/GT答案；部署与策略独立冻结。",
+   "operation": "在19,490 step-labeled trajectories上以BCE训练7B verifier；将u_t映射为2u_t−1作base reward。",
+   "output": "未门控的连续基分R_base。",
+   "claimed_effect": "Table1 EVPV整系统Macro-F1 67.46 vs VisualPRM62.00/TIM-PRM61.70；未给同训练verifier纯gate-only的干净F1效应，不能把5.46pt独归BCE或gate。",
+   "conditions": [
+    "逐步标签可信",
+    "训练数据按作者边界不含VPB",
+    "history可供当前步使用"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "App C.3 p18",
+    "quote": "Reliability gating is applied only at inference time as a calibration layer;\nthe verifier is trained on raw step labels without gating."
+   },
+   "failure_boundary": "验证器标签如何由reference trace精确形成未完全说明；无策略RL；整体比较同时改变模型与数据/输入，组件因果归因有限。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.16253#s4",
+   "object": "推理时视觉步奖励与Best-of-8候选排序",
+   "information": "base judge有I,q,s_≤t；外部Yes额外可见C，No没有。gate读整候选r与ν_t；无测试GT。oracle perception只在另项诊断里使用。",
+   "operation": "对ν_t=1的R_base乘α(r)>0，其他步不动；映射到ε+(R_t+1)/2，求步骤几何均值选最大候选。",
+   "output": "保符号但变幅度的步骤奖励、最终选中答案。",
+   "claimed_effect": "Table2 overall BoN@8：8B32.84→41.67，26B37.23→46.75，38B45.44→55.22；相对VisualPRM41.40/45.80/50.70为+.27/+.95/+4.52pt，MathVision与MathVerse-VO小模型有负结果。",
+   "conditions": [
+    "多候选存在质量差异",
+    "聚合对分数幅度敏感",
+    "全局r可靠且声明完备"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec3.4 p5; Table2 p8",
+    "quote": "Since reliability gating rescales reward magnitudes, we use a magnitude-sensitive aggregation so\nthat gating can influence candidate ranking."
+   },
+   "failure_boundary": "正gate不能单独改变零阈值二元分类，Table1/6归因存在缺口；低r会把负分也拉高到中性，非一律惩罚幻觉；无少裁图/策略学习证据。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.16253#s5",
+   "object": "结构化证据质量的干预诊断",
+   "information": "固定policy、verifier/judge、scoring，只改变预测约束字段；评估可见VPB标注但不作为部署输入。",
+   "operation": "按flip ratio随机翻转constraint字段，并做caption-only、empty、shuffle、drop、vision/history/parse消融；另做人审checklist和约束。",
+   "output": "证据质量–性能曲线及错误/缺失边界。",
+   "claimed_effect": "Fig4 overall67.31→63.85（−3.46pt），Table13 full67.46→caption-only63.38/shuffle59.82/drop35.77；不是所有子曲线严格单调。",
+   "conditions": [
+    "其他条件固定的作者实验陈述成立",
+    "腐化改变的输入路径已区分",
+    "独立人审可定位事实错误"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec4.4B pp10–11; Fig4 p10",
+    "quote": "the constraint set by randomly flipping a fraction of constraint fields (flip ratio), while keeping the policy,\nverifier/judge, and scoring procedure fixed."
+   },
+   "failure_boundary": "外部judge也读C，腐化可经judge证据路径生效而非仅gate；无gate-only固定R_base实验；Fig4 baseline67.31异于Table1 67.46，无误差条。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "VisualPRM-8B",
+   "kind": "method"
+  },
+  {
+   "name": "QWEN-VL-PRM-7B",
+   "kind": "method"
+  },
+  {
+   "name": "TIM-PRM-8B",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o-mini/doubao-seed-1.6-vision/Gemini2.5Pro as prompted judge",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-72B/Qwen3-VL-30B-A3B/Qwen3-VL-235B-A22B as prompted judge",
+   "kind": "method"
+  },
+  {
+   "name": "VisualPRM400K",
+   "kind": "dataset"
+  },
+  {
+   "name": "VisualProcessBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVista/MathVision/MathVerse-VO/WeMath/LogicVista/MMMU",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Macro-F1",
+   "kind": "metric"
+  },
+  {
+   "name": "Pass@1 and BoN@8",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明确全局可靠度会把局部误读传播到整轨迹。",
+   "quote": "We currently use a candidate-level (global) reliability signal, which may propagate a local visual misread to\nthe whole trajectory; step-local reliability is an important next step.",
+   "locator": "Sec6 pp11–12"
+  },
+  {
+   "text": "声明由策略自报，可漏报；文中未在RL对抗激励下检验。",
+   "quote": "the policy, so it can under-report visual dependency (e.g., outputting null when a step actually relies on the\nimage); an external dependency detector/auditor would improve robustness.",
+   "locator": "Sec6 p12"
+  },
+  {
+   "text": "教师伪标签不是独立金标；App G有人审子集但过滤了无效输出。",
+   "quote": "the constraint extractor is\ntrained on teacher-generated pseudo-gold constraints, so fidelity should be validated with human-annotated\nsubsets (precision/recall), not only internal matching signals.",
+   "locator": "Sec6 p12"
+  },
+  {
+   "text": "作者未训练policy；不能外推到GRPO学会必要看图。",
+   "quote": "The policy is not trained in this work; it is only prompted to output steps and\nchecklist items at inference time",
+   "locator": "Sec3.5 p6"
+  }
+ ],
+ "question": {
+  "observed_failure": "Fig1B视觉误解占VPB错误步74%，其内结构56%/值29%/对象15%（视觉读图）；Table1 VisualPRM Macro-F1 62.00。比例来自Gemini分型+部分人审流程，非本次独立标注。",
+  "load_bearing_assumption": "把图像条件下的步正确性评分当作可信视觉前提上的推导判定，默认前提感知可靠。",
+  "scope": "图表/几何多模态数学的PRM步验证与Best-of-8重排；训练抽取器/verifier，不训练policy或裁图策略。",
+  "success_criterion": "VPB逐步Macro-F1和六benchmark BoN@8；额外报告checklist遗漏率与约束precision/recall/F1；不含工具必要率。",
+  "why_open": "VisualPRM/ATHENA提升critic但未显式暴露前提可靠度；TIM-PRM逐步工具获取证据更细但有调用开销；本文一次抽取可复用证据，覆盖/全局性和gate归因仍未解决。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M02",
+   "quote": "EVPV should be read as a PRM-focused component: a lightweight test-time calibration layer, not a\nfull grounded reasoning pipeline.",
+   "locator": "Sec5 p11",
+   "note": "收窄为前提可信性评分接口，非整个grounded reasoning或RL效率方案。"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "while keeping the policy,\nverifier/judge, and scoring procedure fixed.",
+   "locator": "Sec4.4B pp10–11",
+   "note": "按constraint flip ratio固定其他模块；读者仍须区分C进入judge与gate两条路径。"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "On downstream\nbenchmarks we report Pass@1 (policy accuracy without reranking), BoN@k (accuracy after reranking 𝑘\nsamples), and the practical gain Δ𝑘 = BoN@k − Pass@1.",
+   "locator": "Sec4.1 p8",
+   "note": "分清候选生成的单次性能、重排收益和oracle覆盖，不将BoN增益误称策略训练增益。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "rewards for non-visual steps are\nkept unchanged, while rewards for visually dependent steps are down-weighted when 𝑟 is low and preserved\nwhen 𝑟 is high.",
+   "locator": "Fig2 caption p4",
+   "note": "rubric10：按视觉依赖属性分割步骤，再差别处理其奖励。"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "quote": "the constraint set by randomly flipping a fraction of constraint fields (flip ratio), while keeping the policy,\nverifier/judge, and scoring procedure fixed.",
+   "locator": "Sec4.4B pp10–11",
+   "note": "rubric4：对证据质量做受控干预；只能识别结构证据通道依赖，尚未隔离gate本身。"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "role": "supporting",
+   "quote": "EVPV introduces two trainable modules: the constraint extractor 𝐸𝜙 and the step verifier 𝑉𝜃",
+   "locator": "Sec3.5 p6",
+   "note": "rubric11：抽取结构化中间事实供typed matcher与step verifier分工；不声称外部依赖被完备识别。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "d_t\\in\\{\\text{a verifiable visual assertion},\\mathrm{null}\\},\\quad\\nu_t=\\mathbb I[d_t\\ne\\mathrm{null}],\\quad C=E_\\phi(I,q),\\quad p_j=m(v_j,C)",
+    "locator": "Eqs1–4 pp3–4"
+   },
+   {
+    "latex": "r=\\exp\\left(\\frac1M\\sum_{j=1}^M\\log(\\epsilon+p_j)\\right),\\quad\\epsilon=10^{-6}",
+    "locator": "Eqs5,18 pp5,17"
+   },
+   {
+    "latex": "u_t=P_\\theta(y_t=1\\mid I,q,s_{\\le t}),\\quad R_t^{\\mathrm{base}}=2u_t-1",
+    "locator": "Eqs7–8 p5"
+   },
+   {
+    "latex": "\\alpha(r)=\\sigma(\\beta(r-\\tau)),\\quad R_t=\\begin{cases}R_t^{\\mathrm{base}}&\\nu_t=0\\\\\\alpha(r)R_t^{\\mathrm{base}}&\\nu_t=1\\end{cases},\\quad\\beta=10,\\tau=0.5",
+    "locator": "Eqs9–10 p5; AppC.4 p18"
+   },
+   {
+    "latex": "\\widetilde R_t=\\epsilon+(R_t+1)/2,\\quad\\operatorname{Score}(S)=\\exp\\left(\\frac1T\\sum_{t=1}^T\\log\\widetilde R_t\\right)",
+    "locator": "Eqs11–12 pp5–6"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{con}}(\\phi)=-\\log P_\\phi(C^\\star\\mid I,q)",
+    "locator": "Eqs13,19 pp6,18"
+   },
+   {
+    "latex": "\\mathcal L_V(\\theta)=-\\sum_{t=1}^T[y_t\\log u_t+(1-y_t)\\log(1-u_t)]",
+    "locator": "Eqs14,21 pp6,18"
+   },
+   {
+    "latex": "p_j^{\\mathrm{num}}=\\mathbb I\\left[\\frac{|x-c_k.\\mathrm{value}|}{\\max(|x|,1)}<\\delta\\right]c_k.\\mathrm{confidence},\\quad\\delta=0.15",
+    "locator": "Eq15 p16"
+   },
+   {
+    "latex": "p_j^{\\mathrm{rel}}=\\max_{c_k\\in C(t)}\\mathrm{Jaccard}(E_{\\mathrm{claim}},E_{\\mathrm{con}})c_k.\\mathrm{confidence}",
+    "locator": "Eq16 p16"
+   },
+   {
+    "latex": "p_j^{\\mathrm{str}}=\\max_{c_k\\in C^{\\mathrm{struct}}}\\mathrm{Jaccard}(\\mathrm{TokSet}(P),\\mathrm{TokSet}(c_k.\\mathrm{parts}))c_k.\\mathrm{confidence}",
+    "locator": "Eq17 p17"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{DPO}}(\\phi)=-\\log\\sigma(\\beta_{\\mathrm{dpo}}[\\log P_\\phi(C^+\\mid I,q)-\\log P_\\phi(C^-\\mid I,q)])",
+    "locator": "Eq20 p18",
+    "note": "忠实抄原式；文中称DPO但无reference-model log-ratio项；β_dpo=.1, λ_dpo=.1在正文出现但λ未入此式，不自行重构。"
+   }
+  ],
+  "signal_routing": "抽取器SFT信号落在JSON目标token；偏好阶段只训E_phi；BCE监督V_theta各步y_t。策略未训练，gate只用于inference分数。ν=0基分保持、ν=1正负基分均乘同一候选α；无caption/crop/answer token PG路由、无result reward advantage。base judge前缀因果，gate使用完整候选清单，离线重排可用而在线逐步信用会有未来依赖。",
+  "normalization": "other: p按类型匹配；r对M个声明取log平均再exp，trajectory对T个步骤取log平均再exp；数值误差除max(|x|,1)，实体Jaccard≥.5。没有GRPO组mean/std、RLOO或token长度PG归一化。",
+  "invariance": "代数核对：α>0时sign(R_t)=sign(R_base_t)，固定base与ν的零阈值二元预测完全不变；非视觉步连幅度也不变。幅度敏感几何重排可变，故不保候选排序。不是γΦ(s′)−Φ(s)势函数，没有最优策略不变性证明。若移入RL则改动训练目标/信用，不能沿用只校准的结论。",
+  "baseline_or_potential": "baseline在这里是独立训练/冻结verifier或外部judge的step score，不是动作无关状态价值基线、MC answer-now价值或potential。抽取器confidence亦是模型自估，未给概率校准保证。",
+  "degenerate_cases": "M=0：r有1/M，文中未规定空清单值；若ν全0理论上不需gate，但实现fallback仍未知。C空而声明可解析→p=0，r≈1e−6，α≈.00669：不会真置零/改符号；无法解析→p=.5约半权。全支持p=1→r=1+ε（略超文本声称[0,1]，未报告clipping），α≈.9933；T=1变成映射后单步分。全部步基分正时低r使分数往.5下降；全部负时低r使分数向.5上升，可能让错误候选相对受益。单个失败对几何均值的惩罚随M稀释，例如其他p=1时r约ε^(1/M)，故不能无条件称一错必崩。全对/全错rollout组与动作p≈0/1在原文无定义；迁移到RL并不恢复采样支撑。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "作者固定模型与scoring改变constraint flip ratio、caption/JSON形式及结构，配人审constraint/checklist，能支持依赖证据质量；未给相同R_base仅gate on/off的因果臂。建议复核最便宜的代数诊断是固定step logits验证sign invariance（本次只做本地公式数值检查，不跑外部代码）。",
+  "controls": [
+   "Table1外部judge No vs Yes但Yes同时输入C；不是仅gate对照",
+   "Table13 caption-only/empty/shuffled/drop facts；保持图像或去图像组合",
+   "history none/1/2/4/8 steps；parse fail +1/random/−1",
+   "Tables7–9固定policy Pass@1与候选规模，对比五种聚合",
+   "AppF 415traces/1780steps独立宽松视觉依赖标注；AppG600抽样534有效人审约束"
+  ],
+  "negative_results": [
+   {
+    "text": "drop-facts Macro-F1 35.77 vs67.46，严重依赖约束覆盖。",
+    "quote": "Severe evidence loss (drop-\nfacts) collapses performance by 31.69, indicating that calibration fails when constraints are too incomplete.",
+    "locator": "Sec4.5 p11; Table13 p29"
+   },
+   {
+    "text": "保JSON去图仍降12.53pt；结构化事实不能完全替代直接视觉。",
+    "quote": "Making the judge text-only while keeping JSON constraints\nreduces Macro-F1 by 12.53",
+    "locator": "Sec4.5 p11; Table13 p29"
+   }
+  ],
+  "reported_numeric_results": {
+   "table1": {
+    "EVPV_PRM_overall": 67.46,
+    "VisualPRM": 62.0,
+    "TIM_PRM": 61.7,
+    "QWEN_VL_PRM": 58.6,
+    "external_overall_delta": [
+     0.72,
+     2.14,
+     1.51,
+     2.8,
+     1.04,
+     6.94
+    ],
+    "negative_subset_examples": "gpt4o-mini MMMU−.88/WeMath−2.12；Qwen3-30B MMMU−2.29/MathVision−1.00"
+   },
+   "table2": {
+    "policy_sizes": [
+     "8B",
+     "26B",
+     "38B"
+    ],
+    "pass1": [
+     32.84,
+     37.23,
+     45.44
+    ],
+    "VisualPRM_bon8": [
+     41.4,
+     45.8,
+     50.7
+    ],
+    "EVPV_bon8": [
+     41.67,
+     46.75,
+     55.22
+    ],
+    "derived_delta_vs_VisualPRM": [
+     0.27,
+     0.95,
+     4.52
+    ],
+    "negative_examples": "8B MathVision22.07<25.70、MathVerse29.47<35.80；26B28.11<29.60及32.47<39.10。局部退步不被overall掩盖。"
+   },
+   "table13": "full67.46; caption63.38; no constraints62.11; shuffled59.82; drop35.77; text-only keep JSON54.93; no vision/no JSON48.23; history none63.49,last1 65.22,last2 65.90,last4 66.73,last8 67.14; parse +1 65.68/random66.12/−1 67.46",
+   "fig4": "overall67.31→63.85; −3.46pt；子数据集有回升，不能说所有曲线严格单调。",
+   "human_audits": "Table10遗漏77/1305=5.90%；Table11仅534有效（600初抽），3234TP/702FP/300FN，P.8216/R.9151/F1.8659。"
+  },
+  "seeds": "not reported: 未列随机种子数/重复训练次数/置信区间，不擅自标single或多种子；Table6阈值扫描使用VPB，未给独立调参集/选择规则。",
+  "falsifier": "在固定base outputs/候选、相同C输入下关掉gate，若二元F1改变，说明实现还含未述阈值/输入路径；若BoN收益可被随机r或常数gate复现，则premise matching的增益归因不成立。若含无效输出的人审精度/跨域覆盖显著下降，则caption factuality迁移前提不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "E_phi和V_theta各自Qwen2.5-VL-Instruct-7B；teacher Qwen3-VL-235B-A22B-Instruct；policy InternVL2.5-8B/26B/38B",
+   "framework": null,
+   "group_size": null,
+   "rollouts": 8,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "training_details": "E_phi SFT:26454,batch16,3epochs,lr2e−5,AdamW,warmup3%,cosine,maxlen4096；preference:5832,1epoch,lr5e−6,β_dpo=.1,λ_dpo=.1；V_theta:19490 trajectories,batch8,3epochs,lr2e−5,maxlen8192。8是BoN候选数，不是RL group。主解码temperature未明确，Table13仅列消融温度。"
+  },
+  "cost": "Table12只给符号调用/延迟：EVPV 1 E_phi+T judge+0 tools，TIM 0+T+(.21T)tools（.21来自TIM文献）；差Lat(E_phi)−.21T Lat(tool)。跨N候选复用E_phi，但总judge须覆盖所有候选步。无实测token/GPU h/毫秒/硬件/训练总更新次数；不能宣称实测加速。",
+  "pitfalls": [
+   {
+    "text": "训练JSON失败要过滤，但报告有效率及端到端保留率，别把有效子集F1当总体。",
+    "quote": "Responses that fail schema validation are filtered.",
+    "locator": "App C.1 p17"
+   },
+   {
+    "text": "区分claim无法解析(.5)与已解析无证据(0)；也要区分Table13 judge JSON parse fail→−1的另一层fallback。",
+    "quote": "If a claim cannot be reliably parsed into the schema (e.g., too vague or out-of-domain),\nwe assign a neutral support score 𝑝𝑗 = 0.5.",
+    "locator": "App B.1 p15"
+   },
+   {
+    "text": "截断history会影响步判定，缓存与成本比较须保留相同history语义。",
+    "quote": "history length shows a consistent monotonic trend:\nlonger history is better, but the marginal gain diminishes quickly beyond 4 steps",
+    "locator": "App I p23; Table13 p29"
+   }
+  ],
+  "code": null,
+  "lesson": "当可靠性模块只乘一个正系数时，先核对下游指标是否依赖幅度；零阈值分类不会变，收益可能来自额外证据输入。缓存抽取结果应按实际图像状态而非题号，不能把完整原图/未来裁图事实偷带进当前观测信用。"
+ },
+ "relevance": [
+  {
+   "problem": "P36",
+   "how": "直接提供视觉声明–独立结构事实核对接口，可辅助caption事实性审计；但SFT按r加权未在原文试验，尤其不应拿低r直接删除整条轨迹。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "可作为RL前后caption事实性监测的候选工具，需本域人审和无效输出统计；原文没有RL漂移实验。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "过程步视觉前提评分相近，但不是每次crop取证/必要性reward；无bbox和局部动作因果标签。",
+   "strength": 1
+  },
+  {
+   "problem": "P16",
+   "how": "独立冻结extractor/verifier判断事实支持，不代表当前policy是否能用原有信息回答；不能据此宣称裁图冗余。",
+   "strength": 1
+  },
+  {
+   "problem": "P40",
+   "how": "分离错误前提与错误推理有诊断价值，但不能证明caption已正确时policy能读出；没有失败轨迹caption/answer token路由。",
+   "strength": 1
+  },
+  {
+   "problem": "P18",
+   "how": "well-formed无匹配置0混淆抽取漏报与真实错误，不能区分必要但失败探索和无效乱裁，unknown须保留。",
+   "strength": 1
+  }
+ ],
+ "source_consistency_audit": [
+  {
+   "issue": "positive_gate_zero_threshold",
+   "status": "reader_algebraic_check",
+   "locator": "Eqs9–10 p5; Sec4.2 p9; Table6 p18",
+   "detail": "任何α>0都不改变R_base正负，故相同base outputs的0阈值F1必定不变。Table1外部Yes额外输入C可改变base；Table6 τ变化导致F1变化不能由已述公式单独解释，需未披露实现/阈值/输入变化。不能据此否定幅度重排可能有效。"
+  },
+  {
+   "issue": "future_information",
+   "status": "reader_information_set_check",
+   "locator": "Sec3.2 Eq5; Eq6–7; Sec4.3",
+   "detail": "base verifier按前缀s_≤t；全局r按整条候选所有claims，早期step gating可依赖后续声明。部署BoN允许，不能直接当在线当前状态信号。训练teacher可用正确解，外部judge prompt无GT/future。"
+  },
+  {
+   "issue": "missing_oracle_table_and_unclear_oracle_numbers",
+   "status": "source_missing_report",
+   "locator": "Sec4.4A p10",
+   "detail": "原PDF字面Table ??；Normal/Oracle/Noisy/Text-only四设置叙述未附可定位数值表，不补数字。§4.1称报告Std Pass@k，但已读表未列该指标数值。"
+  },
+  {
+   "issue": "corruption_curve_scope",
+   "status": "visual_source_check",
+   "locator": "Fig4 p10",
+   "detail": "overall 67.31→63.85单调，图legend是五数据子集而非judges；DynaMath80→100等子曲线回升，因此正文all evaluated judges/monotonic强说法不能由图严格支持。0%端点67.31也不等Table1 full67.46。"
+  },
+  {
+   "issue": "checklist_false_positive_arithmetic",
+   "status": "reader_arithmetic_check",
+   "locator": "AppF pp21–22 Table10",
+   "detail": "正文false-positive7.1%；按定义FP/ModelVis，表合计推出TP=1305−77=1228，FP=1314−1228=86，86/1314=6.545%；不擅改正文值，记不一致。"
+  },
+  {
+   "issue": "qualitative_graph_image_vs_gold",
+   "status": "visual_source_check_possible_figure_label_mismatch",
+   "locator": "AppJ.1 p30 rendered page-30.png",
+   "detail": "文字声称x=1处连续但不可微、约束sharp corner at x=1；图x=1处有约y=−5空心点和约y=7实心点，显示不连续，不能当本次独立确认gold。可能图片/标签错配，未借此重判数据集。"
+  },
+  {
+   "issue": "DPO_equation",
+   "status": "formula_transcription_boundary",
+   "locator": "Eq20 p18",
+   "detail": "原式仅chosen/rejected当前模型log probability差，无冻结reference项；λ=.1只在文本出现，未展示联合目标。遵原式记录，不补标准DPO。"
+  },
+  {
+   "issue": "global_vs_local_examples",
+   "status": "reader_scope_check",
+   "locator": "Eq5 p5; AppJ pp30–32",
+   "detail": "案例叙述局部步骤低reliability、其他步preserved；公式是所有visual steps共用r，只能靠ν=0不受影响，案例未列完整ν/r/base。案例判对不单独证明step-local gate定位。"
+  },
+  {
+   "issue": "matching_schema_limits",
+   "status": "reader_formula_check",
+   "locator": "Appendix A/B pp15–17; J.1/J.2 pp30–31",
+   "detail": "关系匹配合并entity tokens并忽略方向顺序，structure匹配只看parts，schema中的attachment/adjacency未进入Eq17；示例continuous_at/quadrilateral不在列出的枚举中。无法据此保证严格事实蕴含。"
+  },
+  {
+   "issue": "minor_report_arithmetic",
+   "status": "source_numbers_preserved",
+   "locator": "Table2 p8; Tables7–9 pp20–21",
+   "detail": "8B VisualPRM overall41.40−Pass1 32.84=8.56但表delta8.40；26B45.80−37.23=8.57但表8.90；保留各原值不合并重写。附录Tables7–9不展示MMMU列但overall接近Table2，overall加权未明确，不能当六列算术平均。"
+  }
+ ]
+}

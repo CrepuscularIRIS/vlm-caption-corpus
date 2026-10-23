@@ -1,0 +1,194 @@
+{
+ "paper_key": "litscan:63255",
+ "title": "AdaptVision: Efficient Vision-Language Models via Adaptive Visual Acquisition",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_63255.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3–4 Eq1–14",
+   "§5 Table1 Figures4–6",
+   "§6 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "低分辨先答/裁局部高分辨，自适应省视觉tokens；DTPO按工具首轮与回答分别归一loss并拆reward优势。",
+  "key_step": "Aoc与Atool各自组std；λ=.3在标准化之后；tool分支首轮加Atool、次轮只Aoc；direct全tokens也拿Aoc+λAtool。",
+  "why_non_obvious": "不是只改JSON参数梯度；direct也参与tool通道对比，两个池的loss归一改变首轮梯度权重。",
+  "trigger_condition": "When tool and answer tokens have different lengths and reward roles, normalize their loss pools separately and route standardized channels explicitly.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "按功能分解梯度与条件效率奖励",
+  "abstract_trigger_condition": "When tool and answer tokens have different lengths and reward roles, normalize their loss pools separately and route standardized channels explicitly.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "Aoc与Atool各自组std；λ=.3在标准化之后；tool分支首轮加Atool、次轮只Aoc；direct全tokens也拿Aoc+λAtool。",
+  "abstract_why_non_obvious": "不是只改JSON参数梯度；direct也参与tool通道对比，两个池的loss归一改变首轮梯度权重。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:63255#s1",
+   "object": "DTPO路由与loss归一",
+   "information": "同prompt16轨迹的outcome/tool分量；firstturn边界",
+   "operation": "tooltoken总数与answertoken总数分别作分母；direct用双优势，crop后answer去掉tool优势",
+   "claimed_effect": "33%视觉token保留97.9%相对平均表现；无DTPO57%tokens/96.7%。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq12,14; Table1",
+    "quote": "AdaptVision 33% 97.9%"
+   },
+   "failure_boundary": "97.9%为相对原模型平均而非绝对accuracy或已证非劣；firstturn含reasoning/toolcall，不仅坐标。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:63255#s2",
+   "object": "balance和面积奖励",
+   "information": "正确direct/tool计数；GPT4o判断crop相关性；成功且crop正确子组面积",
+   "operation": "正确tool−.1；r<.2时正确direct也−.1；只对成功且crop正确的大于组均值面积施惩罚",
+   "claimed_effect": "无toolreward约10步归于direct；无balance过度tool；DTPO总体1.67x推理加速。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq8–10; §5.3; Figure4",
+    "quote": "the model collapses to direct answering and fails to invoke"
+   },
+   "failure_boundary": "r是正确响应中direct份额不是P(correct|direct)；低r时两成功分支同罚，非恢复稀有direct支持。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P44",
+   "strength": 3,
+   "how": "双通道标准化后λ与token池归一直接对接当前梯度诊断。"
+  },
+  {
+   "problem": "P26",
+   "strength": 3,
+   "how": "明确直答/crop两分支和效率代价，但未解决无支持状态。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO with same rewards",
+   "kind": "method"
+  },
+  {
+   "name": "VisionThink",
+   "kind": "method"
+  },
+  {
+   "name": "DownSample25%",
+   "kind": "method"
+  },
+  {
+   "name": "FastV/SparseVLM/VisionZip",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只一个工具、固定1/4分辨率、最多两轮。",
+   "quote": "fixed initial compression ratio (1/4 resolution).",
+   "locator": "§6"
+  }
+ ],
+ "question": {
+  "observed_failure": "GRPO最终100%tool；DTPO33%tokens但相对表现97.9%，MathVerse42.3<vanilla46.3。",
+  "load_bearing_assumption": "拆token池与双优势能保直答且不把externalcropjudge优化成目标。",
+  "scope": "[redacted: project-internal]",
+  "success_criterion": "非劣约束下工具率降低、direct支持保留、且两通道梯度方向可解释。",
+  "why_open": "paper没有严格非劣检验，directtoolreward默认与空池实现未明确。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Eq12/14按direct与tool分支、首turn与答案turn拆token监督"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "Eq12/14区分outcome/tool通道及动作token池"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J=(sum_{i,t<=T_i}L_it)/(sum_i T_i)+(sum_{i,t>T_i}L_it)/(sum_i(N_i-T_i))",
+    "locator": "Eq12"
+   },
+   {
+    "latex": "A_direct=A_oc+lambda*A_tool; A_call,t=A_oc+lambda*A_tool*1[t<=T_i]; A_c=(R_c-mean_group R_c)/std_group R_c",
+    "locator": "Eq14;lambda=.3"
+   },
+   {
+    "latex": "r=C_direct/(C_direct+C_tool); Rbal=-.1*1[Racc=1]*(1[r<.2] for direct;1 for call)",
+    "locator": "Eq8"
+   },
+   {
+    "latex": "Rtool=Rcrop-2*1[Racc=1]*1[Rcrop=1]*clip(r_area/mean_successcrop_area-1,0,1)",
+    "locator": "Eq9–10"
+   }
+  ],
+  "signal_routing": "Aoc覆盖所有生成tokens；Atool在direct全response与tool分支首轮reasoning+call覆盖，次轮answer无；工具observation作为条件不属生成。两个loss池按各自总token计数归一；无KL。",
+  "normalization": "两reward通道独立mean+std，λ=.3在std之后不会被通道std取消；area先相对成功正确crop组均值再clip。",
+  "invariance": "非PBRS；单通道正仿射reward缩放被各自std抵消，但后乘λ仍控制相对梯度。所有成功crop面积等比例缩放不改area/mean，故不直接保证绝对最小面积。",
+  "baseline_or_potential": "组均值含自身；r衡量正确结果的分支构成，不是动作条件成功率；无counterfactual。",
+  "degenerate_cases": "无correct则r0/0；无成功正确crop则面积均值空；全部direct则tooltoken池0；某通道同reward则std0。论文未给fallback。r<.2时正确direct/tool同减.1，不给direct相对支持；仅一个成功crop面积比1无罚。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1同框架去DTPO；Figure5去balance/toolreward；缺独立loss-normalization vs优势路由消融。",
+  "negative_results": [
+   {
+    "text": "MathVerse42.3<noDTPO44.2<vanilla46.3；并非逐任务非劣。",
+    "locator": "Table1"
+   },
+   {
+    "text": "33−25=8个百分点视觉token，正文称仅7%存在算术差异。",
+    "locator": "Table1 vs§5.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "仅调整firstturn lossweight即可复现增益，或自由direct/crop初期支持仍丢失，则不能归因精确信用；先量梯度而非训练。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B; GPT4o cropjudge",
+   "framework": "verl/vLLM",
+   "group_size": 16,
+   "max_turns": 2,
+   "kl": 0
+  },
+  "cost": "batch512 minibatch32 lr1e-6 trainT1/inferT0；GPU时未知；1.67x推理加速含额外生成。",
+  "pitfalls": [
+   {
+    "text": "Rtool给direct的原始值未定义于已读正文，却在Eq14包含direct的Atool，不能默认0后当作者实现。",
+    "locator": "§4.2 Eq9–10 vsEq14"
+   },
+   {
+    "text": "面积坐标按low-resolution宽高，真正crop取original；需保持比例对应。",
+    "locator": "Eq10;§4.1"
+   }
+  ],
+  "code": "https://github.com/adaptvision/adaptvision (not inspected)",
+  "lesson": "当分开优化工具与回答时，应同时检查direct分支收到什么信号、各池是否为空及标准化前后λ的位置，不能只看工具token的更新。"
+ }
+}

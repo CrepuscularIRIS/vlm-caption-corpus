@@ -1,0 +1,406 @@
+{
+ "paper_key": "2503.16188",
+ "title": "To Think or Not To Think: A Study of Thinking in Rule-Based Visual Reinforcement Fine-Tuning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.16188.pdf",
+  "version": "[redacted: project-internal]",
+  "sections_read": [
+   "Abstract; 1 Introduction (pp.1–3)",
+   "2.1 Thinking-RFT; 2.2 No-Thinking-RFT (pp.3–4)",
+   "3.1 Think-After-Answer & Adaptive-Thinking; 3.2 setup; 3.3 findings; 3.4 parameter changes (pp.4–7)",
+   "4.1–4.5 classification setup, few-shot, cross-dataset, efficiency, convergence (pp.7–10)",
+   "5 Related Works; 6 Conclusion and Limitations (p.10)",
+   "References (pp.11–15); Contents (pp.16–17)",
+   "Appendix A GRPO; B.1–B.4 related works; C datasets (pp.18–19)",
+   "Appendix D.1–D.3 implementation; E.1–E.3 prompts (pp.20–22)",
+   "Appendix F.1–F.4 classification; G.1–G.4 models/grounding/detection/inference intervention; H.1–H.2 puzzle and DPO (pp.22–28)",
+   "Appendix I and all Figure 9–25 text/captions (pp.28–45); visual examples inspected for Figures 9,15,19,23,25 only",
+   "NeurIPS checklist (pp.46–52), especially item 7 statistical significance (p.48)",
+   "Tables 1–18 text read; Figures 1–8 visually inspected; Table 1–7,8,10,15–18 visually checked in renders; not every heatmap cell independently transcribed"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "审计“显式思考是视觉规则奖励 RL 获益所必需”的假设；用直答提示+全文精确匹配奖励移除显式思考，再以回答后思考和同一已训练模型推理时空思考标签区分训练路径与推理路径。补充任务级自主选模式试验。",
+  "key_step": "保留在线组采样和 GRPO，将被奖励对象从思考后抽取的答案改为整个输出必须等于标签；另外把答案移到思考前而保留格式/正确性奖励。",
+  "why_non_obvious": "思考长度增大常被视为 RL 成功征兆，但分类中作者观察到长度骤降伴随奖励上升；去掉文字思考仍可保留在线探索与结果奖励，且不同容量/任务会改变有益方向。",
+  "trigger_condition": "When 显式中间过程可能增加可验证输出的学习负担且任务可直接判分, apply 匹配数据/模型的有无过程及过程顺序对照 to achieve 区分必要性、训练效应和推理效应。",
+  "reviewer_praise": [
+   "low_evidence: 未获取实际 OpenReview 审稿意见。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 未获取实际审稿意见；本记录的证据边界不冒充审稿人意见。"
+  ],
+  "acceptance_signal": "low_evidence: MANIFEST decision=null，原样保留；PDF首页印有 NeurIPS 2025，但不由此推断 Poster/Spotlight/Oral 或审稿评价。",
+  "contribution_type": "empirical",
+  "abstract_strategy": "审计中间步骤是否必要，并用删除、后移和仅推理期抑制三种干预分离收益来源。",
+  "abstract_key_step": "固定主要优化框架，改变可验证输出前的生成路径和输出合格条件，再比较质量、成本与跨分布表现。",
+  "abstract_why_non_obvious": "可见过程越长并不保证有效计算越多；可验证结果也可通过更短路径学习，但该关系受能力与任务约束。",
+  "abstract_trigger_condition": "When 中间步骤被默认当作收益来源, apply 对其存在性、位置与发生阶段的独立对照 to achieve 检验该步骤的实际贡献。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.16188#s1",
+   "object": "规则可验证视觉任务的完整模型输出及 GRPO 奖励",
+   "information": "看图像、题目、候选标签；训练奖励读取 ground truth 与生成文本，不读取思考质量、crop反事实价值或额外视觉观测。",
+   "operation": "用直接回答提示；删除格式奖励；仅在完整输出与标签精确匹配时给1分，保留在线采样与 GRPO。",
+   "output": "No-Thinking-RFT 的短直答策略。",
+   "claimed_effect": "作者报告 Qwen2-VL-2B 11分类集均值84.39 vs Thinking81.25；CVBench76.76 vs70.36，FT139 vs599分钟；ImageNet FT94 vs1587分钟。表5实数是9胜1平1负，不是文字声称的严格10胜；数学/OOD有反例。",
+   "conditions": [
+    "预训练/指令模型已有输出短答案的支持；论文所谓无SFT指无额外任务SFT，不是原始未指令训练模型。",
+    "分类主设置4-shot、候选列表含GT且限长；固定种子100。",
+    "范围以1B–7B模型为限；不涉及多轮视觉工具。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.2.2 p.4; Table 1 p.5; Table 5 p.8; Table 6 p.9",
+    "quote": "No-Thinking-RFT eliminates the format reward and relies solely on the accuracy reward rather than combining two rewards."
+   },
+   "failure_boundary": "7B MathVista59.10<64.60，MathVision18.09<21.71；2B MathVision13.49<16.45（Table3）；RefCOCO训练后LISA OOD下降（Table15）；无法推出“所有视觉推理无需思考”。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2503.16188#s2",
+   "object": "可验证答案与显式思考的自回归先后顺序",
+   "information": "相同图题/标签；答案生成时不再条件化于当次显式reason文本，后续reason条件化于答案；没有过程真值。",
+   "operation": "将输出改为先<answer>再<reason>，保持格式与准确奖励定义，以顺序干预测试思考前缀的影响。",
+   "output": "Think-After-Answer训练策略及收敛/准确率对照。",
+   "claimed_effect": "Table1 2B CVBench70.36→73.65、FT599→408分钟；Table2 2B PuzzleVQA52.50→64.70，仍低于NoThink70.85；7B MathVista64.60→62.00为负例。Figure3的2B训练奖励支持较快提升。",
+   "conditions": [
+    "改变顺序而不是完全删除过程；提示还要求brief reasoning，故不完全隔离长度。",
+    "相同数据、模型和主要超参；不是相同token计算预算。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.1 p.4; Appendix E.2 p.22; Tables1–3 pp.5–6; Figure3 p.7",
+    "quote": "The prompt is provided in Appendix E.2 and the format and accuracy reward do not change."
+   },
+   "failure_boundary": "只能支持特定任务/模型上的顺序效应；未证明梯度链条或奖励收敛的唯一因果机制；Figure8 p.25中7B Puzzle早期TAA曲线低于Thinking，不支持所有条件下更快。不能将已输出最终答案后的reason直接迁移为答后crop。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2503.16188#s3",
+   "object": "同一模型的think/direct输出模式选择",
+   "information": "策略自身看到当前图题，奖励读取终答正确性及两种允许格式；无逐题模式优劣标签、无强制成对分支、无独立门控器。",
+   "operation": "提示先判断是否需要思考；接受<answer>或<think>再<answer>两种格式并同给格式分1，照常GRPO。",
+   "output": "Adaptive-Thinking；任务级模式收敛，而非逐题自适应。",
+   "claimed_effect": "Table10：2B全部五测集100%直答；7B数学100%思考、CVBench99.6%思考、两puzzle集100%直答。Table1 2B/7B CVBench77.03/81.65；Table2 PuzzleVQA75.45/85.05；但Table3 2B MathVision13.16低于Thinking16.45，故不能无条件声称胜过更优模式。",
+   "conditions": [
+    "初始能够采到两种合法模式；论文未给最小采样比例保护。",
+    "能力/任务相关的全局选择不等于问题级必要性学习。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.3 Finding6 p.7; Table10 p.22; Appendix E.3 p.22",
+    "quote": "We observe that models initially produce a mix of thinking and No-Thinking responses, but gradually converge to a single response type"
+   },
+   "failure_boundary": "任务内几乎没有模式多样性；不解决按状态动作分化或稀少模式的支持消失；不能用来证明何时裁图已被学会。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2503.16188#s4",
+   "object": "Thinking-RFT思考内容与终答标签的一致性诊断",
+   "information": "GPT-4o读题目、ground-truth answer和模型回复，抽取思考内答案并对比终答；Appendix E.1提示含GT，因此不是独立盲评，未验证抽取误差。",
+   "operation": "抽取思考和终答的答案，记录不一致比例与该子集两类答案的正确率，展示含图实例。",
+   "output": "Figure2分任务不一致率/正确率及Figure9–14反例。",
+   "claimed_effect": "Figure2约读Puzzle不一致近47%、CVBench近10%；这些是图形粗读而非原始计数。Figure9 p29展示思考说5/7而终答1/5；作者据此建议一致性有助性能，未训练验证一致性干预。",
+   "conditions": [
+    "抽取器可靠且None处理规则合理；论文未给人工标注验证和样本计数。",
+    "终答与过程的正确性需要分别核对，词面一致不等于事实正确。"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec.3.3 Finding3 p.6; Appendix E.1 pp.21–22; Appendix I p.28; Figure9 p.29",
+    "quote": "We use GPT-4o [25] to extract answers from the thinking tag and compare them with those in the answer tag"
+   },
+   "failure_boundary": "相关性不证明提高一致性能提高准确率。Figure2 MathVision不一致子集终答柱高于整体柱，作者“both below overall”并非每集成立；展示样本不是随机抽样或人工金标。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2-VL-Instruct zero-shot",
+   "kind": "method"
+  },
+  {
+   "name": "SFT",
+   "kind": "method"
+  },
+  {
+   "name": "Thinking-RFT (GRPO)",
+   "kind": "method"
+  },
+  {
+   "name": "Think-After-Answer",
+   "kind": "method"
+  },
+  {
+   "name": "Adaptive-Thinking",
+   "kind": "method"
+  },
+  {
+   "name": "DPO random / DPO model",
+   "kind": "method"
+  },
+  {
+   "name": "Listwise DPO random / Listwise DPO model",
+   "kind": "method"
+  },
+  {
+   "name": "VLM-R1",
+   "kind": "method"
+  },
+  {
+   "name": "Visual-RFT few-shot detection setting",
+   "kind": "method"
+  },
+  {
+   "name": "SAT",
+   "kind": "dataset"
+  },
+  {
+   "name": "Math-40K",
+   "kind": "dataset"
+  },
+  {
+   "name": "CVBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVista / MathVision",
+   "kind": "benchmark"
+  },
+  {
+   "name": "PuzzleVQA / AlgoPuzzleVQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "RefCOCO / RefCOCO+ / RefCOCOg / LISA-Grounding",
+   "kind": "benchmark"
+  },
+  {
+   "name": "COCO eight-category 4-shot",
+   "kind": "dataset"
+  },
+  {
+   "name": "ImageNet / Caltech101 / DTD / EuroSAT / Food101 / Flowers102 / OxfordPets / StanfordCars / SUN397 / UCF101 / FGVCAircraft",
+   "kind": "benchmark"
+  },
+  {
+   "name": "accuracy / base-new harmonic mean / detection mAP",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明示只测试7B及以下，更大模型不确定。",
+   "quote": "computational constraints restricted our experiments to models 7B and smaller; thus, the applicability of our findings to larger models remains unverified.",
+   "locator": "Sec.6 Limitations p.10"
+  },
+  {
+   "text": "作者明示自适应仅任务级，逐题选择未实现。",
+   "quote": "our Adaptive-Thinking method converges to a single response mode (thinking or No-Thinking) at the task level, rather than adapting at the more granular problem level.",
+   "locator": "Sec.6 Limitations p.10"
+  },
+  {
+   "text": "作者承认没有误差条，多次训练因成本未做；小幅差不能当统计非劣。",
+   "quote": "Given the high cost of fine-tuning, we do not report error bars.",
+   "locator": "NeurIPS Checklist item7 p.48"
+  },
+  {
+   "text": "分类不是完整全类识别：候选列表人为包含真类并截断。",
+   "quote": "For few-shot classification, we sample 40% of labels including ground truth labels to form the classification list in question.",
+   "locator": "Appendix D.1 p.20"
+  },
+  {
+   "text": "开放类别结果只挑五个名字较易输出的数据集，严格文本判定可能混入命名能力。",
+   "quote": "synonyms, plural forms, and name partially missing will be judged as incorrect.",
+   "locator": "Appendix F.2 p.23"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table1 2B Thinking CVBench70.36 vs NoThink76.76，同时FT599 vs139分钟；Table2 Puzzle52.50 vs70.85。Figure1分类思考长度下降而奖励上升。任务/容量反例：Table3 7B MathVista Thinking64.60>NoThink59.10。",
+  "load_bearing_assumption": "“规则奖励RL的成功必须依赖显式思考，且让每道视觉题先生成思考通常更好”。论文挑战显式文本过程的必要性，不等同于否认隐式计算或新视觉观测的价值。",
+  "scope": "小中型MLLM（主要Qwen2-VL 2B/7B，另有InternVL2.5 1B/4B、Qwen2.5-VL3B/7B），单次图文任务，六任务类的规则奖励微调。",
+  "success_criterion": "在匹配模型、训练数据和主要超参下，对比终答准确率、训练/推理时间、奖励收敛、跨数据集结果与输出模式比例；没有预注册非劣界。",
+  "why_open": "Sec.1/5/B.3–B.4指出之前多模态RFT主要复现R1长思考现象，过度思考研究偏推理阶段，未分离训练期效应。最近背景包括Visual-RFT、R1-V、VLM-R1、MME-CoT与To CoT or Not to CoT（按论文陈述，未独立复读各前作）。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "quote": "making Thinking-RFT less effective than No-Thinking-RFT.",
+   "locator": "Abstract p.1"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "For a fair comparison, we set hyperparameters the same for all methods.",
+   "locator": "Sec.3.2 p.4; 只表示作者控制意图，主要NoThink臂同时改prompt/reward/长度"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "In this subsection, we compare the training and inference efficiency of SFT, Thinking-RFT and No-Thinking-RFT,",
+   "locator": "Sec.4.4 p.9; Table6分钟口径"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "role": "primary",
+   "quote": "We then rethink and question whether explicit thinking in RFT is always necessary and beneficial.",
+   "locator": "Abstract p.1"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "supporting",
+   "quote": "We test the No-Thinking inference mode of Thinking-RFT by appending an empty thinking tag during inference and show the results on Table 17.",
+   "locator": "Sec.3.3 Finding4 p.6; 训练/推理阶段对照，非完全因果隔离"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J_{\\mathrm{GRPO}}(\\theta)=\\mathbb{E}_{q\\sim Q,\\{o_i\\}_{i=1}^{G}\\sim\\pi_{\\theta_{\\mathrm{old}}}}\\left[\\frac1G\\sum_{i=1}^G\\min\\left(\\frac{\\pi_\\theta(o_i\\mid q)}{\\pi_{\\theta_{\\mathrm{old}}}(o_i\\mid q)}A_i,\\operatorname{clip}\\left(\\frac{\\pi_\\theta(o_i\\mid q)}{\\pi_{\\theta_{\\mathrm{old}}}(o_i\\mid q)},1-\\epsilon,1+\\epsilon\\right)A_i\\right)-\\beta D_{\\mathrm{KL}}(\\pi_\\theta\\Vert\\pi_{\\mathrm{ref}})\\right]",
+    "locator": "Appendix A p.18，原文display公式未编号；不是Eq.1，已看渲染"
+   },
+   {
+    "latex": "A_i=\\frac{r_i-\\operatorname{mean}(\\{r_1,r_2,\\ldots,r_G\\})}{\\operatorname{std}(\\{r_1,r_2,\\ldots,r_G\\})}",
+    "locator": "Appendix A p.18，原文inline公式未编号"
+   },
+   {
+    "latex": "D_{\\mathrm{KL}}(\\pi_\\theta\\Vert\\pi_{\\mathrm{ref}})=\\frac{\\pi_{\\mathrm{ref}}(o_i\\mid q)}{\\pi_\\theta(o_i\\mid q)}-\\log\\frac{\\pi_{\\mathrm{ref}}(o_i\\mid q)}{\\pi_\\theta(o_i\\mid q)}-1",
+    "locator": "Appendix A p.18，原文inline公式未编号；按其采样KL表达式抄录"
+   }
+  ],
+  "signal_routing": "Sec.2: Thinking包含格式与终答正确性两种0/1奖励；正文未明确给组合权重，不能私设总reward=(format+accuracy)/2。NoThink仅完整输出与GT相等的0/1奖励。TAA保持两类奖励，Adaptive允许两种格式同得1分。Appendix A以整条response概率写PG，未写token级损失/长度分母/mask；由自回归因子化可推得序列优势作用于生成token，但这是数学解释而非代码审计。没有显式过程事实奖励或逐次crop信用。Appendix I所称thinking无explicit supervision不能解释成thinking无梯度。",
+  "normalization": "mean+std",
+  "invariance": "无势函数塑形/最优策略不变保证。NoThink同时改变提示、可接受输出集合及奖励，直接偏好无额外文本；TAA改变答案条件化顺序；Adaptive扩大允许格式。三者均非只减方差的基线变换。",
+  "baseline_or_potential": "同题G个当前old-policy样本的奖励均值与std；无critic；冻结reference仅用于KL正则。GPT-4o只做论文一致性诊断，不是训练reward模型。",
+  "degenerate_cases": "推导：NoThink全对/全错组std=0，公式未规定epsilon/跳组，不能直接写实现处理；常用保护若置零则无任务PG、仍可能有KL。混合0/1组优势依赖成功比例。Adaptive p(模式)趋0/1时另一模式采样消失，没有强制支撑；实测几乎单模式。任务都是单次输出，无多轮退化公式。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "最有区分力的已做对照是：同一Thinking-RFT模型加空thinking标签，隔离推理时抑制；另训练NoThink比较训练效应；TAA保留过程但后移以测先后顺序。Table17 2B CVBench70.36→71.72→76.76、Puzzle52.50→62.90→70.85支持两个阶段均贡献；7B CVBench80.36→81.62→80.67却不支持“额外NoThink训练总更好”。Figure3/5逐步曲线检验收敛；匹配步数不是匹配token/FLOPs。",
+  "controls": [
+   "同任务模型/数据/主要超参匹配四模式；Qwen2-VL2B/7B分层。",
+   "7B数学与2B MathVision为不支持不思考普遍更优的自然负对照。",
+   "分类含SFT与零样本、base-to-new、新数据集迁移、开放类别五集。",
+   "更多模型家族；定位ID/OOD、COCO八类4-shot检测。",
+   "Appendix H.2四个离线DPO/listwise DPO负样本对照；仅初步结果，未给完整预算匹配，不能单独证明online sampling因果性。",
+   "o4-mini有无视觉推理的外部pilot84.30→86.48（H.1）；不是Qwen工具必要性或本方法crop实验。"
+  ],
+  "negative_results": [
+   {
+    "text": "数学需要保留条件：2B MathVision Thinking16.45>NoThink13.49；7B MathVista64.60>59.10，MathVision21.71>18.09。",
+    "quote": "It is reasonable that Thinking-RFT outperforms No-Thinking-RFT in MWP and MathVision since these problems need much computation for obtaining final answers and it is hard to directly output correct answers.",
+    "locator": "Sec.3.3 Finding1 p.5; Table3 p.6"
+   },
+   {
+    "text": "定位OOD损失：600步LISA NoThink61.76<VLM-R163.14，虽高于SFT54.82。RefCOCOg600步也略低86.91<87.10。",
+    "quote": "No-Thinking-RFT generally achieves better performance than VLM-R1 on the RefCOCO/+/g in-domain tests but performs worse on the LISA-Grounding out-of-domain (OOD) test.",
+    "locator": "Appendix G.2 pp.25–26; Table15 p.27"
+   },
+   {
+    "text": "无条件跨数据集免费提升不成立；EuroSAT训练可伤OxfordPets。",
+    "quote": "fine-tuning on the EuroSAT dataset could result in diminished performance on the OxfordPets dataset.",
+    "locator": "Appendix F.4 p.24; Figure4 p.9"
+   },
+   {
+    "text": "SFT也有胜出的特定分类集。",
+    "quote": "SFT can surpass Thinking-RFT in certain datasets, such as OxfordFlowers and EuroSAT, indicating that SFT may hold advantages in specific scenarios.",
+    "locator": "Appendix F.1 p.23; Table9 p.20"
+   },
+   {
+    "text": "Adaptive没有学会逐题选择；表10模式几乎为0/100%。",
+    "quote": "Ideally, Adaptive-Thinking would operate at the problem level, a refinement for future work.",
+    "locator": "Sec.3.3 Finding6 p.7; Table10 p.22"
+   },
+   {
+    "text": "7B Qwen2.5-VL的AlgoPuzzle NoThink26.11低于Thinking27.72，而Puzzle86.45高于77.10；视觉puzzle不能一概而论。",
+    "quote": "Thinking-RFT 77.10 27.72",
+    "locator": "Appendix G.1 Table14 p.26"
+   }
+  ],
+  "seeds": "single；Sec.4.1 p.8明确所有实验seed=100；Checklist item7 p.48明确因费用不报error bars、不多次重复。无跨种子CI或预注册非劣界。",
+  "falsifier": "读者提出的判别边界（未实施）：若匹配生成token预算、格式奖励、训练时长和多种子后NoThink增益消失，则“显式思考本身妨碍学习”的强因果解释不成立。若在逐题分层里Adaptive只改变全局模式率而不按需求分化，就不能证明逐题自适应——本论文Table10已呈此边界。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "主要Qwen2-VL-2B/7B-Instruct；附录InternVL2.5-1B/4B及Qwen2.5-VL3B/7B。R1-zero-style任务RL，无额外任务SFT。",
+   "framework": "other: PyTorch；具体RL训练库未明示",
+   "group_size": 4,
+   "rollouts": null,
+   "steps": null,
+   "kl": 0.04,
+   "temperature": 1.0,
+   "max_turns": null
+  },
+  "cost": "分类全参数8×A100；每GPU batch1、梯度累积2；图像328×328、无augmentation；lr1e-6。group_size=4仅默认分类/SAT及7B；2B math/puzzle=8。SAT2epochs（prompt/response1024/1024），Math40K1epoch（4096/512），6.5k puzzle2epochs（1024/1024）。分类4-shot，候选40%（base-new80%）含GT，小于30时用全类，大于100截100；分类1024/1024，StanfordCars提示2048/回复1024（D.2句子有重复笔误）。分类总steps/epochs未明确完整汇报；检测8类×4图、100steps/50epochs；定位展示前600steps。Table6 ImageNet训练SFT35、Thinking1587、NoThink94分钟，推理20/30/26分钟；Table1 2B CVBench Thinking/TAA/NoThink/Adaptive训练599/408/139/208分钟，7B651/428/155/639分钟。总训练token、总GPU·h、rollout成本分项及显存量未报告，不能从8卡概述私算每项GPU·h。",
+  "pitfalls": [
+   {
+    "text": "短直答降低在线采样成本，但成本下降不等于同token预算下机制已被隔离。",
+    "quote": "RFT typically requires significantly more fine-tuning time and GPU memory than SFT due to the generation of multiple lengthy responses",
+    "locator": "Sec.1 p.2"
+   },
+   {
+    "text": "严格字符串匹配让开放类别同义词/拼写成为额外失败源；论文只限制测试类别名，并未给一般修复器。",
+    "quote": "synonyms, plural forms, and name partially missing will be judged as incorrect.",
+    "locator": "Appendix F.2 p.23"
+   },
+   {
+    "text": "作者观察到思考答案不一致，只建议后续修复，没有已经验证的一致性奖励。",
+    "quote": "We leave strategies for enhancing consistency to future work.",
+    "locator": "Sec.3.3 Finding3 p.6"
+   }
+  ],
+  "code": "https://github.com/minglllli/CLS-RL",
+  "lesson": "当显式中间文本并非当前任务的可靠计算途径时，先以相同模型/数据区分训练期去除与推理期抑制，并同时报告准确率、域外退步、模式分布与时间；不能用少生成文本代替少获取必要视觉证据。"
+ },
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "过程已指向正确答案而终答错误的实例是直接相邻证据；Figure9及Figure11。本文诊断对象是think文字，不是caption/crop后的事实，未提供已验证修复。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "只奖励终答可伴随过程模板化/不一致；Appendix I指出过程无显式监督。过程质量漂移需要本项目独立核查，不能从思考不一致直接推断caption幻觉率。",
+   "strength": 2
+  },
+  {
+   "problem": "P29",
+   "how": "Table10证明允许两种输出且同格式奖励不足以维持两种模式采样；对动作支持消失提供相邻实证，不含防塌缩机制。",
+   "strength": 2
+  },
+  {
+   "problem": "P02",
+   "how": "任务级选择不解决直答够用题与需新观测题的条件决策；本篇无crop分支，因此仅是控制变量/负例参考。",
+   "strength": 1
+  },
+  {
+   "problem": "P45",
+   "how": "seed100且无误差条；提示论文的小幅优势同样无法支持统计持平，不是本项目方差的修复。",
+   "strength": 1
+  },
+  {
+   "problem": "P53",
+   "how": "任务×容量×家族改变思考收益方向，可迁移为评测分层原则；不包含Qwen3-VL4B高分辨率工具结果。",
+   "strength": 2
+  },
+  {
+   "problem": "P63",
+   "how": "跨分类集与定位OOD结果表明域外保持必须单独测量；free-lunch有负例。",
+   "strength": 2
+  }
+ ]
+}

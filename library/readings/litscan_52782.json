@@ -1,0 +1,148 @@
+{
+ "paper_key": "litscan:52782",
+ "title": "CPathAgent",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_52782.txt",
+  "sections_read": [
+   "Abstract",
+   "3.1–3.4",
+   "Table 1",
+   "Table 3",
+   "B.4–B.5/Table A5–A6",
+   "C.3–C.4",
+   "D Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "将 WSI 分成筛选、预先规划视图、全视图联合诊断三阶段，并针对各阶段蒸馏监督。",
+  "why_non_obvious": "真实高分辨率像素必须重新裁取；最终推理一次看全轨迹，而非闭环逐步观察。",
+  "trigger_condition": "当 gigapixel 缩图丢失细胞结构时，以筛选和多倍率真实裁剪补充诊断证据。",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当 gigapixel 缩图丢失细胞结构时，以筛选和多倍率真实裁剪补充诊断证据。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "将 WSI 分成筛选、预先规划视图、全视图联合诊断三阶段，并针对各阶段蒸馏监督。",
+  "abstract_why_non_obvious": "真实高分辨率像素必须重新裁取；最终推理一次看全轨迹，而非闭环逐步观察。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:52782#s1",
+   "object": "WSI 诊断路径",
+   "information": "训练有报告引导的 Gemini 合成路径；推理仅缩图、区域图、组织来源、裁剪图",
+   "operation": "32倍缩图→16000²网格5%重叠→语义聚类/严重度筛选→归一化坐标倍率计划→全部裁剪图一次联合推理",
+   "claimed_effect": "六癌种 balanced accuracy 82.8%，去筛选80.3%，去导航与多视图75.0%。",
+   "conditions": [
+    "CPath-CLIP + Qwen3-14B，三级训练；病人级划分"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table A5; §3.1",
+    "quote": "Full CPathAgent                   88.5        90.8             94.6            97.1      62.7        63.2     82.8"
+   },
+   "failure_boundary": "规划阶段不能使用尚未获取的后续裁剪；没有观察后在线重规划或学习 stop 的证据。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "领域和工具行为必须通过阶段监督学得；直接套 Gemini agent prompts 反而下降。",
+   "strength": 3
+  },
+  {
+   "problem": "P39",
+   "how": "筛选后真实高倍率裁剪避免缩图信息损失，但未测等像素预算。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "ABMIL",
+   "kind": "method"
+  },
+  {
+   "name": "CPath-Omni*",
+   "kind": "model"
+  },
+  {
+   "name": "Gemini-2.5-Pro",
+   "kind": "model"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "路径合成而非真实病理医师轨迹。",
+   "quote": "1. Synthetic diagnostic pathways. Currently, the diagnostic viewing paths employed by CPathA-\ngent are synthetically generated rather than derived from real pathologist workflows. Although our",
+   "locator": "Appendix D"
+  }
+ ],
+ "question": {
+  "observed_failure": "Gemini 从直接诊断72.1降到 agent prompts65.4；去导航82.8→75.0。",
+  "load_bearing_assumption": "合成且报告引导的路径能转移为无报告的视觉诊断。",
+  "scope": "六癌种 WSI 分类",
+  "success_criterion": "等像素/区域数比较规划裁剪与随机裁剪 balanced accuracy。",
+  "why_open": "导航与多视图同时消融，无法分开规划质量和额外视觉信息。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.4; Table A6"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "三级监督训练：阶段1只MLP，阶段2全参数，阶段3全参数混入20% patch指令；未见 RL 奖励、优势或 token mask 的公式，不能补写。",
+  "normalization": "other",
+  "invariance": "无 potential shaping；无策略不变性声称。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "筛选漏掉病灶会不可逆丢证据；全部保留增成本；单视图退化对照75.0；没有全对/全错组定义。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "A5 随机保留70%替代筛选 vs 去导航/多视图；A6 同prompt直接迁移 Gemini。",
+  "negative_results": [
+   {
+    "text": "Gemini agent 化72.1→65.4，说明模板本身不保证收益。",
+    "locator": "Table A6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "固定真实像素和视图数，随机/均匀路径若同样有效，则导航智能的独立贡献不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "CPath-CLIP + Qwen3-14B / LLaVA-OneVision",
+   "framework": "LLaVA-OneVision",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8 H800-80G：阶段1 9h、阶段2 25h、阶段3 39h；均为论文报告。",
+  "pitfalls": [
+   {
+    "text": "Upper Bound 使用报告引导的生成训练描述，91.7不是无标签推理可达保证。",
+    "locator": "§4.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当多视图模板跨模型部署时，未训练的模型可能下降，应先测基座领域能力与路径SFT收益。"
+ }
+}

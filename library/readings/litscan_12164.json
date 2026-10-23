@@ -1,0 +1,157 @@
+{
+ "paper_key": "litscan:12164",
+ "title": "V*: Guided Visual Search as a Core Mechanism in Multimodal LLMs",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_12164.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.1–3.2 Algorithms1–2",
+   "§4",
+   "§5.1–5.4 Tables1–5",
+   "§6 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "decompose_and_delegate",
+  "key_step": "VQA模型提出缺失目标，V*用对象线索或常识上下文热图给局部patch优先队列排序，将找到的真像素及坐标写回VWM。",
+  "why_non_obvious": "文字工具返回会丢视觉细节；只加分辨率或对象检测不等于有目标搜索。",
+  "trigger_condition": "When global features miss target details, request a target-directed search and return actual local pixels with their locations.",
+  "contribution_type": "method",
+  "abstract_strategy": "decompose_and_delegate",
+  "abstract_trigger_condition": "When global features miss target details, request a target-directed search and return actual local pixels with their locations.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "VQA模型提出缺失目标，V*用对象线索或常识上下文热图给局部patch优先队列排序，将找到的真像素及坐标写回VWM。",
+  "abstract_why_non_obvious": "文字工具返回会丢视觉细节；只加分辨率或对象检测不等于有目标搜索。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:12164#s1",
+   "object": "SEAL target search and visual working memory",
+   "information": "当前图、问题、缺失目标列表；search模型看局部像素，热图可来自目标或LLM生成上下文线索",
+   "operation": "递归分patch按热图优先级搜索，达到定位置信度则返回原图crop+坐标；无结果写目标不存在；VQA再答",
+   "claimed_effect": "同训练数据无VWM/V* 45.02%，SEAL75.39%；检测替换62.30/62.82%",
+   "conditions": [
+    "自然图像常见物体；VQA自行决定是否列出缺失目标"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2; Algorithms1–2",
+    "quote": "4        Vicuna-7B            ✓          V ∗ -Search                           74.78     76.31     75.39"
+   },
+   "failure_boundary": "搜索长度4.65只统计最终定位成功样本，不是全体工具成本或停止最优性证据。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P39",
+   "strength": 3,
+   "how": "局部新像素+位置写回，直接针对缩略图细节丢失。"
+  },
+  {
+   "problem": "P33",
+   "strength": 2,
+   "how": "定位置信度/最小patch阈值停止；不同于任务剩余预算/证据充分性。"
+  },
+  {
+   "problem": "P63",
+   "strength": 2,
+   "how": "Table5显示某些通用基准退步，不能只报搜索榜。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "LLaVA same training data",
+   "kind": "matched ablation"
+  },
+  {
+   "name": "GroundingDINO/OWL-ViT search replacement",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "自然图像常见物体之外需新训练/算法。",
+   "quote": "0 < γ < 1. Then we use this heatmap generated from hu-                                                                      primarily tailored to natural images and common objects.\nman fixations as guidance to guide our search process and                                                                   To extend its applicability to document and diagram images,",
+   "locator": "§6"
+  }
+ ],
+ "question": {
+  "observed_failure": "同训练数据LLaVA无搜索45.02%，搜索75.39%；替换开放词汇detector仅62%左右。",
+  "load_bearing_assumption": "一次全局视觉编码或文本工具返回已含回答所需细节。",
+  "scope": "191幅高分辨率自然图像属性与空间关系VQA",
+  "success_criterion": "回答准确率与搜索长度/延迟；同时测一般多模态能力。",
+  "why_open": "静态编码遗漏微小目标且MLLM不能稳定指出缺失信息。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§5.2 same-training-data ablation"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "§3 Algorithms1–2"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "VQA生成目标列表；专用MLLM <LOC>隐藏态经两MLP进入目标坐标/置信度decoder与cue heatmap decoder；实际裁图经视觉编码重新送VQA。已读主文未给完整训练损失，不补PG公式。",
+  "normalization": "other",
+  "invariance": "不是PBRS或奖励塑形；推理搜索与上下文增补。",
+  "baseline_or_potential": "优先队列分数是空间搜索启发式，不是RL价值势函数。",
+  "degenerate_cases": "无需目标时可直接答；cue低置信转上下文；目标不存在/太小退出；错目标列表和错置信度可误停，未量化p≈0/1。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2同数据模型无VWM、两种detector替代、V*；Table3去target/context cue长度4.65→5.22/5.36，按成功定位筛样。",
+  "negative_results": [
+   {
+    "text": "MM-Vet 30.4→27.7，LLaVAW62.6→59.1；文中提到diagram对象搜索定位失败。",
+    "locator": "Table5; §5.4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若固定像素/token/总调用预算后仅成功条件长度改善而总错误率或成本不改善，则不能宣称有效效率提升。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Vicuna/LLaVA-7B; CLIP ViT-L/14 224²; localization decoders",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "每目标平均6.0秒，单A100；训练总成本未读到。",
+  "pitfalls": [
+   {
+    "text": "搜索长度仅纳入成功定位样本，需另记失败成本。",
+    "locator": "§5.3"
+   },
+   {
+    "text": "0目标全局线性投影；1–2目标局部线性/全局resampler；>2目标全resampler，视觉token预算随状态变。",
+    "locator": "§3.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当视觉搜索收益依赖返回像素时，应保留原图坐标、crop像素与token预算，并把搜索失败计入效率分母。"
+ }
+}

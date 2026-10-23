@@ -1,0 +1,466 @@
+{
+ "paper_key": "2608.02217",
+ "title": "VC-Tooler: Learning Compositional and Adaptive Visual Tool Use",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.02217.pdf",
+  "version": "v1",
+  "version_evidence": "p.1 arXiv:2608.02217v1 [cs.CV] 3 Aug 2026; online latest not checked",
+  "page_count": 22,
+  "fulltext_path": "2608.02217.txt",
+  "sections_read": [
+   "Abstract/1 Introduction pp.1–2 Fig1",
+   "2 Related Work/3 Preliminaries p.2",
+   "4.1 synthesis pp.2–4 Eqs1–4 Figs2–4",
+   "4.2 training/reward pp.4–5 Eq5",
+   "5.1–5.4 implementation/evaluation/main/ablations pp.5–7 Tables1–3 Figs5–7",
+   "6 Conclusion/7 Limitations p.7",
+   "References pp.8–9",
+   "S1 candidate sources/filtering p.10 TableS1",
+   "S2 planner/executor p.10; Prompt1 relevance p.11",
+   "S3 DTC executable/mock distinction pp.10–12 TableS3 p.13",
+   "S4 filtering/stats p.12 TableS2",
+   "S5 critic/reward p.12; Prompt4 p.22",
+   "S6 RL data p.13 FigS1",
+   "S7 dynamics p.13 FigS2 p.14",
+   "S8 unseen tools pp.13–14 TableS4",
+   "S9 statistics pp.13–14 TablesS5–6",
+   "S10 errors pp.14–15 FigS3",
+   "Prompt2 planner p.16;Prompt3 DTC p.17",
+   "All representative JSON schemas pp.18–21"
+  ],
+  "visual_pages_inspected": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   21,
+   22
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把工具使用拆成可执行轨迹合成、固定图像转变上的接口重标注、以及整轨迹工具质量奖励。先通过GT条件planner和真实执行器造SFT，再对同一视觉操作变换schema，最后用五项外部judge评分辅助GRPO。",
+  "key_step": "固定已观察到的前后图像转变，替换工具schema与参数，扩大接口训练覆盖；部署时从新schema推断调用。",
+  "why_non_obvious": "工具API写法与视觉操作可以解耦；无需为千种训练接口实现新执行器，但这种离线一致性并不保证生成参数能真实执行。较复杂SFT数据可暂时降低SFT分数，却改善后续RL。",
+  "trigger_condition": "When executable visual trajectories cover too few interfaces, preserve observed state transitions while varying schema realizations, then refine behavior with feedback-use assessment.",
+  "reviewer_praise": [
+   "low_evidence: manifest无reviews_path，未读到独立审稿。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 无review来源；下述疑点为读者核查而非审稿人意见。"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null；不由upon acceptance措辞推断接收。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Separate a reusable operation from its interface and teach multiple interface realizations of the same observed transition.",
+  "abstract_key_step": "Hold the transition fixed, resynthesize its invocation schema, and combine that supervision with feedback-aware policy refinement.",
+  "abstract_why_non_obvious": "Valid observations can supervise unfamiliar interfaces without implementing every synthetic interface, but interface validity and executable semantics remain distinct.",
+  "abstract_trigger_condition": "When surface conventions constrain transfer more than the underlying operation, vary the convention while retaining the observed operation and separately test execution fidelity."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.02217#s1",
+   "object": "Tool-relevant candidate pool and executable SFT trajectories",
+   "information": "Qwen3-VL32B relevance judge见Q+图；8BInstruct每题8次估难度，Qwen-Max评答案。235BThinking planner见Q/图/GT/工具，235BInstruct executor见计划及真实交互历史，不直接见GT。",
+   "operation": "先按tool relevance筛，再删≥4/8正确的easy；0/8用235BInstruct与8BThinking复查，有解则留。planner生成工具顺序/参数提示，executor逐步重定参数并执行，按最终正确/格式/冗余筛。SFT学习assistant turns。",
+   "output": "基础单工具与多工具真实执行轨迹；少量ChartVerse no-tool样本。",
+   "claimed_effect": "Table2 ST SFT V*91.6，ST+MT89.0；full SFT92.1，full RL95.8。full不是所有指标最优，CX-RQ RL ST55.3>full54.1；各混合大小/计算量未配平。",
+   "conditions": [
+    "工具环境真实返回并正确绑定图像；teacher计划有用。",
+    "筛选不误删策略可学难题，GT衍生计划不泄漏目标答案。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "S2 p.10",
+    "quote": "the planner-provided tool sequence, the executor predicts"
+   },
+   "failure_boundary": "GT不直接输入executor不等于计划没有泄漏答案；Prompt2会生成描述与参数提示。relevance prompt强烈默认需要工具，不能当当前策略必要性标签；8次失败不能证明unsalvageable。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.02217#s2",
+   "object": "Diverse tool-context (DTC) offline trajectory interface augmentation",
+   "information": "235BInstruct给定before/after图像、该步thought、候选工具池；返回观测沿用原执行或implicit-reasoning image pairs。",
+   "operation": "匹配已有schema或生成新schema/参数；保留图像转变，改写调用表面形式，并加入distractor tools；超过1000个mock valid接口没有新executors。",
+   "output": "跨schema的SFT例子；不是1000个已运行的新工具。",
+   "claimed_effect": "Table2 ST+DTC RL HR8K83.1 vsST80.4，full83.8；TableS6 unseen schema执行成功73.9–100%，但只测格式+无执行error，非语义正确或任务成功。",
+   "conditions": [
+    "重新命名的参数实际描述同一转变；训练schema与heldout接口边界清晰。",
+    "测试环境新工具确有执行器。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "S3 p.11",
+    "quote": "schemas in Table S3) are not backed by new executors; they"
+   },
+   "failure_boundary": "不验证新schema的执行语义，image editing可改变事实；所谓unseen主要接口级。Fig6 translation示例与p21合成translation schema操作相近，不能据此证明操作完全未见，也不能直接认定训练泄漏。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.02217#s3",
+   "object": "Whole-trajectory tool-quality scalar reward for GRPO",
+   "information": "Qwen3.5-Plus critic评整rollout五项binary criteria；Prompt4未给具体trajectory序列化/image bindings或显式GT字段。准确率另由finalanswer判定；筛选用Qwen-Max，online Racc是否同judge未明确。",
+   "operation": "均值五项：plan coherence、call efficiency、feedback responsiveness、observation fidelity、visual grounding；Rtotal=.8accuracy+.2tool+.2format；从SFT策略做G8 GRPO，KL0。",
+   "output": "整轨迹辅助标量，与准确率/格式一起优化；无逐调用或caption段信用路由。",
+   "claimed_effect": "Table3 Std→Tool V*94.7→95.8,HR8K82→83.8,CX-RQ52.9→54.1,VTC33.4→35.3；存在性奖励TE反而全降。没有seed/CI及独立judge校准。",
+   "conditions": [
+    "critic能看懂真实图像/工具反馈并抵抗语言式表现奖励。",
+    "五项对无工具/无error轨迹的适用性和奖励范围一致。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "S5 p.12",
+    "quote": "the critic outputs five binary"
+   },
+   "failure_boundary": "不是每步因果必要性、PBRS或token gate；完整GRPO公式/adv normalization/mask/clip未提供。反馈响应举例Wait/Actually等字样可能被风格利用，论文未做此因果测试；全局平均不能识别哪个调用有价值。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-8B;LLaVA-OV;InternVL3-8B;o4-mini",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes;Thyme;DeepEyes-V2;AdaReasoner;PyVision-RL;CodaDance",
+   "kind": "method"
+  },
+  {
+   "name": "Direct SFT without tools;ST;ST+MT;ST+DTC;full SFT",
+   "kind": "method"
+  },
+  {
+   "name": "Standard accuracy+format;tool-existence TE;tool-quality reward;No tools/Seen/Mixed pools",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "规模较小、短时域、工具集合有限，无open-ended覆盖。",
+   "quote": "Current experiments also focus on bounded tool spaces and",
+   "locator": "Sec7 p.7"
+  },
+  {
+   "text": "新接口训练未实现新executor，不能把mock执行当验证。",
+   "quote": "relabel an already-observed transition at the schema level,",
+   "locator": "S3 p.11"
+  },
+  {
+   "text": "semanticwrongargs及wrongreasoning未随RL改善：E2 682→717,E5 770→811，样本总数不同。",
+   "quote": "incorrect argument values (E2) go from 682 to 717, and",
+   "locator": "S10 p.14"
+  },
+  {
+   "text": "训练数据仅计划后续发布，脚本/分割当前本地来源未验证。",
+   "quote": "composition, source breakdown, and filtering scripts upon",
+   "locator": "S6 p.13"
+  }
+ ],
+ "question": {
+  "observed_failure": "工具使用可能只模仿固定API或发生调用却忽视反馈；Table3 TE V*93.2<Std94.7，HR8K79<82。SFT error audit E4=867、E3=448，但不是独立标注的配对因果证据。",
+  "load_bearing_assumption": "接口多样化能学到共享操作语义；外部五项judge的高分对应真实反馈使用而非更长解释/样式。",
+  "scope": "Qwen3-VL8B，6训练工具、11推理新工具，训练≤5轮、推理≤10轮；VQA及agenticbench。",
+  "success_criterion": "固定模型/数据/计算和工具环境，新增schema训练提高未见接口真实任务正确率；toolreward优于accuracy+format及TE。论文报告均分但无预设非劣或显著性标准。",
+  "why_open": "过去单一/有限工具模板难覆盖组合与schema迁移；终答奖励不区分未用反馈与用错反馈，工具存在性奖励又可能奖励无用调用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "this stage equips the model with a broad set of tool-use",
+   "locator": "Sec4.2 p.4;实际SFT→RL、Table2组合消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "any explicit tool-use signal, (2) an additional tool-existence",
+   "locator": "Sec5.4 p.7/Table3; reward对照，TE具体系数未列"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "quote": "categorize each rollout by its dominant error type and trace",
+   "locator": "S10 p.14/FigS3;执行过分类计数，非全对/全错/混合梯度分组且分母不同"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "Rate” refers to schema-level execution success: the fraction",
+   "locator": "S9 p.13;明确execution success单位，不等于语义正确"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "quote": "that separates high-level tool planning",
+   "locator": "S2 p.10;planner/executor分工",
+   "role": "primary"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "quote": "reinstantiating the same underlying visual operation under",
+   "locator": "S3 p.10;固定schema成为可变训练接口",
+   "role": "supporting"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\pi=(t_1^{plan},\\ldots,t_M^{plan})\\sim p_{plan}(\\cdot\\mid q,\\hat y,v,\\mathcal T)",
+    "locator": "Eq1 p.3;pi here tool plan not policy"
+   },
+   {
+    "latex": "h_k=(q,v,s_1,a_1,o_1,\\ldots,s_{k-1},a_{k-1},o_{k-1}),\\quad(s_k,u_k)\\sim p_{exec}(\\cdot\\mid h_k,t_k^{plan}),\\quad a_k=(t_k^{plan},u_k),\\quad o_k=Env(a_k)",
+    "locator": "Eqs2–3 p.3"
+   },
+   {
+    "latex": "(\\widetilde t_k,\\widetilde u_k)\\sim p_{ctx}(\\cdot\\mid o_{k-1},o_k,s_k,\\mathcal T)",
+    "locator": "Eq4 p.4; original observation retained"
+   },
+   {
+    "latex": "R_{total}=0.8R_{acc}+0.2R_{tool}+0.2R_{fmt}",
+    "locator": "Eq5 p.4"
+   },
+   {
+    "latex": "R_{tool}(\\tau)=\\frac15\\sum_{m=1}^5c_m(\\tau),\\qquad c_m\\in\\{0,1\\}",
+    "locator": "S5 p.12"
+   }
+  ],
+  "signal_routing": "SFT明确assistant turns token CE。RL把五项critic合成一个trajectory reward再加accuracy/format；未提供逐step奖励或segment masks，不能称逐调用credit。全文仅GRPO名称，没有policy loss、优势广播实现、tool/env/prompt/assistant masks、token reduction与clip细节；不从verl默认补完。critic看整轨迹，不是局部before/after反事实。",
+  "normalization": "唯一显式归一化是Rtool五项均值，范围0–1、步长.2；每个criterion对raw Rtotal贡献.04。总权重.8+.2+.2=1.2，非归一化凸混合；Rfmt具体实现/范围未详述。GRPO是否mean/std、epsilon、loss按token/sequence平均均未明示；仅G8、KL0可确定。不能把.04当梯度幅度。",
+  "invariance": "叫shaping但不是gammaPhi(next)−Phi(state)的PBRS，未证最优策略不变；效率/忠实性judge改变目标偏好。DTC设计保持observations而不保持实际可执行动作语义。若实现使用常见groupmean/std，共同常数被中心化消除、统一正缩放在epsilon可忽略时约去，这是条件推导而非已查实现。",
+  "baseline_or_potential": "无显式value model/state potential；Qwen3.5-Plus为外部LLM judge非本文训练的critic网络。GRPO基线公式未给；不能称RLOO或无std。32B tool-relevance用图+题但按能力规则做标签，不测当前策略不调用的反事实；8B difficulty与235B teacher能力也不同。",
+  "degenerate_cases": "若五项judge全给1/全给0且全组answer/format相同，标准centered GRPO下无组内信号；若只有toolscore变化，std可能抵消.2缩放。no-tool或无error时feedbackresponsiveness是否N/A未定义；可诱导表面反思/无必要额外调用，未实测。p(direct)≈0无强制支撑恢复；DTC若退化纯改名可能只学解析，若语义不忠实则学伪接口。重复过滤可能删合理再看/恢复轨迹；GTplan可能传递答案线索。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2比较ST/MT/DTC及去tool DirectSFT并继续RL；Table3 Std/TE/Tool识别“调用存在”与“评反馈使用”差别；Fig5改变工具可用性，Fig7统计真实调用，S10按错误类型分析。未控制轨迹总量、token量/teacher调用数，也没有等mask/长度的打乱critic、单criteria消融、同操作新schema与全新操作的严格分解。",
+  "controls": [
+   "所有公开baseline来自原论文或各自native工具复评，不是完全统一工具预算。",
+   "Table1 full SFT VTC27.8与Table2 full30.4冲突；保留两值不擅自合并。",
+   "S10 SFT分母3761、RL3141；非同样本已证配对。error标签来源/人审一致率未给。",
+   "工具relevance偏向YES并剔除easy，无法用此数据证明自然必要性分化；RL0/8样本直接删除。",
+   "Prompt4视觉评分但图像序列化/GT注入未披露；不是独立人工gold。",
+   "未报告train/test image来源去重与schema操作重叠审计。"
+  ],
+  "negative_results": [
+   {
+    "text": "TE使四项全部下降：V*94.7→93.2、HR82→79、CX52.9→52.1、VTC33.4→33.1。",
+    "quote": "simply rewarding tool calls does not",
+    "locator": "Sec5.4 p.7/Table3"
+   },
+   {
+    "text": "ST+MT的SFT V*89.0低于base90.1，HR75.9低于base78，否定every tool composition surpasses base的绝对表述。",
+    "quote": "does not always improve SFT immediately, and can even hurt",
+    "locator": "Sec5.4 p.7/Table2"
+   },
+   {
+    "text": "full不是各项最优；CX-RQ postRL54.1<ST55.3。",
+    "quote": "ST                      94.2    80.4      55.3    34.0",
+    "locator": "Table2 p.7"
+   },
+   {
+    "text": "E2/E5 raw count都增加；不能说高层视觉语义错误已解决。",
+    "quote": "incorrect reasoning from a valid tool output (E5) from 770",
+    "locator": "S10 p.14"
+   },
+   {
+    "text": "代码真实调用执行成功只有63.4%，不是总是可靠。",
+    "quote": "code           10.5           63.4",
+    "locator": "TableS5 p.14"
+   }
+  ],
+  "seeds": "无训练seed数、CI、重复评测次数或显著性；SFT/RL错误计数不是seed重复。所有指标为作者报告而非本次复现。",
+  "falsifier": "未执行的最小判别：固定轨迹/操作/样本数与token预算，比较原schema、仅改名、语义多样schema，测试严格heldout接口及heldout操作；独立人工核验新参数的真实执行。固定rollouts对critic做图像错配/文字风格置换/criterionshuffle，检验评分能否发现错误区域与忽略反馈，而非仅奖励长反思。若shuffle/无图也同分或等预算仅改名同效，收窄因果主张；若补样本配平后S10错误率不降，撤回该错误改善解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-8B; planner235B-A22B-Thinking; executor/DTC235B-A22B-Instruct; relevance32B; correctness filter Qwen-Max; toolcriticQwen3.5-Plus",
+   "framework": "SFT ms-swift;RL verl;inference Qwen-Agent+vLLM;eval lmms-eval",
+   "group_size": 8,
+   "rollouts": null,
+   "steps": null,
+   "kl": 0.0,
+   "temperature": null,
+   "max_turns": "train5,inference10",
+   "batch_size": 128,
+   "sft_batch_size": 32,
+   "sft_epochs": 3,
+   "sft_lr": 1e-05,
+   "rl_lr": 1e-06,
+   "sft_optimizer": "AdamW/cosine",
+   "max_response_length": 32768,
+   "rl_data": "28K rounded; FigS1 2400+1390+9518+15000=28308",
+   "training_tool_pool": "maintext6:zoom,rotate,enhance,code,mark,edit; S3 example list substitutes search for edit, scope unresolved",
+   "eval_tool_pool": "6seen+11unseen executable; DTC1000+mock schemas are not this pool"
+  },
+  "cost": "无设备/GPUh、walltime、API调用费用或训练token总量；Fig7平均调用V*1.16→1.04,HR8K1.13→1.02,CharXivRQ3.18→1.99,VTC1.74→3.54，不是全域减调用。FigS2 toolreward responses变长，callmean约1；不能推导总推理加速。SFT表S2 39972与图4 49.6K不闭合，少量no-tool存在但缺确数。",
+  "pitfalls": [
+   {
+    "text": "synthetic schema有效不等于实际executor实现，需要保存观测来源与参数语义。",
+    "quote": "keeping the observation ok inherited from a base-tool",
+    "locator": "S3 p.11"
+   },
+   {
+    "text": "严格过滤execution失败，可能丢掉“出错后恢复”行为，应另查覆盖。",
+    "quote": "fails during execution. This step is essential because invalid",
+    "locator": "S4 p.12"
+   },
+   {
+    "text": "schema成功只能保证无运行error。",
+    "quote": "the environment executes without error.",
+    "locator": "S9 p.13"
+   },
+   {
+    "text": "少量no-tool数据保留直答意图，无强制支撑/行为非劣证据。",
+    "quote": "we include a small number of no-tool reasoning samples from",
+    "locator": "Sec4.1 p.4"
+   }
+  ],
+  "code": null,
+  "code_verified": false,
+  "project_url": "https://w1zheng.github.io/VC-Tooler (printed in PDF; not opened)",
+  "lesson": "为每条数据分别标明realexecution、implicit imagepair、schema relabel三类来源，并把执行成功、视觉参数语义正确、反馈被使用、任务正确四个验收口径分开。外部critic要记录真实图像绑定和N/A规则；只看五项JSON与高执行成功率会掩盖错区域及错读。"
+ },
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "五项整轨迹奖励仍不能定位单次crop的边际必要性。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "32B relevance与3.5Pluscritic不是当前policy的能力反事实。",
+   "strength": 2
+  },
+  {
+   "problem": "P18",
+   "how": "失败探索未分情况保护；整体critic不等于四格路由。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "SFT造基础/组合/接口行为，RL再用真实环境试错。",
+   "strength": 3
+  },
+  {
+   "problem": "P26",
+   "how": "small no-tool保留意图但无不确定才再看的条件训练。",
+   "strength": 2
+  },
+  {
+   "problem": "P27",
+   "how": "FeedbackResponsiveness鼓励改口；文字示例不是实际证据驱动纠正率。",
+   "strength": 2
+  },
+  {
+   "problem": "P37",
+   "how": "S4删执行失败与单工具重复轨迹，可能误删合理再看或失败后恢复；未测误删率。",
+   "strength": 2
+  },
+  {
+   "problem": "P38",
+   "how": "DTC扩大schema多样性；筛掉执行失败可能缺恢复样本。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "忠实性为整轨迹外部评分，没有caption专属保护。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "可作外部工具过程评分来源案例，非细粒度已校准监督。",
+   "strength": 3
+  },
+  {
+   "problem": "P44",
+   "how": "反思词和较长response可成为评分捷径，缺置换/错图检查。",
+   "strength": 2
+  },
+  {
+   "problem": "P45",
+   "how": "单点结果无seed/CI，不能证小差可靠。",
+   "strength": 1
+  },
+  {
+   "problem": "P49",
+   "how": "公开多源数据，未给与评测图像/任务去重。",
+   "strength": 1
+  },
+  {
+   "problem": "P58",
+   "how": "较长response与VTC调用增多，缺walltime/GPU成本。",
+   "strength": 2
+  },
+  {
+   "problem": "P69",
+   "how": "目标主要提升工具能力，未证明准确率非劣约束下减少观测。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "measurement_and_source_audit": {
+  "ambiguities_and_conflicts": [
+   "Table1 fullSFT VTC27.8 vsTable2 full30.4，未解释不同run/setting。",
+   "Table2文字every tool-augmented composition surpasses Base不成立：ST+MT SFT V89<90.1/HR75.9<78；full RL CX54.1也低于ST55.3。",
+   "Fig5 Seen V95.3<Original95.8/HR81.4<83.8/CX52.8<54.1，而正文称matches or exceeds seen and mixed；VTC Seen35.8>Mixed35.3，新增工具并非均有益。Original与Mixed本方法四值完全相同，环境差异未展开。",
+   "Table3 toolreward VTC35.3−33.4=1.9pp，而文字up to1.8；不修原表。",
+   "TableS2 ST28590+MT4945+DTC6437=39972；Fig4总49.6K、57.6/10/13%合计80.6%。有no-tool数据但其数量未列，不把差额自动认定全部为no-tool。ST按toolcall数分类但平均1.0602>1，定义口径未解。",
+   "TableS2 MT/DTC消息数更长，但字符5795/5672低于ST6627；不要把longer interaction history等同更多字符/token。",
+   "[redacted: project-internal]",
+   "TablesS5–6 seen call props94.4%+unseen5.5%=99.9%舍入；额外no_tool8.1%不可再加作同一分母。无工具率的明确分母未知。schema success不是正确区域/事实使用。",
+   "Sec5六工具含edit，S3列base例子用search；Prompt1/2工具池也含search。不同阶段池范围需实现澄清，不能把所有列表合成17个训练工具。",
+   "GT只进入planner的宣称不足排除通过description/parameter hints间接泄漏；未做打乱GT/去GT规划审计。",
+   "Fig6 unseen translation与p21 DTC representative image_translate_region同类操作、不同接口字段；未给精确train schema清单，不能认定全新操作或确认泄漏。",
+   "FigS2 toolreward面板未显示可比without曲线，不能由该图独立支持consistently higher的幅度；response长度上升不是效率改善。",
+   "Prompt4要求可视grounding但只留{}trajectory模板；实际image输入顺序/分辨率/binding、无error和no-tool评分、model快照与一致率未知。"
+  ],
+  "source_evidence": [
+   {
+    "kind": "author_claim",
+    "locator": "Prompt1 p.11",
+    "quote": "Assume a tool is needed unless the answer is trivially obvious from a glance."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "S2 p.10; source assertion not leakage audit",
+    "quote": "The ground-truth answer thus only guides the planner"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "S5 p.12",
+    "quote": "We leverage Qwen3.5-Plus as the LLM-as-Judge to evaluate"
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Prompt4 p.22",
+    "quote": "“Wait,” “Actually,” or “No, that’s incorrect, I should try...” when tool output is unexpected or an error occurs."
+   },
+   {
+    "kind": "author_claim",
+    "locator": "Sec5.2 p.5",
+    "quote": "under each method’s native tool setting."
+   }
+  ],
+  "cost_units": "Fig7为每benchmark平均工具调用数，不是交互轮数、并行调用批数或walltime；训练5turn/inference10turn为上限。DTC1000+是schema数，1147patterns也不是执行器数。SFT49.6K与表S2子集数不闭合；RL28K为rounded28308。",
+  "information_boundary": "Planner q,v,GT,toolpool；Executor history+plan，GT可经计划间接流入；DTC before/after/thought/toolpool，返回观测固定；Actor test q,v,schema,history，无GT；relevance judge q,v有强YES先验；reward critic整体轨迹五项，图像/GT具体序列化未披露；无policy-conditioned无工具/有工具反事实。"
+ }
+}

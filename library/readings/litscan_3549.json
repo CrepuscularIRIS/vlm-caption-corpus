@@ -1,0 +1,152 @@
+{
+ "paper_key": "litscan:3549",
+ "title": "RSVP: Reasoning Segmentation via Visual Prompting and Multi-modal Chain-of-Thought",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3549.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3",
+   "4.1–4.4 Tables1–3,5–8",
+   "6 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "让MLLM输出对象描述、横纵区域ID及理由，再把原图定位裁块与描述交给BEiT3+SAM精分割。",
+  "key_step": "用粗区域ID而非直接精像素坐标作为推理到分割的中间接口。",
+  "why_non_obvious": "好分割器缺语义推理，好推理器缺精掩码；结构化区域能把两者连接并保留解释。",
+  "trigger_condition": "When reasoning identifies a target but cannot delineate it, delegate a structured crop and description to a specialized segmenter.",
+  "contribution_type": "modular method",
+  "abstract_strategy": "Separate semantic target selection from fine-grained execution using a structured intermediate artifact.",
+  "abstract_trigger_condition": "When complementary solvers fail at different stages, connect them through explicit proposals.",
+  "abstract_key_step": "Produce a coarse region plus target description before precise execution.",
+  "abstract_why_non_obvious": "The intermediate representation controls both semantic fidelity and localization error.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3549#s1",
+   "object": "reasoning segmentation两阶段定位",
+   "information": "原图/查询、区域分割标识；无推理时GT，无当前策略crop收益。",
+   "operation": "结构化CoT输出名称属性/区域ID/理由，取min-max区域加padding裁图，再用图文特征提示SAM。不存在对象时返回空区域。",
+   "claimed_effect": "RSVP-GPT ReasonSeg test gIoU60.3/cIoU60.0；同模块纯视觉提示val cIoU33.7，双模态63.1。",
+   "conditions": [
+    "MLLM能粗定位",
+    "裁块保留边缘",
+    "分割器已在refCOCO类数据训练"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5",
+    "quote": "Both Modalities               63.1              56.7"
+   },
+   "failure_boundary": "不是无训练系统：第二阶段已训练；GPT结果依赖较强推理器，不等于Qwen3-VL4B可用。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "LISA / Grounded-SAM / OVSeg / text-only and visual-only proposals",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "性能依赖MLLM能力和视觉标记密度。",
+   "quote": "degrade performance (e.g., 13 × 13 results in up to",
+   "locator": "4.4"
+  }
+ ],
+ "question": {
+  "observed_failure": "固定分割器时GPT视觉单模态cIoU33.7，双模态63.1；细到13×13标记可降6.3。",
+  "load_bearing_assumption": "端到端重训或单一模块能兼得推理与精定位。",
+  "scope": "单目标reasoning segmentation",
+  "success_criterion": "在不调推理器时提高IoU且成本可控",
+  "why_open": "普通SAM不原生支持语言推理"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table5–8移除模态/模块/改提示"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "3.2–3.4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Ta=MLLM(I,Tq); region=[min(ids),max(ids)]+padding; M=VLSM(crop(I,region),Ta)",
+    "locator": "3.2–3.4结构式概括"
+   }
+  ],
+  "signal_routing": "推理时无RL奖励或token信用；MLLM名称/属性和ID作为下游图文分割条件。",
+  "normalization": "other: 网格到像素映射，非advantage标准化；第二阶段精确训练loss未在所读节确认。",
+  "invariance": "非PBRS；裁图改变输入支持，丢目标则下游不能恢复。",
+  "baseline_or_potential": "无价值基线；固定专用分割模块。",
+  "degenerate_cases": "空区域可表示无目标，但不是按需工具调用概率；错误框/过密标记伤害下游；全对/错RL组不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "固定第二阶段比较text/visual/both、视觉网格密度、结构CoT与简CoT。",
+  "negative_results": [
+   {
+    "text": "RSVP-GPT test cIoU60.0低于finetuned LISA13B62.2；VLSM refCOCOg66.4低于LISA68.5。",
+    "locator": "Table2–3"
+   },
+   {
+    "text": "7B延迟约9.97–10.07s，LISA7B9.41s，并非更快。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：若等面积随机/中心裁图与结构区域同样好，不能归因于reasoning定位。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "GPT4o/Gemini/LLaVA-NeXT/Qwen2VL + BEiT3/SAM",
+   "framework": "LoRA/DeepSpeed用于第二阶段",
+   "group_size": null,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "单A10040GB推理；7B第一阶段约9.2s，分割.77s。",
+  "pitfalls": [
+   {
+    "text": "正文区域索引/水平垂直和padding单位表述有混用，迁移应显式验证像素映射。",
+    "locator": "3.2–3.4"
+   }
+  ],
+  "code": null,
+  "lesson": "当粗定位串接专用分割器时，错误框会截断真实证据，应单测框覆盖率、padding和下游增益。"
+ },
+ "relevance": [
+  {
+   "problem": "P30",
+   "how": "网格粗定位与padding可作crop候选框基线。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "像素grounding模块可供离线框质量对照但非必要性奖励。",
+   "strength": 1
+  }
+ ]
+}

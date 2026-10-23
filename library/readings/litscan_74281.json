@@ -1,0 +1,190 @@
+{
+ "paper_key": "litscan:74281",
+ "title": "HATCH",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_74281.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3 pp4–5",
+   "§4 Tables1–4 pp6–8",
+   "AppendixC/D pp14–16 rewards/training"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先用训练期3D几何教视觉encoder跨视角patch对应，再SFT/GRPO生成虚拟相机动作序列后回答。",
+  "key_step": "depth+pose投影生成双向patch overlap soft-target；ActoR把动作组合成相对pose，以pose误差而非文字匹配给奖励。",
+  "why_non_obvious": "同一几何变换可有不同动作分解；pose验证使中间表示可计算，但这些是文本推演，不执行环境动作。",
+  "trigger_condition": "静态多图空间推理需跨视角对应且训练可得depth/pose。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "监督观测对齐与中间几何变换，分别训练视觉表示和动作式推理。",
+  "abstract_trigger_condition": "静态多图空间推理需跨视角对应且训练可得depth/pose。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "depth+pose投影生成双向patch overlap soft-target；ActoR把动作组合成相对pose，以pose误差而非文字匹配给奖励。",
+  "abstract_why_non_obvious": "同一几何变换可有不同动作分解；pose验证使中间表示可计算，但这些是文本推演，不执行环境动作。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:74281#s1",
+   "object": "patch correspondence",
+   "information": "训练独有depth、相机内外参；推理只有多图和问题",
+   "operation": "双向投影overlap对称化后softmax target，与cosine feature softmax做双向CE，只更新vision encoder",
+   "claimed_effect": "去PaStA SPAR-MV53.6→52.0；grid超过4变差",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq1–5 p4; Table2/Fig4 p7",
+    "quote": "w/o PaStA    39.3−2.0     43.5−3.9     67.4+0.3     52.0−1.6"
+   },
+   "failure_boundary": "PaStA不适合动态场景/无depthGT；全零overlap行softmax为uniform。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:74281#s2",
+   "object": "intermediate camera actions",
+   "information": "GT相对pose和终答；模型仅图像/Q",
+   "operation": "输出全部i<j的action JSON，组合成pose算exp(-dt/τt-dr/τr)，与答案/格式相加GRPO",
+   "claimed_effect": "sequential action53.6 vs同GRPO natural language52.8；完整相对QA-only51.5仅+2.1",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.4 p5; Table2/3 p7; Eq9–12 pp15–16",
+    "quote": "Sequential Action (HATCH) 41.3 47.4 67.1 53.6"
+   },
+   "failure_boundary": "action是静态推理中间表示，无新观测返回；没有逐动作credit或真实导航验证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "把可验证几何质量作为中间奖励；迁移crop需几何/区域标注且非信息收益。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "10%数据cold-start教授action格式后RL，明确先种行为。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5VL3B",
+   "kind": "method"
+  },
+  {
+   "name": "QA-only SFT",
+   "kind": "method"
+  },
+  {
+   "name": "without PaStA",
+   "kind": "method"
+  },
+  {
+   "name": "without ActoR",
+   "kind": "method"
+  },
+  {
+   "name": "natural-language CoT GRPO",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只研究静态同一几何，多图的动作生成不是可执行环境交互；MMSI27.0仍近chance25。",
+   "quote": null,
+   "locator": "§3.1 p4; §4.2 p6"
+  }
+ ],
+ "question": {
+  "observed_failure": "base多图avg29.4→43.6，但同数据QA-only SPAR51.5已接近完整53.6。",
+  "load_bearing_assumption": "可验证pose中间步骤提供跨图推理增量，而非额外QA训练主导。",
+  "scope": "静态多视角、带训练depth/pose。",
+  "success_criterion": "等训练预算pose/action监督比自然语言与QA-only有稳定增量。",
+  "why_open": "main14.2pp大部分含QA SFT，action表示单独+.8无seed。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.4 action cold-start前置"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "locator": "跨视角patch映到共同几何对应分布"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "PaStA vision-only后ActoR reasoning"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S=(M_XY+M_YX^T)/2; p=softmax(S/τ1); q=softmax(cos(eX,eY)/τ2)",
+    "locator": "Eq1–3 p4"
+   },
+   {
+    "latex": "LCL=mean_pairs(LXY+LYX); LXY=mean_i CE(p_i,q_i)",
+    "locator": "Eq4–5 p4"
+   },
+   {
+    "latex": "R=exp(-dt/τt-dr/τr)+Ranswer+Rformat",
+    "locator": "Eq8/10/12 pp5/15/16"
+   }
+  ],
+  "signal_routing": "PaStA onlyvision更新LM冻结；QA SFT full multimodal，再action+answer cold-start与GRPO；未给GRPO token分配细节，不能补逐动作优势。",
+  "normalization": "patch行softmax、patch/pair均值；两个方向相加无1/2；GRPO实际std未知。",
+  "invariance": "相同复合pose的不同序列得到相同action reward，无步数惩罚；非PBRS。",
+  "baseline_or_potential": "仅命名GRPO，baseline实现未说明。",
+  "degenerate_cases": "无overlap Srow0→uniform target；patch过细噪声增；stop-like plans可选设0但启用状态未知；N1不生成动作直接答。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "≤2GPU天不执行：固定现有pose/action序列比较等价分解和冗余cancel动作奖励；按正确最终答案分层检验action reward能否预测视觉证据利用。",
+  "negative_results": [
+   {
+    "text": "w/oActoR51.1低于w/oboth51.5；MindCube Rotation31.0低于base34.5。",
+    "locator": "Tables1–2 pp6–7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若几何等价但无关/冗余动作同样收益，不能称action reward学会高效推理。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3B",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "10K SPAR7M；coldstart1K；SFT/PaStA单GPUbatch1，RL4GPU global32；全阶段lr1e-5，时长未知。",
+  "pitfalls": [
+   {
+    "text": "relative camera composition次序关键；format必须覆盖全部pair，随N二次增长；softmax target无显式无匹配类。",
+    "locator": "§3.3/3.4; AppC"
+   }
+  ],
+  "code": "https://stjohn2007.github.io/HATCH_project/",
+  "lesson": "当中间动作只是文本几何表达时，必须区分可验证复合变换、真实环境执行及终答使用，不能把action token当观察动作。"
+ }
+}

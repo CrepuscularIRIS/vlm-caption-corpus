@@ -1,0 +1,347 @@
+{
+ "paper_key": "2608.08907",
+ "title": "ToolVision: Learning When and How to Use Visual Tools with Capability-Aligned Supervision",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.08907.pdf",
+  "version": "v1",
+  "sections_read": [
+   "pp.1–7 Abstract, Introduction, Related Work, §3.1–3.3 all methods, §4.1–4.4 all experiments, Conclusion; Figs1–4 Tables1–3",
+   "pp.8–9 References (not followed)",
+   "pp.10–18 Appendices A–H.5 in full: Algorithms1–2, Tables4–8, all policy/planner/executor/judge interfaces, Figs5–13 including all case text and final cost/configuration sections"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition (primary): fixed question tiers receive different tool-success bonuses; decompose_and_delegate (supporting): student delegates localization/OCR/counting to specialist tools through code and returned images; self_supervised_signal_engineering (supporting): generated answer outcomes manufacture otherwise missing step-utility and tool-need labels, with existing task GT still required.",
+  "key_step": "First seed student-usable executed trajectories using a cross-scale committee; then measure frozen-SFT no-tool/tool-enabled outcomes offline and gate a successful-tool trajectory bonus by fixed question tier.",
+  "why_non_obvious": "A strong teacher can emit accurate crop coordinates that a smaller student cannot reproduce. Low answer accuracy alone confounds tool-responsive questions with questions neither route can solve. Executable calls can still miss the relevant pixels.",
+  "trigger_condition": "When teacher demonstrations and blanket tool rewards misalign with student ability, filter evidence using student-scale judges and condition tool bonuses on frozen-model rollout groups; test whether this transfers to the evolving policy.",
+  "reviewer_praise": [
+   "low_evidence: no local OpenReview reviews supplied"
+  ],
+  "reviewer_concern": [
+   "low_evidence: no reviewer text; limitations below are source statements or reader analysis"
+  ],
+  "acceptance_signal": "Local arXiv v1 dated 9 Aug 2026; manifest decision null; no acceptance inference.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Partition examples by measured response to an available intervention and apply distinct incentives; route weak capabilities through structured specialist outputs.",
+  "abstract_key_step": "Reject generated demonstrations that lose measured answerability, retain a bounded neutral bridge, and reuse a frozen intervention-response label to gate later reward.",
+  "abstract_why_non_obvious": "Demonstration success under a strong producer does not imply imitable success under the learner, and difficulty is not intervention benefit.",
+  "abstract_trigger_condition": "When demonstrations exceed learner capacity and uniform incentives encourage unhelpful actions, measure learner-scale outcomes before tailoring the treatment."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.08907#s1",
+   "object": "SFT search frontier and candidate tool trajectories",
+   "information": "Planner/Executor see question, visible image timeline, actions/results, capability list and remaining budget. Eight judges see trajectory/images, never GT; external matcher alone sees y. Final planner may receive independent judge consensus, not GT.",
+   "operation": "For base failures use Qwen3.6-plus planner/executor, up to two proposals per state, execute valid code, score mean committee answer match J; prune negative gain or second consecutive zero gain, keep top2 children, depth≤6; export only final-correct trajectories and mix direct-answer base successes.",
+   "output": "4057 SFT examples; executable localization and direct-answer support",
+   "claimed_effect": "Table3 SFT V*77.0 vs distilled59.7; Fig4 detector crop31.3/28.6/35.1% vs0 on V*/HR4/HR8. Table3 source-reported; full pipeline comparison does not isolate committee alone.",
+   "conditions": [
+    "Task GT for external matcher",
+    "Specialist services operational",
+    "Target-scale evidence usable to committee",
+    "Bounded search can reach sufficient evidence"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.2 p.5; Algorithm1 p.11",
+    "quote": "a branch is pruned immediately when its score decreases, a single zero-gain step is tolerated, and a second consecutive zero-gain step terminates the branch."
+   },
+   "failure_boundary": "Noisy committee differences may prune useful delayed sequences; two zero steps cannot survive. Committee contains proposer itself and stronger models as well as students, so target correctness not guaranteed. No source-confirmed all-zero support guarantee.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.08907#s2",
+   "object": "Question-level fixed RL sampling and reward tier",
+   "information": "Frozen SFT checkpoint, x/y,16 tool-disabled outcomes; for c≤8 also8 tool-enabled trajectories whose call choice is optional. GTC/NTC are two counts within these8, not NTC from disabled16.",
+   "operation": "Assign strong when c≤8,GTC≥2,NTC≤1 (w=.5); weak when c≤8,GTC=1 (w=.2, no extra NTC condition); source-balance ordinary c9..15 (w0); exclude c16 and hard candidates not admitted; freeze labels throughout RL.",
+   "output": "24921 questions:8460 strong,6481 weak,9980 ordinary",
+   "claimed_effect": "Table3 conditioned reward gives85.9/81.4/75.9 vs uniform77.0/76.0/68.6 high-res accuracy; comparison changes both which questions and magnitude of bonus relative to uniform w=.2 on fixed mixture.",
+   "conditions": [
+    "Enough disabled failures with enabled tool success",
+    "Frozen measurement remains relevant to later policy",
+    "Rule matcher adequate"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.3 p.5; Algorithm2 p.11",
+    "quote": "The no-tool correct count (NTC) records correct trajectories that answer directly without invoking a tool in this tool-enabled stage."
+   },
+   "failure_boundary": "GTC/NTC uses endogenous action groups, different denominators; not randomized forced-action treatment effect or per-call necessity. Weak tier allows NTC up to7. No paired random seeds/common continuation guarantee; no CI or repeated-label stability.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.08907#s3",
+   "object": "RL trajectory scalar reward",
+   "information": "Current trajectory final correctness, protocol validity, existence of≥1tool and execution errors, number calls; fixed offline w, no per-call semantic contribution test.",
+   "operation": "Optimize GSPO with R=Y+.2Rproto+wY·1[n≥1,no error]−.05max(0,n−6); direct correct answers may earn full protocol reward and receive no tool bonus.",
+   "output": "Question-gated positive incentive for successful tool-containing trajectories; overuse safeguard",
+   "claimed_effect": "Full model improves all7 main benchmark aggregates vsbase; Table3 uniform worseall9; AppendixD overuse term active297/198656=.15% of194-step logged trajectories.",
+   "conditions": [
+    "Useful successful tool support seeded by SFT",
+    "No assumption individual calls contributed",
+    "GSPO implementation details beyond reported configuration unknown"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.3 pp.5–6; AppA.3/D/H.4",
+    "quote": "The trajectory-level indicator Rmut ∈ {0, 1} marks tool-use success: the final answer is correct, at least one tool is used, and no tool call raises an execution error."
+   },
+   "failure_boundary": "Bonus credits entire successful trajectory even with irrelevant extra calls≤6; failed necessary search gets no bonus and over6 penalty still applies. Changing reward can change optimum; no PBRS guarantee. No action-specific gradient isolation.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-8B-Thinking",
+   "kind": "method"
+  },
+  {
+   "name": "Distilled SFT (4257 valid final-correct teacher trajectories, same pool/toolbelt)",
+   "kind": "method"
+  },
+  {
+   "name": "Distilled SFT + MUT RL",
+   "kind": "method"
+  },
+  {
+   "name": "Uniform tool-success bonus w=.2",
+   "kind": "method"
+  },
+  {
+   "name": "Outcome-only/no tool-success bonus Fig2",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme-7B / CodeVision-8B / CodeDance-7B (published source results)",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-32B-Thinking / 30B-A3B",
+   "kind": "method"
+  },
+  {
+   "name": "Counting specialist alone FSC147 MAE14.76",
+   "kind": "method"
+  },
+  {
+   "name": "V*, HRBench4K/8K, OCRBench, ChartQA, MME-L/CN, ArxivQA-2k, FSC147-test",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Single training run per configuration; four eval trajectory draws are not four trained seeds or noninferiority CI.",
+   "quote": "each reported SFT and RL configuration is trained once",
+   "locator": "H.2 p.16"
+  },
+  {
+   "text": "Question-ID holdout does not ensure image/source-figure disjointness. RL includes public CountQA/OCRBenchv2 test sources, neither is a reported evaluation set; do not invent benchmark contamination proof.",
+   "quote": "does not assume that different questions never reuse the same source figure.",
+   "locator": "B.2 p.10; Table5 p.12"
+  },
+  {
+   "text": "Offline SFT labels can become stale; question-tier counts are not the current policy or a local per-crop counterfactual.",
+   "quote": "keep the resulting confidence fixed throughout training.",
+   "locator": "§3.3 p.5"
+  },
+  {
+   "text": "Synthesis proposer sensitivity check promised but not located in full local18-page PDF; full scoring matcher, judge decoding, target-only vs cross-scale ablations unreported.",
+   "quote": "a proposer-sensitivity check are given in the Appendix.",
+   "locator": "§3.2 p.5"
+  },
+  {
+   "text": "RL case2/3 images are replays, not pixel-identical logged observations; cannot use screenshots as exact rollout binding.",
+   "quote": "can therefore differ from the original returns at the pixel level.",
+   "locator": "AppG p.14"
+  },
+  {
+   "text": "Published code/data planned; no repository URL in manifest/localpaper, checkpoints/private service files absent; did not inspect implementation.",
+   "quote": "Original benchmark images, model checkpoints, cluster logs, and private service files are not redistributed.",
+   "locator": "H.1 pp.15–16"
+  }
+ ],
+ "question": {
+  "observed_failure": "Fig2 outcome-only calls fall to0 by aboutstep32 while reward rises; uniform bonus7-benchmark mean70.7 vsToolVision78.1. Distilled SFT V*59.7 belowbase77.5 despitecrop74% and4.1turns (ToolVisionSFT37.5%,1.3). These are author results, not reproduced.",
+  "load_bearing_assumption": "Correct strong-teacher trajectories are directly imitable by small students, and successful tool use is beneficial uniformly across questions.",
+  "scope": "Qwen3-VL-8B-Thinking with heterogeneous code-based image tools, supervised initialization plus fixed-label GSPO; not solely caption+crop and not per-call credit.",
+  "success_criterion": "Improve benchmark accuracy with more targeted specialist use relative to same-pool distilledSFT and uniform bonus. Author supplies no preregistered noninferiority/overall cost-reduction criterion.",
+  "why_open": "Outcome rewards can suppress unreliable tool execution, blanket bonuses reward irrelevant valid calls; task difficulty or teacher success fails to identify student-usable evidence."
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "quote": "We use these counts to form three training groups.",
+   "locator": "§3.3 p.5",
+   "interpretation": "[redacted: project-internal]"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "we therefore estimate w(x, πSFT ) once before RL using a sequential rollout procedure",
+   "locator": "§3.3 p.5",
+   "interpretation": "Pre-RL measurement actually performed; does not establish current-policy need throughout training."
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "SFT thereby places useful behaviors within the policy’s practical support",
+   "locator": "§3.1 p.4",
+   "interpretation": "Actual SFT seed before RL; behavioral support hypothesis bounded by natural-sampling collapse risk."
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "we apply the same MUT RL training to Distilled SFT.",
+   "locator": "§4.4 p.7",
+   "interpretation": "SFT-component comparison under same RL treatment, not identical SFT distributions/compute."
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "quote": "the two arms take 43.2 and 673.0 GPU-hours, respectively",
+   "locator": "H.5 p.18",
+   "interpretation": "Reports measurement and RL costs; incomplete end-to-end API/SFT/evaluation/token costs."
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "quote": "Strong MUT questions show repeated correct tool-using trajectories but little direct success",
+   "locator": "§3.3 p.5",
+   "role": "primary",
+   "interpretation": "Different treatments .5/.2/0 by measured tiers."
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "quote": "ToolVision SFT delegates on 29–35% of questions and answers in fewer turns.",
+   "locator": "§4.4 p.6",
+   "role": "supporting",
+   "interpretation": "Localization via external detector returns usable cropped images; not merely planner/executor role names."
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "quote": "All remaining tool calls and step-level values are synthesized without additional human annotations of tool use or step utility.",
+   "locator": "§3.2 p.5",
+   "role": "supporting",
+   "interpretation": "Generated outcomes replace missing utility/need labels, existing image/question/answer annotation still required."
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J(E_t;x)=|C|^{-1}\\sum_{m\\in C}\\operatorname{score}(m(q,E_t),y),\\quad\\Delta_t=J(E_t;x)-J(E_{t-1};x)",
+    "locator": "§3.1 p.4 unnumbered"
+   },
+   {
+    "latex": "w(x,\\pi_{SFT})=\\begin{cases}.5&c\\le8,GTC\\ge2,NTC\\le1\\\\.2&c\\le8,GTC=1\\\\0&9\\le c\\le15\\end{cases}",
+    "locator": "§3.3 p.5; Algorithm2 p.11; unassigned candidates excluded"
+   },
+   {
+    "latex": "R=R_{acc}+.2R_{proto}+w(x,\\pi_{SFT})R_{mut}-.05\\max(0,n-6)",
+    "locator": "§3.3 p.5/AppA.3 p.10"
+   },
+   {
+    "latex": "R_{mut}=\\mathbf1[Y=1,n\\ge1,\\mathrm{no\\ execution\\ error}]",
+    "locator": "§3.3 pp.5–6; AppA.3"
+   }
+  ],
+  "signal_routing": "J/Delta only filters offline demonstrations, not a separate on-policy process loss. GT enters external matcher; generator-side prompts lack GT, final planner can see judge consensus. SFT trains LM only; exact user/environment/action/answer masks and CE reduction unspecified. RL adds all terms into one trajectory scalar; GSPO sequence-level aggregation explicitly stated, no displayed local action/token channel. Detailed advantage formula and masks are not supplied; cannot silently import from cited GSPO or CodeVision. KL loss .001 separate, entropy coefficient0.",
+  "normalization": "J equally averages8model task-matcher scores; GTC/NTC raw counts not rates; w fixed values not calibrated probabilities. RL sequence-level aggregation, clip.20/.28,c10 reported, but advantage centering/std/epsilon/population, cross-group weighting, response/environment masks and exact reduction unreported. No separate normalized efficiency channel stated. SFT loss normalization not given.",
+  "invariance": "Tool bonus and overuse fee deliberately alter objective; no policy invariance/PBRS. Reader conditional: if group mean/std and allY=1,protocolconstant,nooveruse,thenR=const+w·T and positivew scales out of standardizedA up toepsilon whenTvaries; ifallT=1A0. This is algebra under assumed implementation, not verified GSPO behavior. Uniformvsfixedtier also changes relative reward magnitudes, not only semantic labels.",
+  "baseline_or_potential": "Cross-scale committee is offline demonstration scorer; frozenSFT rollouts construct question confidence. Neither is an online critic or current-state potential. Paired samequestion interfaces do not force equal action trajectories. Currentpolicy value/advantage estimator formula unknown.",
+  "degenerate_cases": "Atc16 questionexcluded; atc≤8andGTC0 excluded even if improving exploration might help. GTC≥2,NTC≥2 receives no strong/weak label byAlgorithm2. GTC1 may coexistNTC7. Withallwrong/nooveruse/validformatR=.2 acrossgroup→conditional groupcenteredtaskA0; overuse/format differences mayremain. Allcorrect+alltool+sameformat/countbelow6 givesconstantR→conditionalA0;direct/toolmixturecanstilldiffer. ptool0 removesbonus samples; ptool1 removesdirect contrast; no forced-balanced RL support. Singletool getsfullbonus iffcorrect/errorfree, not proof necessity; n≤6 seeszero overusefee."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Actual Table3 same-pool/distilledSFT vsalignedSFT and sameMUTRL, plusuniform. Missing reader-proposed test: preserve reward-weight histogram and source/difficulty distribution while shufflefixedw, compare controlledforcedtool/disabled outcomes and checkpointwise drift. No experiment executed by reader.",
+  "controls": [
+   "DistilledSFT4257vs4057samequestionpool/toolbelt but synthesis/filtering/behavior distributions differ; not committee-only isolation.",
+   "Uniformw.2 vs.5/.2/0 on fixedmixture: changes reward scale aswell asassignment; nohistogram-matched shuffledlabel.",
+   "Fig2 outcome-only callcollapse; fullmethod not compared ascomplete matched ninebench outcomeonly row.",
+   "FSC147 counting-onlyMAE14.76 vs11.56: supports additionalpolicyvalue in reported protocol, no fullcost matching.",
+   "No committee student-only/strong-only/random filtering or promised proposer-sensitivity numbers located; no repeatedlabels or same-prefixforcedaction ablation."
+  ],
+  "negative_results": [
+   {
+    "text": "FullToolVision ChartQA90.1 < distilledSFT+MUT90.2; SFTalone belowbase V*77vs77.5,OCR78.2vs81.9,Chart87.8vs88.6,MMECN54.4vs57.4.",
+    "quote": "scores below ToolVision-8B on seven of the eight accuracy benchmarks",
+    "locator": "§4.4 p.7/Table3"
+   },
+   {
+    "text": "Outcomeonly toolcalls collapse while totalreward rises; uniform hasmore ineffectiveoperations. Fig2 ratesArxiv24.4vs.2,OCR32.3vs4.3,HR8K5.1vs1.1; denominator ineffectivecalls%, not allquestions.",
+    "quote": "tool calls collapse to zero even as total reward rises",
+    "locator": "§4.4 p.7/Fig2 p.2"
+   }
+  ],
+  "seeds": "single training run/configuration. SFT/sourcebalance seed42;RLloader1;vLLMtrain/eval0;diag subsampling42. avg@4 fourtrajectories/q; Table6 SD per-run evaluationdraw .17–.99 accuracypoints, FSCMAE.67; no repeatedtraining CI.",
+  "falsifier": "Reader proposed: fixedw fails to predict controlled current-policy tool benefit or shuffled matchedw reproduces gains, undermining necessity-information attribution; samepool strong/targetcommittee ablations indistinguishable would weaken capability-alignment mechanism. No such test run."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-8B-Thinking; LM trained, vision/projector frozen in SFT; Qwen3.6-plus synthesis;8membercommittee",
+   "framework": "other: CodeVision environment, DeepSpeedZeRO3 SFT, FSDP GSPO/vLLM; exact repo unavailable",
+   "group_size": 8,
+   "rollouts": "RL8/q;offline16disabled then8optional-enabled forhardcandidates;eval4/q",
+   "steps": 180,
+   "kl": 0.001,
+   "temperature": 0.7,
+   "max_turns": 12
+  },
+  "cost": "H.5:118724*16=1899584 disabled and51773*8=414184 enabled measurement trajectories (reader arithmetic).43.2+673=716.2 GPUh (author rounds716), roughly40% of1728GPUhRLto180 (~41.4% arithmetic). EightA100 workers measurement;16A100-80GB RL,8SFT.194step log198656trajectories matches194*128*8; mainstep180 selectedhighesttrainingreward, checkpoints10steps. ToolsadditionalGPU≤16GBmemory notzeroGPUcost; exactinclusionserviceGPUh,teacherAPI/SFT/evaltotal,tokens unknown.",
+  "pitfalls": [
+   {
+    "text": "Highrolloutconcurrency malformedcalls;selected32 instead1024. Do not infer same bug in local harness.",
+    "quote": "produced malformed toolcall responses under high rollout concurrency.",
+    "locator": "H.4 p.18"
+   },
+   {
+    "text": "Budget selection64vs128promptbatch;128 balancesmixtureearlytraining,nomultiseedcausalvalidation.",
+    "quote": "128 prompts per step give each batch a more balanced mixture of question sources and difficulty",
+    "locator": "H.4 p.18"
+   },
+   {
+    "text": "Figs12/13 replayed returns differpixels; Fig11 displayed300resize then308sharpeningreturn, Fig13fourtoolcalls finalrefimageindex3 vs append-onlycontract not reconciled by excerpt. Not runtimebugproof.",
+    "quote": "code and tool observations are excerpted where marked",
+    "locator": "AppG p.14"
+   }
+  ],
+  "code": null,
+  "lesson": "When correct teacher traces depend on fine localization the learner lacks, matching final answers is insufficient: verify intermediate results with target-scale readers and inspect actual crop bindings. Treat offline success groups as versioned labels, log their drift, retain direct support, and price measurement+service compute before training; proposed localaudit not performed."
+ },
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 1,
+   "how": "Question-leveltoolbonus doesnot supplypercallcredit; can motivate measurement butdoesnotresolve redundantcalls."
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "Explicitlyconditions toolneed onfrozenSFTmodel andmeasuresit; transferrequires currentpolicyagreement/drifttest, not assumed."
+  },
+  {
+   "problem": "P02",
+   "strength": 1,
+   "how": "Observedoutcomeonlytoolcollapse here opposite ourcropdominance; showsbehavior/supportcontext matters."
+  },
+  {
+   "problem": "P24",
+   "strength": 1,
+   "how": "Separatesofflinehow/whenlabelconstruction, butsameLManswers/routes; no parameterdecoupling oruniformbiascontrol."
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": []
+}

@@ -1,0 +1,191 @@
+{
+ "paper_key": "litscan:78654",
+ "title": "HiDe: Rethinking The Zoom-IN method in High Resolution MLLMs via Hierarchical Decoupling",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78654.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 pp3–9 Eq1–6/Tables1–5",
+   "Appendix F–J p17"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把zoom拆成放大/去背景，再用语义querytoken的去噪attention定位、多框保序压缩图回填。",
+  "key_step": "高斯平滑attention→逐图minmax→减searchprompt噪声均值→再minmax阈值连通框→删空行列compact，与原图共同回答。",
+  "why_non_obvious": "多对象问题不能只用首答token或把crop按序拼接；保相对顺序与去无关token各有贡献。",
+  "trigger_condition": "When high-resolution clutter hides several query objects, localize semantic token regions and compact them while retaining spatial order.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "逐层拆分表观有效操作，保留真正贡献因子。",
+  "abstract_trigger_condition": "When high-resolution clutter hides several query objects, localize semantic token regions and compact them while retaining spatial order.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "高斯平滑attention→逐图minmax→减searchprompt噪声均值→再minmax阈值连通框→删空行列compact，与原图共同回答。",
+  "abstract_why_non_obvious": "多对象问题不能只用首答token或把crop按序拼接；保相对顺序与去无关token各有贡献。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78654#s1",
+   "object": "regionproposal",
+   "information": "模型自身中层querytoken attention，无推理GT框",
+   "operation": "TAD语义token注意力减genericsearch背景",
+   "claimed_effect": "V* base79.1→questiontoken86.9→semantic91.1→TAD92.1",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq4/Table2 pp6/8",
+    "quote": "Base + TAD                      94.8     88.2    92.1"
+   },
+   "failure_boundary": "语义token抽取具体实现未知；attention仍会错定位，GT框只用于诊断分析。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78654#s2",
+   "object": "多crop回填",
+   "information": "TAD框的原始像素和位置",
+   "operation": "保内容行列并拼紧，原图+compact二图输入",
+   "claimed_effect": "LPD92.1 vs顺序拼接86.4、保布局不压缩88.0；compactonly90.1低于二图92.1",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq6/Table3/Table12",
+    "quote": "Base + LPD                      94.8      88.2   92.1"
+   },
+   "failure_boundary": "删空白保排序/对象内形状，不严格保持所有距离比/角度；不是新环境视角。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P39",
+   "strength": 3,
+   "how": "关键瓶颈不只分辨率，还有背景干扰和视觉token数；同像素放大不必有用。"
+  },
+  {
+   "problem": "P05",
+   "strength": 2,
+   "how": "衡量实际输入token/延迟及布局，不能只看crop次数。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "ViCrop",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "sequential/masking/no-compaction",
+   "kind": "method"
+  },
+  {
+   "name": "full-image upscaling",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者失败案例：attention定位错导致答案错。",
+   "quote": "",
+   "locator": "Appendix I p17"
+  },
+  {
+   "text": "Reader：在V*调σ/α/层后固定到其他集，V*主结果兼做选择集；不是独立调参测试。",
+   "quote": "",
+   "locator": "§5.4"
+  }
+ ],
+ "question": {
+  "observed_failure": "全图upscale不稳定；同框顺序拼接Spatial73.7低于base76.3，LPD88.2。",
+  "load_bearing_assumption": "语义attention可定位相关对象，删空行列保问题所需关系。",
+  "scope": "高分辨率多对象VQA",
+  "success_criterion": "同框同token预算布局/随机布局对照，accuracy与cost均报告。",
+  "why_open": "距离/角度任务可能被压缩重排改变，背景也可能是必要证据。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§3拆zoom操作"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2–3"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "TAD/LPD"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "masking/padding分析"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "M_i=N(Gσ*A_i)−E_q∈SearchPrompt N(Gσ*A_q); mask_i=1[N(M_i)>α]",
+    "locator": "Eq4–5"
+   },
+   {
+    "latex": "N(x)=(x−min x)/(max x−min x)",
+    "locator": "Eq4"
+   }
+  ],
+  "signal_routing": "无梯度/奖励；先forward并抽semanticqueryattention定位原图像素，再独立原图+compactQA。FlashAttention后只计算选定nquery注意力并CPUoffload。关键token选择/heads聚合未在已读段明确。",
+  "normalization": "other：逐attentionmap minmax、减背景均值后再次minmax再阈值；无概率/优势归一化。",
+  "invariance": "minmax正仿射不变；空行列删除保序不保持绝对距离/所有比例；非PBRS。",
+  "baseline_or_potential": "searchprompt平均attention为去噪prior，非value baseline。",
+  "degenerate_cases": "常数map分母0、无region时fallback未知；多tokenfalsepositive框可吞全图；空背景删减可能失参照。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "固定分辨率mask语义，再trim/pad背景token；同TAD框比较布局方法，分开识别与回填。",
+  "negative_results": [
+   {
+    "text": "ViCropSpatial71.1<base76.3；compactonly90.1<原图+compact92.1。",
+    "locator": "Table1/Table12"
+   }
+  ],
+  "seeds": "temperature0; repeated seeds null",
+  "falsifier": "对metric距离任务同框compact若系统性改变答案，严格空间关系保持主张失败；给错误attention框若仍有效则定位因果解释需重审。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/Qwen3VL8B layer15 σ3 α.7; InternVL3 layer17 σ2 α.6",
+   "framework": "FlashAttention with selective attention recomputation/CPU offload",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "单PPU-ZW810E96GB；V*191题base7min/HiDe14min/ViCrop*28min；约20GB vs原ViCrop>96GB OOM。所谓75%为作者近似，96→20超过79%。",
+  "pitfalls": [
+   {
+    "text": "主方法多一次图像输入，不应称相对base无开销；DeepEyes数值取原文非全同设置。",
+    "locator": "§5.2/Table4"
+   }
+  ],
+  "code": "https://tennine2077.github.io/HiDe.github.io/ (paper link only)",
+  "lesson": "当crop带来收益时，先拆分辨率、背景语义和token数，再决定优化工具频率还是输入重组。"
+ }
+}

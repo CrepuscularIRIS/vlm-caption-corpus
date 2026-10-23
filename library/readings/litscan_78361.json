@@ -1,0 +1,209 @@
+{
+ "paper_key": "litscan:78361",
+ "title": "Ophiuchus: Incentivizing Tool-augmented “Think with Images” for Joint Medical Segmentation, Understanding and Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78361.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 pp3–6",
+   "§4 pp6–9 Tables1–6",
+   "Appendix B–C pp15–16; G p22"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "真实分割/zoom工具交错推理，coldstart→跨checkpoint失败成功对的reflectionSFT→有工具成功bonus的GRPO。",
+  "key_step": "保留图像索引，SAM2 bbox/BiomedParse text取mask再crop；duplicate调用早停，obs全maskout；成功工具轨迹奖励2。",
+  "why_non_obvious": "反思数据取自训练过程中工具序列变化与答案翻转，但跨checkpoint改变不等于同一轨迹现场纠错。",
+  "trigger_condition": "When medical evidence requires localized pixels and tools, teach interleaved tool trajectories and revised strategies before online RL.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用外部视觉能力和失败到成功的数据课程拓展交互轨迹。",
+  "abstract_trigger_condition": "When medical evidence requires localized pixels and tools, teach interleaved tool trajectories and revised strategies before online RL.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "保留图像索引，SAM2 bbox/BiomedParse text取mask再crop；duplicate调用早停，obs全maskout；成功工具轨迹奖励2。",
+  "abstract_why_non_obvious": "反思数据取自训练过程中工具序列变化与答案翻转，但跨checkpoint改变不等于同一轨迹现场纠错。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78361#s1",
+   "object": "反思SFT",
+   "information": "每epoch同问题early错误/late正确且工具序列不同",
+   "operation": "配对后reconcile/consolidate成新轨迹，再SFT2epochs",
+   "claimed_effect": "10+2 reflection Avg60.8 vs12epoch原SFT58.8；全训练68.1",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq1/Table2 pp4/7",
+    "quote": "Ophiuchus              ✓            ✓               ✓      73.6(+9.9)     83.9(+16.3)          76.0(+17.5)       39.3(+15.6)    67.5(+42.6)   68.1(+20.4)"
+   },
+   "failure_boundary": "合并规则、reflection样本量未知；不能认定保留错误前缀和真实失败返回。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78361#s2",
+   "object": "工具成功奖励与选择性",
+   "information": "答案GT或maskIoU；至少一次工具（正文）",
+   "operation": "answer+format+成功工具2分，整轨迹共享credit",
+   "claimed_effect": "Table5在基座已能答对子集unnecessary调用均3.3%；基座错子集正确且调用93.7%",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.2/AppC; Table5 p9",
+    "quote": "Unnecessary tool-calling          4.8          1.4            4.2             0.6             3.5           3.7          3.9         4.6      3.3"
+   },
+   "failure_boundary": "不是当前策略因果必要性；AppEq7仅I(Sans>0)×2漏tool indicator，实际实现未知；成功冗余调用仍可加分。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P02",
+   "strength": 3,
+   "how": "正确工具奖励2对direct不对称，无法从目标保证必要性。"
+  },
+  {
+   "problem": "P38",
+   "strength": 3,
+   "how": "失败/成功工具序列数据构造与recover能力直接相关但拼接细节未知。"
+  },
+  {
+   "problem": "P30",
+   "strength": 3,
+   "how": "重复调用直接早停，不能与学会停止混淆。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "cold-start only",
+   "kind": "method"
+  },
+  {
+   "name": "12-epoch cold-start",
+   "kind": "method"
+  },
+  {
+   "name": "cold+reflection",
+   "kind": "method"
+  },
+  {
+   "name": "RL only",
+   "kind": "method"
+  },
+  {
+   "name": "static self/GT crop",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者：多轮RL/工具执行及teacherAPI成本高；仅2D。",
+   "quote": "",
+   "locator": "Appendix G p22"
+  },
+  {
+   "text": "Reader：基座错误不证明对训练后模型工具必要；工具集合能力/训练预算与静态crop对照不同。",
+   "quote": "",
+   "locator": "§4.3/Table4–5"
+  }
+ ],
+ "question": {
+  "observed_failure": "原7B OOD49.3→68.0；GTcrop54.9；反思60.8 vs额外SFT58.8。",
+  "load_bearing_assumption": "正确工具bonus对应有用证据，crosscheckpoint序列修订能教现场纠错。",
+  "scope": "2D医疗图的多工具策略",
+  "success_criterion": "用同训练后策略direct/tool成对比较准确率与冗余率，反思对照保相同token预算。",
+  "why_open": "必要性定义和合并轨迹未排除重复工具奖励/强teacher信息。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "三阶段训练"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2相同12epoch"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "SRS Eq1"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "SAM2/BiomedParse"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S=S_ans+S_format+S_tool; S_tool=2·1[S_ans>0] (printed Eq7; prose additionally requires ≥1 tool)",
+    "locator": "AppC Eq4–7"
+   },
+   {
+    "latex": "S_ans^seg=3 if IoU>.8; 2 if .7<IoU≤.8; 1 if .5<IoU≤.7; 0 otherwise",
+    "locator": "AppC Eq6"
+   },
+   {
+    "latex": "L_RL=−E (1/G)Σ_i(1/T_i)Σ_n min(ratio_i,n A_i,clip(ratio_i,n)A_i)",
+    "locator": "Eq2 p5"
+   }
+  ],
+  "signal_routing": "生成thought/toolcall/answer接受轨迹A；工具返回obs不计loss和Ti。Eq2 n按step写而Ti为生成token长度，token展开实现未知。SFT亦只reasoning/toolcall tokens。真实工具原图或历史图索引执行，mask/crop为新增观测像素。",
+  "normalization": "other/unknown：正文只称normalized A；Ti排除obs的长度平均；KL明确无。",
+  "invariance": "非PBRS；工具成功bonus改变direct/tool排序；若实际实现groupstd才有公共正缩放抵消，此处不确认。",
+  "baseline_or_potential": "未给baseline公式；无potential。",
+  "degenerate_cases": "工具重复即终止，截断答错与超限罚分细节未知；全部成功工具或全错组如何处理std未知；IoU低于.5无seg梯度奖励；Sformat要求工具字段是否惩direct未知。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "12epoch原SFT vs10+2reflection；reward条件/无条件/无bonus；静态GTcrop。Table5是base能力分层而非同策略反事实。",
+  "negative_results": [
+   {
+    "text": "MedXpertQA39.3低于Gemini46.6/o3 44.1；摘要全任务胜出不可泛化。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "固定训练后策略按同题direct与tool强制配对，若有大量direct正确且工具未提升而拿bonus，则反驳“奖励只鼓励必要工具”。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B",
+   "framework": "VERL; tools FastAPI",
+   "group_size": 8,
+   "max_turns": 6,
+   "kl": 0
+  },
+  "cost": "16A100；cold30K10epoch lr1e-5 batch256；reflection2epoch；RL30K12epoch lr1e-6 batch256 maxcontext32K。teacher轨迹用GT工具返回，后续真实工具校验。",
+  "pitfalls": [
+   {
+    "text": "Eq7缺tool条件与正文不一致必须核代码再实现。",
+    "locator": "AppC"
+   },
+   {
+    "text": "跨checkpoint答案翻转不是直接观测的在线自反思。",
+    "locator": "Eq1"
+   }
+  ],
+  "code": "https://github.com/SII-zyj/Ophiuchus (paper-reported, not read)",
+  "lesson": "当用训练中失败到成功的轨迹教纠偏时，保留真实失败前缀与工具返回；不要把成功工具加分当必要性测量。"
+ }
+}

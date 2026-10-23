@@ -1,0 +1,328 @@
+{
+ "paper_key": "2506.14821",
+ "title": "Reinforcing VLMs to Use Tools for Detailed Visual Reasoning Under Resource Constraints",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2506.14821.pdf",
+  "version": "v3",
+  "sections_read": [
+   "PDF pp.1–10 (all pages)",
+   "Abstract; §1 Introduction (p.1)",
+   "§2 Method: tool implementation, image resolution, limited tool use (pp.1–3)",
+   "§2 Training: masking, reward shaping, data mix (pp.3–4)",
+   "§3 Experiments: setup, results, discussion and analysis (pp.4–5)",
+   "Figures 1–4; Table 1 (pp.2–6)",
+   "§4 Related Work; §5 Conclusion; acknowledgments (pp.5–6)",
+   "References (pp.6–8)",
+   "Appendix A: system prompt, zoom description, user prompt (pp.9–10)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把资源受限的小 VLM 工具学习拆成可学接口、单次观测预算、视觉结果 token 分配、困难题筛选与显式工具执行奖励的配方。资源限制通过硬约束实现，不是最少必要调用的优化。",
+  "key_step": "用 YAML-like keypoint 调用固定 400×400 crop，放大 crop 后作为用户图像返回；训练时仅对模型生成 token 计算 GRPO 损失；用基础模型 8 次作答的平均 VQA<0.5 筛选训练题。",
+  "why_non_obvious": "作者发现全量题会学会不用工具，只有零分困难题又损害泛化；更多工具能力不自动产生整体收益。复杂 JSON+bbox 同时引入格式与定位困难。",
+  "trigger_condition": "When a small model under a fixed memory budget cannot reliably learn a verbose localization tool, apply a concise point-based interface, a bounded observation loop, and moderately difficult training examples to learn usable detail acquisition.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null and no reviews_path; no review or acceptance outcome inferred.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Simplify the action parameterization and constrain the interaction budget before optimizing task success.",
+  "abstract_key_step": "Replace a verbose region specification with a point and a fixed-size operator; select challenging but not exclusively unsolved examples and return an enlarged observation.",
+  "abstract_why_non_obvious": "Easy instances can remove the incentive to acquire evidence, while exclusively unsolved instances can teach the action yet hurt transfer; interface complexity can block learning.",
+  "abstract_trigger_condition": "When resource limits and action-format failures obstruct learning, simplify the controllable action and curate a moderately difficult distribution while retaining an explicit interaction cap."
+ },
+ "signatures": [
+  {
+   "sig_id": "2506.14821#s1",
+   "object": "Small-model zoom action interface and returned visual observation",
+   "information": "Policy sees image, question, image size and prompt; after one zoom it sees original plus returned crop. No target-region annotation. Training tool can only crop the resized ≤1024-long-side image; evaluation tool accesses original high-resolution image.",
+   "operation": "Replace JSON+bbox with YAML-like name/keypoint, center a fixed 400×400 crop (shift at boundaries), upscale the square crop to input long-side dimension, append as user image, and force a final-answer-form second response after at most one call.",
+   "output": "A zero-or-one-call visual rollout with a simpler localization action and enlarged returned observation.",
+   "claimed_effect": "Figure 2 example interface length is 48→24 tokens. Authors report the former JSON+bbox setup collapsed; Figure 4 ablates crop upscaling. Complete recipe achieves V* 80.1 vs 74.4 baseline (Table 1); that +5.7pp is not an isolated interface effect.",
+   "conditions": [
+    "Qwen2.5-VL-3B-Instruct and at most one relevant ROI",
+    "Fixed 400×400 crop plus upscaling",
+    "Training image long side ≤1024; evaluation resolution differs"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "PDF p.3, §2 Easy-to-learn tool interface; Figure 2; pp.5–6 Figure 4",
+    "quote": "Additionally, we changed the tool to accept a keypoint defined in pixel coordinates instead of a bounding box. The tool then returns a fixed 400 x 400 pixel crop centered at the keypoint."
+   },
+   "failure_boundary": "Single ROI cap prevents multi-step recovery or multi-region evidence acquisition. Interface format and box parameterization change together. Figure 4 at 512 shows trained model slightly below baseline and no-upscale below baseline, so its broad prose generalization is not universal.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2506.14821#s2",
+   "object": "TextVQA RL training-example distribution",
+   "information": "Base model eight sampled no-tool answers scored against human answers; no ground-truth tool traces, no online current-policy necessity labels, no paired tool/no-tool gain measurement.",
+   "operation": "Evaluate training questions eight times at temperature 1.0, ≤10 generated tokens; retain questions with mean VQA score <0.5 rather than all questions or only mean-zero questions.",
+   "output": "Approximately 7,800 retained examples from approximately 34,600.",
+   "claimed_effect": "Full data leads to not using zoom despite a bonus; mean-zero-only approximately 4,000-example subset learns zoom without explicit tool reward but gives V* 71.7, below 74.4 baseline. Final <0.5 recipe gives V* 80.1; selection-only causal effect is not separately quantified with fully specified matched runs.",
+   "conditions": [
+    "Use base-model performance on the training split",
+    "Retain some solvable examples alongside difficult ones",
+    "Difficulty filter is tied to the base checkpoint and original no-tool evaluation setup"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "PDF p.3, §2 Data mix",
+    "quote": "We found the most success when the model was trained on the subset of the TextVQA training data for which the base Qwen2.5-VL-3B-Instruct model gets an average VQA score of < 0.5 from an 8-shot evaluation on the training set."
+   },
+   "failure_boundary": "Base-model failure is not proof that zoom is necessary or sufficient; hardest-only selection harms generalization. Training/evaluation resolution shift remains.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2506.14821#s3",
+   "object": "GRPO reward and loss for generated tool-use trajectories",
+   "information": "Final answer and ten human reference answers, answer-format validity, and successful zoom execution. The tool reward does not inspect whether selected content is relevant; no counterfactual necessity estimate.",
+   "operation": "Combine correctness (equal hard VQA and soft edit-distance components), format reward, and 0.1-weight successful-tool bonus; optimize model-generated tokens while masking tool-generated tokens.",
+   "output": "A policy explicitly incentivized to execute zoom within the hard single-call limit.",
+   "claimed_effect": "Figure 3 reports positive accumulated advantage for successful tool-use trajectories and negative for no-tool trajectories relative to failed calls; final recipe gives V* +5.7pp while TextVQA −5.9pp and HR-Bench 8K −5.7pp. These are reported aggregate outcomes, not evidence that the bonus selects only necessary calls.",
+   "conditions": [
+    "Weights α=1, β=1, γ=0.1, λ=0.5",
+    "One tool call maximum",
+    "Tool-generated output tokens excluded from GRPO loss"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "PDF p.3, §2 Reward shaping",
+    "quote": "Rt provides reward on any successful use of the zoom tool, even if the selected region does not contain information relevant to the query."
+   },
+   "failure_boundary": "Reward can favor irrelevant but executable calls; Figure 3 does not separate correctness strata or establish necessity. Exact advantage estimator/normalization and token reduction denominator are not specified.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-3B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen-VL-Max",
+   "kind": "method"
+  },
+  {
+   "name": "GPT4-o",
+   "kind": "method"
+  },
+  {
+   "name": "SEAL",
+   "kind": "method"
+  },
+  {
+   "name": "DC2",
+   "kind": "method"
+  },
+  {
+   "name": "ZoomEye",
+   "kind": "method"
+  },
+  {
+   "name": "LLaVA-HR-X-7B",
+   "kind": "method"
+  },
+  {
+   "name": "TextVQA",
+   "kind": "dataset"
+  },
+  {
+   "name": "V*Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HR-Bench 4K/8K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "VQA score",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "最多一个细节 ROI；不支持多次裁图、改框恢复。",
+   "quote": "This limits our approach, as implemented, to tasks that require at most one detailed ROI per image.",
+   "locator": "PDF p.3, §2 Limited tool use (continuation)"
+  },
+  {
+   "text": "Table 1: V* 74.4→80.1; HR4K 65.1→65.3; HR8K 63.8→58.1; TextVQA 79.3→73.4。作者总体承认领域内下降及 HR 无增益。",
+   "quote": "However, our approach decreases in-domain performance on the validation set of TextVQA and does not improve results on HR-Bench.",
+   "locator": "PDF p.4, §3 Results; p.5 Table 1"
+  },
+  {
+   "text": "低分辨率训练到 4K/8K 的分辨率差是作者猜测的泛化失败原因，未独立证实。",
+   "quote": "We conjecture that the resolution gap between training and inference causes RL to generalize poorly, and our future work will focus on curating training data that supports better performance in these settings.",
+   "locator": "PDF p.4, §3 Low-resolution training does not generalize to 4K & 8K images at inference time"
+  }
+ ],
+ "question": {
+  "observed_failure": "基线 Qwen2.5-VL-3B 在 V* 总分 74.4、空间关系 63.2；JSON+bbox preliminary setup 发生格式错误及后期 collapse（无次数/比例）；仅零分困难题训练后 V* 71.7。",
+  "load_bearing_assumption": "让模型自由输出复杂 bbox 工具调用、给全量现有 VQA 数据，即可在小模型/有限显存中学到可靠的细节获取；实际工具接口与训练题的观测需求决定能否学到调用。",
+  "scope": "4×A100 80GB 上的 Qwen2.5-VL-3B、TextVQA RL、至多一次定点 zoom，并评测 V*/HR-Bench/TextVQA。",
+  "success_criterion": "作者目标：在资源约束下学会工具并提高细节 VQA；V* 对同尺寸基线 +5.7pp。未预设准确率非劣界、调用率或实测 GPU·h 目标。",
+  "why_open": "作者认为多分辨率方案增加视觉 token 开销，复杂视觉搜索引入外部系统与重复区域评估，且缺少标注工具轨迹；本文采用无专门轨迹 SFT 的 RL 配方。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M01",
+   "quote": "First, we adopted a YAML-like tool use interface that is less brittle and more concise than JSON (Figure 2).",
+   "locator": "PDF p.3, §2 Easy-to-learn tool interface"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "quote": "We plot the total observed advantage grouped by the category of rollout: 1) no tool use; 2) successful tool use; 3) failed tool use.",
+   "locator": "PDF p.4, §3 Effect of structured reward"
+  },
+  {
+   "vocab": "rs",
+   "id": "outside_taxonomy",
+   "role": "primary",
+   "quote": "This allows for the model to be less precise in its localization and increases the likelihood that the tool’s output contains information that is useful to the query.",
+   "locator": "PDF p.3, §2 Easy-to-learn tool interface",
+   "rationale": "简化JSON/框接口同时改变格式与动作表达能力；尚无明确独立证据表明廉价替代算子保留定义清楚的关键性质。按RS窄判据不强行归为architectural_operator_substitution。原文引句只支持定位容忍性设计。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=\\alpha R_c+\\beta R_f+\\gamma R_t",
+    "locator": "PDF p.3, §2 Reward shaping, unnumbered inline equation"
+   },
+   {
+    "latex": "R_c=\\lambda R_a+(1-\\lambda)R_e",
+    "locator": "PDF p.3, §2 Reward shaping, unnumbered inline equation"
+   },
+   {
+    "latex": "R_a=\\min\\left(\\frac{\\#\\text{ matching human answers}}{3},1\\right)",
+    "locator": "PDF p.3, §2 Reward shaping, unnumbered displayed expression"
+   }
+  ],
+  "signal_routing": "原文只明确训练模型自己生成的 tokens、mask tool-generated tokens。R 是 correctness+format+execution 的总奖励；未给各项到各轮/各 token 的差异路由，不补造 per-action advantage 或必要性 mask。第二次生成被 regex 约束为终答。",
+  "normalization": null,
+  "invariance": "没有势函数或策略不变定理。工具执行 bonus 与格式奖励改变优化目标；硬上限和第二轮 regex 限制可达轨迹。准确率非劣未被保证且 Table 1 有下降。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "未报告全对/全错组、p≈0/1 或零方差分母处理。读者条件推论：若采用标准组内中心化且组奖励完全相同，则该组无相对信号；答题全对不代表奖励相同，因为格式/工具分量仍可变。论文未写 advantage 方程，不能指定其 std 或 epsilon。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "实际：Fig.4 在 512/800/1024/2048 输入分辨率比较 base、RL+upscaled crop、RL without crop upscale；数据全量/mean-zero/<0.5 的探索；JSON+bbox→YAML+keypoint 的联合改动。没有完整奖励因子析因或相同 token/GPU·h 的训练对照。",
+  "controls": [
+   "Qwen2.5-VL-3B 同尺寸基线与 7B 参数规模比较",
+   "Fig.4 crop upscale 消融，但不同分辨率的视觉 token 预算不是等成本",
+   "mean-zero-only 数据反例 71.7；全量数据不学 zoom",
+   "Fig.3 按工具执行类别累积 advantage，仅描述性诊断，无 correctness 分层"
+  ],
+  "negative_results": [
+   {
+    "text": "最难零分子集 V* 71.7，比 baseline 74.4 低；不能将更难题更多视作单调增益。",
+    "quote": "We find that this data selection strategy hurts rather than helping the model’s performance, resulting in 71.7% accuracy on V ∗ Bench, which is lower than",
+    "locator": "PDF p.5, §3 Effect of data mix choice (sentence continues in next column)"
+   },
+   {
+    "text": "复杂接口出现晚期 collapse。",
+    "quote": "We found that the model would gradually forget how to use the tool altogether. This led to complete model collapse in later training stages.",
+    "locator": "PDF p.3, §2 Easy-to-learn tool interface"
+   },
+   {
+    "text": "全量 TextVQA 在小额工具奖励下仍学会不调用。",
+    "quote": "Even when provided a small reward for correct tool usage, the model still learns to not use the zoom tool.",
+    "locator": "PDF p.4, §2 Data mix continuation"
+   }
+  ],
+  "seeds": "未报告种子数、独立运行方差或置信区间；作者选择 best-performing training run 报告，每个评测样例只跑一次。不能把未知训练种子数写成已证实 single seed。",
+  "falsifier": "读者提出、未执行：固定初始化/训练题次/视觉与文本 token 预算的重复运行若不再有 V* 增益，则配方的等成本效率解释不成立；若扩大到 HR8K/TextVQA 并要求非劣，当前 Table 1 已不能支持普遍准确率不降。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-3B-Instruct",
+   "framework": "TRL + Verifiers (extended by authors)",
+   "group_size": 3,
+   "rollouts": 3,
+   "steps": 800,
+   "kl": 0,
+   "temperature": 1.0,
+   "max_turns": null,
+   "max_tool_calls": 1,
+   "global_batch_size": 4,
+   "max_images_per_rollout": 2,
+   "max_completion_tokens_per_response": 2048,
+   "learning_rate": 1e-06,
+   "optimizer": "Adam; beta2=0.98",
+   "schedule": "cosine; warmup 10 steps; max grad norm 1.0",
+   "clip_low": 0.2,
+   "clip_high": 0.28,
+   "evaluation_temperature": 0.1
+  },
+  "cost": "原文：4×A100 80GB，800 steps，global batch size 4，3 rollouts，最多2 images/rollout、2048 generated tokens/response、1 tool call。实际生成 tokens、rollout wall time、GPU·h、峰值显存、训练运行总数均未报告。筛选另需约34,600题各8次≤10 token作答。没有 token-matched/compute-matched 对照；3B vs 7B 参数量或一次 vs SEAL平均4.65 crops 不能直接换算端到端成本。",
+  "pitfalls": [
+   {
+    "text": "必须屏蔽工具返回 token 的训练损失；论文明确报告此 mask，未给代码实现细节。",
+    "quote": "To accomplish this, we mask out tokens generated by the tool during the GRPO loss computation.",
+    "locator": "PDF p.3, §2 Training"
+   },
+   {
+    "text": "不放大 crop 会失去收益；原文概括 baseline level，Fig.4 的 512 与 2048 点并不严格等于 baseline，需保留图文细节。",
+    "quote": "Without applying this technique, the model’s performance degrades to a baseline level.",
+    "locator": "PDF p.5, §3 Effect of inference time image resolution; p.6 Figure 4"
+   }
+  ],
+  "code": null,
+  "lesson": "当小模型的复杂工具格式和定位空间妨碍学习时，应把接口错误率、视觉返回 token 分配、数据难度与硬预算分别审计；显式工具奖励能教调用，但不能代表必要调用或多轮恢复。"
+ },
+ "relevance": [
+  {
+   "problem": "P02",
+   "how": "直接给成功执行工具加分，Fig.3 无工具 advantage 为负；提供与保护直答目标相反的目标设计证据。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "无专门工具轨迹 SFT 仍可在 instruction-tuned 3B 上经接口/数据/奖励学到 zoom；这是特定初始能力条件下的证据，不证明缺失行为可普遍靠 RL 恢复。",
+   "strength": 2
+  },
+  {
+   "problem": "P30",
+   "how": "固定框+keypoint 避开小框乱裁；仅一次调用，不能解决或评估重复裁图。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "硬上限 1 并强制终答，没有剩余预算条件策略；只提供边界对照。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "训练 crop 只源自已缩小图，测试可用原图；像素和 token 预算差影响可读性及 HR8K 泛化。",
+   "strength": 2
+  },
+  {
+   "problem": "P65",
+   "how": "基础模型8次成功率筛选困难题，可迁移到训练题需求分层，但不等于工具必要性标签。",
+   "strength": 2
+  },
+  {
+   "problem": "P51",
+   "how": "V*正收益伴随其他任务下降，且无多种子/非劣检验，不支持准确率普遍不降。",
+   "strength": 1
+  }
+ ]
+}

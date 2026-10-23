@@ -1,0 +1,51 @@
+{
+ "paper_key": "litscan:75850",
+ "title": "PixCLIP",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_75850.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs1–7",
+   "Tables1–3/7–8",
+   "AppD Limitation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "mask输入CLIP视觉塔配长文本LLM编码，局部crop与全局池化辅助对齐。",
+  "key_step": "零初始化mask卷积加到image embedding；10%全一mask配全图caption保全局能力。",
+  "why_non_obvious": "仅长文本或mask-text对齐无法同时保局部细节与全图语义。",
+  "trigger_condition": "When global embeddings dilute irregular regions, align mask-conditioned and cropped features with long region descriptions.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用局部和全局双视图约束表征。",
+  "abstract_trigger_condition": "When finer localization loses context, preserve both granularities during training."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75850#s1",
+   "object": "mask条件视觉表征",
+   "information": "LongGRIT1.5M自动mask/长caption，固定LLM文本塔",
+   "operation": "LCL+.25LFC+.25LLG；10%全图训练；add maskembedding",
+   "claimed_effect": "ImageNetS top1 AlphaCLIP68.89→69.57；concat InstanceCOCO69.3 vsadd72.7",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table1/7",
+    "quote": "added mask embedding layer ConvM (·) is initialized to"
+   },
+   "failure_boundary": "不是VLM动作策略；region相似度不能直接当crop必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 1,
+   "how": "有区域证据embedding思路，但替换视觉塔与语料成本大，非caption/crop策略训练。"
+  }
+ ]
+}

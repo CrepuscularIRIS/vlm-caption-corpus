@@ -1,0 +1,58 @@
+{
+ "paper_key": "litscan:1206",
+ "title": "Grounded Multimodal Named Entity Recognition on Social Media (GMNER)",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_1206.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§4.1–4.5",
+   "§5.1,5.3–5.4 Tables 3,5",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "unify_into_shared_representation",
+  "key_step": "将实体跨度、类型及可 grounding 标记编码到统一索引序列，仅对 groundable 实体预测 VinVL 候选框分布。",
+  "why_non_obvious": "约60%实体没有图像对应区域，强制每个文本实体落框会造成错误关联。",
+  "trigger_condition": "When textual entities may lack visual referents, predict referability before region selection.",
+  "contribution_type": "benchmark+method",
+  "abstract_strategy": "unify_into_shared_representation",
+  "abstract_trigger_condition": "When textual entities may lack visual referents, predict referability before region selection."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:1206#s1",
+   "object": "entity-type-region triple",
+   "information": "文本和图像 top18 VinVL 区域；训练GT实体/类型/框",
+   "operation": "BART生成 entity/groundable/type 索引；groundable token隐藏态接区域softmax，索引CE+归一化IoU软标签KL训练",
+   "claimed_effect": "GMNER F1 56.41 vs BARTMNER-VinVL-EVG 52.45；去层次预测54.32",
+   "conditions": [
+    "候选框需覆盖GT；IoU<0.5置0后重归一化"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 3; Table 5",
+    "quote": "H-Index (Ours)                         56.16    56.67   56.41   79.37   80.10   79.73   60.90   61.46   61.18"
+   },
+   "failure_boundary": "仅文本提及实体；groundable 不代表当前策略需要再裁，候选框全不重叠时软标签归一化处理未在已读正文交代。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P44",
+   "strength": 1,
+   "how": "有框/无框标签可启发证据标注，但NER关联不是 crop必要性。"
+  },
+  {
+   "problem": "P28",
+   "strength": 1,
+   "how": "None是视觉对应缺失，不等价问答弃答。"
+  }
+ ],
+ "scientific_replication": false
+}

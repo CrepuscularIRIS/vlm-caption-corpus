@@ -1,0 +1,390 @@
+{
+ "paper_key": "2411.16044",
+ "title": "ZoomEye: Enhancing Multimodal LLMs with Human-Like Zooming Capabilities through Tree-Based Image Exploration",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2411.16044.pdf",
+  "version": "v4",
+  "sections_read": [
+   "Abstract; 1 Introduction (PDF pp.1–2)",
+   "2 Preliminary; 3.1 Abstraction of Tree Search (p.3)",
+   "3.2 Tree Representation for Image; 3.3 Ranking Function; Eq.1; Algorithms 1–2 (pp.3–5)",
+   "3.4 Stopping Criterion; 3.5 Overall Search Algorithm (p.5)",
+   "4.1 Implementation Details; 4.2 Results on High-Resolution Benchmark; Tables 1–2 (pp.5–6)",
+   "4.3 Results on Real-World Benchmark; Table 3 (pp.6–7)",
+   "4.4.1 Vision-level test-time scaling; 4.4.2 Zoom contribution; 4.4.3 Split sub-regions; Figure 4; Tables 4–5 (p.7)",
+   "4.5.1 Zoom Eye vs. V*; 4.5.2 Other HR processing methods; Tables 6–7 (p.8)",
+   "4.6 Case Study; Figure 5 (pp.8–9)",
+   "5 Related Work; 6 Limitations; 7 Conclusion (p.9)",
+   "8 Acknowledgements; References (pp.10–12; bibliography inspected, cited works not independently read)",
+   "Appendix A; Table 8 (pp.13–14)",
+   "Appendix B.1 DC2; B.2 Pixel Reasoner; B.3 VisCrop (p.13)",
+   "Appendix C; complete reported MME-RealWorld results, Table 9 (pp.13–14)",
+   "Appendix D.1 Local Input; D.2 Global + Local Input; Figure 6 (pp.14–15)",
+   "Appendix D.3 Additional Settings; D.4 Complete Algorithm Workflow; Algorithms 3–4 (pp.15–16)",
+   "In-Context Examples of V* Bench and HR-Bench (p.17)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "作者方法：把固定图像输入改为问题引导的层级图像树搜索；用同一 MLLM 的线索存在、潜在可见性和可回答性反馈控制访问与停止，推理时不更新模型参数。",
+  "key_step": "先用 in-context examples 从题目生成单实例或全实例线索，再按两类置信度的深度加权值排序图像子块；单实例遇可回答节点即停，多实例收集满足存在阈值的节点，合并框后回答。",
+  "why_non_obvious": "读者归纳：能否看见目标与继续放大是否有希望不是同一信息；搜索终止也不等于目标存在。论文将三者分开询问，并让单实例与全实例问题走不同终止逻辑。印刷权重函数与文字方向冲突，不能把设计意图当作已验证实现。",
+  "trigger_condition": "When fixed-resolution perception loses task-relevant details in a high-resolution natural image, apply question-guided hierarchical region search to achieve a more informative final view without parameter updates.",
+  "reviewer_praise": [
+   "low_evidence: 未提供或读取实际 OpenReview 审稿。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 以下局限来自作者正文或读者分析，不冒充审稿意见。"
+  ],
+  "acceptance_signal": "low_evidence: MANIFEST 的 decision=null、venue=arXiv；不推断会议或录用档次。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把固定输入组织成可逐级细化的候选树，用当前求解器的反馈选择下一次观测。",
+  "abstract_key_step": "分开估计当前证据存在性、继续细化的潜力与终答充分性，再按任务要求收集一个或全部候选。",
+  "abstract_why_non_obvious": "区分已经可见、可能通过细化变得可见和足以回答三种状态，避免用一个相关性分数承担所有控制职责。",
+  "abstract_trigger_condition": "When coarse observations discard decisive detail, search a hierarchical observation space with separate relevance and sufficiency feedback to recover task-specific evidence."
+ },
+ "signatures": [
+  {
+   "sig_id": "2411.16044#s1",
+   "object": "推理时可访问的图像区域与访问顺序",
+   "information": "同一固定 MLLM 可见当前局部图，Global+Local 模式还可见原图及红框位置、问题生成的目标线索和深度；看不到目标真值框、正确答案或裁图的反事实收益。",
+   "operation": "把超过编码器分辨率的区域递归四等分；对候选分别询问线索是否存在及进一步放大是否可能找到，以深度权重合成优先级排序队列。",
+   "output": "问题条件化的访问节点和最后聚焦区域；队列可转向其他分支。",
+   "claimed_effect": "Table 2 报告 LLaVA-ov-7B 的 V* 75.39→90.58、HR-4K 63.00→69.63、HR-8K 59.75→69.25。按这些显示分数相减分别为 +15.19/+6.63/+9.50 个百分点；作者 Δ 行及正文却将 V* 写为 +14.19、HR-8K 写为 +10.0，存在源内算术不一致。上述是整套方法结果，不是单独排序项的效应。",
+   "conditions": [
+    "自然高分辨率图像包含可通过缩放恢复的细节",
+    "MLLM 能产生有用线索并对 Yes/No 反馈打分",
+    "四分网格不会过度割裂目标；更细分支数另有消融"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "PDF p.6, Table 2, LLaVA-ov-7B baseline/Zoom Eye rows; p.4 §3.2–3.3",
+    "quote": "LLaVA-ov-7B w/ Zoom Eye 93.91 85.53 90.58 84.25 55.0 69.63 88.5 50.0 69.25"
+   },
+   "failure_boundary": "Table 2 的 HR-8K FCP 从 52.25 降到 50.0；固定网格可割裂目标。权重函数的方向与正文描述冲突，未读代码不能判定实际采用哪一个。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2411.16044#s2",
+   "object": "单实例搜索的终止与多实例搜索的覆盖",
+   "information": "单实例使用当前节点和历史最佳节点的 answering confidence、已用搜索步数及树深度；多实例用 existing confidence。没有真实正确性反馈，也没有显式学习的剩余预算价值。",
+   "operation": "单实例 ca≥τ 时停止；超过 C=3D 后每 δ=2 步降 τ 0.1，最低 τmin=0，并重查历史最佳节点。全实例线索不应用单实例停止条件，深度限 2、ce≥τ2=0.8 才收集。",
+   "output": "一个可回答区域或多个满足存在阈值的区域；全实例并非无限制遍历所有分辨率层。",
+   "claimed_effect": "作者 §4.4.1/Fig.4 报告更多搜索步数与更高最终准确率、后续趋稳；没有逐阈值的完整数据表、置信区间或预算匹配对照。Table 5 四/九/十六分支的平均搜索步数为 8.20/5.71/5.02，不能等同于全部模型调用数。",
+   "conditions": [
+    "可回答性分数有足够区分力",
+    "单实例/全实例类型识别正确",
+    "搜索空间和阈值衰减规则明确"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "PDF p.15, Appendix D.3; p.16 continuation and Algorithm 4",
+    "quote": "reduced as the number of search steps increases."
+   },
+   "failure_boundary": "低阈值可能选择错误区域，高阈值可能无用遍历；降低阈值不是校准正确率保证。Algorithm 4 的 type 2 伪代码缺 Q.pop 和 nt 初始化，type 1 空集合退出后最终 union 的回退未明确。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2411.16044#s3",
+   "object": "最终回答使用的跨区域视觉上下文",
+   "information": "已搜到区域的原图坐标与原始像素；没有未被搜索到的细节真值。Global+Local 保留全图，Local 不提供完整原图。",
+   "operation": "将多个节点包围框合并为最小外接矩形；Global+Local 组合缩小全图与 AnyRes 局部框。Local 模式若合并框长边超过 1000px，则按相对位置贴到空白图再缩放。",
+   "output": "携带一个或多个线索的最终视图，再由原模型输出终答。",
+   "claimed_effect": "作者为避免多块远距区域 union 后再缩小损失细节而引入拼贴；没有报告该回退的单独消融或数值收益。",
+   "conditions": [
+    "需要多个区域时能保留相对关系",
+    "1000px 特例只适用于 Local 模式"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "PDF p.15, Appendix D.1, Figure 6",
+    "quote": "exceeding 1000px), we skip the Union operation."
+   },
+   "failure_boundary": "作者报告 RS/Position 定位成功仍回答错；拼贴及裁图可能改变全局位置解释。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "LLaVA-v1.5-7B/13B",
+   "kind": "method"
+  },
+  {
+   "name": "LLaVA-OneVision-0.5B/7B",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-3B",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL2.5-4B/8B/26B",
+   "kind": "method"
+  },
+  {
+   "name": "V* Search",
+   "kind": "method"
+  },
+  {
+   "name": "DC2",
+   "kind": "method"
+  },
+  {
+   "name": "VisCrop (MKWTL)",
+   "kind": "method"
+  },
+  {
+   "name": "Pixel Reasoner, Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o",
+   "kind": "method"
+  },
+  {
+   "name": "V* Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HR-Bench 4K/8K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld (TD omitted)",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者局限：搜索排名和停止条件为手工启发式，跨图像/任务不保证最优泛化。",
+   "quote": "including manually defined ranking",
+   "locator": "PDF p.9, §6 Limitations"
+  },
+  {
+   "text": "作者局限：固定大小图块与语义区域不对齐，线索可被割裂或遗漏。",
+   "quote": "visual cues may be fragmented or overlooked",
+   "locator": "PDF p.9, §6 Limitations"
+  },
+  {
+   "text": "作者局限：主要为自然图像设计，不适合以版面、阅读顺序和表格结构为核心的文档任务；MME-RW 的 TD 没测。",
+   "quote": "It is less applicable to document",
+   "locator": "PDF p.9, §6 Limitations; p.13 Appendix C"
+  },
+  {
+   "text": "读者推断：Table 4 以定位是否成功分组后比较准确率（93.45 vs 54.55），不是同题随机化裁图因果对照；可能混入难度、目标大小和任务差异。",
+   "quote": "LLaVA-ov-7B ✓ 93.45 LLaVA-ov-7B ✗ 54.55",
+   "locator": "PDF p.7, Table 4 caption and §4.4.2"
+  },
+  {
+   "text": "读者核对：印刷 W 随深度增大，Alg.2 将 W 乘给 latent confidence，反而加大 latent 权重；与正文要求深层转向 existing 不一致。没有代码证据可以消除此矛盾。",
+   "quote": "shift more weight to ce .",
+   "locator": "PDF p.5, §3.3 continuation; p.4 Algorithm 2 line 13; p.5 §4.1; p.15 Appendix D.2"
+  },
+  {
+   "text": "读者核对：伪代码不完整；Algorithm 4 type 2 循环没有取出/定义 nt，type 1 使用 N 但未初始化。未执行，不能把伪代码当运行验证。",
+   "quote": "41: if nt .depth ≥ 2 then",
+   "locator": "PDF p.16, Algorithm 4 lines 19 and 39–48"
+  }
+ ],
+ "question": {
+  "observed_failure": "作者结果：LLaVA-v1.5-7B 的 V* 基线 48.68，ZoomEye 83.25；LLaVA-ov-7B HR-8K 基线 59.75，ZoomEye 69.25。固定输入下小目标细节丢失是作者解释；数值是整体准确率而非直接测得的“不可见比例”。",
+  "load_bearing_assumption": "仅让语言模型生成更多文字推理、保持视觉输入不变，就能充分利用高分辨率细节；论文改为主动改变视觉观测。",
+  "scope": "无需为搜索训练模型，在自然高分辨率图像的细粒度属性、位置、计数任务中进行问题条件化树搜索。",
+  "success_criterion": "在 V*、HR-Bench 4K/8K 与报告的 MME-RW 子任务比较最终答题准确率，并检查搜索步数/粒度关系；未定义准确率非劣且裁图减少的联合判据。",
+  "why_open": "作者认为固定缩放和仅文字层推理丢失细节；V* 依赖专门训练的搜索模型和额外高分辨率编码器，DC2 聚合题目无关文本描述，VisCrop 为单次再看。上述前作差异仅按本篇描述，未独立核实前作全文。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "we can adjust the confidence threshold or",
+   "locator": "PDF p.7, §4.4.1 final sentence; 作者用阈值/搜索步数调节性能效率"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "In this part, we conduct an ablation study",
+   "locator": "PDF p.7, §4.4.3 heading and Table 5; 比较分支数4/9/16，未完全匹配调用预算"
+  },
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "role": "primary",
+   "quote": "We model the overall image as a tree T .",
+   "locator": "PDF p.4, §3.2"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "categorized into two types: (type 1) those requiring",
+   "locator": "PDF p.5, §3.5; 单实例早停 vs 全实例收集"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "role": "supporting",
+   "quote": "the in-context capability from the LLM base of",
+   "locator": "PDF p.5, §3.5; in-context 生成问题相关线索，不更新参数"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal{V}(n_t)=\\begin{cases}[F(R(I.\\mathrm{crop}(b_t)))]&\\mathrm{Local}\\\\[F(R(I)),F(A(I.\\mathrm{crop}(b_t)))]&\\mathrm{Global+Local}\\end{cases}",
+    "locator": "PDF p.4, Eq.(1); 视觉核对，补齐排版括号"
+   },
+   {
+    "latex": "z_1=\\Phi_\\theta(y=\\mathrm{Yes}\\mid\\mathcal V(n_t),x),\\quad z_2=\\Phi_\\theta(y=\\mathrm{No}\\mid\\mathcal V(n_t),x),\\quad c=(\\mathrm{softmax}(z_1,z_2)[0]-0.5)\\times 2",
+    "locator": "PDF p.4, Algorithm 2 lines 16–20（未编号公式，非 Eq.2）；原文对 probability/logit 的措辞不一致"
+   },
+   {
+    "latex": "\\alpha=\\mathcal W(n_t.\\mathrm{depth}),\\quad n_t.\\mathrm{priority}=\\alpha c_l+(1-\\alpha)c_e,\\quad \\mathcal S(n_t)=[c_a\\ge\\tau]",
+    "locator": "PDF p.4, Algorithm 2 lines 5–6 and 10–13（无公式编号）"
+   },
+   {
+    "latex": "\\mathcal W(d)=\\frac{1-b}{D^2}d^2+b,\\quad b=0.2\\ (\\mathrm{Local}),\\quad b=0.6\\ (\\mathrm{Global+Local})",
+    "locator": "PDF p.5 §4.1; pp.14–15 Appendices D.1–D.2（无公式编号）；照印刷式转录，和 §3.3 的权重方向冲突"
+   },
+   {
+    "latex": "b^*=(\\min_i x^*_{1,i},\\min_i y^*_{1,i},\\max_i x^*_{2,i},\\max_i y^*_{2,i})",
+    "locator": "PDF p.5, §3.5 Answering the question using the searched cues（无公式编号）"
+   },
+   {
+    "latex": "C=3D,\\quad \\delta=2,\\quad \\tau_{\\min}=0;\\qquad \\mathrm{count}\\ge C\\Rightarrow\\tau\\leftarrow\\tau-0.1,\\ C\\leftarrow C+\\delta",
+    "locator": "PDF p.16, Appendix D.3 and Algorithm 4 lines 15,21–25（无公式编号）"
+   }
+  ],
+  "signal_routing": "没有训练损失、reward、advantage 或 token 梯度路由。pe/pl 两次 Yes/No 反馈给候选节点排序；pa 反馈控制 type 1 当前/历史最佳节点早停；ce 控制 type 2 收集；最终生成器消费合并区域。所有来自同一个被封装 MLLM，参数固定。",
+  "normalization": "other: Algorithm 2 对 Yes/No 两个输出做二元 softmax，减0.5后乘2，值域(-1,1)；不是 GRPO 组内 std，也不是概率校准。",
+  "invariance": "模型参数保持不变；改变图像观测、搜索分配和最终输入，故输出策略行为可变。无 PBRS、最优策略不变定理或性能非劣保证。",
+  "baseline_or_potential": "无 critic、价值基线或势函数；ce/cl/ca 是问题/区域条件化的提示反馈。训练前固定 MLLM 与最终答题器相同，但提示反馈不等于在自然 caption→crop 协议下的动作价值。",
+  "degenerate_cases": "若根节点 ca≥τ 可直接回答；τ过低可错停，过高可能遍历过多，附录动态降阈值缓解。全对/全错 rollout 组不适用；没有 p≈0 时恢复动作梯度机制。D=0 时打印 W 的分母、无节点达到阈值时空 L 的最终合并、type 2 遍历实现均未明确，不能自行补成运行事实。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "已做：同模型 baseline vs ZoomEye，改变 τ 的搜索步数曲线，4/9/16分支消融，以及按目标覆盖≥50%划分的成功/失败定位组。尚不足以区分三置信度、层级结构和额外计算各自贡献：缺等模型调用数随机区域/固定网格/无latent/无回溯等对照。Table 4 是观察性分组，不能单独证明定位的因果效应。",
+  "controls": [
+   "Table 2/8 同一模型加/不加 ZoomEye；跨 0.5B–26B 的不同家族。",
+   "Table 5 分支数4/9/16；平均搜索8.20/5.71/5.02，HR-8K 69.25/67.63/69.75，非单调全面提升。",
+   "Table 7 将最终回答用 LLaVA-v1.5 改训为224px版本以对齐 V*；除CLIP-224外其余设置声称一致，但搜索分辨率分别224 vs768，计算未匹配。",
+   "Table 6 与 DC2/VisCrop 使用LLaVA-v1.5-7B；与Pixel Reasoner比较3B vs7B，不能视为同底座机制隔离。"
+  ],
+  "negative_results": [
+   {
+    "text": "MME-RW RS/Position 从61.40降到48.45，−12.95个百分点；定位到目标仍可能误解全局坐标。",
+    "quote": "Position 61.40 48.45 -12.95",
+    "locator": "PDF p.14, Table 9 RS/Position; pp.7–8 §4.3 and Fig.5"
+   },
+   {
+    "text": "MME-RW AD/Attentiontrafficsignal 从71.89降到68.66，−3.23个百分点。",
+    "quote": "Attentiontrafficsignal 71.89 68.66 -3.23",
+    "locator": "PDF p.14, Table 9"
+   },
+   {
+    "text": "MME-RW OCR Book map poster 77.17→75.24，−1.93个百分点，不能把正文挑选的大幅改善推广到全部OCR。",
+    "quote": "Book map poster 77.17 75.24 -1.93",
+    "locator": "PDF p.14, Table 9"
+   },
+   {
+    "text": "LLaVA-ov-7B HR-8K FCP 52.25→50.0（−2.25个百分点），整体改善不保证跨实例子任务非劣。",
+    "quote": "LLaVA-ov-7B (Li et al., 2024) 75.65 75.0 75.39 72.0 54.0 63.0 67.25 52.25 59.75",
+    "locator": "PDF p.6, Table 2 baseline row; compare ZoomEye row 50.0"
+   },
+   {
+    "text": "分支数增加不保证每个数据集改善：9分支HR-8K 67.63低于4分支69.25。",
+    "quote": "90.58 93.19 69.63 69.75 69.25 67.63 8.20 5.71",
+    "locator": "PDF p.7, Table 5, 9-sub-region row"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出的验证条件，论文未执行：在同题、相同视觉token/模型调用成本下，问题引导排序不能优于随机或固定区域搜索，则“结构化搜索本身带来额外收益”未获支持；若 ca 对正确性/继续看的收益无辨别力，不能据此声称已解决按需裁图。迁移到项目应以封存集非劣+成本下降检验，不能以直答率上升代替。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "主表：LLaVA-v1.5-7B (Local,336px)、Qwen2.5-VL-3B、LLaVA-OneVision-7B (384px)、InternVL2.5-8B；附表LLaVA-v1.5-13B、LLaVA-ov-0.5B、InternVL2.5-4B/26B。",
+   "framework": "other",
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null
+  },
+  "cost": "主算法training-free，无训练更新。Table5仅报告平均搜索步数8.20/5.71/5.02；搜索排名要对候选节点额外计算ce/cl，不能把visited steps等同总forward或crop数。未报告GPU·h、wall time、完整token成本。AnyRes上限12块，Qwen max pixels 12,845,056；type2深度上限2；不存在论文给定的固定8轮上限。V*公平对比额外训练224px LLaVA-v1.5，训练成本未报告。",
+  "pitfalls": [
+   {
+    "text": "作者：Local模式远距区域合并后又被缩小，细节仍可能丢失；长边>1000px改按原相对位置贴到空白画布。",
+    "quote": "exceeding 1000px), we skip the Union operation.",
+    "locator": "PDF p.15, Appendix D.1, Figure 6"
+   },
+   {
+    "text": "作者：τ过高会不必要地搜完整树，采用超出3D步后每2步减0.1，最小0；低阈值又有错框风险。",
+    "quote": "entire tree unnecessarily, thus wasting time.",
+    "locator": "PDF p.15, Appendix D.3; p.16 continuation"
+   },
+   {
+    "text": "作者推测：朝向任务弱可能因训练朝向数据不足；这只是失败例推测，没有数据审计确认。",
+    "quote": "we conjecture that",
+    "locator": "PDF p.8, Figure 5, MO/Orientation error example"
+   }
+  ],
+  "code": "https://github.com/om-ai-lab/ZoomEye",
+  "lesson": "当终答依赖分辨率受限的小目标时，应区分线索存在、放大潜力与答题充分性，并保留全局坐标；置信度阈值和节点访问次数须经过校准与全调用成本统计，不能仅凭“找到了”判定裁图必要或答题正确。"
+ },
+ "relevance": [
+  {
+   "problem": "P30",
+   "how": "直接提供由根到叶的粗到细区域生成与多分支搜索机制，可对照首框2–3%和小步重复裁图；未训练SFT，也未报告重复IoU指标，迁移需改造。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "D.3给出随已搜索步数降阈值的停止规则，补充“预算/证据充分性”的近邻；仍不是剩余轮次条件化策略，不解决预算2/4/8下泛化。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "ca作为自述充分性的候选测量，但未报告校准、AUROC或裁图必要性预测；不能直接当已验证recover信号。",
+   "strength": 1
+  },
+  {
+   "problem": "P31",
+   "how": "明确低阈值错停与高阈值无用遍历的权衡；未做错框注入或本项目E2评测。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "详细区分Naive/AnyRes和最终union导致的二次细节丢失，可指导教师/学生实际缩放视图核对。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "定位正确仍位置/朝向答错的实例支持“看到了不等于会使用”，但不是caption已正确后选项映射错误的同一诊断。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "系统外接搜索使固定模型出现多次查看，不证明RL可学出稀缺行为；若构造SFT轨迹需要另检验迁移。",
+   "strength": 1
+  },
+  {
+   "problem": "P48",
+   "how": "使用HR-Bench 4K/8K、V*和MME-RW；可参照benchmark覆盖，本文未给本项目cyclic判分实现。",
+   "strength": 2
+  },
+  {
+   "problem": "P05",
+   "how": "表明搜索步数与准确率有权衡，但未提供必要裁图真值或预注册非劣界。",
+   "strength": 1
+  }
+ ]
+}

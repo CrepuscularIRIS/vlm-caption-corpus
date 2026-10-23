@@ -1,0 +1,161 @@
+{
+ "paper_key": "litscan:2132",
+ "title": "GroundingGPT",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2132.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3 pp3–5",
+   "§4 Tables2–8 pp6–9",
+   "§6 Limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用普通文本数字表达空间框/时间区间；先全局对齐、再细粒度grounding、最后多粒度对话SFT，并混入前阶段样本。",
+  "key_step": "先训练adapter再解冻LLM；坐标标签无额外词表。",
+  "why_non_obvious": "第一阶段直接混细粒度数据反而损害grounding，需先建立模态对齐。",
+  "trigger_condition": "When global alignment is immature, learn coarse semantics before fine-grained coordinate supervision.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Order supervision by the prerequisites of each task, then rehearse earlier tasks.",
+  "abstract_trigger_condition": "When fine tasks depend on coarse representations, stage training and retain prior data.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null；无reviews",
+  "abstract_key_step": "Delay fine supervision until the shared interface is aligned.",
+  "abstract_why_non_obvious": "More detailed labels can hurt before the interface is ready."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2132#s1",
+   "object": "多模态坐标监督训练",
+   "information": "公开框/时间标签，经GPT3.5模板生成问题；坐标相对值保留3位、时间2位小数。",
+   "operation": "冻结encoder；阶段1仅adapter全局预训练，阶段2 LLM+adapter细粒度对齐，阶段3多粒度指令，重放旧数据。",
+   "claimed_effect": "toy224px训练：初始粗粒度84.68 RefCOCO val，对比初始粗+细82.43；最终7B336px88.02。",
+   "conditions": [
+    "有定位标注",
+    "分阶段数据与adapter可训练"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table7 p9",
+    "quote": "C      F    C+F      84.68     88.88    78.94"
+   },
+   "failure_boundary": "toy消融不同于最终336px；输出框不等于会按需调用crop。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "先建立坐标/局部问答行为支持，迁移到SFT覆盖。",
+   "strength": 2
+  },
+  {
+   "problem": "P63",
+   "how": "重放与多benchmark揭示通用能力并非全保持。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Shikra/Ferret/LLaVA1.5；stage1混细粒度；linear vs MLP adapter",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "采样会丢长视频/音频信息，未支持segmentation输出。",
+   "locator": "§6 p9",
+   "quote": "currently lacks the capability to output more"
+  }
+ ],
+ "question": {
+  "observed_failure": "toy初始混细粒度RefCOCO val低2.25pp；LLaVA1.5 TextVQA58.2而本法55.2。",
+  "load_bearing_assumption": "全局对齐自然赋予局部grounding，或越早加精细标签越好。",
+  "scope": "Vicuna7B/13B image/video/audio grounding。",
+  "success_criterion": "定位性能提高同时保留整体理解。",
+  "why_open": "既有MLLM偏全局且多模态定位标注稀少。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table7阶段1混细粒度对照"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.2三阶段实际SFT"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "locator": "§3.1.4文本坐标"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L=-E_{D_{current}}\\log p(y|x)-\\alpha E_{D_{previous}}\\log p(y|x)",
+    "locator": "§3.2.3 p5"
+   }
+  ],
+  "signal_routing": "标准SFT响应及坐标文本；encoder全程冻结，adapter阶段1起训练、LLM阶段2起训练；精确token masks未知。",
+  "normalization": "other：数据期望加权，alpha为旧数据采样率；stage1=0，后续数值未查到。",
+  "invariance": "非PBRS；重放改变训练分布，无严格保能力定理。",
+  "baseline_or_potential": "无RL baseline/势函数。",
+  "degenerate_cases": "没有直答/crop两动作、allcorrect组或单轮GRPO信号；低分辨率与稀疏视频采样损失细节。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table7训练顺序；Table8同7B linear86.01 vs MLP88.02；跨理解benchmark检查副作用。",
+  "negative_results": [
+   {
+    "text": "TextVQA55.2低于LLaVA58.2，MME1454.2低于1510.7；非全面保持。",
+    "locator": "Table4 p7"
+   },
+   {
+    "text": "RefCOCOg test81.99低于Ferret84.76。",
+    "locator": "Table2 p6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：相同数据量下比较现有SFT与分阶段+重放，锁定通用VQA和直答集；若仅额外框标注而非顺序有效则收窄主张。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Vicuna1.5-7B/13B,CLIPViT-L14,ImageBind",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "image_resolution": 336,
+   "video_frames": 64,
+   "audio_segments": 3,
+   "epochs_per_stage": 1
+  },
+  "cost": null,
+  "pitfalls": [
+   {
+    "text": "格式正则只滤损坏坐标格式，不能保证语义grounding正确。",
+    "locator": "§3.2.3 p5"
+   }
+  ],
+  "code": "https://github.com/lzw-lzw/GroundingGPT",
+  "lesson": "当坐标监督先于视觉对齐时，精细标签可能妨碍学习，应以同设置阶段消融验证顺序。"
+ }
+}

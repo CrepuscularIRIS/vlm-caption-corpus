@@ -1,0 +1,155 @@
+{
+ "paper_key": "litscan:58462",
+ "title": "MDocRAG",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_58462.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 Tables1–2",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "decompose_and_delegate",
+  "key_step": "OCR对齐和受限注意力生成预训练压缩文档retriever；大模型拟定轨迹、grounder精修框；generator学search/region/summary，奖励早检索相关页。",
+  "why_non_obvious": "相关页先到达与页内细节放大是两个瓶颈，应分别训练和消融。",
+  "trigger_condition": "当RAG既漏相关页又丢失页内细节时，联合检索表征、局部感知动作和轨迹排序奖励。",
+  "contribution_type": "RAG系统及复合训练",
+  "abstract_strategy": "将跨文档定位与文档内定位分解并联合终局目标。",
+  "abstract_trigger_condition": "信息获取有粗细两级且有相关文档标注时。",
+  "abstract_key_step": "以检索序列DCG提供早获取证据的偏好。",
+  "abstract_why_non_obvious": "不是惩罚所有动作，而是奖励证据较早出现。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:58462#s1",
+   "object": "多文档视觉RAG轨迹",
+   "information": "检索文档GT集合、问题与答案GT；答案RM只看Q/GT/pred，未给视觉输入",
+   "operation": "联合NDCG检索质量、答案RM、格式奖励进行GRPO；region坐标映射到原分辨率crop重编码。",
+   "claimed_effect": "7B overall57.4(VRAG-RL)→62.5；固定预训练retriever+RAG奖励，加视觉动作58.6→62.5。",
+   "conditions": [
+    "SlideVQA/ViDoSeek/MMLongBench",
+    "Phi3V retriever，Qwen2.5-VL generator"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p7",
+    "quote": "MDocRAG-RL                 75.9           50.3           66.2          80.1    29.4   30.2      28.3   29.5    24.7     62.5"
+   },
+   "failure_boundary": "无GT相关文档则NDCG训练信号不可直接用；早检索不是逐crop必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "文档相关性提供过程证据，但不能直接核框内视觉事实。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "大模型策略与grounder精修轨迹分工适用于SFT。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "VRAG-RL",
+   "kind": "method"
+  },
+  {
+   "name": "pretraining/reward/visual action toggles",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "相对传统RAG仍增加延迟，动作丰富度有限。",
+   "quote": "pared to traditional RAG approaches.",
+   "locator": "Limitations p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "7B基线VRAG-RL57.4，完整62.5；去视觉动作58.6。",
+  "load_bearing_assumption": "高质量检索与局部高分辨率互补，相关页早到达有助生成。",
+  "scope": "视觉文档RAG",
+  "success_criterion": "固定组件消融后的答案指标",
+  "why_open": "生成式encoder不是直接合适的检索嵌入，整页上下文丢细节。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "§3.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_{ret}=\\frac{\\sum_{i=1}^{|D_{trj}|}(2^{\\mathbf1[d_i\\in D_{gt}]}-1)/\\log_2(i+1)}{\\sum_{i=1}^{|D_{gt}|}1/\\log_2(i+1)}",
+    "locator": "Eq7–9"
+   },
+   {
+    "latex": "r_\\phi=\\alpha r_{ret}+\\beta\\pi_{RM}(Q,A_{gt},A_{pred})+\\gamma Eval(H);\\quad\\alpha+\\beta+\\gamma=1",
+    "locator": "Eq11–12"
+   }
+  ],
+  "signal_routing": "retriever先独立contrastive+OCR generation；generator终局复合reward做GRPO。已读文中未明确tool observation mask或各token优势广播细节。",
+  "normalization": "other",
+  "invariance": "NDCG按理想DCG归一；PPO/GRPO优势std及长度归一未明确。不是PBRS，相关页顺序奖励改变目标。",
+  "baseline_or_potential": "未给出具体advantage公式；Eq13 KL reference约束。",
+  "degenerate_cases": "Dgt为空IDCG=0；重复相关文档是否去重未说明，按原式可重复得分；同奖励组无相对反馈；无低概率工具支持保护。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2三组件开关：预训练、vanilla/RAG reward、视觉动作。",
+  "negative_results": [
+   {
+    "text": "增加感知多步仍比传统RAG慢；无绝对walltime文本数值可核。",
+    "locator": "§5.4/Limitations"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若去重后的NDCG控制或固定相关页顺序使收益消失，则不能归因更有效工具使用。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Phi3V；Qwen2.5-VL3B/7B；轨迹72B+框32B；答案RM Qwen2.5-7B",
+   "framework": "LLaMA-Factory/verl",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "8H100；500k retriever预训练文档，约70k RL文档；cold-start KL0。",
+  "pitfalls": [
+   {
+    "text": "crop坐标按encoder宽高缩放回raw，错坐标系会改变证据。",
+    "locator": "Eq3"
+   }
+  ],
+  "code": null,
+  "lesson": "当检索和局部感知同时变更时，应固定其中一项做消融，且明确排序奖励的去重及空集行为。"
+ }
+}

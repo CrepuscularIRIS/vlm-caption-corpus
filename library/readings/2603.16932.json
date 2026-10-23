@@ -1,0 +1,461 @@
+{
+ "paper_key": "2603.16932",
+ "title": "Look Where It Matters: High-Resolution Crops Retrieval for Efficient VLMs",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2603.16932.pdf",
+  "version": "v2",
+  "version_observed": "PDF p.1: arXiv:2603.16932v2 [cs.CV] 23 Sep 2026; latest online version not checked",
+  "pages": 28,
+  "sections_read": [
+   "Abstract",
+   "1 Introduction",
+   "2 Related Work",
+   "3.1 Problem setup",
+   "3.2 Automatic supervision for crop requests",
+   "3.3 Cold-start (SFT)",
+   "3.4 Multi-turn GRPO (3.4.1 Reward design; 3.4.2 GRPO optimization)",
+   "3.5 Inference",
+   "4.1 Evaluation Protocol",
+   "4.2 Datasets",
+   "4.3 Implementation Details",
+   "4.4 Baselines",
+   "4.5 Main Results (4.5.1 Beyond Token Efficiency; 4.5.2 From Over-Calling to Looking Where It Matters)",
+   "4.6 Ablations (4.6.1–4.6.4)",
+   "5 Conclusion",
+   "Limitations",
+   "References",
+   "Appendix A.1–A.5 Data Annotation",
+   "Appendix B/B.1 Benchmark Qualitative Examples and Failure cases",
+   "Appendix C.1–C.3 Latency Analysis",
+   "Appendix D.1–D.5 Additional Cold-Start Analysis",
+   "Appendix E/E.1 GRPO ablations and learning beyond grounding",
+   "Appendix F Training Details",
+   "Appendix G.1–G.3 Prompts",
+   "Equations 1–8",
+   "Tables 1–10",
+   "Figures 1–18"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以低分辨率全局图为默认输入，把是否升分辨率和请求哪些离散区域合并成一个首轮工具动作；离线生成 LR/HR 与区域示范，SFT 学协议，再以语义终答奖和非对称工具/面积代价优化。",
+  "key_step": "保留全局上下文并在一次 GET_CROPS 调用中选子集；训练期以离线 y=HR 的漏调用罚2、任意调用罚0.25+0.01×面积、终答余弦相似度×10构造轨迹奖励。",
+  "why_non_obvious": "正确率相同不代表相同观测成本；SFT学会接口后仍会过调用，且token缩减不保证延迟下降。需要同时控制请求面积、文本生成长度及跨轮缓存；本文有限两轮协议与低成本短回答共同促成报告结果，不能独归因于裁图代价。",
+  "trigger_condition": "When fine detail is spatially sparse and a low-cost global view can locate useful regions, apply a short coupled escalation-and-region action with cold-start supervision and asymmetric acquisition costs to achieve lower observation cost at similar reported task accuracy.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null and no reviews_path; arXiv source is not an acceptance decision.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以廉价全局摘要启动，只获取回答所需的高保真局部，并用短结构化请求表达获取决策。",
+  "abstract_key_step": "将是否追加观测与选择观测子集联合编码；先示范两种路径，再把结果质量、遗漏风险与获取量合为奖励。",
+  "abstract_why_non_obvious": "减少输入规模仍可能被长输出和交互开销抵消；获取位置改变获取价值，而学会请求接口本身会诱发过量请求。",
+  "abstract_trigger_condition": "When expensive information is sparse and coarsely localizable, replace exhaustive acquisition with a learned short subset request and retain a cheap global context to reduce cost while preserving measured output quality."
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.16932#s1",
+   "object": "离线 LR/HR 标签、grounder crop targets 及 SFT assistant token loss",
+   "information": "离线 base VLM T分别见(q,I_low)/(q,I_full)，LLaMA-3.3-70B judge见题目、GT答案及两份预测；grounder Qwen3-VL-235B-A22B见图像与问题。Sec3.2称为(q,a*)定位证据，但App G.2模板仅有Question，无显式GT答案占位，实际GT答案是否传给grounder未清楚。grounder框为模型标注，不是人工GT框；学生首轮只见q和I_low，第二轮才见返回crop；GT答案仅监督，不能作为推理输入。",
+   "operation": "以judge比较低/高分辨率答案产生y；HR样本把grounder框以IoU≥0.5映射到10种固定crop集合；构造直答或调用后答两种轨迹，整轨迹SFT并把工具调用turn的NLL权重设5，其余assistant设1。",
+   "output": "冻结SFT参考π_ref与GRPO初始化；可解析GET_CROPS协议和初步whether/where策略。",
+   "claimed_effect": "Table6/8: split SFT 75.15/RTR.36/parse89.83%，trajectory-only77.90/.43/98.57%，trajectory+wt5 79.70/.49/100%；故有效性提升伴随更高观测成本。",
+   "conditions": [
+    "有带答案的图像问答数据、原始高分辨率图和昂贵离线judge/grounder",
+    "直答和请求两种示范均存在；冻结teacher的分辨率比较能够提供有用初始标签",
+    "固定crop集合足以覆盖证据；多框到子集和无IoU匹配fallback需实现明确"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Appendix D.5, PDF p.17; Tables 6/8 p.18",
+    "quote": "Upweighting the tool-call turn (wt=5) eliminates formatting corruption entirely (100% valid parse)"
+   },
+   "failure_boundary": "judge将equally bad也判tie，依正文tie→LR可把双错样本标为无需裁图；模型间96.88%/88% agreement不等于人工正确率。细小bbox可能与任一大crop IoU都<.5，Eq3得到空集；fallback/多框合并未交代。SFT overcalls，不能单靠接口成功证明必要性。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.16932#s2",
+   "object": "已完成两轮轨迹的单一标量奖励及GRPO assistant-token更新",
+   "information": "奖励见GT答案、当前策略生成终答、请求crop子集与预先标注y；无需在RL时比较grounder框，不见当前策略同状态禁裁/裁图反事实价值。y不是在线刷新必要性，cosine答案奖励的sentence-transformer型号未报告。",
+   "operation": "R=10*cos(answer,GT)−Ctool；对HR且不调用罚2，对任何调用罚.25+.01×请求面积，对LR且不调用罚0；同题8轨迹减均值除std后，将同一优势广播所有assistant token，PPO clipped更新并KL到冻结SFT。",
+   "output": "选择直答/工具和区域面积的联合策略；不产生逐次工具因果信用。",
+   "claimed_effect": "Table9: full80.30/RTR.36；SFT-only79.70/.49；GRPO-only77.11/.31；λ=0为80.47/.42；无tool-cost80.85/.51。Fig5报告LR46.3%→72.2%、All16.6%→4.9%。精度-成本权衡，不是精度无损已证明。",
+   "conditions": [
+    "SFT已有工具与直答采样支持",
+    "离线y与当前策略需求足够一致",
+    "αmiss=2>αuse+.01×area，偏向召回；数据和短答案语义相似度适用"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Appendix E, PDF p.18; Table9 p.19",
+    "quote": "Setting λ = 0 retains the misuse penalty but drops the area term, leaving RTR at 0.42"
+   },
+   "failure_boundary": "mean+std仍可能抵消小面积系数，未给λ剂量/尺度诊断；无强制两分支采样。已过时HR即使当前直答正确仍受罚，成本亦惩罚失败的crop。无tool-cost准确率反而更高，正文no accuracy benefit与表值矛盾。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2603.16932#s3",
+   "object": "推理时高分辨率像素获取与跨轮上下文",
+   "information": "首轮仅q及长宽减半I_low；策略可以看到低分辨率布局但未编码完整高分辨率像素。工具有原图，仅返回请求的预定义区域；第二轮保留I_low与历史。推理不调用grounder/judge，也不提供GT答案/框或y；这是图内取crop，不是外部语料检索。",
+   "operation": "直接输出短答案，或一次发GET_CROPS列表，再追加高分辨率crop并复用第一轮KV缓存完成短答案；最多两次prefill。",
+   "output": "单轮直答或调用一次后终答；固定离散区域、低文本开销的部署接口。",
+   "claimed_effect": "Table1平均80.30 vs全图80.46，RTR.36 vs1.00；Table3平均HF .61s vsVisionThink2.71s；Sec4.5.1 vLLM .24s、比full-res快31%（单H100作者报告）。",
+   "conditions": [
+    "细节需求空间稀疏且低分辨率足以粗定位",
+    "固定10个候选crop、原图像素可由工具取得",
+    "短答案/一次获取后作答适用；缓存复用实际正确实现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Sec3.5, PDF p.6",
+    "quote": "the low-resolution view and the query are already in the KV cache saving on the required compute."
+   },
+   "failure_boundary": "Table1 POPE85.73<87.87、RealWorld68.50<68.80、V*71.20=71.20；平均接近不等于逐域非劣。Table3 RealWorld PixelReasoner LR .26s比AwaRes .66s快；不支持每域最快。没有多次recover、连续bbox、泛化模型测试。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B native full resolution",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B LR (width/height halved)",
+   "kind": "method"
+  },
+  {
+   "name": "VisionZIP 50%/70%",
+   "kind": "method"
+  },
+  {
+   "name": "SparseVLM 50%/70%",
+   "kind": "method"
+  },
+  {
+   "name": "Holo-V 50%/70%",
+   "kind": "method"
+  },
+  {
+   "name": "VisionThink",
+   "kind": "method"
+  },
+  {
+   "name": "ERGO and ERGO LR",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes and DeepEyes LR",
+   "kind": "method"
+  },
+  {
+   "name": "PixelReasoner and PixelReasoner LR",
+   "kind": "method"
+  },
+  {
+   "name": "SFT-only; GRPO-only; no tool cost; lambda=0; ANLS/LaaJ reward",
+   "kind": "method"
+  },
+  {
+   "name": "ChartQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "DocVQA val",
+   "kind": "benchmark"
+  },
+  {
+   "name": "OCRBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "POPE",
+   "kind": "benchmark"
+  },
+  {
+   "name": "RealWorldQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "V*Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Retain Token Ratio (mean of per-sample visual-token ratios across all turns)",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "固定离散crop限制空间精度，细目标/跨边界要取更多面积。",
+   "quote": "when the answer-bearing evidence straddles crop boundaries or occupies a region much smaller than a quadrant, the policy must request more area than strictly necessary.",
+   "locator": "Limitations, PDF p.9"
+  },
+  {
+   "text": "监督标注非人工gold；judge/grounder错误会传播到冷启动。",
+   "quote": "We measure inter-model agreement rather than validating against human annotations.",
+   "locator": "Limitations, PDF p.9"
+  },
+  {
+   "text": "仅一模型与一硬件/服务栈范围，绝对延迟不能泛化。",
+   "quote": "We evaluate a single VLM (Qwen2.5-VL-7B)",
+   "locator": "Limitations, PDF p.9"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table1低分辨率RTR=.25时平均73.39 vs全图80.46（下降7.07pp）；VisionThink平均79.23/.61，ChartQA RTR1.15；SFT Fig5过调用：LR占80.8%标签变46.3%，All3.4%变16.6%。",
+  "load_bearing_assumption": "高保真需求并非覆盖整张图；仅决定是否升级全图或仅减少输入token，不能同时解决无关区域成本和长文本/多步开销。",
+  "scope": "单Qwen2.5-VL-7B、短回答六benchmark、低分辨率起步、一次离散crop请求后答题。",
+  "success_criterion": "在每域任务指标和平均指标上接近全分辨率结果，同时降低全轮visual RTR与端到端延迟；作者未设非劣界/CI。",
+  "why_open": "固定token pruning不能按题分配，整图升分辨率浪费区域，既有空间工具用长CoT/多步迭代引入decode成本；SFT能学接口却过调用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "quote": "explicitly optimizing the accuracy–efficiency trade-off.",
+   "locator": "Sec3 introduction, PDF p.3",
+   "note": "[redacted: project-internal]"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "the model barely uses the tool, falls back to low-resolution processing, and loses accuracy.",
+   "locator": "Sec4.6.4, PDF p.9",
+   "note": "[redacted: project-internal]"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "quote": "end-to-end latency also depends on the number of autoregressive text tokens generated",
+   "locator": "Sec4.5.1, PDF p.7",
+   "note": "[redacted: project-internal]"
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "role": "primary",
+   "quote": "AwaRes instead escalates spatially, via a short tool call.",
+   "locator": "Sec4.4, PDF p.7",
+   "note": "rubric rule2：用按需局部获取替代整图高分辨率处理，声称保留回答所需信息；证据是经验结果，无信息保持定理。"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "role": "supporting",
+   "quote": "a judge compares low- vs. high-resolution answers to label whether cropping is needed",
+   "locator": "Abstract, PDF p.1; instantiated in Sec3.2 pp.3–4",
+   "note": "rubric rule7：从base VLM输出制造缺失的分辨率必要性伪标签，并用grounder制造区域监督；GT答案仍用于评判，因此不是完全无标注学习。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\pi_\\theta(C\\mid q,I_{\\mathrm{low}}),\\quad C\\subseteq\\mathcal C",
+    "locator": "Eq1, PDF p.3; C=empty denotes direct answer"
+   },
+   {
+    "latex": "\\hat a_{\\mathrm{low}}=T(q,I_{\\mathrm{low}}),\\quad\\hat a_{\\mathrm{full}}=T(q,I)",
+    "locator": "Eq2, PDF p.3"
+   },
+   {
+    "latex": "C^\\star=\\{c\\in\\mathcal C\\mid\\operatorname{IoU}(b,c)\\ge\\tau\\},\\quad\\tau=0.5",
+    "locator": "Eq3, PDF p.4"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{SFT}}(\\theta)=-\\sum_{t=1}^T w_t\\log\\pi_\\theta(y_t\\mid h_t),\\quad w_t=5\\text{ on tool-call turn, }1\\text{ otherwise}",
+    "locator": "Eq4, PDF p.4; weights Sec4.3 p.7"
+   },
+   {
+    "latex": "R(\\tau)=w_a R_{\\mathrm{ans}}(\\hat a,a^\\star)-C_{\\mathrm{tool}}(C,y),\\quad w_a=10",
+    "locator": "Eq5, PDF p.4; cosine sentence-transformer reward pp.4–5; weight p.7"
+   },
+   {
+    "latex": "C_{\\mathrm{tool}}(C,y)=\\begin{cases}\\alpha_{\\mathrm{miss}}&y=\\mathrm{HR},C=\\varnothing\\\\\\alpha_{\\mathrm{use}}+\\lambda\\lVert C\\rVert&C\\ne\\varnothing\\\\0&y=\\mathrm{LR},C=\\varnothing\\end{cases},\\quad\\alpha_{\\mathrm{miss}}=2,\\ \\alpha_{\\mathrm{use}}=.25,\\ \\lambda=.01",
+    "locator": "Eq6, PDF p.5; constants Sec4.3 p.7; norm denotes total fraction of image area covered"
+   },
+   {
+    "latex": "\\hat A_i=\\frac{R(\\tau_i)-\\mu_G}{\\sigma_G+\\epsilon}",
+    "locator": "Eq7, PDF p.5; numerical epsilon not specified"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{GRPO}}(\\theta)=\\mathbb E_{x\\sim\\mathcal D}\\left[\\frac1G\\sum_{i=1}^{G}\\frac1{|\\tau_i|}\\sum_{t=1}^{|\\tau_i|}\\min\\left(r_t^{(i)}\\hat A_i,\\operatorname{clip}(r_t^{(i)},1-\\epsilon,1+\\epsilon)\\hat A_i\\right)-\\beta D_{\\mathrm{KL}}(\\pi_\\theta\\Vert\\pi_{\\mathrm{ref}})\\right],\\quad r_t^{(i)}=\\frac{\\pi_\\theta(a_t^{(i)}\\mid x,a_{<t}^{(i)})}{\\pi_{\\mathrm{old}}(a_t^{(i)}\\mid x,a_{<t}^{(i)})}",
+    "locator": "Eq8 and ratio, PDF p.5; assistant-token KL description p.6; beta=.05 Table10 p.19; printed objective named L but has maximization sign convention"
+   },
+   {
+    "latex": "\\mathrm{RTR}_i=T_i/T_{\\mathrm{full}},\\quad\\mathrm{RTR}=\\mathbb E_i[\\mathrm{RTR}_i]",
+    "locator": "Sec4.1, PDF p.6, unnumbered; Ti counts visual tokens across all turns"
+   }
+  ],
+  "signal_routing": "SFT仅assistant tokens受NLL，工具调用turn权重5、答案turn1；保留完整两轮history。GRPO只把assistant tokens视作action，tool images为observation；一个完成轨迹的answer+cost总奖产生共享A_i，工具命令和最终答案均收相同A_i，assistant分布另收KL到SFT。不是对crop动作单独给必要性credit；无caption监督通道、逐轮反事实门控、无强制直答/裁图组。",
+  "normalization": "mean+std (Eq7)，分母sigma_G+epsilon；Eq8先1/|tau_i|再1/G，具有轨迹长度平均。Rans为句向量cosine相似度，area是原图面积比例；这些与advantage std不可混淆。αmiss/αuse/λ不是独立归一化通道。",
+  "invariance": "非势函数工具代价改变目标，不能保证最优策略不变或准确率不变。成本对等面积的不同位置不变（作者称agnostic to which region）；答案奖励会打破该位置等价。读者代数：同题y固定、所有样本都调用且Rans恒定时R_i=const−λs_i，A_i=−λ(s_i−mean(s))/(λstd(s)+epsilon)，epsilon可忽略时正λ被约掉；有不同答案奖/调用状态时不必完全消掉。无λ响应曲线。",
+  "baseline_or_potential": "同题G=8总奖均值μ_G为baseline，无critic、势函数或当前策略answer-now反事实Q。π_ref为冻结SFT仅供KL；y为离线base VLM两个分辨率回答经judge得出标签；grounding框仅供SFT监督和agreement诊断，不是GRPO区域奖励。",
+  "degenerate_cases": "相同总奖组A=0；全对/全错若cosine或工具费用不同仍可有信号，不能简单断言all-correct为零。p(call)≈0/1时采样支持可能消失；SFT初始化+KL缓解无保证，无强制分支。单轮C=empty时，HR被扣2而LR不扣；同终答下HR单个full crop成本.26比不调用的2低，离线标签可迫使已可直答题仍裁。C=all会保留LR再加整张图，理想视觉预算约1.25倍而非≤1。Eq3中极小bbox即使被crop包含，IoU仍可能<.5导致C*=empty；无文中fallback说明。多crop面积是否求和或并集、重叠计费未明确。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table9同训练管线去掉面积cost/全部tool-cost，以及SFT-only/GRPO-only；Table6/8改变trajectory-level和wt，分别测精度/RTR/格式。支持成本与冷启动的重要性，但没有equal-token/equal-latency、标签置换、同当前策略真实/随机crop反事实，不能把效率全部归于学到必要性。",
+  "controls": [
+   "六benchmark同Qwen2.5-VL-7B base，full-res/LR、固定50/70% pruning、动态模型及其LR首轮变体（不同方法训练数据与token预算未全部匹配）。",
+   "Table9 full vs λ=0 vs no tool cost：分别80.30/.36、80.47/.42、80.85/.51。",
+   "Table9 SFT-only79.70/.49，GRPO-only77.11/.31；Sec4.6.4 GRPO-only3 epochs，Table10常规GRPO1 epoch，非计算匹配。",
+   "Table2 judge标签 vs ANLS；Fig8换另一judge；Fig10换grounder，均是模型一致性和下游结果，不是人标gold。",
+   "Table5 separates call precision/recall/FPR from region IoU; Fig5 uses external validation while Table7 evaluation prompts population is not fully specified.",
+   "Table3 latency HF H100-80GB，Table4统计characters mean±std而非generated-token或多seed accuracy CI。"
+  ],
+  "negative_results": [
+   {
+    "text": "从基础模型直接GRPO3 epochs仍少调工具且掉准确率：77.11/.31，低于full方法80.30/.36。",
+    "quote": "the model barely uses the tool, falls back to low-resolution processing, and loses accuracy.",
+    "locator": "Sec4.6.4 p.9; Table9 p.19"
+   },
+   {
+    "text": "ANLS标签使SFT平均75.9 vs LaaJ79.70，伴随RTR .38 vs .49，不能把便宜当学会必要性。",
+    "quote": "Training with ANLS-based labels for cold-start yields substantially lower average accuracy than LaaJ-based labels (75.9 vs. 79.70)",
+    "locator": "Appendix A.4, PDF p.12; Table2 p.15"
+   },
+   {
+    "text": "作者称去掉全部工具成本无精度收益，但Table9显示80.85比80.30高.55pp；保留冲突，报告成本-精度tradeoff。",
+    "quote": "Removing the tool cost entirely raises RTR to 0.51",
+    "locator": "Appendix E, PDF pp.17–18; Table9 p.19"
+   },
+   {
+    "text": "正确取到曲线仍读错年份：选2012而非2013，均值30.3 vs GT28.6；局部证据获取不能保证证据利用。",
+    "quote": "the crop isolates the correct line, yet the model skips the value at 2013 and use 2012 instead",
+    "locator": "Fig17 caption, PDF p.26"
+   },
+   {
+    "text": "teacher零样本工具接口也退化，native HR88.9到tool79.89；支持需要协议训练，不等于学生学到了更正确的证据因果。",
+    "quote": "The strong grounding model drops from 88.9 average accuracy in native HR mode to 79.89 under the tool interface",
+    "locator": "Appendix E.1, PDF p.18"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出、未执行：在封存来源隔离测试集、同模型/数据/解码/实测端到端预算下，与同调用率随机区域或统一偏置的策略比较；若真实where策略不胜同面积随机crop，空间决策解释受损。用当前策略同前缀强制直答/取crop续跑核查离线y，若错标/双错ties大量且置换y仍获得相同收益，则不能将miss penalty称当前必要性。验证λ剂量-响应及group分层A分布；非劣需事前δ、多seed和区间，不能用平均差−.16pp代替。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct; offline judge LLaMA-3.3-70B; grounder Qwen3-VL-235B-A22B; cross-check DeepSeek-V3.2 / InternVL3.5-241B-A28B",
+   "framework": "TRL modified for multi-image multi-turn SFT/GRPO; lmms-eval; HF and vLLM inference",
+   "group_size": 8,
+   "rollouts": 8,
+   "steps": null,
+   "kl": 0.05,
+   "temperature": 1.0,
+   "max_turns": 2,
+   "lora_rank": 8,
+   "sft_learning_rate": 0.0001,
+   "rl_learning_rate": null,
+   "rl_learning_rate_reported": "Sec4.3 1e-5 vs Table10 5e-5; unresolved",
+   "sft_effective_batch_size": null,
+   "sft_batch_reported": "Sec4.3 total16 vs Table10 per-device16/effective128; unresolved",
+   "rl_effective_batch_size": 64,
+   "rl_per_device_batch_size": 8,
+   "sft_epochs": 2,
+   "rl_epochs": 1,
+   "grpo_only_ablation_epochs": 3,
+   "sft_max_seq_length": 8192,
+   "rl_max_prompt_length": 512,
+   "max_completion_length": 512,
+   "top_p": 1.0,
+   "optimizer": "AdamW",
+   "sft_schedule": "cosine, warmup .05, weight decay .001",
+   "rl_schedule": "linear, warmup0, weight decay0, max grad norm1",
+   "crop_candidates": 10,
+   "sft_tool_turn_weight": 5,
+   "answer_weight": 10.0,
+   "miss_penalty": 2.0,
+   "use_penalty": 0.25,
+   "area_weight": 0.01,
+   "training_samples": 50000,
+   "sft_samples": 25000,
+   "validation_samples": 2000,
+   "max_source_image_resolution": "2000x2000 cap; LR width/height divided by2",
+   "max_turns_definition": "最多2个assistant turn；可含1个工具返回，不是多次crop/recover循环"
+  },
+  "cost": "50K训练样本=五来源各10K，SFT取各5K共25K，另2K validation；SFT2 epochs、GRPO1 epoch、G8；实际更新次数/训练token/生成丢弃量/训练GPU型号数量与GPU·h/离线judge-grounder调用成本未报告。推理单H100-80GB，HF平均.61s（含两轮from generation start），vLLM .24s/较HR快31%为正文报告但无逐域表和重复测量CI。RTR是视觉token比而不是FLOP比/GPU时；Table4仅输出字符统计。",
+  "pitfalls": [
+   {
+    "text": "SFT学协议会过调用；须把格式正确率、调用率、面积及任务正确率分开报告。",
+    "quote": "the policy becomes conservative with respect to accuracy and therefore over-invokes the crop tool",
+    "locator": "Sec4.5.2, PDF p.7"
+   },
+   {
+    "text": "简单后处理未必救回错误调用；baseline10.17%格式损坏中5.48%变错crop，trajectory+wt5达100% parse。",
+    "quote": "a large fraction of corrupted calls lead to incorrect crop requests even after simple recovery",
+    "locator": "Appendix D.5, PDF p.17"
+   },
+   {
+    "text": "区域框错也可能被大离散crop包容，掩盖grounder错误；选整图又无节省。",
+    "quote": "the selected crop still contains the correct answer.",
+    "locator": "Fig7 caption, PDF p.14"
+   }
+  ],
+  "code": null,
+  "project_url": "https://nimrodshabtay.github.io/AwaRes",
+  "lesson": "当用粗粒度视觉工具降低成本时，应把离线必要性伪标签、格式可解析性、取到证据、最终利用证据和端到端时延分别验证；只减视觉token或只提高grounder一致率都不足以证明策略按需看图。本文成本/协议超参存在冲突，复现前须核对配置，不能自行选一份当真。"
+ },
+ "relevance": [
+  {
+   "problem": "P05",
+   "how": "把效率操作化为RTR、调用率和面积，同时离线LR/HR仅teacher-relative需求代理，未建立当前策略必要性真值。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "Eq7仍除std，小面积代价同质组内可约掉；提供成功经验但没有修复尺度问题。",
+   "strength": 1
+  },
+  {
+   "problem": "P02",
+   "how": "SFT overcall被GRPO显式cost拉回，结构最接近现有目标；短两轮+离线miss penalty与当前8次crop不同。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "LR/HR标签来自离线base+judge，grounding模型与当前策略不同；不足以支持当前策略不需要crop。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "Table9从零GRPO失败与混合直答/工具SFT支持先种行为；没有弃答和纠偏示范。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "Fig17正确crop仍选错年份，直接显示取证与利用分离。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "不用人工GT框，依赖昂贵grounder伪框且只测model agreement；GT-like图例不应当金标。",
+   "strength": 2
+  },
+  {
+   "problem": "P48",
+   "how": "[redacted: project-internal]",
+   "strength": 2
+  },
+  {
+   "problem": "P51",
+   "how": "80.30与80.46平均接近无CI/非劣界，且POPE下降2.14pp，不能据此宣称非劣。",
+   "strength": 1
+  },
+  {
+   "problem": "P68",
+   "how": "已有非对称漏裁/调用/面积cost的多轮GRPO，撞成本故事；没做在线当前策略边界/dual λ/尺度修复。",
+   "strength": 2
+  }
+ ]
+}

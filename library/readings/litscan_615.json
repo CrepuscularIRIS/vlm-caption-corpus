@@ -1,0 +1,58 @@
+{
+ "paper_key": "litscan:615",
+ "title": "TARA",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_615.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5",
+   "§6 Tables2–4",
+   "§7–8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "将图片时空背景推断定义为层级标签检索；NYT caption自动提取并众包核验，CLIP加入object/face片段共同对齐时空文本。",
+  "why_non_obvious": "只识别像素内对象不足以确定时间地点，需要世界知识与粒度可变标签。",
+  "trigger_condition": "当视觉问题依赖图外背景时，显式定义层级语境预测及可回答性，避免把未知背景当像素事实。",
+  "contribution_type": "数据集/任务与segment baseline",
+  "abstract_strategy": "将图外语境缺失转成独立可测任务。",
+  "abstract_trigger_condition": "图像局部识别无法唯一决定事件语境时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:615#s1",
+   "object": "图片及检测出的object/face片段",
+   "information": "训练时NYT时空标签、可选61,325WIT弱监督；测试仅图像和候选标签，human可搜关键词",
+   "operation": "YOLOv5/InsightFace取大于50的片段，人物≤3，与全图一起CLIP contrastive微调层级时空标签文本。",
+   "claimed_effect": "Table2上表CLIP11.11→CLIP+Seg16.46 accuracy，Example-F1 44.96→50.52；下表CLIP+Seg0.92不及+WIT1.07。",
+   "conditions": [
+    "TARA总15,429，train12,306/dev1,552/test1,571",
+    "human只测30例selected subset"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p8",
+    "quote": "CLIP+Seg      16.46       50.52"
+   },
+   "failure_boundary": "原文引言把11.11/0.46称time/location，而Table2 caption称上location下time，标签映射冲突保留；human并非全test且可外搜。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "提醒caption区分像素可见事实与世界知识推断；机制不能直接指导crop必要性。",
+   "strength": 1
+  },
+  {
+   "problem": "P48",
+   "how": "外部语境任务可作边界测试，但不是多轮crop评测。",
+   "strength": 1
+  }
+ ],
+ "scientific_replication": false
+}

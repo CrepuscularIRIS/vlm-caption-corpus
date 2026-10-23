@@ -1,0 +1,174 @@
+{
+ "paper_key": "litscan:72124",
+ "title": "DeepEyes",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_72124.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 pp4–9 Tables1–9",
+   "B.1–2 pp16–17 Table10",
+   "D.2/E pp24"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "assumption_audit_and_pivot",
+  "key_step": "用GT区域可解数据过滤保障探索支持，再以正确且至少crop一次bonus从原生grounding能力训练iMCoT，无冷启动SFT。",
+  "why_non_obvious": "纯终答案reward会迅速放弃视觉动作；单纯调用奖励亦不等于有效调用。",
+  "trigger_condition": "基座已有crop坐标及tool格式能力但RL难激活时。",
+  "contribution_type": "agentic RL数据与reward recipe",
+  "abstract_strategy": "用可解性筛选和成功条件奖励激活潜在动作支持。",
+  "abstract_trigger_condition": "动作已有非零有效概率，训练集含可获益观察。",
+  "abstract_key_step": "保留0<acc<1且GT区域crop可答的细粒度数据，混合推理/chart以保能力。",
+  "abstract_why_non_obvious": "任务选择可替代一部分冷启动，但借助框标签且不证明最小必要调用。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:72124#s1",
+   "object": "crop→visual observation→reasoning轨迹",
+   "information": "QA及细粒度GT框用于数据筛选；最终reward仅答案/格式/成功调用",
+   "operation": "全轨迹GRPO，外部观测token loss mask=0，正确且至少一次crop得固定bonus。",
+   "claimed_effect": "Table5 conditional V*/HR4K/HR8K90.1/75.1/72.6 vs无bonus87.4/53.4/55.4；调用动态先升后降。",
+   "conditions": [
+    "Qwen2.5-VL7B已有grounding先验",
+    "47k混合数据；最多6次crop"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p8",
+    "quote": "Conditional Reward          90.1      75.1      72.6"
+   },
+   "failure_boundary": "bonus没有按调用数惩罚，也不区分原本会答；调用下降不能证明必要性或非劣安全。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "原生tool支持及可获益样本选择决定RL-only能否工作。",
+   "strength": 3
+  },
+  {
+   "problem": "P43",
+   "how": "未给局部grounding奖励，但通过GT框过滤训练样本。",
+   "strength": 2
+  },
+  {
+   "problem": "P63",
+   "how": "perception-only数据导致推理遗忘，混合数据缓解。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "no tool bonus/unconditional bonus/conditional bonus",
+   "kind": "ablation"
+  },
+  {
+   "name": "text-only CoT RL same data",
+   "kind": "ablation"
+  },
+  {
+   "name": "data mixture Table10",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "实际案例中第二次crop偏离目标使正确假设翻错；准确定位也可能推理失败。",
+   "locator": "D.2 p24",
+   "quote": "reversal in the model’s judgment, ultimately resulting in an incorrect answer."
+  }
+ ],
+ "question": {
+  "observed_failure": "无bonus时视觉调用趋零；只用精选perception数据MathVista68.2→64.7/MathVerse45.6→41.3。",
+  "load_bearing_assumption": "Qwen已具备足够原生定位及JSON工具能力，成功条件bonus能激活它。",
+  "scope": "crop iMCoT",
+  "success_criterion": "perception/reasoning分项、调用/IoU曲线与数据组成控制。",
+  "why_open": "基础能力存在不等于在稀疏奖励中被持续利用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§3.3/4.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables5/9/10"
+  },
+  {
+   "vocab": "M",
+   "id": "M12",
+   "locator": "B.2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R(\\tau)=R_{acc}+R_{format}+1[R_{acc}>0]R_{tool};\\quad R_{tool}>0\\ \\text{only if at least one crop}",
+    "locator": "Eq2/§3.2 p5"
+   }
+  ],
+  "signal_routing": "序列reward作用所有模型生成文本/动作；明确外部observation token mask=0；没有独立局部因果credit。GRPO详细advantage/std/length公式未列。",
+  "normalization": null,
+  "invariance": "非PBRS；正确tool与正确direct不同reward，改变原答案目标。若组内全成功且全tool则bonus常数无区分；若标准化，共同比例项可能抵消但原配方未知。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "成功但不必要crop也得bonus；1次和6次同bonus，无显式最少调用目标；全错仅格式差异可有信号。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table5奖励消融及Table10数据组成，Table9与相同数据文本RL。",
+  "negative_results": [
+   {
+    "text": "HR4K text-only75.4高于iMCoT75.1，与正文all benchmarks superior不符；POPE adversarial85.9→84.0；V*90.1低于ZoomEye90.6。",
+    "locator": "Tables1/3/9"
+   },
+   {
+    "text": "E说only7B，但Table6报告32B；数据混合改善推理以V*91.6→90.1及HR8K74.6→72.6为代价，非全项免费收益。",
+    "locator": "E/Table6/Table10"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：按无crop已会/GT-crop可解分层，比较固定一次crop和相同预算iMCoT，独立测翻错而不是仅均值。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B；另32B扩展",
+   "framework": "GRPO",
+   "group_size": 16,
+   "max_turns": 6,
+   "kl": 0
+  },
+  "cost": "80iterations H100；batch256 max response20480；无可核统一GPU数量/walltime。",
+  "pitfalls": [
+   {
+    "text": "GT区域可解过滤只用于fine数据；不是全库无框监督。",
+    "locator": "§3.3"
+   },
+   {
+    "text": "失败案例定位漂移与看对仍推错需分开诊断。",
+    "locator": "D.2"
+   }
+  ],
+  "code": "https://github.com/Visual-Agent/DeepEyes",
+  "lesson": "先统计基座有效crop支持和数据过滤收益，同时保护通用推理数据；不要把成功条件bonus叫效率目标。"
+ }
+}

@@ -1,0 +1,162 @@
+{
+ "paper_key": "litscan:78992",
+ "title": "TLVS: Steer Where It Matters: Token-Level Visual-Sensitivity Steering for LVLMs Hallucination Mitigation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78992.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "4",
+   "Tables1–3",
+   "5.3–5.5",
+   "Conclusion",
+   "D.2",
+   "E cap definition"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "按token图/无图logprob差选极端敏感/不敏感集合构造PCA方向，校正答案微调方向，推理KL控制强度",
+  "why_non_obvious": "token对齐避免生成路径差；敏感性不等于错误或因果需要",
+  "trigger_condition": "When visual dependence is sparse across output tokens, calibrate steering on extreme tokens and adapt its strength",
+  "contribution_type": "activation steering with small supervised calibration",
+  "abstract_strategy": "局部内部信号决定干预位置与大小",
+  "abstract_trigger_condition": "可访问hidden及有图/无图logits",
+  "abstract_key_step": "只优化steering vectors，推理按KL归一sigmoid再confidence cap",
+  "abstract_why_non_obvious": "不全局固定加同等偏移，减少不相关token扰动",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78992#s1",
+   "object": "layerwise steering vector and per-token strength",
+   "information": "aligned with/noimage logits; RLHF-V human corrections",
+   "operation": "top/bottom5% absolute logprob difference→PCA；NLL+KL+prox refine；KL gate",
+   "claimed_effect": "LLaVA AMBER Hal36.4→19.7、F1 74.7→82.2；refine-only Hal28.1",
+   "conditions": [
+    "steer all except first/last layers",
+    "dual-route inference"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "51.8 ↑1.5 19.7 ↓16.7 82.2 ↑7.5"
+   },
+   "failure_boundary": "高视觉敏感不证明真值；对Qwen coverage仍51.6→51.2",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "局部caption hallucination干预可用作比较基线",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "视觉敏感性与置信度分别校准而非混同",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "VCD/VTI/VISTA/DPO",
+   "kind": "method"
+  },
+  {
+   "name": "TLVS Init/Refine/full",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "双路前向推理代价2.04×样本时间。",
+   "quote": "2.04×",
+   "locator": "Table3"
+  },
+  {
+   "text": "D.2默认margin cap，E展示entropy cap；默认margin完整映射常数未在本文展开。",
+   "locator": "D.2;E"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen init POPE86.83低于base86.90，refine AMBER覆盖48.9低于51.6",
+  "load_bearing_assumption": "敏感token定向干预比全局扰动更能保留覆盖",
+  "scope": "caption decoding factuality/coverage",
+  "success_criterion": "事实幻觉降低同时覆盖非劣，在2×前向成本下胜匹配对照",
+  "why_open": "局部KL可来自错误视觉依赖；少说也可降幻觉"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "targeted_self_supervised_objective",
+   "locator": "4.1–4.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\Delta_t=\\log p(\\hat y_t|I,x,\\hat y_{<t})-\\log p(\\hat y_t|\\varnothing,x,\\hat y_{<t});\\ d^l=mean_{T^+}\\tilde h_t^l-mean_{T^-}\\tilde h_t^l;\\ W^l=PCA_1(d_i^l)/\\|PCA_1(d_i^l)\\|",
+    "locator": "Eq8–12"
+   },
+   {
+    "latex": "L=L_{NLL}+.05KL(p_{steer}\\|p_{base})+.1\\,mean_l\\|W^l-W^l_{init}\\|^2;\\ h_t^l\\leftarrow h_t^l+\\lambda_tW^l",
+    "locator": "Eq7,13–16;D.2"
+   },
+   {
+    "latex": "VS_t=KL(p_I\\|p_\\varnothing);\\ g_t=\\sigma(((VS_t-\\mu)/(\\sigma+\\epsilon)-b)/s);\\ \\lambda_t=\\min(\\hat\\lambda_t,\\lambda_t^{cap})",
+    "locator": "Eq17–22"
+   }
+  ],
+  "signal_routing": "refinement只方向参数W获梯度，answer token NLL及KL均值；测试干预每层hidden，非RL reward。",
+  "normalization": "hidden L2；样本内top/bottom5%均值；方向PCA再L2；KL可topK截断重新归一；VS用heldout mean.0913/std.293，b2.25,s1；lambda0–1.5，默认smoothing0。",
+  "invariance": "无PBRS；absolute Delta混正负视觉依赖；PCA符号选择未详述；温度会改KL与gate。",
+  "baseline_or_potential": "冻结原模型分布提供trust-region KL；双路同prefix。",
+  "degenerate_cases": "短答案极端集合为空处理未知；std小需epsilon；gate高且高confidence可能cap抑制；自信幻觉仍可能少干预。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2分离refinement/adaptive；Table3报告双路真实开销；COCO token类型诊断为相关性。",
+  "negative_results": [
+   {
+    "text": "Qwen CHAIR recall86.7→83.9；AMBER coverage51.6→51.2。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：随机token/等预算constant steering同样改善，或只缩短/减少对象词，则selectivity主张受否。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5-7B;Qwen2.5VL7B",
+   "framework": "PyTorch/Transformers",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "1×A100；1500microsteps优化W；推理6.79s vs3.34s/sample",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当with/noimage对比估计局部作用时应固定prefix并计双路开销，保留事实覆盖指标防靠少说取胜。"
+ }
+}

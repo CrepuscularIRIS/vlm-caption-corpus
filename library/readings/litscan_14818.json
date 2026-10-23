@@ -1,0 +1,160 @@
+{
+ "paper_key": "litscan:14818",
+ "title": "Interleaved-Modal Chain-of-Thought (ICoT)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_14818.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3.2–3.3 Eq4–6",
+   "§4.1–4.6 Tables1–4",
+   "§6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "把难以生成的细粒度中间图像替换为按当前signal-token attention选择的原图缓存视觉tokens。",
+  "why_non_obvious": "推理中的视觉信息往往已在输入中；但重新注入embedding和复制KV cache位置语义不同。",
+  "trigger_condition": "When reasoning loses access to retained visual detail, insert attention-selected cached visual tokens at rationale boundaries.",
+  "contribution_type": "method",
+  "abstract_strategy": "architectural_operator_substitution",
+  "abstract_trigger_condition": "When reasoning loses access to retained visual detail, insert attention-selected cached visual tokens at rationale boundaries.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "把难以生成的细粒度中间图像替换为按当前signal-token attention选择的原图缓存视觉tokens。",
+  "abstract_why_non_obvious": "推理中的视觉信息往往已在输入中；但重新注入embedding和复制KV cache位置语义不同。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:14818#s1",
+   "object": "ADS inference token insertion",
+   "information": "原图视觉encoder缓存；换行signal到所有视觉tokens的跨层平均attention",
+   "operation": "换行触发TopK，按原图行优先恢复相对顺序，然后把选中视觉embedding接入当前文本序列继续生成",
+   "claimed_effect": "Chameleon1shot M3CoT32.3/ScienceQA53.4/LLaVA-W ROUGE-L27.6；去ADS29.2/52.4/24.5",
+   "conditions": [
+    "需读取内部attention，eager attention；Chameleon64tokens，Qwen2-VL16"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq4–6; Table2",
+    "quote": "4.5. Ablation Study                                                  w/o ADS            29.2 (-3.1)    52.4(-1.0)      24.5(-3.1)"
+   },
+   "failure_boundary": "仅复用已编码信息，无新像素；自然换行不是经校准的视觉需求决策；14%是ROUGE-L相对提升而非准确率百分点。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "strength": 2,
+   "how": "在已有视觉信息被后续推理忽略时重注入可能改善证据利用。"
+  },
+  {
+   "problem": "P39",
+   "strength": 2,
+   "how": "不能修复编码前信息丢失；可作为实际crop与缓存重用的区分对照。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "No-CoT / multimodal CoT",
+   "kind": "prompt"
+  },
+  {
+   "name": "KV-Copy",
+   "kind": "implementation ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "自动选取patch不一定连续，会引入噪声。",
+   "quote": "with providing visual information at the input end. We at-        formulating a continuous sub-image through ADS is non-\ntribute this phenomenon to the fact that although copying         trivial, and some discrete patches inevitably introduce addi-\nKV Cache indeed makes VLMs attend more to the same re-            tional noise. Therefore, considering that designing such a",
+   "locator": "§4.6"
+  }
+ ],
+ "question": {
+  "observed_failure": "Chameleon1shot去ADS后M3CoT32.3→29.2；Qwen2-VL收益较小（46.0 vs最好baseline45.7）。",
+  "load_bearing_assumption": "文本CoT足以维持精细视觉引用；或KV复制等价重新插入视觉embedding。",
+  "scope": "不训练的交错视觉/文本推理",
+  "success_criterion": "M3CoT/ScienceQA准确率、LLaVA-W ROUGE-L与额外计算分别报告。",
+  "why_open": "已有visual token在长文本推理中可能失去有效对齐。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.5 ablations"
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "locator": "§3.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "V_{selected}=\\{f_v[i]:i\\in TopK(A_t,n)\\}",
+    "locator": "Eq5"
+   },
+   {
+    "latex": "next\\_token=VLM(Cat(predicted\\_tokens,V_{selected}))",
+    "locator": "Eq6"
+   }
+  ],
+  "signal_routing": "无训练梯度；换行信号当前attention跨层平均决定视觉token选择；原图embedding层拼接再forward。不是pixel crop执行，不是逐token advantage。",
+  "normalization": "other",
+  "invariance": "attention平均与TopK/坐标顺序恢复；无reward normalization或PBRS保证。",
+  "baseline_or_potential": "无价值baseline；KV-Copy与w/oADS为信息路由对照。",
+  "degenerate_cases": "初始编码缺小目标细节无法恢复；换行频繁时插入成本增长；无换行不触发；错误attention可重复强化错证据。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2去ADS/随机demonstration视觉tokens/两者都去；Table3 KV-Copy低于embedding插入；Table4自动demonstration低于人工。",
+  "negative_results": [
+   {
+    "text": "KV-Copy1shot M3CoT31.5低于32.3；自动示例ScienceQA51.8低于人工53.4。",
+    "locator": "Tables3–4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "固定额外tokens/计算，用随机区域和原图重复tokens做对照；若仅延长上下文也有同收益，不能归功于attention选区。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Chameleon-7B; Qwen2-VL-7B-Instruct",
+   "framework": "HuggingFace eager attention",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "A800；无训练；已读主文未给可复核的延迟总数，不能把ignorable latency当实测量。",
+  "pitfalls": [
+   {
+    "text": "需要eager attention；不能假设flash-attention同开销。",
+    "locator": "§4.3"
+   },
+   {
+    "text": "Qwen2-VL merge后的patch按28²近似，选16而非64；不应搬到Qwen3-VL当事实。",
+    "locator": "§4.3"
+   }
+  ],
+  "code": "https://github.com/jungao1106/ICoT",
+  "lesson": "当插入视觉缓存时，应明确插入embedding还是复制KV，并核位置与attention实现；缓存重用不能声称获得新视觉证据。"
+ }
+}

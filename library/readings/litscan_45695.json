@@ -1,0 +1,137 @@
+{
+ "paper_key": "litscan:45695",
+ "title": "DirectGuide",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_45695.txt",
+  "sections_read": [
+   "Abstract/contributions; §4.1-4.3/Algorithm1; Table1-2; §6-7; AppA.2 settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "对原可答图按grounding box定向裁切，以同模型答案是否由对变错生成补看方向或不动标签，LoRA监督六选一。",
+  "key_step": "先筛原图答对，再扰动，错误标签为裁切逆方向；仍对标不动；错配问图另构造不可恢复类。",
+  "why_non_obvious": "物体不完整不必然影响答题，标签依赖当前模型而非仅几何截断。",
+  "trigger_condition": "When partial evidence sometimes remains sufficient, label recovery actions by answer changes under controlled removal.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以已知可解样本的可控缺失合成恢复监督。",
+  "abstract_trigger_condition": "When recovery demonstrations are scarce, remove known evidence and label the inverse action conditionally.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "几何扰动与模型答题变化共同定标签。",
+  "abstract_why_non_obvious": "同一裁切可对不同能力模型产生不同信息需求。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:45695#s1",
+   "object": "方向指导SFT样本",
+   "information": "数据生成模型见原/扰动图与GT判分；训练policy只见扰动图问题选项；测试无原图",
+   "operation": "原图答对→裁切→仍对标不动/变错标逆方向，平衡六类并LoRA",
+   "claimed_effect": "LLaVA13B overall .53→.63，方向ACC .01→.43；GPT4o overall .60",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Algorithm1/Table1",
+    "quote": "G ← Preverse"
+   },
+   "failure_boundary": "测六类指导准确率，未实际执行相机动作验证恢复；逆裁切方向不保证真实世界可恢复。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "可控视觉证据缺失可生成信息需求/恢复方向SFT。"
+  },
+  {
+   "problem": "P27",
+   "strength": 2,
+   "how": "补齐恢复动作但尚非真正多轮执行。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "zero-shot/CoT；CLIPlinear；扰动范围及option shuffle",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只做单方向分类，不含幅度、组合方向/zoomout、曝光/对焦；human test删除大量分歧。",
+   "locator": "§4.2/7"
+  }
+ ],
+ "question": {
+  "observed_failure": "13B baseline方向ACC.01，整体.53显示多数类可掩盖方向失效。",
+  "load_bearing_assumption": "会回答或说不可答就自然会指导补证据。",
+  "scope": "821样本方向指导，合成训练由VizWizgrounding验证集",
+  "success_criterion": "方向类别准确率与整体均改善，并验证真实补看恢复",
+  "why_open": "缺少信息不足时如何获取的行为数据。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Algorithm1/§4.3"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table1"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§4.1"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "SFT只算选项字母及EOS token CE；prompt/图不作目标。选项字母映射可随机打乱；视觉能力判断来自GT词precision阈值e（所读未定位数值）。",
+  "normalization": "other: CE实现；六类通过下采样平衡，无GRPOstd。",
+  "invariance": "非PBRS；新分类任务和数据分布，不保证原VQA不退化。",
+  "baseline_or_potential": "原模型原图/扰动图答题作标签，不是value baseline。",
+  "degenerate_cases": "原图答错样本全被筛掉；裁切过轻多不动，过重对象不可识别；全部无恢复标签难学方向；RL组退化不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "0.1–0.3/0.3–0.5/0.5–0.7/0.7–0.9扰动范围与选项打乱；比较方向ACC而非只overall。",
+  "negative_results": [
+   {
+    "text": "最强扰动方向ACC .43→.40；shuffle对13B宽范围overall .63→.57，非稳定受益。",
+    "locator": "Tables1-2"
+   }
+  ],
+  "seeds": "所读未给多seed CI；标注26人，含291可重构/230不可重构/300可答。",
+  "falsifier": "若无GT答题变化、纯截断几何标签同效，policy-relative条件贡献未证；真实重拍失败会推翻动作恢复解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5 7B/13B,InstructBLIP7B LoRA",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "4×RTX A6000；LLaVA3epochs；训练数据平衡不动和四方向/不可恢复，具体总条数未读到。",
+  "pitfalls": [],
+  "code": "https://github.com/LeoLee7/Directional_guidance",
+  "lesson": "当构造补看数据时先筛原图可解，保留移除后仍可解的不动样本，并分别测方向与最终回答恢复。"
+ }
+}

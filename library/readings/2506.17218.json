@@ -1,0 +1,409 @@
+{
+ "paper_key": "2506.17218",
+ "title": "Machine Mental Imagery: Empower Multimodal Reasoning with Latent Visual Tokens",
+ "source": "candidates",
+ "decision": "withdrawn",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2506.17218.pdf",
+  "version": "v1",
+  "version_evidence": "PDF p.1 margin: arXiv:2506.17218v1 [cs.CV] 20 Jun 2025; local version only, latest version not checked.",
+  "sections_read": [
+   "pp.1–3 Abstract, Introduction, Related Work §§2.1–2.2",
+   "pp.3–6 §3 and §§3.1–3.4, Eqs.1–4, Figures1–3",
+   "pp.6–9 §§4.1–4.3, Tables1–3, Figures4–6 (text calls Figures4/5 Tables4/5)",
+   "pp.9–10 §5 Analysis, Figure7",
+   "p.10 §6 Conclusion and Limitations",
+   "pp.11–13 References",
+   "pp.14–19 Appendix A.1–A.3, Figures8–11 and Tables4–8",
+   "pp.19–20 Appendix B.1–B.2, Tables9–10"
+  ],
+  "pages_read": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20
+  ]
+ },
+ "reviews_source": {
+  "locator": "2506.17218.json",
+  "forum_id": "GYWuixnyvu",
+  "venue": "ICLR",
+  "year": 2026,
+  "review_count": 4,
+  "meta_review_count": 0,
+  "version_match": "unverified; later review descriptions do not match all details of local arXiv v1"
+ },
+ "rs": {
+  "innovation_approach": "用压缩 helper-image 特征监督可自回归生成的连续隐状态，替代推理中显式像素图像生成；随后取消隐向量重建损失，让后续文本目标塑造隐轨迹。",
+  "key_step": "Stage 1 以真实 helper-image 压缩向量为条件、同时训练文字 CE 与 latent cosine loss；Stage 2 换成模型自生成的连续向量并只对文字施加 CE，通过可微依赖向隐向量反传。",
+  "why_non_obvious": "作者的两阶段消融显示仅保留视觉重建约束并不足够；完全不做视觉 grounding 也不及完整流程。这是观测到的条件性结果，不证明 latent 具有心理学意义上的意象。",
+  "trigger_condition": "When explicit image generation burdens interleaved reasoning and task-specific helper images are available during training, ground compact continuous tokens and then relax their reconstruction constraint to improve downstream reasoning.",
+  "reviewer_praise": [
+   "vlfbbORXR1 认为写作清楚、设计动机明确。",
+   "MyypefbVeK 认可两阶段框架的消融验证；该评价属于评审观点，未独立复现。"
+  ],
+  "reviewer_concern": [
+   "vlfbbORXR1 与 ORamh0KY7z 质疑基线是否获得等价 helper-image 监督，以及任务特定合成图像限制泛化。",
+   "ORamh0KY7z 认为 t-SNE 接近视觉特征不足以支持强的 mental imagery 解释。",
+   "MyypefbVeK 质疑删除 helper-image 占位符后，文本基线的理由是否仍连贯。"
+  ],
+  "acceptance_signal": "Manifest decision is withdrawn, not Reject. Four official reviews have ratings 2,2,4,4; no meta-review and decision_raw=null. These are review opinions for an unverified manuscript version, not an acceptance/rejection outcome.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Replace expensive explicit intermediate outputs with compact continuous surrogates; initialize them with privileged intermediate targets and then optimize them for the downstream task.",
+  "abstract_key_step": "First align intermediate states to compressed targets; then remove their direct reconstruction loss and backpropagate downstream errors through self-generated states.",
+  "abstract_why_non_obvious": "Fixed intermediate targets can constrain task performance, while unconstrained states can start in unhelpful regions; staged alignment and relaxation seek to retain useful initialization without a permanent reconstruction requirement.",
+  "abstract_trigger_condition": "When costly explicit intermediates have accessible training targets, substitute compact differentiable states and relax the target constraint after grounding."
+ },
+ "signatures": [
+  {
+   "sig_id": "2506.17218#s1",
+   "object": "SFT 轨迹中的 helper image 及其对应生成位置。",
+   "information": "训练时可见原输入 x、GT 答案 y、任务工具生成的 helper image I 与教师理由；推理时只有原输入和已生成前缀，不读取 GT helper image。helper 图像可含由 GT 路径构造的特权信息。",
+   "operation": "用 VLM 编码 helper image，平均池化成 k 个向量；训练对应位置末层隐状态以 cosine loss 拟合这些向量，周围文字用 CE；推理时跳过语言投影，把隐状态作为后续输入。",
+   "output": "与文本交错的紧凑连续 latent visual tokens，无像素图像解码器。",
+   "claimed_effect": "完整两阶段系统的 Table1（p.7）Direct 版本 VSP reasoning/planning 平均准确率 0.86/0.76，对照 Direct SFT 为 0.83/0.72；这些差异不能归因于 Stage1 单独作用。",
+   "conditions": [
+    "可构造任务特定 helper images 和相应理由。",
+    "具有可访问的视觉特征及可馈回的末层隐状态。",
+    "默认 k=4；stage1 单独训练表现并不好，须结合后续放松阶段。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.5 §3.2, Eq.1–2; outcome comparison p.7 Table1",
+    "quote": "For the training objective for latent token generation, we adopt the cosine similarity between the last layer hidden states of the model and the target latent tokens:"
+   },
+   "failure_boundary": "helper-image 监督是训练特权信息；未证明对没有这种监督的新领域泛化；仅 Stage1 的 VSP planning 平均 0.21（p.8 Figure4）。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2506.17218#s2",
+   "object": "Stage1 后的 latent 生成轨迹及下游文本目标。",
+   "information": "Stage2 以原始输入、教师文字前缀及模型自生成 latent 为条件；不再用压缩 GT 图像向量直接约束 latent，但已继承 Stage1 的监督信息。",
+   "operation": "取消 latent cosine loss，以自回归生成的连续 latent 替换教师图像向量，只计算前后文字 CE；让后段文字损失沿 latent 依赖反向传播。",
+   "output": "可为答题自由调整的 latent priors。",
+   "claimed_effect": "p.8 §4.3 Figure4 的 VSP planning 均值：完整流程 0.58，去 Stage1 为 0.52，去 Stage2 为 0.21；为单种子报告，未给等算力消融。",
+   "conditions": [
+    "Stage1 提供视觉 grounding 初始化。",
+    "连续 latent 可微，并参与后段文字预测。",
+    "不把 latent 当作离散采样 token 计算额外文本 CE。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.5 §3.3; p.8 §4.3 Figure4 (called Tab.4 in prose)",
+    "quote": "Therefore, in the second stage, we remove the cosine loss altogether and keep only the cross-entropy loss over text tokens."
+   },
+   "failure_boundary": "去 Stage1 仍有 0.52 的表现，不能声称无 grounding 完全无效；latent 的视觉属性只做了 t-SNE 诊断，未作 causal/semantic 验证。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2506.17218#s3",
+   "object": "两阶段 SFT 后的文字—连续 latent 混合轨迹。",
+   "information": "同题多条当前策略输出、最终答案正确性和格式；没有逐 latent 语义真值、逐步必要性奖励或外部 critic 说明。",
+   "operation": "用 GRPO 优化文本 token 概率，允许梯度穿过连续 latent；聚合正确性和格式奖励；RL 时省略 latent visual tokens 上的 KL。",
+   "output": "经结果/格式奖励微调的 interleaved policy。",
+   "claimed_effect": "p.7 Table1：Ours CoT → +GRPO 的 VSP reasoning 0.87→0.89，planning 0.58→0.60；规划仍低于 Ours Direct 0.76。",
+   "conditions": [
+    "已有两阶段 SFT 的 interleaved 行为。",
+    "可判最终答案及 think/boxed 格式。",
+    "Appendix Table10 rollout num=5、KL=0.01、entropy coefficient=0。"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p.6 §3.4; p.7 Table1; p.20 Appendix B.1",
+    "quote": "During RL, we explicitly optimize the probabilities of textual tokens while allowing gradients to flow through the latent tokens."
+   },
+   "failure_boundary": "未给 GRPO 估计器/归一化/clip 公式及 latent 入口 token 的独立路由细节；正文与附录奖励权重不完全一致；未测少裁图、直答保留或纠偏。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Zero-Shot Qwen2.5-VL",
+   "kind": "method"
+  },
+  {
+   "name": "Direct SFT",
+   "kind": "method"
+  },
+  {
+   "name": "CoT SFT",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO without SFT",
+   "kind": "method"
+  },
+  {
+   "name": "CoT SFT + GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "Anole",
+   "kind": "method"
+  },
+  {
+   "name": "MVoT",
+   "kind": "method"
+  },
+  {
+   "name": "VSP",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK-Jigsaw",
+   "kind": "benchmark"
+  },
+  {
+   "name": "SAT Synthetic / SAT Real",
+   "kind": "benchmark"
+  },
+  {
+   "name": "COMT Mathematical Geometry",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明确依赖生成的多模态轨迹质量。",
+   "quote": "The performance of our interleaved reasoning depends on the quality of the generated multimodal trajectories.",
+   "locator": "p.10 §6 Limitations and Future Works"
+  },
+  {
+   "text": "作者只评估空间推理，其他多模态或文本任务泛化未建立。",
+   "quote": "Currently, our evaluation is limited to spatial-reasoning benchmarks. How to extend our framework to broader multimodal or purely textual tasks remains an open direction.",
+   "locator": "p.10 §6 Limitations and Future Works"
+  },
+  {
+   "text": "作者承认简单 prompt 偶尔产生差的理由轨迹。",
+   "quote": "Our current approach relies on straightforward prompts, which occasionally yield subpar reasoning trajectories.",
+   "locator": "p.16 Appendix A.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table1（p.7）VSP spatial planning 上 CoT SFT 0.47 低于 Direct SFT 0.72，Anole/MVoT 为 0.01/0.11；Figure4（p.8）仅 Stage1 为 0.21。作者将限制联系于文本化或显式图像生成/重建，但这些因果解释未被所有对照隔离。",
+  "load_bearing_assumption": "要进行视觉中间推理就必须把它完全表述为文字或生成完整像素图像；以及持续精确重建中间图像特征总有利于最终推理。",
+  "scope": "Qwen2.5-VL 7B/3B，VSP reasoning/planning、BLINK-Jigsaw、SAT、COMT geometry 上的任务内训练与评测。",
+  "success_criterion": "在相应任务上相对直接答案 SFT、CoT SFT、RL 和图像生成基线提高最终准确率；不要求生成像素图像。没有预注册显著性或非劣界。",
+  "why_open": "§2 指出此前图像/文字统一生成要承担图像生成训练与解码，LLM 连续 latent 工作没有在本文设置中建立视觉 grounding。本文不解决获取新外部观测或必要 crop 判定。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "Given VLMs naturally generating text tokens only, they require additional supervised fine-tuning to learn an interleaved reasoning pattern.",
+   "locator": "p.4 §3.1"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "These ablations confirm that the first stage aligns latent tokens with visual features, the second stage allows them to adapt to the task, and both steps are necessary for the final performance.",
+   "locator": "p.8 §4.3; two-stage ablation, not a compute-matched proof"
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "role": "primary",
+   "quote": "pass the helper images to the VLM first to convert the helper images in the synthetic training data into patch-level features; then fine-tune the VLM to output such features as latent reasoning tokens, thus eliminating the need to generate helper images by the VLM.",
+   "locator": "p.4 §3.2"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "role": "supporting",
+   "quote": "Therefore, in the second stage, we remove the cosine loss altogether and keep only the cross-entropy loss over text tokens.",
+   "locator": "p.5 §3.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal L_{\\mathrm{visual}}=\\ell_{\\cos}(\\hat e_j,g_\\theta(o_{\\mathrm{pre}},\\hat e_{1:j-1}))",
+    "locator": "p.5 §3.2 Eq.1; x omitted in printed notation"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{text}}=\\sum_{i=1}^{|o_{\\mathrm{pre}}|}\\ell_{\\mathrm{CE}}(o_{\\mathrm{pre},i},f_\\theta(x,o_{\\mathrm{pre},<i}))+\\sum_{i=1}^{|o_{\\mathrm{post}}|}\\ell_{\\mathrm{CE}}(o_{\\mathrm{post},i},f_\\theta(x,o_{\\mathrm{pre}},\\{\\hat e_j\\}_1^k,o_{\\mathrm{post},<i}))",
+    "locator": "p.5 §3.2 Eq.2; transcribed with closing-parenthesis typography regularized"
+   },
+   {
+    "latex": "\\mathcal L_1=\\mathcal L_{\\mathrm{visual}}+\\gamma\\mathcal L_{\\mathrm{text}}",
+    "locator": "p.5 §3.2 unnumbered objective; conflicts with appendix weight description"
+   },
+   {
+    "latex": "e_j=f_\\theta(x,o_{\\mathrm{pre}},e_{<j})",
+    "locator": "p.5 §3.3 Eq.3"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{text}}=\\sum_{i=1}^{|o_{\\mathrm{pre}}|}\\ell_{\\mathrm{CE}}(o_{\\mathrm{pre},i},f_\\theta(x,o_{\\mathrm{pre},<i}))+\\sum_{i=1}^{|o_{\\mathrm{post}}|}\\ell_{\\mathrm{CE}}(o_{\\mathrm{post},i},f_\\theta(x,o_{\\mathrm{pre}},\\{e_j\\}_1^k,o_{\\mathrm{post},<i}))",
+    "locator": "p.6 §3.3 Eq.4; generated e_j replaces target hat e_j"
+   }
+  ],
+  "signal_routing": "Stage1: latent hidden states receive cosine alignment, pre/post text receives CE with target compressed vectors in context. Stage2: text CE only; post-text dependence allows gradients through generated continuous latents. RL: textual probabilities optimized with GRPO; gradients flow through latents; KL omitted on latent visual tokens. Exact per-token masks, advantage weights, stopping/entry-token treatment are not specified.",
+  "normalization": null,
+  "invariance": "没有势函数塑形或最优策略不变定理；改变表示/训练目标与上下文。Stage2 去掉直接重建约束并保持下游文本损失；这不保证保留全部视觉语义。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "作者分析 γ→∞ 会相对取消 Stage1 视觉监督（p.9 §4.3）；k=8 的报告均值 0.75 低于 k=6 的 0.88。未报告全对/全错组、p≈0/1、无 latent 入口等 RL 退化情况。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "实际证据：Stage1/Stage2 删除消融（p.8 Figure4）、k 与 γ 扫描（p.9 Figure5）、helper image 直接作为输入的上界诊断（Figure6）、3B/7B 比较（Tables2–3）。它们区分训练阶段，但没有充分控制总算力或所有基线的特权监督。",
+  "controls": [
+   "Direct SFT vs CoT SFT vs GRPO vs CoT SFT+GRPO；Table1 将 Ours Direct/CoT/+GRPO 分开。",
+   "完整 2-stage vs 去 Stage1 vs 去 Stage2。",
+   "同 latent size k=4 比较 γ=.1/.5/1；同 γ=.1 比较 k=2/4/6/8。",
+   "helper image 有/无输入 × zero-shot/SFT；这测信息可用性，并非 latent 已恢复同样信息的证据。"
+  ],
+  "negative_results": [
+   {
+    "text": "显式合成 CoT 在 VSP planning 低于直接答案训练：text baseline .47 vs .72，Ours .58 vs .76（Table1）。",
+    "quote": "We notice that on VSP spatial planning task, fine-tuning with synthesized reasoning thoughts performs significantly worse than training directly on answer labels, both with and without our latent design.",
+    "locator": "p.7 §4.2 and Table1"
+   },
+   {
+    "text": "增大 latent 数到8从 k=6均值.88降至.75；误差累积为作者推测。",
+    "quote": "However, increasing k to 8 results in a significant performance drop around 13%,",
+    "locator": "p.9 §4.3 Figure5 (called Tab.5 in prose)"
+   },
+   {
+    "text": "只有 Stage1 的 VSP planning 平均.21，完整两阶段.58；重建约束可能过强是作者解释。",
+    "quote": "- w/o Stage 2 0.38 0.19 0.16 0.09 0.21",
+    "locator": "p.8 §4.3 Figure4"
+   }
+  ],
+  "seeds": "single: §4.1 specifies seed 42; no multi-seed variability or confidence intervals reported.",
+  "falsifier": "读者建议、未执行：使各基线获得等价 helper-image 信息/连贯文本理由，并匹配训练 token 与计算预算后，如果二阶段 latent 的增益消失，则本文的机制归因不成立；若 latent 置换/替换不损害表现，t-SNE 接近不能支撑 latent 提供任务视觉信息。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct; Qwen2.5-VL-3B in Table3; teacher Qwen2.5-VL-32B; SAT helper generator CogVideoX-5B",
+   "framework": "verl",
+   "group_size": null,
+   "rollouts": 5,
+   "steps": null,
+   "kl": 0.01,
+   "temperature": null,
+   "max_turns": null,
+   "latent_tokens": 4,
+   "sft_epochs_per_stage": 10,
+   "rl_epochs": 15,
+   "rl_batch_size": 32,
+   "rl_minibatch_size": 8,
+   "rl_learning_rate": 1e-06,
+   "sft_batch_size": 8,
+   "sft_learning_rate": 1e-05,
+   "vision_encoder": "frozen during SFT; all other components trainable per Appendix B.1"
+  },
+  "cost": "作者 Appendix B.2 p.20: VSP reasoning SFT 使用单张 NVIDIA H100，Stage1 ~3.5小时，Stage2 ~7.2小时，文本 CoT SFT ~5.5小时。RL GPU小时、总训练token、更新步数及推理吞吐未报告。",
+  "pitfalls": [
+   {
+    "text": "作者报告合成教师理由并非完美，缺陷会传到学生；SAT视频生成 helper 无GT标注也会引入噪声。并无已验证修复。",
+    "quote": "they are not flawless, and any imperfections propagate into the base model.",
+    "locator": "p.7 §4.2"
+   },
+   {
+    "text": "较长 latent 序列 k=8 掉点；论文默认 k=4，误差累积只是解释。",
+    "quote": "However, increasing k to 8 results in a significant performance drop around 13%,",
+    "locator": "p.9 §4.3 Figure5"
+   }
+  ],
+  "code": "https://github.com/UMass-Embodied-AGI/Mirage",
+  "lesson": "当中间视觉表征需要先学会与任务证据对齐时，先 grounding 再放松可在这些任务改善答题；搬用前必须核对特权信息公平性、轨迹事实一致性和额外阶段成本，不能把隐想象当作取得新外部证据。"
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "先以SFT注入交错 latent 行为、再RL优化的实践对应行为覆盖前提；没有研究缺失的 crop/abstain/revise 能否出现。",
+   "strength": 1
+  },
+  {
+   "problem": "P36",
+   "how": "作者承认教师理由错误传播；附录 Table4 示例理由写入洞但最终 A 成功，提供可核对的轨迹一致性风险实例。",
+   "strength": 2
+  },
+  {
+   "problem": "P39",
+   "how": "训练helper图含GT/更强视觉信息，推理不见它；提醒区分教师可用证据与学生可恢复信息，但未研究图像缩放预算。",
+   "strength": 1
+  },
+  {
+   "problem": "P40",
+   "how": "通过下游文本损失使隐中间表征服务最终答案，与证据利用相关；没有对已正确caption却错答的子类测量。",
+   "strength": 1
+  },
+  {
+   "problem": "P42",
+   "how": "Stage2/RL撤掉直接 latent 监督，仅用t-SNE检查其漂移，不能作为caption事实性保持证据。",
+   "strength": 1
+  },
+  {
+   "problem": "P45",
+   "how": "仅seed42、无区间，2pp RL增益不可当跨种子稳健结论。",
+   "strength": 1
+  },
+  {
+   "problem": "P53",
+   "how": "报告3B/7B同家族实验；不是跨模型家族或Qwen3-VL迁移验证。",
+   "strength": 1
+  }
+ ],
+ "reviews_evidence": [
+  {
+   "source": "reviews",
+   "note_id": "vlfbbORXR1",
+   "locator": "OpenReview forum GYWuixnyvu; note vlfbbORXR1; content.strengths",
+   "quote": "The paper is clearly written and generally accessible, with the main design choices well-motivated and logically presented."
+  },
+  {
+   "source": "reviews",
+   "note_id": "MyypefbVeK",
+   "locator": "OpenReview forum GYWuixnyvu; note MyypefbVeK; content.strengths",
+   "quote": "Valid ablation study validating the necessity and effectiveness of the proposed two-stage training framework."
+  },
+  {
+   "source": "reviews",
+   "note_id": "vlfbbORXR1",
+   "locator": "OpenReview forum GYWuixnyvu; note vlfbbORXR1; content.weaknesses",
+   "quote": "My primary concern is the limited generalizability of the proposed approach. As currently presented, each task appears to require separate fine-tuning on a specifically synthesized dataset."
+  },
+  {
+   "source": "reviews",
+   "note_id": "ORamh0KY7z",
+   "locator": "OpenReview forum GYWuixnyvu; note ORamh0KY7z; content.weaknesses",
+   "quote": "The paper is not explicit about which baselines have access to helper images during training, making it difficult to interpret the reported gains."
+  },
+  {
+   "source": "reviews",
+   "note_id": "ORamh0KY7z",
+   "locator": "OpenReview forum GYWuixnyvu; note ORamh0KY7z; content.weaknesses",
+   "quote": "However, the primary evidence provided, the t-SNE visualization in Section 5 (Figure 5), is insufficient to support it."
+  },
+  {
+   "source": "reviews",
+   "note_id": "MyypefbVeK",
+   "locator": "OpenReview forum GYWuixnyvu; note MyypefbVeK; content.weaknesses",
+   "quote": "If helper image placeholders were simply deleted while keeping text referring to them, the text-only baseline might contain incoherent pseudo-visual descriptions, leading to unfair or ambiguous comparisons."
+  }
+ ]
+}

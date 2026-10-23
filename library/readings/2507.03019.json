@@ -1,0 +1,462 @@
+{
+ "paper_key": "2507.03019",
+ "title": "Look-Back: Implicit Visual Re-focusing in MLLM Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2507.03019.pdf",
+  "version": "v1",
+  "version_observation": "PDF p1 watermark: arXiv:2507.03019v1 [cs.CV] 2 Jul 2025; latest online version not checked; local copy pinned.",
+  "sections_read": [
+   "Abstract and §1 Introduction pp1–2",
+   "§2 diagnostic, Tables1–2 and Figure2 p3",
+   "§3 Method, Eqs1–4 pp3–4",
+   "§4 experimental setup/results/ablation pp4–7, Tables3–5",
+   "§5 failed attempts and cold-start analysis pp7–8, Figure5",
+   "§6 Related Work pp8–9",
+   "§7 Conclusion and §8 Acknowledgment p9",
+   "Appendix A datasets and hyperparameters pp13–14",
+   "Appendix B all prompt templates pp14–15,17",
+   "Appendix C case study p15 and all five cases pp18–22",
+   "Appendix D training dynamics p15 and Figure6 p16"
+  ],
+  "visually_inspected": [
+   "p2 Figure1",
+   "p3 Tables1–2 and Figure2",
+   "p4 Eqs1–4 and format box",
+   "p6 Tables3–4",
+   "p7 Figure4 and Table5",
+   "p8 Figure5",
+   "p16 Figure6",
+   "p21 Appendix C Sample4"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用提示实验检验原图重读是否必须显式重注入；将模型已有的隐式再关注能力变成带<back>标记的可训练行为。",
+  "key_step": "从学生自己的CoT出发，由GPT-o4-mini结合图像和真值插入验证/纠错段，冷启动后仅提高<back>格式的奖励。",
+  "why_non_obvious": "文字标记可能只学到格式而不看图；论文用注意力可视化与提示对照寻找可行基座，并实际报告弱基座生成空标记的失败。",
+  "trigger_condition": "When a model can already re-attend to its original input under a reflection prompt but triggers this inconsistently, apply self-originated cold-start traces plus a format bonus to reinforce the behavior.",
+  "reviewer_praise": [
+   "low_evidence: manifest未提供OpenReview审稿路径。"
+  ],
+  "reviewer_concern": [
+   "low_evidence: 无可核对审稿；读者方法局限不冒充审稿意见。"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null, venue=arXiv; 不推断录用。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先测量能否通过提示恢复已有输入的利用，再用原模型轨迹建立行为支撑并强化触发。",
+  "abstract_key_step": "保留原模型生成的推导，用掌握正确答案的教师插入局部验证或纠正，再给予触发格式额外回报。",
+  "abstract_why_non_obvious": "显式触发符号不保证目标行为；基础能力和轨迹分布同时决定符号是否成为有效行为。",
+  "abstract_trigger_condition": "When a latent behavior is prompt-accessible but inconsistently elicited, seed it with compatible demonstrations and reinforce its observable trigger; test for empty-trigger shortcuts."
+ },
+ "signatures": [
+  {
+   "sig_id": "2507.03019#s1",
+   "object": "未微调Qwen2.5-VL-7B的推理提示与输出协议",
+   "information": "模型看到原图、题目、已生成推理；推理时看不到答案真值，也没有新crop或重注入图像。",
+   "operation": "在CoT提示中要求使用<back>段对照图像验证，允许后续继续推理，并检查生成阶段的视觉注意力。",
+   "output": "含原图重读文字段的推理序列及注意力案例。",
+   "claimed_effect": "Table1 pp3: AvgM 48.294→50.33（+2.036个百分点，读者相减），平均触发率62.48%；Table2在已触发题的选择子集50.89→54.166（+3.276），不视为随机分配的因果效应。",
+   "conditions": [
+    "Qwen2.5-VL-7B已有可提示诱发的能力",
+    "只复用已输入图像，不增加可观测分辨率"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "quote": "To investigate this, we conducted a preliminary experiment using a simple prompt modification that encourages the model to generate a <back> token and subsequently re-examine its response based on visual information.",
+    "locator": "§2 p3; Tables1–2 and Figure2"
+   },
+   "failure_boundary": "仅62.48%触发，未给出触发是否必要的真值；注意力案例缺少遮图/错图与匹配计算量对照。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2507.03019#s2",
+   "object": "冷启动SFT轨迹及验证/纠错行为覆盖",
+   "information": "选题阶段同题12次学生CoT及答案奖励；教师看到图像、题目、学生CoT、ground-truth答案，可改错后的续写。学生推理时没有该特权答案。",
+   "operation": "筛选较高奖励方差且较难的题，保留学生CoT并用GPT-o4-mini插入语义中途或完整解答后的<back>验证/纠错，再对整段目标文本SFT一轮。",
+   "output": "4k Semantic-back或10k Solution-back冷启动集；SFT模型。",
+   "claimed_effect": "Table4 p6：完整Semantic-back AvgAll67.6，无SFT66.7；Solution-back67.3，无SFT66.7。SFT-only分别58.5/58.6，低于base61.8，因此冷启动贡献仅在后续RL管线下成立。",
+   "conditions": [
+    "能得到ground-truth答案和教师插入服务",
+    "学生原生CoT作为底稿",
+    "SFT验证与纠错混合；论文RR默认50%，精确比例定义未形式化"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "quote": "For samples with incorrect answers, backtracking tokens that correct the answer based on image information are inserted, and the final answer is adjusted accordingly.",
+    "locator": "§3 Data Construction p4; Appendix B pp15,17; Table4 p6"
+   },
+   "failure_boundary": "GPT-4o原生CoT替换学生底稿曾导致退步；纯数学冷启动扩大时感知性能下降。两个变体数据量不同，不能只归因于触发时机。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2507.03019#s3",
+   "object": "GRPO的响应级格式奖励",
+   "information": "奖励检查响应是否满足<back>/CoT格式并使用准确性奖励；没有逐次视觉必要性标签或实测注意力奖励。",
+   "operation": "把<back>格式、普通CoT、其他格式分别赋1、0.667、0，按R=0.1Rformat+Raccuracy训练；不修改模型结构或再输入图像。",
+   "output": "强化<back>段生成的Semantic-back/Solution-back策略。",
+   "claimed_effect": "Table4 p6: GRPO AvgM53.9/AvgP77.5/AvgAll65.7；Semantic-back55.5/79.6/67.6，Solution-back56.4/78.3/67.3。完整方法相对GRPO为+1.9/+1.6 AvgAll个百分点，含SFT与奖励等管线差异，非仅奖励单因子的精确效应。",
+   "conditions": [
+    "先冷启动；Qwen2.5-VL-7B-Instruct",
+    "15k数学题，2 epochs，G=12，温度1.0",
+    "没有crop动作或显式新观测"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "quote": "To guide the model in triggering the visual review behavior more stably, we modified only the format reward function.",
+    "locator": "§3 Look-Back RL p4, Eqs2–4; §4 Table4 p6"
+   },
+   "failure_boundary": "Qwen2-VL可用空<back></back>获得格式奖励；不惩罚多次反思、不保护不反思支撑，不提供按需调用或效率非劣保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B + standard GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "CoT prompt",
+   "kind": "method"
+  },
+  {
+   "name": "Back prompt",
+   "kind": "method"
+  },
+  {
+   "name": "Look-Back without SFT / without RL",
+   "kind": "method"
+  },
+  {
+   "name": "RR10/30/50/70/90% cold-start data",
+   "kind": "dataset"
+  },
+  {
+   "name": "VL-Rethinker-7B",
+   "kind": "method"
+  },
+  {
+   "name": "OpenVLThinker-7B",
+   "kind": "method"
+  },
+  {
+   "name": "ThinkLite-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "VLAA-Thinker-7B",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-R1-7B",
+   "kind": "method"
+  },
+  {
+   "name": "MM-Eureka-8B and MM-Eureka-Qwen-7B",
+   "kind": "method"
+  },
+  {
+   "name": "R1-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "R1-Onevision-7B",
+   "kind": "method"
+  },
+  {
+   "name": "NoisyRollout-7B",
+   "kind": "method"
+  },
+  {
+   "name": "MathVerse / MathVision / MathVista / WeMath / GeoMath",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HallusionBench / TallyQA / MME",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Geo170K / MathV360K / Geometry3K / K12",
+   "kind": "dataset"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者承认跨模型训练数据和时长不一致，比较受限。",
+   "quote": "Although the training data and duration varied across models, making a direct comparison challenging, Look-Back still demonstrated competitive performance.",
+   "locator": "§4 Main Results p5"
+  },
+  {
+   "text": "仅提示不能稳定触发；这不等于62.48%以下的触发必然不必要或失败。",
+   "quote": "only modifying prompts is insufficient to consistently trigger this reflective behavior, resulting in an average trigger rate of only 62.48%.",
+   "locator": "§2 p3"
+  },
+  {
+   "text": "弱模型出现格式奖励黑客。",
+   "quote": "the model learned a shortcut by generating an empty <back></back> token sequence, thus obtaining format rewards without genuine reasoning.",
+   "locator": "§5 Failed Attempts p7"
+  },
+  {
+   "text": "作者将纯数学冷启动的感知退化归为可能的泛化局限，仍是作者假设。",
+   "quote": "We hypothesize that cold starting with purely mathematical data may limit further generalization on perceptual tasks.",
+   "locator": "§5 Impact of Cold Start p8"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table1提示触发平均62.48%，CoT AvgM48.294 vs Back50.33；Figure1/2展示后期视觉注意力弱的案例，没有总体注意力衰减的数值统计。Qwen2-VL还出现空back奖励黑客，未给频率。",
+  "load_bearing_assumption": "恢复后期视觉利用必须显式重注入图像/视觉token；论文给出只改提示也能出现注意力回升的反例，但不证明全部场景都可隐式恢复。",
+  "scope": "Qwen2.5-VL-7B原图推理的隐式视觉重读、数学与感知8项评测；不是多轮crop工具决策。",
+  "success_criterion": "提升数学/感知benchmark准确性并在back段观察视觉注意力重新聚焦；没有预设非劣界、触发必要性标签或省算判据。",
+  "why_open": "显式重注入范式改变输入或结构，单纯提示触发不稳定；把潜在重读行为训练稳定仍面临格式奖励和真实视觉使用脱节。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "To investigate this, we conducted a preliminary experiment using a simple prompt modification that encourages the model to generate a <back> token and subsequently re-examine its response based on visual information.",
+   "locator": "§2 p3"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "To address instability associated with the spontaneous triggering of the <back> token and reward hacking by the model (detailed in the Discussion), we first constructed a supervised fine-tuning dataset for cold-start initialization.",
+   "locator": "§3 Cold-start Initialization p4"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "quote": "the model learned a shortcut by generating an empty <back></back> token sequence, thus obtaining format rewards without genuine reasoning.",
+   "locator": "§5 Failed Attempts p7"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "role": "primary",
+   "quote": "This targeted refocusing occurs intrinsically, without any explicit reinjection of visual information or structural modifications to the model’s architecture.",
+   "locator": "§2 p3, Figure2"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "role": "supporting",
+   "quote": "To investigate this, we conducted a preliminary experiment using a simple prompt modification that encourages the model to generate a <back> token and subsequently re-examine its response based on visual information.",
+   "locator": "§2 p3; prompt-only diagnostic, not the later training stage"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathcal{L}_{\\mathrm{cold-start}}=-\\mathbb{E}_{(x,q,r_{back},a)\\sim D}\\sum_{t=1}^{|y|}\\log\\pi_\\theta(y_t\\mid x,q,y_{<t}),\\quad y=[r_{back};a]",
+    "locator": "§3 Eq1 p4, visually checked"
+   },
+   {
+    "latex": "J_{\\mathrm{GRPO}}(\\theta)=\\mathbb{E}_{q\\sim P(Q),\\{o_i\\}_{i=1}^{G}\\sim\\pi_{\\theta_{old}}(O\\mid q)}\\left[\\frac1G\\sum_{i=1}^G\\frac1{|o_i|}\\sum_{t=1}^{|o_i|}\\left\\{\\min\\left[\\frac{\\pi_\\theta(o_{i,t}\\mid q,o_{i,<t})}{\\pi_{\\theta_{old}}(o_{i,t}\\mid q,o_{i,<t})}A_{i,t},\\operatorname{clip}\\left(\\frac{\\pi_\\theta(o_{i,t}\\mid q,o_{i,<t})}{\\pi_{\\theta_{old}}(o_{i,t}\\mid q,o_{i,<t})},1-\\epsilon,1+\\epsilon\\right)A_{i,t}\\right]-\\beta D_{KL}[\\pi_\\theta\\Vert\\pi_{ref}]\\right\\}\\right]",
+    "locator": "§3 Eq2 p4, visually transcribed; source expectation/sum linebreak typography made explicit"
+   },
+   {
+    "latex": "R_{format}=\\begin{cases}1.0&\\text{if <back> format}\\\\0.667&\\text{if CoT format}\\\\0&\\text{otherwise}\\end{cases}",
+    "locator": "§3 Eq3 p4; printed angle brackets appear as inverted punctuation in PDF"
+   },
+   {
+    "latex": "R=\\lambda R_{format}+R_{accuracy},\\quad\\lambda=0.1",
+    "locator": "§3 Eq4 p4; lambda default §4 p5"
+   }
+  ],
+  "signal_routing": "Eq1监督完整目标文本（back和answer，格式例亦含think）；Eq2对每条输出token取1/|oi|均值，再在G内取均值，含token概率比和Ai,t以及KL。文中没有定义Ai,t如何由R生成，也没有逐back/think/answer专属信用、mask或仅back token受格式奖励的说明。奖励是响应级，不能补写未给出的token分配实现。视觉塔在RL冻结。",
+  "normalization": null,
+  "invariance": "不是PBRS；正格式奖金改变目标偏好，不保证保持最优策略。已有图像/模型结构不变是操作性质，不是策略不变定理。λ0.1时格式差带来0.0333总奖励增量（同准确性下，读者代入），不是真实信息收益。",
+  "baseline_or_potential": "命名GRPO但未明写优势估计、组内mean/std、epsilon、critic或πref具体checkpoint；只有Eq2的Ai,t、πold与πref符号。不能从框架名称推断本次实现细节。",
+  "degenerate_cases": "读者条件推导：若实现常规组内mean/std，格式与准确性都相同的全对/全错组零方差，需要未报告的保护；若正确性相同而仅格式不同，小λ可被std约掉。论文未证明使用哪种归一化，以上仅迁移风险。p(back)≈0时SFT提供初始支撑但无采样保证；p(back)≈1没有不反思支撑保障。Eq3只分格式类，不依back次数给奖励/惩罚；单次back也能拿1，空段在弱模型已被利用。",
+  "evidence": [
+   {
+    "quote": "To guide the model in triggering the visual review behavior more stably, we modified only the format reward function.",
+    "locator": "§3 p4"
+   },
+   {
+    "quote": "where ϵ and β are the clipping hyperparameters and the KL divergence penalty coefficient, respectively.",
+    "locator": "§3 following Eq2 p4"
+   }
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1同一基础模型prompt对照支持可提示诱发；Table4含standard GRPO、去SFT、去RL；Table5扫冷启动反思率，Figure5扫冷启动样本数。均有机制线索，但没有同checkpoint、同token预算、同位置真实/遮挡/错图对照，注意力图为选定案例。",
+  "controls": [
+   "Table1 CoT vs Back prompt；Table2只选Back触发题，存在条件选择，不能把子集增益当无偏处理效应",
+   "Table4 standard GRPO及两变体各去SFT/去RL，训练投入不同",
+   "Table5 RR10/30/50/70/90%；没有给精确RR分子/分母定义或种子",
+   "Figure5 Solution-back 2.5k/5k/7.5k/10k，数学55.0/55.5/55.7/56.4，感知79.3/79.1/78.8/78.3",
+   "Figures1/2/4注意力曲线/热图，Appendix C五个纠错展示；没有系统错→对/对→错率"
+  ],
+  "negative_results": [
+   {
+    "text": "Qwen2-VL用空格式取奖；基础能力不足是作者假设，非已证机制。",
+    "quote": "the model learned a shortcut by generating an empty <back></back> token sequence, thus obtaining format rewards without genuine reasoning.",
+    "locator": "§5 p7"
+   },
+   {
+    "text": "GPT-4o生成原始CoT再插back导致cold-start后退步，随后改用学生同源CoT；未给数值。",
+    "quote": "However, we observed a deterioration in performance after cold-starting the model.",
+    "locator": "§5 SFT Cold-Start Data Requirements p7"
+   },
+   {
+    "text": "RR并非越高越好；Table5 overall:10%=66.3,30%=67.1,50%=67.6,70%=66.4,90%=67.1。",
+    "quote": "Both excessively low and high reflection rates result in a decrease in model performance.",
+    "locator": "§4 Ablation p6; Table5 p7"
+   },
+   {
+    "text": "Figure5冷启动2.5k→10k时数学55.0→56.4但感知79.3→78.3，overall67.1→67.3；同源数学样本扩展没有整体持续增益。",
+    "quote": "However, performance on perceptual tasks declined slightly, although the overall performance remained relatively unchanged.",
+    "locator": "§5 p8, Figure5"
+   },
+   {
+    "text": "SFT-only（w/o RL）Semantic/Solution AvgAll58.5/58.6低于base61.8；原表已有可见退化。",
+    "quote": "removing either the RL or SFT phase of the look-back training leads to a significant degradation in model performance.",
+    "locator": "§4 Ablation p5; Table4 p6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者提出，未执行：用相同训练/生成预算，对比真实图像、遮图/错图、纯文字等长反思以及仅格式标记。如果真实视觉条件没有额外纠错增益，或打乱图像仍同幅提高，则“改善视觉证据利用”的解释不足；若希望迁移按需crop，还需按观测需求分层并检验不需要时的调用率与准确率非劣。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct; failed attempt Qwen2-VL (size not specified)",
+   "framework": "EasyR1",
+   "group_size": 12,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": 1.0,
+   "max_turns": null
+  },
+  "cost": "8×NVIDIA A800；SFT4k或10k样本、1 epoch，RL15k题×2 epochs、batch128、每题12rollouts。完整训练token、精确update/rollout总数、GPU·h、推理时延均未报告。Figure6曲线约到230余步，不能冒充精确更新次数；response_length/mean显示Solution约500、Semantic约400、GRPO约300 tokens量级（图上近似观察），非固定成本比较。",
+  "pitfalls": [
+   {
+    "text": "弱模型reward hacking需先核对能力，本文不能保证仅加格式就学到真实重读。",
+    "quote": "the model learned a shortcut by generating an empty <back></back> token sequence, thus obtaining format rewards without genuine reasoning.",
+    "locator": "§5 p7"
+   },
+   {
+    "text": "同源CoT底稿降低分布偏差是作者解释；在学生CoT上插back比全换教师CoT更匹配冷启动目标。",
+    "quote": "We hypothesize that fine-tuning on homologous model outputs reduces distributional deviation, aligning better with the cold-start objective of consistent output formatting.",
+    "locator": "§5 p7"
+   },
+   {
+    "text": "RL阶段冻结视觉塔，语言组件继续训练。",
+    "quote": "we froze the vision tower parameters and fine-tuned only the language components.",
+    "locator": "Appendix A p14"
+   }
+  ],
+  "code": "https://github.com/PKU-YuanGroup/Look-Back",
+  "lesson": "当格式奖励被当作视觉重读代理时，先核对基础模型确实能诱发该行为，并监控空段/错误推理；从学生同源轨迹补验证与纠错，仍不能把格式触发当成必要补看的真值。",
+  "additional_reported_setup": {
+   "SFT": {
+    "framework": "LLaMA-Factory",
+    "strategy": "full parameter finetuning as stated for SFT",
+    "learning_rate": 8e-07,
+    "scheduler": "cosine",
+    "per_device_batch_size": 4,
+    "gradient_accumulation_steps": 1,
+    "epochs": 1,
+    "deepspeed": "Zero-3"
+   },
+   "RL": {
+    "backend": "EasyR1(using VERL)",
+    "epochs": 2,
+    "training_problems": 15000,
+    "rollout_batch_size": 128,
+    "actor_global_batch_size": 128,
+    "update_microbatch_per_device": 2,
+    "experience_microbatch_per_device": 4,
+    "optimizer": "AdamW",
+    "learning_rate": 1e-06,
+    "vision_tower": "frozen",
+    "validation": "geometry3k test set",
+    "format_reward_weight": 0.1
+   },
+   "data_construction": {
+    "student_samples_per_question": 12,
+    "teacher": "GPT-o4-mini as spelled in §3",
+    "semantic_sft_samples": 4000,
+    "solution_sft_samples": 10000,
+    "reported_reflection_rate": 0.5,
+    "reflection_rate_exact_definition": null
+   }
+  }
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "SFT播种验证/纠错，弱基座空标记失败；支持先审计基础能力和行为覆盖，不证明能创造未示范的不裁/弃答。",
+   "strength": 2
+  },
+  {
+   "problem": "P26",
+   "how": "原图重读被格式奖励提升，目标本身偏向更稳定触发；无不确定性阈值、按需crop真值或少调用目标。",
+   "strength": 1
+  },
+  {
+   "problem": "P27",
+   "how": "示范显式修改推理/答案提供数据设计近邻；没有系统recover评测且Sample4推导/选项不一致。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "教师看真值插入验证/纠错；未给独立人审或视觉事实金标，附录错误示例提示标签正确不保证推理正确。",
+   "strength": 2
+  },
+  {
+   "problem": "P38",
+   "how": "冷启动反思率和数据量扫描显示混合比例、分布比单纯扩容重要；RR定义不够明确。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "附录Sample4得14°但选B44，直接提示reasoning-answer一致性必须另审；只是一例，非频率结论。",
+   "strength": 2
+  },
+  {
+   "problem": "P42",
+   "how": "真实视觉利用不能由格式奖励保证；可将注意力观察作为诊断线索，不能替代caption事实监督。",
+   "strength": 1
+  },
+  {
+   "problem": "P61",
+   "how": "只数学cold-start扩量使感知均值下降，需测跨任务能力；未测试我们直答子集保持。",
+   "strength": 1
+  }
+ ],
+ "source_caveats": [
+  {
+   "text": "§4 prose使用48.5基线与Tables3–4的49.5不一致；prose对perception的61.3→67.6/67.3又与表格列不对应。本文抽取以原表为准并保留冲突。",
+   "quote": "Semantic-back improved by an average of 7% (from 48.5% to 55.5%)",
+   "locator": "§4 Mathematical Reasoning p5, compared with Tables3–4 p6"
+  },
+  {
+   "text": "Sample4最终B对应44，然而后续推导是14°；此案例不能证明中间推理已正确修复。",
+   "quote": "7. Recompute the measure of CF\nd = mF\nd\nd = 118◦ − 104◦ = 14◦ .\n-- Therefore, mCF\nE − mEB\n</think> B Correct",
+   "locator": "Appendix C Sample4 p21, lower reasoning and boxed answer; page21.png visually checked"
+  },
+  {
+   "text": "默认RR50%用于SFT数据，而Table1的62.48%是提示后trigger rate，两者不是同一分母，不可混用。",
+   "quote": "As a result, we adopted a reflection rate of 50% in this study.",
+   "locator": "§4 Ablation p6; compare Table1 caption p3"
+  },
+  {
+   "text": "此图的clip_ratio标题是response_length/clip_ratio，不足以证明PPO ratio clipping是否激活；未给底层日志。",
+   "quote": "The visualizations include reward (on both training and validation sets), accuracy, response length, and clip ratio across training steps.",
+   "locator": "Appendix D p15 and Figure6 p16"
+  }
+ ]
+}

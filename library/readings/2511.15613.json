@@ -1,0 +1,443 @@
+{
+ "paper_key": "2511.15613",
+ "title": "When to Think and When to Look: Uncertainty-Guided Lookback",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.15613.pdf",
+  "version": "v3",
+  "version_url": "https://arxiv.org/abs/2511.15613v3",
+  "observed_version": "PDF p.1 arXiv:2511.15613v3 [cs.CV] 27 Mar 2026; arXiv version page agrees",
+  "sections_read": [
+   "Abstract; 1 Introduction (pp.1–2)",
+   "2.1 Visual Reasoning; 2.2 LVLM Analysis (p.2)",
+   "3 Analysis setup; Table 1–2 (pp.2–3)",
+   "3.1 Will Thinking Help?; Figures 1–4 (pp.1,3–4)",
+   "3.2 Does Thinking Lead in All Categories? (pp.4–5)",
+   "3.3 How Does Thinking Perform?; Figure 5 (p.5)",
+   "4 Improvement (p.5)",
+   "4.1 Token-Level Visual Sensitivity Probe; Equations 1–2; Figures 6–7 (p.6–7)",
+   "4.2 Lookback-When-Uncertain Decoding; Equation 3 (p.7)",
+   "4.3 Parallel Lookback Sampling; Equation 4 (p.7)",
+   "4.4 Baselines; 4.5 Results; Tables 3–4 (pp.7–8)",
+   "5 Conclusion (p.8)",
+   "Acknowledgements and References (pp.9–10)"
+  ],
+  "pages": 10,
+  "appendix_status": "Absent from supplied PDF and versioned arXiv HTML TOC. Several main-text claims refer to missing appendix; those details were not read."
+ },
+ "rs": {
+  "innovation_approach": "先用同一解码前缀的真图、合成噪声图、无图对照分离内容依赖与图像存在效应，再把这些离线探针挖出的暂停词和回看短语变成推理期控制器；可选按真图相对噪声图的困惑度收益挑选短分支。",
+  "key_step": "部署时不连续估计不确定性：匹配近期文本中的暂停短语，尚未进入终答且未触发冷却限制时插入回看提示；分支版本另做在线内容差分评分。",
+  "why_non_obvious": "长推理不等于持续使用图像，存在视觉 token 也不等于依赖其真实内容；短语控制器用离线内容/存在差分作代理，是否能迁移到 caption/crop 仍未知。",
+  "trigger_condition": "When a streamed reasoning suffix matches a mined pause phrase before the answer phase and outside the cooldown window, append an image-lookback template to encourage renewed grounding.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence: manifest decision=null; no review path. Versioned arXiv abstract metadata says Accepted to CVPR 2026, but does not specify Oral/Spotlight/Poster and supplies no reviewer evidence.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Separate sensitivity to informative content from sensitivity to input presence, then intervene only at a cheap proxy of the diagnosed failure state.",
+  "abstract_key_step": "Mine trigger phrases and corrective continuations offline; append the corrective text when the trigger matches and enforce a cooldown.",
+  "abstract_why_non_obvious": "An extended computation can repeatedly use priors without extracting useful evidence; detecting input presence alone does not identify content use.",
+  "abstract_trigger_condition": "When a cheap sequence cue matches a previously diagnosed ungrounded state, insert a targeted reminder and optionally retain the continuation with the strongest content dependence."
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.15613#s1",
+   "object": "离线已解码 thinking trace 的词级步骤及短语词表",
+   "information": "同一模型对同一问题/前缀/已生成 token 在真图、同分辨率合成噪声图、无图下的概率；挖回看模板还用终答正确性。看不到独立人工视觉需要真值或真实 crop 的价值。",
+   "operation": "计算两轴困惑度差；从大 |presence| 小 |content| 的位置挖暂停词，从正确轨迹强负 content 的位置挖回看模板。",
+   "output": "暂停词表 P 与回看模板集 L，及视觉内容敏感性描述。",
+   "claimed_effect": "作者称与不确定位置高度对齐（§4.1），Fig.6 正确轨迹通常具有更负内容差分；没有给出 AUROC、独立标注准确率或对齐数值。",
+   "conditions": [
+    "可访问本模型 token log-prob",
+    "同分辨率噪声保持视觉输入结构但移除语义",
+    "正确轨迹可用来挖模板；验证集/测试集隔离没有明确交代"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§4.1 p.6, real/noise/no-image controls",
+    "quote": "Noise,\nby contrast, provides a structurally valid but semantically\nempty control); No image c = ∅: no visual tokens."
+   },
+   "failure_boundary": "噪声分布外效应仍可能影响差分；同一验证集兼作探针伪真值，缺少独立 need-to-look 标签校准；阈值和完整词表未提供。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2511.15613#s2",
+   "object": "推理期 thinking token 流",
+   "information": "输入原图、题目、已生成词串、离线词表、是否已终答和最近 L 个 token 是否触发过；基本控制器看不到 GT、crop 价值或实时 PPL。",
+   "operation": "命中暂停词时在流中拼接回看模板，L 个 thinking token 内最多一次，终答开始后禁用。",
+   "output": "继续在原图上推理的受控生成序列；没有新增裁图观测。",
+   "claimed_effect": "Table 3 overall: Qwen3-VL 4B 67.0→69.7、token 100→57.2%；8B 70.3→73.0、62.1%；32B 75.3→81.7、66.2%。这些是作者表值，不是复现。正文 4B 59.3→61.6 实际对应 Design 列，存在不一致。",
+   "conditions": [
+    "模型能在 thinking 流内接受插入短语",
+    "暂停词匹配覆盖当前任务风格",
+    "L、模板选择规则和终答检测方式需补充"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2 p.7; Eq.3 (operation); Table 3 p.8 (numeric results)",
+    "quote": "Intuitively, whenever the recent context contains a pause\nphrase from P and the model is still in the thinking phase,\nwe immediately append a lookback template from L, forc-\ning an explicit re-consultation of the image before reason-\ning proceeds."
+   },
+   "failure_boundary": "词表未命中不触发；短语不保证真实使用图像；不证明 crop 必要性、纠错训练或准确率非劣统计检验。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2511.15613#s3",
+   "object": "回看触发后的 M 条短推理分支",
+   "information": "同一触发前缀、同一回看模板；各分支 H 步 token 在真图与噪声图下的本模型 PPL；无终答 GT 用于在线选择。",
+   "operation": "采 M 条 H 步续写，计算负平均 content 差分，选最大分数分支续写。",
+   "output": "保留内容依赖最强的短分支状态。",
+   "claimed_effect": "Table 3 overall sampling: 4B 73.0（lookback69.7）, 8B74.2（73.0）, 32B79.2（81.7，下降2.5pt）；token比基线59.5/63.0/70.3%。Table 4 MathVision4B 60.0→64.2→65.5。",
+   "conditions": [
+    "在线可重新评分各分支在真/噪声图下概率",
+    "M、H和分支状态恢复可实现；具体值未知",
+    "新增重评分成本必须计入总成本"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.3 p.7, Eq.4; Tables 3–4 p.8",
+    "quote": "continue decoding from its state."
+   },
+   "failure_boundary": "内容依赖不是答案正确性；32B总体反降且token更高；H=0无定义，M=1无选择收益；缺少实际延迟与重评分总量。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Original Thinking / Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "DEER",
+   "kind": "method"
+  },
+  {
+   "name": "DeepConf",
+   "kind": "method"
+  },
+  {
+   "name": "REFRAIN",
+   "kind": "method"
+  },
+  {
+   "name": "Periodic lookback insertion",
+   "kind": "method"
+  },
+  {
+   "name": "Uncertainty-only branching without lookback phrase",
+   "kind": "method"
+  },
+  {
+   "name": "MMMUval",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMBench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVista",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVision",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVerse",
+   "kind": "benchmark"
+  },
+  {
+   "name": "Pass@k",
+   "kind": "metric"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者承认构造探针与挖触发词需要 token log-prob，限制无该接口的闭源模型。",
+   "quote": "Our current\nimplementation requires token-level log-probabilities for\nprobe construction and trigger mining, so applicability to\nclosed-source without log-prob access remains limited.",
+   "locator": "§5 Conclusion p.8"
+  }
+ ],
+ "question": {
+  "observed_failure": "Fig.2 p.3 一个32B thinking例子10次全错、instruct用1 token答对；§3.3/Fig.5指出4B/8B easy项思考使token中位数大约翻倍而收益有限。这是作者例子和分组描述，不是总体失败率。",
+  "load_bearing_assumption": "增加thinking深度/样本数就足以提高视觉推理，且长思考会持续关注图像。",
+  "scope": "InternVL3.5 4B/8B与Qwen3-VL 4B/8B/32B，共8 checkpoint、10变体；MMMU分析和6 benchmark方法评估。",
+  "success_criterion": "同checkpoint下提高Pass@1并减少生成token；比较周期插入、仅分支、文本早停控制；论文未设准确率非劣界。",
+  "why_open": "文本CoT早停/信心策略没有分离图像存在与具体内容依赖；无工具/不加训练的视觉推理控制仍需定位介入时机。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "quote": "These observations motivate adaptive\ncontrol over when and how to think, conditioned on both\nuncertainty and grounding.",
+   "locator": "§4 opening p.5"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "As a fairness control, we\nadditionally run a budget-matched setting in which Thinking\ngenerations are truncated to the same 16,384-token cap as\nInstruct; the key conclusions in Secs. 3.2 and 3.1 remain\nunchanged.",
+   "locator": "§3 Token budgets p.3"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "role": "primary",
+   "quote": "Noise,\nby contrast, provides a structurally valid but semantically\nempty control); No image c = ∅: no visual tokens.",
+   "locator": "§4.1 p.6",
+   "note": "合成噪声保留输入结构、去除语义，再以无图区分存在效应；不是泛称做了消融。"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "role": "supporting",
+   "quote": "Intuitively, whenever the recent context contains a pause\nphrase from P and the model is still in the thinking phase,\nwe immediately append a lookback template from L, forc-\ning an explicit re-consultation of the image before reason-\ning proceeds.",
+   "locator": "§4.2 p.7",
+   "note": "通过注入条件文本改变生成，无参数更新；不声称训练了路由或奖励模型。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\mathrm{PPL}_{c}(s)=\\exp[-\\log p_{\\theta}(y_s\\mid x,I_c,y_{<s})],\\quad c\\in\\{R,N,\\varnothing\\}",
+    "locator": "§4.1 p.6, unnumbered definition"
+   },
+   {
+    "latex": "\\Delta_{\\mathrm{content}}(s)=\\mathrm{PPL}_{R}(s)-\\mathrm{PPL}_{N}(s)",
+    "locator": "Eq.1 p.6"
+   },
+   {
+    "latex": "\\Delta_{\\mathrm{presence}}(s)=\\mathrm{PPL}_{N}(s)-\\mathrm{PPL}_{\\varnothing}(s)",
+    "locator": "Eq.2 p.6"
+   },
+   {
+    "latex": "y'_{1:t+1}=\\begin{cases}y_{1:t}\\Vert y_{t+1}\\Vert\\ell,&\\neg\\mathrm{ans}(t),\\neg\\mathrm{trig}(t),\\mathrm{suffix}_{L}(y_{1:t+1})\\in\\mathcal P,\\\\ y_{1:t}\\Vert y_{t+1},&\\mathrm{otherwise}.\\end{cases}",
+    "locator": "Eq.3 p.7"
+   },
+   {
+    "latex": "\\mathcal V^{(m)}=-\\frac1H\\sum_{t=s}^{s+H-1}\\Delta_{\\mathrm{content}}^{(m)}(t)",
+    "locator": "Eq.4 p.7"
+   }
+  ],
+  "signal_routing": "无训练目标、无reward/advantage/token loss。PPL差作用于离线短语挖掘；词表命中作用于thinking阶段的插入事件，终答阶段不插入；可选V分数只用于在线分支选择。",
+  "normalization": "other: content/presence为原始per-token PPL差，无std归一化；分支V只除固定H求均值。Fig.3 z-score与Fig.6轨迹位置0–100%归一化是展示，不是优化目标。",
+  "invariance": "模型参数不变；插入文本与分支选择改变生成分布，没有保持最优策略或PBRS保证。真/噪声控制保持分辨率但无图条件改变视觉token存在。",
+  "baseline_or_potential": "对照来自同一待解码模型的真图、合成噪声图、无图概率；不是critic、冻结外部读者或动作价值基线，不是势函数。",
+  "degenerate_cases": "读者推导：无暂停词/已终答/冷却中→原始解码；PPL三条件相同→两差分0，无这种探针挖掘信号（外加hmm/wait仍可触发）；若p(token)趋0则PPL趋无穷、差分不稳定，原文未给clip；p趋1时PPL趋1，差分压缩。M=1无分支选择收益，H=0公式未定义；全对/全错GRPO组不适用；若挖掘集无正确轨迹，数据挖出的lookback模板无来源，回退未知。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "作者对照：同前缀R/N/无图分离内容与存在；同模型周期插入对比自适应触发，分支-only对比lookback+分支；16,384 token匹配上限控制Thinking/Instruct预算。后者和online-PPL对照只有正文结论，缺少附录数据。",
+  "controls": [
+   "Reported: real/noise/no-image on fixed decoded prefixes (§4.1)",
+   "Reported: periodic insertion n=1..5 versus adaptive (§4.5); n的具体间隔单位未说明",
+   "Reported: uncertainty-only branching without injected phrase (§4.5); 数值缺失",
+   "Reported: Original Thinking, DEER, DeepConf, REFRAIN on same checkpoints (Table 3)",
+   "Reported: matched 16,384-token cap (p.3), appendix evidence unavailable",
+   "Not reported: shuffled/matched-count random trigger, semantic placebo prompt, held-out need-to-look labels, full FLOPs/latency-matched branching"
+  ],
+  "negative_results": [
+   {
+    "text": "周期触发Qwen 4B 51.1/53.8/54.5/59.1/57.7均低于adaptive61.6；但同段InternVL n=4=60.4高于adaptive59.2，反驳该段“consistently worse”的无条件表述。",
+    "quote": "For Qwen3-VL, periodic\nlookback yields 51.1/53.8/54.5/59.1/57.7 for n = 1 . . . 5,\ncompared with 59.3 for Original Thinking and 61.6 for ours.\nInternVL shows the same pattern (52.2/54.9/54.0/60.4/56.9\nvs. 57.8 Original and 59.2 ours).",
+    "locator": "§4.5 p.7"
+   },
+   {
+    "text": "作者报告只有不确定触发分支、不加回看短语的增益更小且更不稳定，未给数值。",
+    "quote": "For completeness, uncertainty-only\nbranching (without lookback phrase injection) yields smaller\nand less stable gains than full lookback-when-uncertain, in-\ndicating that branching alone does not reliably recover visual\ngrounding once the chain has already drifted.",
+    "locator": "§4.5 p.7"
+   },
+   {
+    "text": "表3整体32B加sampling比lookback少2.5pt、token比例高4.1pt；8B Design加sampling从63.7降至61.0；表4 4B MMBench从89.5降至88.2。仅为原表读取，不是独立复现。",
+    "quote": "Ours (+sampling) 79.2(+3.9) 70.3(-29.7) 73.1(+6.1) 65.3(-34.7) 71.3(+3.0) 63.0(-37.0) 76.5(+6.2) 61.0(-39.0) 72.0(+6.3) 66.3(-33.7) 77.3(+6.3) 63.5(-36.5) 84.2(+6.5) 61.5(-38.5)",
+    "locator": "Table 3 p.8, 32B Ours (+sampling) row; compare preceding lookback row; Table 4 p.8"
+   }
+  ],
+  "seeds": "§3: 每题10条独立采样，varying only random seeds；具体seed列表及独立完整评测重复数unknown。Fig.1带std、Fig.4箱线图；Tables3–4没有CI/显著性。不是10个训练种子；训练不适用。",
+  "falsifier": "读者提出、未运行：在独立图源留出集冻结词表，以相同插入数、生成/重评分预算比较adaptive与random/periodic/placebo；若触发不预测真实补看收益，或随机词表达到相同收益，否定状态特异性解释。若完整重评分成本计入后无准确率—成本优势，否定效率迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "InternVL3.5-4B/8B Instruct+COT; Qwen3-VL-4B/8B/32B Instruct+Thinking; 8 checkpoints,10 variants",
+   "framework": null,
+   "group_size": null,
+   "rollouts": 10,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "top_p": null,
+   "max_output_tokens": {
+    "instruct": 16384,
+    "thinking": 32768,
+    "budget_matched_control": 16384
+   },
+   "branch_count_M": null,
+   "branch_horizon_H": null,
+   "cooldown_tokens_L": null,
+   "training": "none; rollouts=10 means analysis sampled paths per item, not RL group"
+  },
+  "cost": "无训练。Table3 lookback生成token为原始57.2/62.1/66.2%；sampling59.5/63.0/70.3%。离线三条件重评分与在线分支真/噪声重评分额外成本未量化；GPU型号/ GPU·h/实际延迟未见。生成token减少不能等同FLOPs或wall-clock减少。",
+  "pitfalls": [
+   {
+    "text": "防连续触发导致退化：L-token窗口最多一次，终答阶段关闭。",
+    "quote": "To prevent degeneration, we allow at most\none lookback trigger within any window of L thinking to-\nkens and disable further triggers once the final-answer phase\nstarts.",
+    "locator": "§4.2 p.7"
+   }
+  ],
+  "code": null,
+  "lesson": "当不确定词触发来自长thinking而任务只生成短caption时，应先验证词表覆盖及真正补看收益，再把回看提示迁移成crop控制；不要把低token比例直接当低总计算成本。"
+ },
+ "relevance": [
+  {
+   "problem": "P26",
+   "how": "提供免训练的不确定短语触发回看对照；但回看同一图而非调用crop，不能证明训练后模型学会按状态少裁。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "提供同策略的视觉内容/存在差分及词表代理，尚无对crop必要性AUROC或独立校准。",
+   "strength": 2
+  },
+  {
+   "problem": "P47",
+   "how": "短语挖掘和探针伪真值复用同一验证集，最终MMMU评估是否隔离未说明，提示开发/最终评测分开。",
+   "strength": 1
+  },
+  {
+   "problem": "P16",
+   "how": "同模型真图/噪声/无图对照可避免外部读者能力错位，但其内容敏感性仍不等于裁图价值。",
+   "strength": 1
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "reported_results": {
+  "status": "author_reported_not_replicated",
+  "table3_overall": {
+   "locator": "Table 3 p.8, visually checked",
+   "columns": [
+    "Original_pass1",
+    "lookback_pass1",
+    "lookback_tokens_pct",
+    "sampling_pass1",
+    "sampling_tokens_pct"
+   ],
+   "4B": [
+    67.0,
+    69.7,
+    57.2,
+    73.0,
+    59.5
+   ],
+   "8B": [
+    70.3,
+    73.0,
+    62.1,
+    74.2,
+    63.0
+   ],
+   "32B": [
+    75.3,
+    81.7,
+    66.2,
+    79.2,
+    70.3
+   ]
+  },
+  "table4": {
+   "locator": "Table 4 p.8, visually checked",
+   "benchmarks": [
+    "MMBench",
+    "MMStar",
+    "MathVista",
+    "MathVision",
+    "MathVerse"
+   ],
+   "4B": {
+    "Original": [
+     86.7,
+     73.2,
+     79.5,
+     60.0,
+     75.2
+    ],
+    "lookback": [
+     89.5,
+     75.0,
+     84.3,
+     64.2,
+     77.2
+    ],
+    "sampling": [
+     88.2,
+     75.7,
+     85.0,
+     65.5,
+     78.7
+    ]
+   },
+   "8B": {
+    "Original": [
+     87.5,
+     75.3,
+     77.2,
+     62.7,
+     77.7
+    ],
+    "lookback": [
+     88.7,
+     78.5,
+     79.4,
+     67.9,
+     78.9
+    ],
+    "sampling": [
+     89.8,
+     79.6,
+     79.7,
+     68.3,
+     79.9
+    ]
+   },
+   "32B": {
+    "Original": [
+     90.8,
+     79.4,
+     83.8,
+     70.2,
+     82.6
+    ],
+    "lookback": [
+     93.6,
+     81.2,
+     85.6,
+     72.0,
+     84.4
+    ],
+    "sampling": [
+     93.9,
+     82.5,
+     85.9,
+     73.3,
+     84.7
+    ]
+   }
+  }
+ }
+}

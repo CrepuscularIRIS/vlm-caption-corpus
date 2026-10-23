@@ -1,0 +1,226 @@
+{
+ "paper_key": "litscan:78739",
+ "title": "Bad Seeing or Bad Thinking? Rewarding Perception for Multimodal Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78739.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 pp3–5",
+   "§3 pp6–8 Tables1–4",
+   "Appendix A p13 hyperparameters",
+   "[redacted: project-internal]"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把视觉感知外显成recognition块，盲文本读者判断其可解性；失败轨迹中按PV保护/加罚感知token。",
+  "key_step": "R=RO+.3RP，组均值中心化不除std；仅RO0的recognition token做A±.2|A|，其余保留原A。",
+  "why_non_obvious": "不只是加感知奖励，而是在失败轨迹分感知和推理credit；但proxy充分性不是感知真实性，混合reward的A也未必负。",
+  "trigger_condition": "When failed answers may arise from either perception or reasoning, use blindfolded evidence sufficiency to route credit on explicit perception tokens.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把隐式故障源外显为可测试中间表示，再按组件修改失败credit。",
+  "abstract_trigger_condition": "When failed answers may arise from either perception or reasoning, use blindfolded evidence sufficiency to route credit on explicit perception tokens.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "R=RO+.3RP，组均值中心化不除std；仅RO0的recognition token做A±.2|A|，其余保留原A。",
+  "abstract_why_non_obvious": "不只是加感知奖励，而是在失败轨迹分感知和推理credit；但proxy充分性不是感知真实性，混合reward的A也未必负。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78739#s1",
+   "object": "失败recognition token",
+   "information": "RO来自结构化文本verifier；RP来自无图14B读者对所有recognition文本的回答",
+   "operation": "失败且RP1用A+.2|A|，失败且RP0用A−.2|A|；reasoning及成功轨迹不变",
+   "claimed_effect": "V*86.6 vs加性83.1 vsoutcome-only79.7；MathVista73.8低于outcome-only74.4",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2.5 p5/Table2 p8",
+    "quote": "Full Model                    86.6       87.0        74.2        33.1          58.3       45.1      31.3        54.8       73.8"
+   },
+   "failure_boundary": "无工具观测/动作mask，仍是单次自回归交错文本；不得把保护理解成完全归零或只罚终答。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78739#s2",
+   "object": "PV代理质量",
+   "information": "979个Q、感知文本、gold triplet；三人多数判文本可推gold",
+   "operation": "盲14B答案正确作为RP，对比人工充分性",
+   "claimed_effect": "accuracy86.31%, κ.707；FN90/9799.19%，FP44/9794.49%",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.3/Table3 p8",
+    "quote": "PV Oracle     Sufficient      550 (56.18%)       44 (4.49%)"
+   },
+   "failure_boundary": "人类也看gold判充分性，并非原图事实真值审计；FN比例为总体，条件FNR90/640≈14.06%。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78739#s3",
+   "object": "自由式答案核验",
+   "information": "Q/gold/pred，无图",
+   "operation": "同14B按答案类型/boxed内容/重建参考/语义比较的自然语言程序逐步执行",
+   "claimed_effect": "273挑战集acc91.9/F192.7/5次T.7一致92.3 vs普通judge79.1/82.4/78.6",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2.4/Table4",
+    "quote": "VP (Ours)               91.9          92.7             92.3"
+   },
+   "failure_boundary": "仍LLM verbal执行，非确定算法运行；92.3非100一致。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "strength": 3,
+   "how": "直接定位感知充分但答错的证据利用失败。"
+  },
+  {
+   "problem": "P42",
+   "strength": 3,
+   "how": "recognition文本有独立充分性和定向credit。"
+  },
+  {
+   "problem": "P41",
+   "strength": 3,
+   "how": "外部无图读者不改策略续写，但充分性仍有猜中/泄答和读者误差。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Instruction-only",
+   "kind": "method"
+  },
+  {
+   "name": "RO only",
+   "kind": "method"
+  },
+  {
+   "name": "RO+λRP additive",
+   "kind": "method"
+  },
+  {
+   "name": "plain LLM judge",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者承认proxy可能对充分文本产生假阴性；reader指出RP0错误失败进入加罚，不被Case1保护。",
+   "quote": "",
+   "locator": "§2.3/2.5"
+  },
+  {
+   "text": "Reader：RP可被先验或答案泄漏满足；无图文本充分不等于视觉事实真。",
+   "quote": "",
+   "locator": "§2.3"
+  },
+  {
+   "text": "Reader：800token限制被提及但罚值/与R结合实现未知。",
+   "quote": "",
+   "locator": "§2.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "additive V*83.1、full86.6；PV代理FN9.19%总样本。",
+  "load_bearing_assumption": "无图强reasoner正确足以判文本视觉证据充分，且失败A通常为负。",
+  "scope": "外显感知/推理的单次自回归VLM",
+  "success_criterion": "独立原图事实审计通过、shuffledRP不能复现提升、正确率/工具成本非劣。",
+  "why_open": "RP错误、泄答和混合reward正A可使路由与“归责”语义不一致。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "locator": "Badseeingvsbadthinking"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2加性vs路由"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "AP/AR"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "blindfoldPV"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=R_O+λR_P, λ=.3; Aτ,t=Rτ−(1/k)Σ_jRτj",
+    "locator": "§2.5 p5/AppA"
+   },
+   {
+    "latex": "A′=A+αprotect|A| if RO=0,RP=1,t∈recognition; A′=A−αpunish|A| if RO=0,RP=0,t∈recognition; A′=A otherwise; αprotect=αpunish=.2",
+    "locator": "§2.5/AppA"
+   }
+  ],
+  "signal_routing": "先所有轨迹以混合R生成mean-only A，成功轨迹全token不变；失败trajectory只有recognition token修正，think/answer维持A。PV汇总全部recognition，无逐blockcredit/时间反事实，无图、无模型参数更新描述。最终PPO clipping、token长度reduction未在已读段给出，null。",
+  "normalization": "mean-only；含自身组均值非LOO，不除std。lengthlimit800是额外约束但罚值未知。",
+  "invariance": "公共reward平移不变，正缩放连同|A|线性缩放；λ改变RO/RP相对排序。非PBRS；路由改变估计目标并无无偏保证。",
+  "baseline_or_potential": "混合回报组均值；没有value/potential。",
+  "degenerate_cases": "全混合回报相同则A0、路由也0。RO0 RP1时R=.3，若组mean<.3则A正，保护变1.2A而非减负；通常A负时保护.8A、惩罚1.2A。假阴性RP0使正确感知被额外惩罚，与文中noise保护解释矛盾。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同数据base的Table2区分PV、路由、SVV；PV人工充分性校验与SVV5次重复，尚无shuffledRP负对照。",
+  "negative_results": [
+   {
+    "text": "full MMMU54.8<ROonly55.3、MathVista73.8<74.4；并非相对所有训练对照非劣。",
+    "locator": "Table2"
+   },
+   {
+    "text": "主文把58.3称DUDE，Table1/2实际SlideVQA58.3、DUDE45.1，按表。",
+    "locator": "§3.1/Table1–2"
+   }
+  ],
+  "seeds": "SVV5runs T.7; RL seed count null",
+  "falsifier": "先独立标注caption真实且充分性，对RP0假阴性路由的梯度符号逐例检查；shuffledRP或只缩小caption负A若同效则归责机制证据不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "policy Qwen2.5VL7B; PV/OV Qwen2.5-Instruct14B",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "16H10080GB约16h；lr1e-6 cosine；globalbatch256/512QArollouts per sync（原文表述，具体accumulation未知）；λ.3 α两侧.2。额外14B推理非零成本。",
+  "pitfalls": [
+   {
+    "text": "recognition跨度与tag异常fallback须实现核对；文章没给多轮crop动作路由。",
+    "locator": "§2.5"
+   },
+   {
+    "text": "卡中“MoCA未给α”已过时，AppA给.2；卡说一次性感知不精确，论文可交错多recognition但无真实工具。",
+    "locator": "AppA/Fig2; card Method"
+   }
+  ],
+  "code": null,
+  "lesson": "当用盲读者路由失败credit时，先检查混合A的符号和代理假阴性，再区别文本充分性、视觉事实及工具必要性。"
+ }
+}

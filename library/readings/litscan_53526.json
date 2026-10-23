@@ -1,0 +1,137 @@
+{
+ "paper_key": "litscan:53526",
+ "title": "More Thinking, Less Seeing?",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_53526.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§3",
+   "§4.1–4.2 Eq1–2",
+   "§5.1 Eq3/Table1",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "用长度干预扫描 reasoning/perception 双任务，并按 reasoning accuracy 排序求 RH-AUC。",
+  "why_non_obvious": "单一平均正确率无法区分感知和推理随长度的非单调变化；AUC本身也受归一化定义影响。",
+  "trigger_condition": "当延长CoT可能损伤感知时，同时测原始感知/推理准确率与长度曲线。",
+  "contribution_type": "evaluation",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "当延长CoT可能损伤感知时，同时测原始感知/推理准确率与长度曲线。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "用长度干预扫描 reasoning/perception 双任务，并按 reasoning accuracy 排序求 RH-AUC。",
+  "abstract_why_non_obvious": "单一平均正确率无法区分感知和推理随长度的非单调变化；AUC本身也受归一化定义影响。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:53526#s1",
+   "object": "推理长度对视觉幻觉的评测",
+   "information": "同一图像输入；模型隐藏状态，长短轨迹来自测试benchmark",
+   "operation": "各层长短轨迹内均值再跨轨迹均值之差得到方向，α∈[-.15,.15]加到post-attention状态；扫描长度并对准确率曲线积分",
+   "claimed_effect": "RH-Bench 1000题；Table1 Ocean-R1-7B RH-AUC .63，R1-OneVision-7B .46。",
+   "conditions": [
+    "仅 Qwen2.5-VL 系列；500推理+500感知"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.1 Eq1–2; Table1",
+    "quote": "with a batter, catcher, and umpire, but                                                                Ocean-R1-7B"
+   },
+   "failure_boundary": "长度steering也可能改变语义；attention观察不证明因果；不同训练模型不是受控SFT/RL比较。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "直接检查长caption/CoT偏离图像的现象，适合加长度分层评测。",
+   "strength": 3
+  },
+  {
+   "problem": "P40",
+   "how": "同时分开量化感知与最终推理，防止正确率均值遮掩。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [],
+ "limitations": [
+  {
+   "text": "训练数据和范式结论只是观察，未受控重训。",
+   "quote": "influence of training data is based solely on technical reports and publicly available documentation of\nexisting models, without conducting controlled retraining experiments. Therefore, our conclusions\nare observational and may not fully capture causal effects.",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "7B R1-OneVision perception55.7/reasoning44.2/RH-AUC.46，Ocean-R1为62.3/51.8/.63。",
+  "load_bearing_assumption": "长度改变可独立于语义改变，且归一化AUC保留可比性。",
+  "scope": "Qwen2.5-VL推理模型的视觉感知漂移",
+  "success_criterion": "同题同模型多长度同时报告原始准确率、幻觉率和曲线；验证结论跨长度控制法。",
+  "why_open": "训练数据结论无受控重训；归一化范围未明确跨模型还是各自。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "d^l=\\bar S^l_{long}-\\bar S^l_{short};\\quad S^l_{steering}=S^l+\\alpha d^l",
+    "locator": "Eq2"
+   },
+   {
+    "latex": "RH\\!\\!-AUC=\\sum_{i=0}^{n-2}\\frac{R_{T(i+1)}-R_{T(i)}}2(H_{T(i+1)}+H_{T(i)})",
+    "locator": "Eq3"
+   }
+  ],
+  "signal_routing": "无训练reward/advantage；隐藏状态方向在decoder各层改变生成；GPT-4o评开放题，感知0–6分中<3为幻觉。H是感知表现而非越高越差的幻觉率。",
+  "normalization": "other",
+  "invariance": "R、H均min-max到[0,1]；原文没有说明用模型内还是共享极值。若各自归一化则正仿射变换不变，可能遮蔽绝对水平；这是条件推论。无PBRS。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "若R或H常数min-max分母为零，未给处理；同R点宽度零；排序R不是对token长度积分。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "三种长度控制：硬预算、Wait续写、latent steering；Fig7给非单调感知/推理曲线。",
+  "negative_results": [
+   {
+    "text": "Zerothink也下降，不能推论越短越好。",
+    "locator": "§4.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若等原始accuracy下只有模型内归一化改变排名，则RH-AUC不能独立表征绝对视觉可靠性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL系列推理模型",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": null,
+  "pitfalls": [
+   {
+    "text": "steering方向取自测试benchmark响应；部署独立性须另用校准集核验。",
+    "locator": "§4.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当比较推理长度时，同时保留未归一化感知和推理分数，避免仅用AUC掩盖绝对失败。"
+ }
+}

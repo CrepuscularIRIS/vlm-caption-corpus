@@ -1,0 +1,463 @@
+{
+ "paper_key": "2608.00743",
+ "title": "LUT: Latent Utility Training for Visual Reasoning",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.00743.pdf",
+  "version": "v1",
+  "pages": 9,
+  "version_observed": "p1 arXiv:2608.00743v1 [cs.CV] 1 Aug 2026; online latest not checked",
+  "sections_read": [
+   "pp1–2 Abstract, Introduction, Related Work; Figure1",
+   "pp2–4 §3.1–3.3 Overall Framework, teacher exploration, latent selection, student curriculum, LAPO, all unnumbered equations; Figure2",
+   "pp4–6 §4.1–4.3 setup/main results/SFT ablation; Tables1–4; Figure3",
+   "pp6–7 §4.4–4.5 RL ablation/attention interpretation; Table5; Figures4–5; §5 Conclusion",
+   "pp8–9 References, not independently followed; no appendix in local PDF"
+  ],
+  "extraction": "Canonical pdftotext default reading order, unedited; layout extraction used to read tables. Replaced mechanical extraction mode only to avoid interleaved column quotes."
+ },
+ "reviews_source": null,
+ "reviews_evidence": [],
+ "rs": {
+  "innovation_approach": "把训练目标从匹配外部bbox/sketch轨迹转为答案相关latent效用：带视觉瓶颈的教师自产latent，冻结原学生对norm匹配随机latent作teacher-forced评分，筛选并按低到高课程蒸馏，RL再按答案对latent注意力放大各latent更新。仅VQA标注用于训练不等于没有答案监督。",
+  "key_step": "SFT先把teacher的特殊信息路径转换为普通因果attention的student；RL保留序列优势符号，仅在latent位置乘1至2.5的相关性gate。",
+  "why_non_obvious": "教师被迫经latent传图像信息，不代表继续用教师参数就是最佳student；Table4教师初始化64.85低于base初始化68.45。轨迹utility排序亦非从高到低：同筛选集反向课程66.24低于低到高68.45。",
+  "trigger_condition": "When weakly answer-supervised latent trajectories differ in transferability and latent steps differ in answer association, score against a norm-matched random control, stage the retained trajectories, and positively reweight latent updates.",
+  "reviewer_praise": [
+   "low_evidence: manifest has no local reviews; author performance claims are not reviewer praise."
+  ],
+  "reviewer_concern": [
+   "low_evidence: no independent review artifact available; implementation and causal limitations below are reader observations."
+  ],
+  "acceptance_signal": null,
+  "contribution_type": "methodological",
+  "abstract_strategy": "生成任务条件的中间状态；用独立参照筛选可转移监督，再按局部相关性分配更新强度。",
+  "abstract_key_step": "把生成监督、判断监督可用性、最终优化分开，并分别使用相对评分、阶段顺序和正权重。",
+  "abstract_why_non_obvious": "高评分样本未必适合先学；与最终输出相关的中间状态也不是经干预证实的必要状态。",
+  "abstract_trigger_condition": "When intermediate supervision is induced rather than annotated and its usefulness varies across samples and positions, separate generation, selection, curriculum and bounded update weighting."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.00743#s1",
+   "object": "教师attention可达路径与final-layer latent多样性",
+   "information": "训练图像I、问题Q、答案Y；不用bbox/sketch/CoT中间标注；没有新工具像素。",
+   "operation": "屏蔽answer→image及question→image attention，让答案经latent读取视觉；答案CE加所有异步latent单位向量平方内积平均正则。",
+   "output": "VQA监督诱导的teacher latent轨迹及各层状态。",
+   "claimed_effect": "Table4无bottleneck 66.09、无decorrelation67.76，相对完整SFT68.45；作者归因于信息路径和多样性。",
+   "conditions": [
+    "教师训练与student推理attention不同",
+    "N>1且latent非零才可直接使用所写正则",
+    "λdec数值与具体特殊token路径未报告"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "quote": "We apply a visual bottleneck attention\nmask: answer tokens cannot directly attend to image tokens,\nand question tokens are also prevented from attending to\nimage tokens to avoid indirect visual leakage through their\nhidden states.",
+    "locator": "§3.2 p3 teacher exploration"
+   },
+   "failure_boundary": "不等于语义正确/必要的中间状态；没有验证全部架构侧信道或每个latent的独立信息。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.00743#s2",
+   "object": "teacher轨迹的离线保留/排序分数",
+   "information": "冻结原始student ϕ；同I,Q及teacher-forced GT答案前缀；最后层teacher latent和独立随机、逐步norm匹配latent。",
+   "operation": "分别注入teacher/random latent，计算答案token平均logp差Δfair；保留Δfair>−0.5。",
+   "output": "保留93.5%的候选轨迹及utility分数；不是二值正确性或自然rollout收益。",
+   "claimed_effect": "Table4过滤无课程68.01 vs不滤无课程67.79；严格0阈值只留76.1%且完整均分68.24<68.45。",
+   "conditions": [
+    "冻结judge与训练中student会不同",
+    "随机分布/重复次数未给；norm匹配只控制幅度",
+    "保留阈值为负，不能称所有保留轨迹优于random"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "quote": "We use the frozen original student model as a judge to\nestimate the utility of each teacher latent trajectory against\na random control.",
+    "locator": "§3.2 p3 Latent Trajectory Selection"
+   },
+   "failure_boundary": "φ评分不保证当前student收益；random是非语义替代而非有效工具反事实；GT teacher forcing不等于自回归正确率。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.00743#s3",
+   "object": "student初始化、all-layer latent alignment与数据课程",
+   "information": "同VQA答案、teacher所有层latent；来自冻结judge的Δfair，按数据子集保留类别比例。",
+   "operation": "从原base初始化student，普通causal attention下优化答案CE+各层/步cosine对齐；每子集按保留集Δ中位数二分，低utility先高utility后，组内shuffle。",
+   "output": "具备固定latent推理格式的student；不是沿用特殊mask教师权重。",
+   "claimed_effect": "Table4完整SFT68.45 vs逆序66.24、无alignment65.96、teacher初始化64.85。",
+   "conditions": [
+    "教师/学生latent层及步位置可对齐",
+    "λalign未给",
+    "课程的epoch、重复次数及相同update预算未给"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "quote": "initialized from the original base MLLM rather than from\nthe teacher. Since the teacher is trained under a specialized\nmasking regime, directly continuing from its parameters may\nintroduce bias relative to standard inference. Starting from\nthe base model allows the student to learn answer generation\nand latent alignment jointly under ordinary causal attention.",
+    "locator": "§3.2 p4 Student Curriculum"
+   },
+   "failure_boundary": "不能将utility排序解释为经独立测定的题目难度；预算/种子未报告，不是普遍课程最优定理。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.00743#s4",
+   "object": "连续latent策略梯度的逐步权重",
+   "information": "最终答案content token对latent的最后若干层、多head attention；原序列优势A；非GT bbox，非逐步因果价值。",
+   "operation": "Gaussian latent action ratio基础上，算r_i为answer→latent attention均值；相对同样本latent均值rbar，g_i=1+1.5 max(0,tanh((r_i−rbar)/0.5))，latent优势变g_i A。",
+   "output": "只增幅不置零的latent步优势；sequence结果信用符号在乘法层保留。",
+   "claimed_effect": "Table5 LAPO69.96 > VLPO69.35、GRPO68.87、reverse69.11；6K heldout RAR top11.250、all3.745、bottom0.813。",
+   "conditions": [
+    "固定训练N8",
+    "attention层集合、stopgradient与精确actor实现未给",
+    "accuracy/format均二值但混合权重、A公式、clip/KL未给"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "quote": "and the reweighted advantage Ãi is applied to latent policy\nupdates.",
+    "locator": "§3.3 p4 Attribution-Guided Per-Latent Credit Assignment"
+   },
+   "failure_boundary": "注意力相关性不是因果责任；g≥1只放大不抑制低关联步；若A0仍0；不是何时crop或如何减少次数的方法。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "method"
+  },
+  {
+   "name": "vanilla SFT",
+   "kind": "method"
+  },
+  {
+   "name": "vanilla SFT+GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "LVR official 438K",
+   "kind": "method"
+  },
+  {
+   "name": "LVR reproduced 60K",
+   "kind": "method"
+  },
+  {
+   "name": "SkiLa-V",
+   "kind": "method"
+  },
+  {
+   "name": "UniVLR",
+   "kind": "method"
+  },
+  {
+   "name": "Laser",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "Monet",
+   "kind": "method"
+  },
+  {
+   "name": "SkiLa",
+   "kind": "method"
+  },
+  {
+   "name": "SCOLAR-7B",
+   "kind": "method"
+  },
+  {
+   "name": "VLPO",
+   "kind": "method"
+  },
+  {
+   "name": "LAPO reverse",
+   "kind": "method"
+  },
+  {
+   "name": "VStar",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HRBench4K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HRBench8K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld-Lite",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar",
+   "kind": "benchmark"
+  },
+  {
+   "name": "BLINK",
+   "kind": "benchmark"
+  },
+  {
+   "name": "VisualPuzzles",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "多阶段训练复杂性为作者自述；没有量化GPU小时、teacher成本、评分成本或walltime。",
+   "kind": "author_claim",
+   "quote": "Although its multi-stage\npipeline introduces additional training complexity, inference\nremains lightweight.",
+   "locator": "§5 p7 Conclusion"
+  },
+  {
+   "text": "除LVR外主要引用公开baseline报告，输入像素预算/评测prompt/生成长度等未匹配，不能把所有差值归因于LUT。",
+   "kind": "author_claim",
+   "quote": "Except for LVR, evaluated using both its official checkpoint and our controlled reproduction, baseline results are taken from public reports.",
+   "locator": "§4.1 p5 Baselines"
+  },
+  {
+   "text": "正文称评测8/10/12/16并按benchmark取最好；§4.2再报告最终LUT全部在8步最佳，所以最终模型可固定8，但SFT消融与其他model是否统一选择协议未完全给出。",
+   "kind": "author_claim",
+   "quote": "we evaluate\ninference budgets in {8, 10, 12, 16} and report the best result\nper benchmark.",
+   "locator": "§4.1 p4 Training Setup"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table4无filter/curriculum SFT67.79 vs完整68.45，reverse66.24；Table5 uniform连续VLPO69.35 vs LAPO69.96。小幅平均差异为作者单表结果，无seed/CI可界定显著性。",
+  "load_bearing_assumption": "中间latent从答案监督生成或匹配外部结构就足够；同一结果优势对所有latent同等更新即可。论文改为先估计可转移效用，再按答案相关性分配更新。",
+  "scope": "Qwen2.5-VL-7B、固定latent预算的pre-answer视觉推理；60K VQA SFT候选、24K RL；不是多轮真实裁图。",
+  "success_criterion": "在相同stage data的SFT/GRPO与连续VLPO参照上改善四benchmark均分，并比较filter、课程顺序、teacher初始化和reverse attribution；同时报告生成token代理成本。没有本项目accuracy非劣或调用下降判据。",
+  "why_open": "VQA诱导轨迹可能不适合student；统一latent credit不区分关联强弱。本文仍未证明关联==因果效用、当前policy工具需求或同成本优化优势。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "quote": "This partition is performed within each\ndata subset, thereby preserving similar category proportions\nacross curriculum stages.",
+   "locator": "§3.2 p4 curriculum",
+   "interpretation": "[redacted: project-internal]"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "To directly test this core hypothesis, we introduce LAPO (reverse) as an intervention-style control experiment: it inverts\nthe attribution-based update weights,",
+   "locator": "§4.4 p6 LAPO reverse",
+   "interpretation": "执行reverse attribution和反向课程对照；reverse精确权重/总梯度预算未写，不能称完全隔离。"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "Utility-Aware Latent Distillation SFT equips the model with\nbasic latent reasoning ability, but its optimization is still\ndominated by teacher imitation and answer likelihood. We\ntherefore introduce LAPO to further refine latent steps.",
+   "locator": "§3.3 p4",
+   "interpretation": "先蒸馏latent格式和内容再RL；未直接检验本项目直答/恢复支持。"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "primary",
+   "quote": "We first split samples at the median\n∆fair into a relatively lower-utility group and a relatively\nhigher-utility group. This partition is performed within each\ndata subset, thereby preserving similar category proportions\nacross curriculum stages. The order of data is arranged as\nthe lower-utility group followed by the higher-utility group,\nwhile samples within each group are randomly shuffled.",
+   "locator": "§3.2 p4 curriculum",
+   "interpretation": "按trajectory utility组织不同学习阶段，按latent attribution差异化更新；反向对照明确改变对应关系。"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "role": "supporting",
+   "quote": "This stage induces task-relevant latent trajectories from ordinary VQA supervision and provides candidate supervision\nfor student training.",
+   "locator": "§3.2 p3",
+   "interpretation": "从有答案标注的VQA诱导缺失中间latent监督；并不等于label-free或GT-free，不添加resolves_problem。"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\hat z_i=z_i/\\|z_i\\|_2;\\quad L_{dec}=\\frac{1}{N(N-1)}\\sum_{i\\ne j}(\\hat z_i^T\\hat z_j)^2",
+    "locator": "§3.2 p3 unnumbered teacher equation",
+    "note": "final-layer states；所有有序i≠j对平均；零norm/N1未定义。"
+   },
+   {
+    "latex": "L_{teacher}=L^{ans}_{CE}+\\lambda_{dec}L_{dec}",
+    "locator": "§3.2 p3 unnumbered",
+    "note": "λdec数值未给。"
+   },
+   {
+    "latex": "S(Z)=|Y|^{-1}\\sum_t\\log p_\\phi(y_t\\mid I,Q,Z,y_{<t});\\quad\\Delta_{fair}=S(Z^T)-S(Z^R)",
+    "locator": "§3.2 p3 unnumbered",
+    "note": "ϕ冻结原始student，GT teacher forcing；ZR逐步匹配ZT的norm。"
+   },
+   {
+    "latex": "\\mathrm{retain}=1[\\Delta_{fair}>-0.5]",
+    "locator": "§4.1 p4 Training Setup",
+    "note": "删除6.5%；0阈值仅留76.1%。不是保留positive gain only。"
+   },
+   {
+    "latex": "L_{align}=\\frac1{LN}\\sum_{\\ell=1}^L\\sum_{i=1}^N[1-\\cos(h^S_{\\ell,i},h^T_{\\ell,i})];\\quad L_{student}=L^{ans}_{CE}+\\lambda_{align}L_{align}",
+    "locator": "§3.2 p4 unnumbered",
+    "note": "all-layer alignment；λalign数值未给。"
+   },
+   {
+    "latex": "\\log\\pi_\\theta(z_t\\mid s_t)\\propto-\\frac{\\|z_t-\\mu_\\theta(s_t)\\|_2^2}{2\\sigma^2};\\quad r_t^{lat}=\\exp(\\log\\pi_\\theta-\\log\\pi_{\\theta old})",
+    "locator": "§3.3 p4 Preliminary",
+    "note": "σ数值/采样实现/归一化常数与维度reduction未给；固定同σ时相同Gaussian常数可消去为读者条件推论。"
+   },
+   {
+    "latex": "r_i=\\frac1{|\\mathcal L|}\\sum_{\\ell\\in\\mathcal L}\\frac1{H|\\mathcal A|}\\sum_{h=1}^H\\sum_{t\\in\\mathcal A}\\mathrm{Attn}_{\\ell,h}(t,i)",
+    "locator": "§3.3 p4 attribution",
+    "note": "答案content token集合A与标量优势A同字母不同对象；r_i attention不是上式ratio。"
+   },
+   {
+    "latex": "\\bar r=N^{-1}\\sum_i r_i;\\quad g_i=1+\\alpha\\max(0,\\tanh((r_i-\\bar r)/\\tau));\\quad\\tilde A_i=g_i A",
+    "locator": "§3.3 p4 gate",
+    "note": "α1.5 τ.5；1≤g≤2.5为宽界，有限输入严格小于上界；不除mean gate。"
+   },
+   {
+    "latex": "R_{acc}=1[\\mathrm{correct}];\\quad R_{fmt}=1[\\mathrm{valid\\ delimiters\\ and\\ prescribed}\\ N]",
+    "locator": "§3.3 p4 Reward Design",
+    "note": "完整R混合系数、最终objective和group优势公式均未报告，不能补写标准GRPO当已见。"
+   }
+  ],
+  "signal_routing": "教师答案CE和final-layer decorrelation可经latent路径更新共享参数；student答案CE+all-layer cosine，普通causal attention允许直接读图。offline Δfair只筛选排序，不是RL reward。LAPO明示latent优势g_i A，文本token目标/门控/环境mask细节没有完整公式。其attention在完整答案生成后形成，不是首决策可用的need标签；是否old-policy或current-policy重算、detach均未知。若g不detach则会额外出现梯度项，不能假定纯固定credit权重实现。",
+  "normalization": "teacher regularizer按N(N−1)，alignment按LN，S按答案token数，attribution按最后层数×head×answer-content长度；gate按同样本latent mean中心化，经tanh但不做std、不归一为mean1。最终序列A的组均值/std及epsilon未展示，GRPO/VLPO名称不足以确定实际实现。",
+  "invariance": "g为正时只在标量相乘层保持A符号、不会删掉低attention latent的结果信用；不保证共享参数更新方向或最优策略不变。过滤与课程改变训练分布，norm匹配只控制random幅度而非语义或可达流形。无PBRS理论。",
+  "baseline_or_potential": "Δfair的参照是冻结原学生对随机norm匹配latent的GT答案logp；不是当前策略tool counterfactual。gate参照是样本内平均attention，非value critic/return baseline；A的baseline不明，无势函数。",
+  "degenerate_cases": "若所有r_i相等则g=1；N1时gate=1但teacher Ldec分母0。latent为零时unit norm需未给guard。A0→所有gA0；全对全错只有在最终奖励相同且采用中心化优势的条件下才可推出A0，不能从未给A公式断言。答错A<0时高attribution更强负credit不证明它是错误原因。固定N不包含call/skip决策，p≈0/1的自然裁图支持问题未解决。固定Gaussian若采样等于当前mean，其均值logdensity梯度可能0，真实采样/噪声未知。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4同阈值同保留比例的低→高/随机/高→低课程；Table5统一VLPO与LAPO及reverse；6K heldout posthoc RAR作为关联旁证。后两者不能单独证明逐latent因果必要性。",
+  "controls": [
+   "LVR官方438K vs作者同60K/匹配settings重训明确分开，不能混为同数据基线。",
+   "Vanilla SFT/SFT+GRPO使用相同stage data；除LVR多数baseline来自公开报告。",
+   "Teacher bottleneck、decorrelation、student alignment、student初始化逐项消融；严格0过滤同时改变数据量。",
+   "Norm匹配random控制注入尺度；未给多次随机重复、matched-semantic control或对student最终效用的独立校准。",
+   "Reverse门控有做，但未给公式/均值/范围匹配；缺constant同均值gate、随机shuffle gate、latent removal/替换对照，不能排除纯梯度增幅的贡献。"
+  ],
+  "negative_results": [
+   {
+    "text": "教师初始化64.85是Table4最低；机制解释为special mask bias是作者解释，未隔离全部差异。",
+    "kind": "author_claim",
+    "quote": "Initializing the student from the teacher checkpoint\ngives the lowest score, showing that the teacher is better used\nas a trajectory explorer than as direct student initialization.",
+    "locator": "§4.3 p6"
+   },
+   {
+    "text": "reverse LAPO69.11低于LAPO69.96和VLPO69.35；仍高于SFT68.45及GRPO68.87，不能说reverse完全无效。",
+    "kind": "author_claim",
+    "quote": "Its performance drops below both LAPO\nand VLPO.",
+    "locator": "§4.4 p7"
+   },
+   {
+    "text": "0阈值68.24<−.5阈值68.45，但VStar81.15>80.63、HR4K71.88>71.75；strict不是所有benchmark都坏。",
+    "kind": "author_claim",
+    "quote": "A stricter threshold\nperforms slightly worse than the full setting, suggesting that\noverly aggressive filtering may reduce useful data diversity.",
+    "locator": "§4.3 p6"
+   },
+   {
+    "text": "Table5 GRPO在HR8K66.75低于SFT67.63；Table1 LAPO后MME reasoning47.33低于SFT48.27，HR8K FCP56.25低于58.25；平均增益不能泛化每子集。",
+    "quote": "Method\n\nVStar HR-4K HR-8K MME-RW-Lite Avg\n\nLUT-7B-SFT\n80.63\n+ GRPO\n82.20\n+ VLPO\n83.77\n+ LAPO\n84.29\n+ LAPO (reverse) 83.25\n\n71.75\n71.88\n71.88\n72.62\n72.00\n\n67.63\n66.75\n67.75\n68.12\n67.50\n\n53.78\n54.66\n53.99\n54.82\n53.67\n\n68.45\n68.87\n69.35\n69.96\n69.11",
+    "locator": "Table5 p7; MME reasoning/HR8K FCP values additionally visually checked in Table1 p5",
+    "kind": "reported_experiment"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议、未执行：统一数据/训练步/mean gate与梯度norm后比较真实attribution、shuffle、constant和reverse，在独立latent替换结果上验证关联排序；若constant或shuffle等效而去除高关联步不比低关联步伤害答案，则不支持特异性的因果credit解释。当前表格没有seed/CI，不能以不显著当等效。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B; base-initialized student and separately trained bottleneck teacher",
+   "framework": null,
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "latent_steps_train": 8,
+   "latent_steps_eval": [
+    8,
+    10,
+    12,
+    16
+   ],
+   "alpha": 1.5,
+   "tau": 0.5,
+   "utility_threshold": -0.5,
+   "sft_candidate_examples": 60000,
+   "rl_examples": 24000,
+   "rl_sources": {
+    "ZwZ-RL-VQA original images": 15000,
+    "ViRL": 9000
+   },
+   "image_pixel_budget": null,
+   "sigma": null,
+   "lambda_dec": null,
+   "lambda_align": null
+  },
+  "cost": "Table2作者报告平均generated tokens：LUT15.14/18.33/18.23/14.00，Monet85.27/85.20/76.55/134.08；具体latent/special token计量实现未给，不能当walltime或FLOPs。无hardware/GPUh、teacher训练、random/teacher打分、SFT/RL更新和token总量。60K×93.5%=56.1K为四舍五入比例的读者估算非确切保留数。",
+  "pitfalls": [
+   {
+    "text": "直接从特殊mask teacher初始化student性能最低；源码/额外训练因果未核。",
+    "kind": "author_claim",
+    "quote": "Initializing the student from the teacher checkpoint\ngives the lowest score, showing that the teacher is better used\nas a trajectory explorer than as direct student initialization.",
+    "locator": "§4.3 p6"
+   },
+   {
+    "text": "高utility先学反而低2.21pt均分；utility不是无条件课程优先级。",
+    "kind": "author_claim",
+    "quote": "The full low-to-high curriculum achieves the best result,\nwhile reversing the curriculum causes a clear drop.",
+    "locator": "§4.3 p6"
+   }
+  ],
+  "code": null,
+  "lesson": "当用frozen reader给中间表示排utility时，应同时记录reader版本、对照分布、teacher/student输入预算与排序稳定性；保留负Δ阈值样本不等于全部正收益。把latent credit乘gate时须记录detach、均值增幅及完整A公式，否则无法区分局部分配与全局学习率变化（§3.2–3.3 pp3–4；Tables4–5）。"
+ },
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "latent步骤可用正gate差异化结果信用，提供结构类比；无真实crop因果必要性，仍需另测。",
+   "strength": 2
+  },
+  {
+   "problem": "P15",
+   "how": "g≥1不删除结果信用，避免在公式层给低关联latent零信用；不能证明裁图冗余减少或准确率非劣。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "Δfair恰依赖冻结原student，说明其用于离线监督挑选，不可直接作当前策略需求；未解决错配。",
+   "strength": 1
+  },
+  {
+   "problem": "P36",
+   "how": "teacher-forced答案logp筛选不检caption事实；latent无显式caption，最多提供监督效用筛选思路。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "teacher特殊mask/student常规mask需转换；不是已核pixel预算与可读性，视觉分辨率完全未报。",
+   "strength": 1
+  },
+  {
+   "problem": "P67",
+   "how": "norm匹配random是一个受控参照，但抽样方差/语义分布/GT条件差异未解除；提供测量提醒。",
+   "strength": 1
+  }
+ ],
+ "source_discrepancies": [
+  "正文完整RL损失/advantage、reward混合、Gaussian采样、σ、clip、KL、gradient detach、训练超参缺失；不以VLPO引用补成已读实现。",
+  "Δfair称information gain但实为特定冻结reader的GT答案logp对照差，不是形式化互信息/已证明因果效用。",
+  "保留Δ>−.5允许random得分更高；按Table4两阈值比例相差17.4个百分点，为原始数据中约−.5<Δ≤0区间，不能叫全部positive。",
+  "§4.1按benchmark取最好与§4.2最终统一8步并列：最终LUT最佳8有Figure3支持，其他SFT变体统一预算和选择过程不全。",
+  "Table2 LUT平均69.96仍低于SCOLAR71.69；MME54.82低于Monet55.50，Table1HR4/8低于UniVLR，Table3BLINK低于Laser；competitive不是全部胜出。",
+  "RAR6K是posthoc attention相关性，red bbox只分析非训练；Figure4没有题目/独立操作结果，不能作必要性或正确性金标。"
+ ]
+}

@@ -1,0 +1,173 @@
+{
+ "paper_key": "litscan:24433",
+ "title": "LocReward",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_24433.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3 pp3–5",
+   "§4 Tables1–7/消融 pp6–9",
+   "§5限制 p9",
+   "Appendix A设置 pp14–16"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先用GT框扰动的IoU排序训练ordinal embedding，再以到少量目标样例原型的距离减少作为局部移动奖励，测试时继续更新定位controller。",
+  "key_step": "为奖励专门训练保持IoU次序的表示，且奖励投影头与策略状态表示分离。",
+  "why_non_obvious": "分类/检测embedding接近不保证框更准；监督奖励可在缺目标框测试域用样例原型替代。",
+  "trigger_condition": "When test boxes are unknown but target exemplars exist, learn ordinal reward geometry and adapt the localization controller.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "Learn an ordered surrogate on labeled perturbations, then transfer it using target prototypes.",
+  "abstract_trigger_condition": "When direct feedback disappears at deployment, transfer its ordering through a learned representation.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null；PDF ICLR2022但未把venue当审稿证据",
+  "abstract_key_step": "Calibrate local ranking before using similarity changes as reward.",
+  "abstract_why_non_obvious": "Representation usefulness for prediction does not imply reward-order correctness."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:24433#s1",
+   "object": "可迁移框移动奖励",
+   "information": "训练GT IoU排序；测试5个目标裁图样例与未标注图，冻结encoder/projection。",
+   "operation": "10个IoU区间抽pair做triplet ordinal训练；R=d(prev,c)−d(next,c)，REINFORCE训练/适配RNN controller的14离散框动作。",
+   "claimed_effect": "COCO Table4 before22.3→adapt39.3 CorLoc；CUB82.1→89.3；FRCNN embedding加ordinal cat13.17→72.46。",
+   "conditions": [
+    "样例原型代表目标",
+    "距离排序能泛化"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table7 p9",
+    "quote": "66.67     72.46    61.59    60.29    71.25"
+   },
+   "failure_boundary": "定位代理奖励不是终答或裁图必要性；需要测试域训练，不是仅推理零样本。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "给无GT时局部进展代理的可检验构造。",
+   "strength": 2
+  },
+  {
+   "problem": "P19",
+   "how": "差分势与折扣/终止条件边界直接相关。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "ordinal域迁移失效会奖励错误框。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "IoU reward；raw embedding reward；selective-search ranking；FasterRCNN finetune；TFA/MetaRCNN",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "ordinal次序在目标域失效则适配不工作。",
+   "locator": "§5 p9",
+   "quote": "If the ordinal preference does not hold in the test domain,"
+  }
+ ],
+ "question": {
+  "observed_failure": "raw FasterRCNN reward cat CorLoc13.17 vs ordinal72.46；MNIST tinyset finetune88.9→83.7而adapt97.4。",
+  "load_bearing_assumption": "预训练embedding距离可自然替代局部IoU改善奖励。",
+  "scope": "单目标框顺序搜索，类迁移/背景迁移，少量样例。",
+  "success_criterion": "无目标域全框标注仍改善CorLoc，校验OrdAcc排序。",
+  "why_open": "GT框奖励无法在未知框测试域继续更新策略。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§3.2比较raw embedding与ordinal/IoU"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.4 2×2 ranking/RL和ordinal消融"
+  },
+  {
+   "vocab": "rs",
+   "id": "assumption_audit_and_pivot",
+   "locator": "§3.2/§4.4：检验原始表示距离可作reward的假设，ordinal校准"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_{triplet}=\\sum\\max(m+d(a,p)-d(a,n),0),\\quad IoU(p,g)>IoU(n,g)",
+    "locator": "Eq3 p4"
+   },
+   {
+    "latex": "c=|E|^{-1}\\sum_{g_i\\in E}f(g_i);\\quad R_t=\\|f(b_{t-1})-c\\|-\\|f(b_t)-c\\|",
+    "locator": "Eq4 p5"
+   },
+   {
+    "latex": "L_{policy}=-(R-\\bar R)\\log\\pi;\\ L_{agent}=L_{policy}+\\lambda_2L_{entropy},\\ L_{entropy}=-\\pi\\log\\pi",
+    "locator": "App Eq6 p14，按原文保留符号"
+   }
+  ],
+  "signal_routing": "每个框变换动作获局部距离差，RNN按折扣累计回报更新；没有语言token/mask。预训练ROIencoder与projection在policy训练和适配冻结，只有controller更新。",
+  "normalization": "other：prototype样例均值；App写R−Rbar但baseline来源/聚合未定义、未写std；正文Algorithm1写折扣returns，App Eq6称R为Eq4 reward，留定义差异。",
+  "invariance": "不是已证明严格PBRS。令Phi=-d，Eq4为Phi(s_next)−Phi(s)仅对应gamma=1势差；正文用折扣累计gamma但未给值/终止势处理，也未把差分作为保留原任务reward的附加项。故不能据距离差宣称最优策略不变；无少调用目标。",
+  "baseline_or_potential": "冻结ordinal网络和queryprototype给代理势，Rbar定义未明；目标是定位相似度而非当前VLM终答价值。",
+  "degenerate_cases": "stay奖励0；距离平台/错排序无有效定位梯度；无动作支撑保底，仅entropy探索；多目标混原型可能歧义。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "ordinal×RL/ranking分离；同FasterRCNN embedding有/无ordinal；prototype替换和目标域适配对照。",
+  "negative_results": [
+   {
+    "text": "源域FasterRCNN多数优于本法；cow→horse本法48.41→46.80下降，FRCNN适配68.04。",
+    "locator": "Tables5–6 p8"
+   },
+   {
+    "text": "测试适配用目标域未标注图；不是与只5shot finetune同信息预算。MNIST App明确训练/测试不重叠，CUB使用该类全部图适配并评价，设置不同。",
+    "locator": "§4.1/AppA.2 p15"
+   }
+  ],
+  "seeds": "正文10 independent runs mean/std；Table6的±跨任务含义不能当训练seed不确定性。",
+  "falsifier": "proposed：先在当前crop状态以人工框/最终正确性独立核ordinal单调性；若相似度改善不提高策略终答或必要性，拒绝用作奖励。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "VGG16 ROIAlign+MLP ordinal head+RNN controller",
+   "framework": "PyTorch",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "exemplars": 5,
+   "triplet_margin": 60
+  },
+  "cost": "作者称模型各阶段训练<1h/单A100；无VLM等预算结论。",
+  "pitfalls": [
+   {
+    "text": "App Eq6正加H且最小化会降低熵，正文Algorithm1/叙述却要鼓励探索；符号冲突需实现核验，未读外部代码。",
+    "locator": "p5/App p14"
+   }
+  ],
+  "code": "https://github.com/litingfeng/Localization-by-OrdEmbed",
+  "lesson": "当相似度被用于过程奖励时，先验证局部排序与任务进展一致，并将奖励投影与策略状态表示分开；不能凭距离差形式认定PBRS。"
+ }
+}

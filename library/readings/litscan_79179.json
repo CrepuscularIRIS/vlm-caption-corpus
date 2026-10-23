@@ -1,0 +1,174 @@
+{
+ "paper_key": "litscan:79179",
+ "title": "Text Before Vision: Staged Knowledge Injection Matters for Agentic RLVR in Ultra-High-Resolution Remote Sensing Understanding",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79179.txt",
+  "sections_read": [
+   "Abstract",
+   "3",
+   "4 pipeline overview",
+   "5.1 Table 3",
+   "Tables 1 and 4",
+   "Conclusion",
+   "Appendix A"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "固定基础模型与通用RL数据，改变领域知识模态及进入SFT/RL的阶段；先领域文本CoT与困难VQA预热，再zoom工具RL。",
+  "why_non_obvious": "图像任务的增益主要依赖先有文本领域知识，不能把高pass@32直接归因为RL探索。",
+  "trigger_condition": "When difficult visual RL has poor trajectory support, inject domain concepts and pre-warm the same hard examples before tool RL.",
+  "contribution_type": "diagnostic plus training recipe",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "When domain knowledge and training stage are confounded, intervene on both while fixing the base pipeline.",
+  "abstract_key_step": "交叉比较领域数据进入阶段及文本CoT移除。",
+  "abstract_why_non_obvious": "区分可到达答案覆盖与单次成功率。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79179#s1",
+   "object": "UHR遥感工具使用轨迹",
+   "information": "148777领域文本QA；SuperRS-VQA困难图文；最终正确性与工具轨迹",
+   "operation": "领域文本与图文冷启动后用zoom GRPO训练",
+   "claimed_effect": "Table4 pass@1 50.01→60.40、pass@32 82.58→96.25；单独图文预热52.39/91.85。",
+   "conditions": [
+    "Qwen2.5-VL-7B",
+    "XLRS-Bench",
+    "固定推理预算32"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 4",
+    "quote": "+ pre-warming + ES Text QA (w/ CoT)       7B         60.40      96.25"
+   },
+   "failure_boundary": "pass@32是有限采样指标；不能证明无限预算推理边界或crop必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "直接展示先建立领域与困难视觉轨迹支持再RL，避免只把难例投进RL。",
+   "strength": 3
+  },
+  {
+   "problem": "P26",
+   "how": "zoom证据搜索依赖先验知识，但未校准何时必须看。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen2.5-VL-7B",
+   "kind": "base"
+  },
+  {
+   "name": "DeepEyes-style tool GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "SuperRS-only cold start",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅XLRS-Bench与一个7B主干支持阶段结论，跨任务迁移未证明。",
+   "locator": "Tables 1–4; reader boundary"
+  },
+  {
+   "text": "有限预算pass@32不等于理论能力上界。",
+   "locator": "5.1; reader interpretation"
+  }
+ ],
+ "question": {
+  "observed_failure": "工具RL基线50.01/82.58，去除领域文本CoT使最终pass@1从60.40降54.49而pass@32仅降0.50。",
+  "load_bearing_assumption": "有效RL搜索需要可达的领域证据与推理轨迹。",
+  "scope": "Qwen2.5-VL-7B遥感zoom工具RL",
+  "success_criterion": "同数据预算下提升pass@1并保留pass@32",
+  "why_open": "只加强RL奖励无法补足缺失领域知识。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "3.2; Table 3"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "3.2; Table 4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "G(γ)=S_ok(γ)+S_fmt(γ)+1[S_ok(γ)=1]S_tool(γ)",
+    "locator": "Appendix A Eq.5"
+   }
+  ],
+  "signal_routing": "最终正确性、格式与仅正确时的工具bonus组合；tool observations仅作条件并mask出LM loss。未给出工具bonus数值、advantage分配细节。",
+  "normalization": null,
+  "invariance": "非PBRS；conditional tool bonus可能偏好正确轨迹中的工具使用，不保证必要裁图。",
+  "baseline_or_potential": "A.1给通用PPO value-network advantage；A.2明确agentic GRPO，未给group baseline/std实现。",
+  "degenerate_cases": "若所有轨迹均错且格式相同，正确性与正确条件tool bonus无区别；SFT旨在改善支持但未证明p≈0恢复。全对组工具bonus可仍不同，是否形成梯度取决于未给归一化。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "阶段控制与Table3移除ES CoT/替换math CoT；去CoT主要损害pass@1。",
+  "negative_results": [
+   {
+    "text": "ES无CoT54.49/95.75，相比60.40/96.25掉5.91/0.50。",
+    "locator": "Table 3"
+   },
+   {
+    "text": "Math CoT替代ES CoT仅46.98/90.87。",
+    "locator": "Table 3"
+   },
+   {
+    "text": "一般GRPO并不稳定优于SFT，域知识仅RL注入可退步。",
+    "locator": "3.1–3.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：等token/等领域事实的文本答案与CoT对照若消除单次成功差异，则程序性脚手架解释减弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B",
+   "framework": "LLaMA-Factory SFT; DeepEyes-style RL",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "主比较1 epoch SFT +80 RL steps；5.2 scaling实验48步，不能混同。",
+  "pitfalls": [
+   {
+    "text": "知识图谱过滤来自同教材，不能当独立真值验证。",
+    "locator": "4"
+   },
+   {
+    "text": "正确条件tool bonus与减少不必要crop目标可能冲突。",
+    "locator": "A.2 Eq.5; reader"
+   }
+  ],
+  "code": null,
+  "lesson": "当难图样本只在RL阶段出现且可达成功稀少时，先在SFT预热再比较同预算RL，分别测pass@1与有限pass@K。"
+ }
+}

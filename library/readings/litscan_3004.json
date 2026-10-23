@@ -1,0 +1,204 @@
+{
+ "paper_key": "litscan:3004",
+ "title": "Mitigating Visual Forgetting via Take-along Visual Conditioning for Multi-modal Long CoT Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3004.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "§2–3",
+   "§4 Tables1–3",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先用前缀续写移图诊断依赖，再在SFT和推理中重新插入压缩视觉输入。",
+  "key_step": "DVR把桥接提示和视觉embedding插在reflection处；PVC推理重置KV并将pooling图像token放到后续推理位置。",
+  "why_non_obvious": "长链中可持续依赖先前错误文本；更多textCoT不自动重检视觉。",
+  "trigger_condition": "When long reasoning loses access to visual details, teach and replay explicit visual reactivation at intermediate stages.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把被遗忘的输入重新放到后续计算可见的位置。",
+  "abstract_trigger_condition": "When long reasoning loses access to visual details, teach and replay explicit visual reactivation at intermediate stages.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "DVR把桥接提示和视觉embedding插在reflection处；PVC推理重置KV并将pooling图像token放到后续推理位置。",
+  "abstract_why_non_obvious": "长链中可持续依赖先前错误文本；更多textCoT不自动重检视觉。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3004#s1",
+   "object": "long multimodal CoT",
+   "information": "同原图、生成前缀、桥接prompt；teacher答案筛选依赖gold及外部judge",
+   "operation": "DVR重插图像生成SFT轨迹，PVC中途缓存重建并4×4平均pool视觉token",
+   "claimed_effect": "7B三集均值43.2 vs vanillaSFT38.3、去PVC41.4、去DVR41.0；72B五集均值43.4vsQVQ40.0。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2.2; Tables1–3",
+    "quote": "initial implementation adopts midpoint reactivation"
+   },
+   "failure_boundary": "固定/人工触发，非学得crop/停止策略；外部数据过滤与revisit有多项变化。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:3004#s2",
+   "object": "visual-dependence diagnostic",
+   "information": "同QVQ产生的前k/8文本，移除图像并resetKV；剔除textonly已答对30.9%题",
+   "operation": "8个cutoff重新续写并与正常链比较",
+   "claimed_effect": "MathVista-Hard中点40.9 vs正常43.1，差2.2pp。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2.1 p3",
+    "quote": "performance is 40.9 at k = 4 and 43.1 for the"
+   },
+   "failure_boundary": "前缀已携带视觉事实；移图低敏感性不等于视觉忘记或图像无用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P26",
+   "strength": 2,
+   "how": "提供中途重看与文字更新的SFT行为模板，但非必要性触发。"
+  },
+  {
+   "problem": "P39",
+   "strength": 2,
+   "how": "压缩图像再次可见，需要学生像素/token可读性检查。"
+  },
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "移图续写存在前缀信息携带混杂。"
+  },
+  {
+   "problem": "P55",
+   "strength": 2,
+   "how": "缓存重建及图像token位置属于关键协议实现。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2-VL",
+   "kind": "method"
+  },
+  {
+   "name": "QVQ-72B-preview",
+   "kind": "method"
+  },
+  {
+   "name": "vanilla direct SFT",
+   "kind": "method"
+  },
+  {
+   "name": "TVC without DVR",
+   "kind": "method"
+  },
+  {
+   "name": "TVC without PVC",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "更多视觉重看不足以解决内在推理能力不足，实时反馈场景可能不适用。",
+   "quote": "simply increasing visual",
+   "locator": "Limitations p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "中点移图只掉2.2pp，早期移图约20pp；模型长链后视觉依赖减弱。",
+  "load_bearing_assumption": "初始图像token足以支撑整个长推理链。",
+  "scope": "Qwen2-VL长数学视觉CoT",
+  "success_criterion": "同SFT数据下DVR/PVC消融有增益并检查token成本。",
+  "why_open": "单纯文本反思可重用错误视觉描述。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§2.1移图诊断"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "DVR SFT→PVC"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "§2.2重新设计visualconditioning位置"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "M_i=(V,[T_{prev};Prompt;T_{new}])\\text{ at }r_i",
+    "locator": "Eq3"
+   },
+   {
+    "latex": "y^*=\\arg\\min_{y\\in Y_{valid}} Length(y)",
+    "locator": "Eq5–6 bestof8筛选"
+   }
+  ],
+  "signal_routing": "SFT更新LLM和crossmodalconnector，visionencoder冻结。视觉token是条件输入；重看后的caption/推理由teacher生成，正文未给lossmask细节。PVC无梯度；不是reward/advantage路由。",
+  "normalization": "监督语言建模；正文未明示loss reduction；无组return归一化。",
+  "invariance": "非PBRS；更换图像位置、池化及缓存会改变条件分布，无策略不变性。",
+  "baseline_or_potential": "无valuebaseline；Qwen2.5-72Bjudge判答案与gold匹配。",
+  "degenerate_cases": "无需额外图像时周期重插仍付成本；pooling可能抹小字；已错误prefix可固化；单短链无中途空间，未报告。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2同数据vanillaSFT与去DVR/PVC，Table3 pooling2×2/4×4；诊断textonly已答对题剔除。",
+  "negative_results": [
+   {
+    "text": "Dynamath72B30.0低于QVQ30.7；pooling均值差仅0.1，不能称稳定提升。",
+    "locator": "Tables1,3"
+   }
+  ],
+  "seeds": "未报告多训练seed/区间。",
+  "falsifier": "使用同token预算文字提醒或随机重插位置即可复现全部收益，否定视觉重注入的特有解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "QVQ-72B teacher; Qwen2-VL7B/72B student",
+   "framework": "LLaMA-Factory",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "batch_size": 256,
+   "epochs": 5,
+   "learning_rate": 2e-05
+  },
+  "cost": "7B64×H20×10h；72B约4天，~200K筛选数据；未执行。",
+  "pitfalls": [
+   {
+    "text": "答案正确过滤并选最短valid可能删除纠偏多样性；不把它移植成全轨迹质量保证。",
+    "locator": "§3.2"
+   },
+   {
+    "text": "重置KV需重建全部文本/视觉状态，确切mRoPE规则未报告。",
+    "locator": "§2.2"
+   }
+  ],
+  "code": "https://sun-hailong.github.io/projects/TVC",
+  "lesson": "当重看要求依赖外部协议时，分别报告SFT行为收益与推理时强制重看收益，不能合称自主工具决策。"
+ }
+}

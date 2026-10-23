@@ -1,0 +1,141 @@
+{
+ "paper_key": "litscan:67495",
+ "title": "VisFaith",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_67495.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 Algorithms1/Tables1–2",
+   "§4 Algorithm2",
+   "§5–7 Tables3–4",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "分开视觉事实忠实度和答案正确率，只在不忠实感知句触发局部重生成。",
+  "key_step": "强辅助VLM先ground图像，再分类感知/推理及感知真伪；找到首个坏句重试后续。",
+  "why_non_obvious": "事实修好不必然答案改善，干预位置和检测器强度决定副作用。",
+  "trigger_condition": "When CoT contains visual hallucinations, detect the first unfaithful perception step and regenerate locally.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将观察错误诊断与后续推理干预解耦。",
+  "abstract_trigger_condition": "When end accuracy hides intermediate failure, measure the failed sub-process directly.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "按步骤类型选择干预。",
+  "abstract_why_non_obvious": "全局反思会改动原本正确的部分。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:67495#s1",
+   "object": "推理期局部反思",
+   "information": "辅助judge看图与推理；不需GT答案或GT解释；评测用另一Claude4judge",
+   "operation": "检测首个不忠实感知句，带图/前缀/纠错prompt最多重生3次，继续后缀",
+   "claimed_effect": "MMVP UPR8.4→1.7，accuracy35.0→39.7；换Qwen72B检测则32.0",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Algorithm2 footnote/Table4",
+    "quote": "90% of successful corrections occur within three retries"
+   },
+   "failure_boundary": "纠错标签来自辅助模型；更忠实不保证答案提升。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "caption事实核查与答案正确拆开评测。"
+  },
+  {
+   "problem": "P27",
+   "strength": 2,
+   "how": "局部纠错后续写可迁移但成本和误干预须测试。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "vanilla / weaker detector / self-prompt / SAPLMA / HaloScope / kNN",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "额外推理延迟，依赖强外部VLM，3次重试仍可能失败。",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table4无干预UPR8.4，accuracy35；Qwen检测UPR2.1但accuracy32。",
+  "load_bearing_assumption": "答案正确足以衡量视觉推理可靠性；任何纠正感知都能改善答案。",
+  "scope": "7B reasoning VLM的感知MCQ",
+  "success_criterion": "减少UPR且不损害最终准确率，分别报告",
+  "why_open": "感知和推理错误混合，弱检测器会误触发。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "locator": "§3"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "UPR=\\#\\text{unfaithful perception sentences}/\\#\\text{perception sentences}",
+    "locator": "§5"
+   }
+  ],
+  "signal_routing": "纯inference编辑，无训练奖励或优势；只重生首坏感知句与之后后缀，前缀保留；重试耗尽仍继续，不保证全链忠实。",
+  "normalization": "other: UPR数据集句子比例，非每题平均；无GRPO。",
+  "invariance": "非PBRS；重采样可能改变答案。",
+  "baseline_or_potential": "外部检测器不是当前policy动作value。",
+  "degenerate_cases": "没有感知句分母为零处理未知；检测漏报不改；不会纠正的内容3次后保留残余错误。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4固定生成模型仅换detector；Table2 grounding提升judge ICC .66→.69，加rationale降.65。",
+  "negative_results": [
+   {
+    "text": "Qwen72B detector accuracy32低于vanilla35；self7B33.3。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": "300样本两人工标注；ICC .69不是accuracy或CI；模型运行seed/CI未在所读给。",
+  "falsifier": "独立人工复核下UPR增益消失，或同成本重采样答案更好，则定向修复价值削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "ThinkLite-VL7B等；detector Claude3.7；metric Claude4",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "K=3每个坏句重试；90%以上成功修复在3次内，不等于90%所有错误可修复。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用judge同时筛查与验收时，单独测人类一致性并更换检测器；事实正确性与答案收益必须分开报。"
+ }
+}

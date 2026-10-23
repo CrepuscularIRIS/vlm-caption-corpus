@@ -1,0 +1,173 @@
+{
+ "paper_key": "litscan:75452",
+ "title": "FOCUS-RL: Seeing is Solving: Unlocking Efficient Multimodal RL via View Alignment",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75452.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3–4",
+   "Tables1–2",
+   "5.2",
+   "Conclusion",
+   "C.3",
+   "D.1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "生成/参考CoT与图token末层hidden cosine形成view，按PVA课程采样，RVA与正确性分通道归一后相加",
+  "why_non_obvious": "将逐token参考文本匹配改为视觉view相似度，但必须拥有参考CoT",
+  "trigger_condition": "When verified reference CoTs exist, compare hidden-state visual views to drive curriculum and auxiliary RL reward",
+  "contribution_type": "curriculum and auxiliary alignment advantage",
+  "abstract_strategy": "参考轨迹诱导潜在观测分布，作为宽松过程代理",
+  "abstract_trigger_condition": "同模型能得到真实/参考轨迹hidden且参考可靠",
+  "abstract_key_step": "分别归一answer和view rewards再相加",
+  "abstract_why_non_obvious": "允许不同推理表述但假设view相似反映有用视觉证据",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75452#s1",
+   "object": "curriculum distribution and trajectory advantages",
+   "information": "image/question + verified reference CoT/answer + policy hidden states",
+   "operation": "PVA排序Gaussian采样；RVA通道优势加入answer优势",
+   "claimed_effect": "Qwen7B平均GRPO42.7→Data44.7→Data+Policy45.3",
+   "conditions": [
+    "8k verified CoT dataset",
+    "same backbone",
+    "8 candidate generations"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "+ FOCUS-RL(Data+Policy)        49.1          54.2            73.5           29.0        40.0        25.8        45.3"
+   },
+   "failure_boundary": "参考CoT是额外信息；dense是轨迹连续分数，不是逐视觉动作因果credit",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "额外视觉过程代理可在终局同分组提供区分",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "两reward通道先各归一再加，但仍broadcast trajectory advantage",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "GT参考view不是当前policy必要crop的oracle",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "vanilla GRPO / AdaRFT / GainRL",
+   "kind": "method"
+  },
+  {
+   "name": "Data-only vs Data+Policy",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "参考CoT必须可用；没有独立证明高view相似即正确因果依据。",
+   "quote": "a reference chain-of-thought",
+   "locator": "3.1 Notation"
+  },
+  {
+   "text": "成本表是从Perception-R1估算，不能读成所有baseline实测GPU-hours。",
+   "quote": "These estimates are intentionally coarse",
+   "locator": "D.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "Data-only44.7→两通道45.3仅+.6，而相对GRPO+2.6",
+  "load_bearing_assumption": "参考CoT view为可优化过程质量而非语义相似捷径",
+  "scope": "固定课程仅比较辅助view advantage",
+  "success_criterion": "同准确率更快收敛且真实caption groundedness改善",
+  "why_open": "尚缺policy-only/随机或错误reference view的决定性控制"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "3.1;4.2"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table1 Data-only vs Data+Policy"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "v_i=[\\cos(x_i,x_j)]_{j=1}^m;\\ v_{plan}=v_n;\\ v_{reason}=|T_M|^{-1}\\sum_{i\\in T_M}v_i;\\ v_{guide}=|T_{gt}|^{-1}\\sum_{i\\in T_{gt}}v_i",
+    "locator": "3.1"
+   },
+   {
+    "latex": "PVA=\\cos(v_{plan},v_{guide});\\ RVA=\\cos(v_{reason},v_{guide});\\ A=A^{ans}+A^{RVA}",
+    "locator": "3.2;4.2"
+   },
+   {
+    "latex": "P_t(i)=Z_t^{-1}e^{-(i-\\mu_t)^2/(2\\sigma_t^2)};\\ \\mu_{t+1}=\\mu_t+{n\\over2}\\tanh[2(Acc_t-.5)]",
+    "locator": "4.1;5.1"
+   }
+  ],
+  "signal_routing": "RVA为整CoT平均view对reference的标量；answer/RVA各组归一再相加更新policy。没有显式crop或局部token信用；是否mask answer/CoT token未详述。",
+  "normalization": "每token hidden cosine，再跨CoT token均值，再view cosine；两通道group normalization未展示精确std/epsilon式，不能自动补实现；Gaussian按Z归一。",
+  "invariance": "view对hidden正尺度不变；不是PBRS。若group normalization采用std，reward前统一比例会抵消，而归一后相加保持通道作用。",
+  "baseline_or_potential": "组相对两个通道；GT CoT经同模型得到guide非独立人类grounding图。",
+  "degenerate_cases": "全对/全错answer组可能无信号，RVA有差异仍能更新；两者同分/单候选及零范数处理未知；高RVA错推理会正反馈；sigma调度/边界clip未明确。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1课程only与课程+policy；Table2跨四模型；没有policy-only消融。",
+  "negative_results": [
+   {
+    "text": "核心增量policy平均+.6；WeMath data及data+policy均40.0。",
+    "locator": "Table1"
+   },
+   {
+    "text": "文中Qwen7B speedup描述2.3x，摘要/结论2.5x不完全一致。",
+    "locator": "5.2 vs Abstract"
+   }
+  ],
+  "seeds": "C.3 data_seed42；多训练seed未给",
+  "falsifier": "读者：在GTview随机置换、匹配语言但不匹配图像时仍获益，或准确率与view冲突时reward偏向错解，则代理失效。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/3B; InternVL3 2B/8B",
+   "framework": "VLM-R1",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.04
+  },
+  "cost": "8×A100；200iterations；8k PVA单A100<1h；表GPU-hours为粗估",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用reference view作奖励时，应审reference来源与forward成本，并区分整轨迹连续反馈和逐动作credit。"
+ }
+}

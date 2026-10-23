@@ -1,0 +1,51 @@
+{
+ "paper_key": "litscan:7039",
+ "title": "Query and Attention Augmentation",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_7039.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs1/3/5/7",
+   "§4 Tables1–2/4–5",
+   "§5 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "为视觉和外部知识各训query agent，共享中间attention记忆。",
+  "key_step": "先按图距离≤3生成候选词表，actorcritic分别优化答案相似+视觉/外知相似reward。",
+  "why_non_obvious": "同一个question query不足以从异质知识源找互补信息。",
+  "trigger_condition": "When question-only module queries ignore context, select distinct visual and external concepts with shared intermediate memory.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "按信息源拆查询，再用状态记忆融合。",
+  "abstract_trigger_condition": "When one query serves incompatible evidence stores, specialize retrieval actions."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:7039#s1",
+   "object": "NMN的query选择与attention",
+   "information": "训练reward显式使用GT答案embedding、视觉embedding和外部知识embedding；测试不应给GT",
+   "operation": "SFT初始化两agent，actorcritic与MCTS生成双查询，memory融合双图注意力",
+   "claimed_effect": "NSM OKVQA26.79→29.24，FVQA64.08→68.74；KQ-only OK28.42",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.1 Eq3",
+    "quote": "r^{v} = \\delta (g^{qv}, g^{y}) + \\eta ^{v}\\delta (g^{qv}, g^{v}), \\\\ r^{e} = \\delta (g^{qe}, g^{y}) + \\eta ^{e}\\delta (g^{qe}, g^{c}),"
+   },
+   "failure_boundary": "旧式NMN/知识图谱选择与现代多轮crop决策不同；相似度不是实际动作收益。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 1,
+   "how": "视觉和外部知识分流可作概念参考，缺少直接可迁移的caption/crop机制。"
+  }
+ ]
+}

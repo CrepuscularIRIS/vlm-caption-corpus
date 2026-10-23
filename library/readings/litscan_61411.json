@@ -1,0 +1,173 @@
+{
+ "paper_key": "litscan:61411",
+ "title": "SPECTRA",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_61411.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–6 Tables1–3",
+   "§8 Limitations",
+   "Appendix B/C/D/I Tables4–5/8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "不做任务轨迹SFT，以reason→tool→observation→perception→reason→answer软结构等级、执行有效性/多样性和GT正确性复合奖励做LoRA GRPO。",
+  "why_non_obvious": "用程序可判结构建立稠密信号，但结构合规不是视觉事实真实，监督免费仅限轨迹/偏好。",
+  "trigger_condition": "当小VLM有预训练工具潜力但缺领域轨迹标签时，用结构先验和可验证终答案启动。",
+  "contribution_type": "cold-start RL及工具效用指标",
+  "abstract_strategy": "可计算拓扑约束代替逐步轨迹标签。",
+  "abstract_trigger_condition": "已有模型存在非零有效行为支持且能执行工具和核终答案时。",
+  "abstract_key_step": "不同完整度轨迹给递减结构分，保留无工具有效路径。",
+  "abstract_why_non_obvious": "结构奖励与任务收益可能冲突，工具偏好集中也可能是塌缩。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:61411#s1",
+   "object": "小VLM工具调用与感知复述轨迹",
+   "information": "GT终答案、轨迹标签结构、tool执行状态与使用计数；无人工偏好/参考轨迹",
+   "operation": "四分量奖励加权、常数缩放后组标准化；优化LoRA并冻结vision；结构完整2分、简化1.5/1.125。",
+   "claimed_effect": "7B ID平均73.4→77.8，MMMU-Pro44.3→46.7；TIU35.63→44.66（9.03百分点），但TIU定义/数值冲突。",
+   "conditions": [
+    "四任务各1000train/200test；MMMU单图1592例",
+    "四工具包含外部Qwen2.5-VL7B perception"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p6",
+    "quote": "VERL: Qwen2.5-VL [7B]                      71.1    77.5      79.6           83.1                   77.8                  46.7"
+   },
+   "failure_boundary": "无任务SFT不等于无预训练行为支持；不能用GT奖励称完全无监督；TIU不证明因果必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "[redacted: project-internal]",
+   "strength": 3
+  },
+  {
+   "problem": "P43",
+   "how": "显式perception模板并不能保证中间陈述grounding。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "总奖励常数归一/缩放在后续std中基本消失。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "VERL Qwen2.5-VL7B agent",
+   "kind": "method"
+  },
+  {
+   "name": "leave-one-reward-out",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "即使最终答对，中间推理仍可幻觉。",
+   "quote": "even when the final prediction is correct.",
+   "locator": "§8 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "agent baseline7B73.4，cold-start优化77.8；TER77.30→88.69%。",
+  "load_bearing_assumption": "预训练模型能采到有效结构，且结构奖励能引导有用证据整合。",
+  "scope": "四种视觉工具的小VLM MCQ",
+  "success_criterion": "任务正确率、有效调用率和独立证据真实性，而非仅TIU。",
+  "why_open": "高质量轨迹标签昂贵，形式和工具执行失败阻碍探索。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "Eq2/7"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=R_{corr}+R_{struct}+2R_{tool}+3R_{term};\\ R_{corr}=8\\mathbf1[correct],\\ R_{struct}=2(0.75)^{\\phi},\\ R_{term}=2\\mathbf1[answer\\ tag]",
+    "locator": "Eq5–10/Table8"
+   },
+   {
+    "latex": "R_{tool}=\\mathbf1[syntax]+\\mathbf1[success]+\\min(0.8,\\sum_k0.1\\min(count_k,2));\\ R'=2.5R/21.6",
+    "locator": "Eq8–11/Table8"
+   },
+   {
+    "latex": "\\hat A_i=(R_i-\\mu)/(\\sigma+\\delta);\\quad TIU=TER(1+TTAC)\\tanh(D_{KL}(P\\|U))/2",
+    "locator": "Eq4/12–15"
+   }
+  ],
+  "signal_routing": "序列总奖励广播各token，Eq3每轨迹1/|τ|并组均值、非对称clip0.2/0.4和KL0.001；tool observation是否loss-mask已读处未明确，不能从VERL推定。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS；常数S/Nnorm在组std中除δ外抵消，不能解释为保留奖励尺度稳定性。Algorithm1又将未缩放Rtotal入组，存在实现表述差异。",
+  "baseline_or_potential": "组均值；外部perception工具输出不是当前policy价值。",
+  "degenerate_cases": "全同综合reward组无梯度，全同答案仍可学结构；diversity奖励为正且到cap后不再增加，不是额外调用负惩罚；零调用TER分母与恒定工具使用TTAC相关系数需约定。TSS在4工具uniform下≤ln4（log2≤2），表中3.08与原式不符。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3逐一去reward；7B及baseline三独立runs。",
+  "negative_results": [
+   {
+    "text": "去Rtool AI2D74.5高于完整71.17；去Rstruct OKVQA82.5高于79.67，模块非逐任务单调有效。",
+    "locator": "Table3"
+   },
+   {
+    "text": "OKVQA TIU40.12→37.99下降、TTAC0.009→−0.100；不支持所有任务工具效用改善。",
+    "locator": "Table2"
+   },
+   {
+    "text": "TSS被解释为避免mode collapse，但KL对uniform恰在单工具集中时最大；有限工具的有界性也与原文[0,∞]冲突。",
+    "locator": "§6.2/AppC.2 Eq20"
+   }
+  ],
+  "seeds": "7B/base平均3独立runs；seed值未见",
+  "falsifier": "若随机打乱tool文本或固定单工具也提高结构/TIU但答案不变，则不能称学到grounded工具效用。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B/7B；BLIP2/DETR/Tesseract/Qwen2.5-VL7B工具",
+   "framework": "VERL/vLLM LoRA rank64 alpha64",
+   "group_size": 8,
+   "max_turns": 16,
+   "kl": 0.001
+  },
+  "cost": "2A10080GB；100iterations，batch64，response2048；工具有独立模型成本，TIU非walltime。",
+  "pitfalls": [
+   {
+    "text": "有GT终答案并有7B视觉工具，不能将supervision-free写成无标签或纯小模型能力。",
+    "locator": "Eq6/Table4"
+   }
+  ],
+  "code": null,
+  "lesson": "当奖励形式结构和执行成功时，应另查内容真实性、工具代价以及指标边界；避免把调用集中误当策略必要性。"
+ }
+}

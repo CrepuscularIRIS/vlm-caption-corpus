@@ -1,0 +1,179 @@
+{
+ "paper_key": "litscan:75661",
+ "title": "DocVAL: Validated Chain-of-Thought Distillation for Grounded Document VQA",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75661.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3",
+   "4.1",
+   "Tables1–3",
+   "5.2–5.3 Scope",
+   "B.1–B.3",
+   "C examples",
+   "H.1–H.2"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "teacher在GT答案/框和检测区域条件下生成空间CoT，规则过滤，再用student错误+规则纠正迭代SFT",
+  "why_non_obvious": "训练可用额外定位信息但部署不依赖检测器；验证准确不等于推理因果忠实",
+  "trigger_condition": "When small VLMs localize poorly despite correct answers, distill validated spatial traces then retrain on diagnosed errors",
+  "contribution_type": "validated trajectory data and iterative supervised refinement",
+  "abstract_strategy": "训练期结构化监督支架换取部署期简化",
+  "abstract_trigger_condition": "存在答案/框真值与可靠检测区域",
+  "abstract_key_step": "生成→过滤→student错误诊断→纠正监督循环",
+  "abstract_why_non_obvious": "监督质量与总训练量同时变化，应区分过滤与迭代额外算力贡献",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75661#s1",
+   "object": "document answer + spatial CoT + bounding box",
+   "information": "teacher gets GT answers/boxes and detected text; student input only image/question",
+   "operation": "Q>.85过滤95k，76k SFT，9.5k学生错误迭代feedback tuning",
+   "claimed_effect": "DocVQA ANLS91.4/mAP82.4；无validation88.1/63.7；binary filter89.5/76.1",
+   "conditions": [
+    "Gemma3-12B",
+    "Gemini2.5Pro teacher",
+    "GT bbox",
+    "OCR/detection training only"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "91.4       82.4          73.7       68.8"
+   },
+   "failure_boundary": "需要框真值/OCR质量；非在线工具控制；D4用于再训练与收敛判定，不是独立heldout",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P38",
+   "how": "先校验空间推理及坐标再收集student修正轨迹，可迁移SFT质量控制",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "明确框/语义真值监督条件，本项目若无框就不能直接复制",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "答案正确仍需独立视觉定位质量检查",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "no validation / binary filter / detailed verifier",
+   "kind": "ablation"
+  },
+  {
+   "name": "B1 only / B1+B2 iterations",
+   "kind": "ablation"
+  },
+  {
+   "name": "DLaVA/ARIAL/Gemma3",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "多行答案单框失败，例ANLS1却IoU.31；文字正确并不保证grounding。",
+   "quote": "(ANLS=1.0) but bbox covered only first line (IoU=0.31).",
+   "locator": "Appendix C"
+  },
+  {
+   "text": "手写/降质扫描/图表主导页面超当前覆盖，detector错误损害训练监督。",
+   "quote": "current benchmark distribution and are expected to be harder:",
+   "locator": "H.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "无验证mAP63.7，filter76.1，full82.4；多行地址ANLS1/IoU.31",
+  "load_bearing_assumption": "可验证空间过程标签对student可见像素是可学的",
+  "scope": "caption/box/revise轨迹的数据验收",
+  "success_criterion": "同token训练预算下grounding改善且答案不退步，错误修正无需teacher输入部署",
+  "why_open": "框/区域信息可能不可得；detector和GT不足时规则不能凭空验证"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "3.3–3.4;Algorithm1"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2–3 validation/training ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Q_a=.7ANLS(a_p,a_{gt})+.3\\mathbf1[a_p\\in OCR(R)];\\ Q_b=.8IoU(b_p,b_{gt})+.2\\mathbf1[r_p=r_{gt}]",
+    "locator": "B.2 Eq1–2"
+   },
+   {
+    "latex": "Q_r=(S_{struct}+S_{coord}+S_{spatial})/3;\\ Q=.4Q_a+.4Q_b+.2Q_r;\\ \\mathrm{accept}\\Leftrightarrow Q>.85",
+    "locator": "B.2 Eq3–4;3.3"
+   },
+   {
+    "latex": "L_{SFT}=-\\sum_t\\log P_\\theta(c_t|I,q,c_{<t}),\\ c=[CoT,a,b]",
+    "locator": "3.4.1"
+   }
+  ],
+  "signal_routing": "Q用筛选/诊断而非policy advantage；B1监督全部序列CoT/答案/坐标；B2原student错误与反馈→修正目标SFT，具体feedback输入序列编码未展开；全量微调student。",
+  "normalization": "QA/框质量加权和，reason三规则均值；CE写token sum，batch归一未明确；无groupstd。",
+  "invariance": "非PBRS；Q阈值改变数据选择；多维质量可互相补偿，不能声称每分量都有独立硬门。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "detector漏字/错区域导致规则弱反馈；单bbox无法覆盖断行目标；无GT框无法算Qbbox；高Q规则一致不证明CoT忠实。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2过滤/feedback差异，Table3迭代0/5/10/converged；AppendixC答案正确定位错反例。",
+  "negative_results": [
+   {
+    "text": "5次B2 FUNSD ANLS89.9略低B1 90.1；单bbox多行失败。",
+    "locator": "Table3;AppendixC"
+   },
+   {
+    "text": "B2不是免费：约251k例次，与B1 228k同量级；1.0–1.2倍B1时间。",
+    "locator": "H.1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：训练token/次数匹配的标准纠正SFT若追平，或去CoT仍相同定位收益，不能归因显式空间推理。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Gemma3-12B/4B; Gemini2.5Pro teacher",
+   "framework": "full-parameter AdamW; DB-ResNet training scaffold",
+   "group_size": null,
+   "max_turns": 20,
+   "kl": null
+  },
+  "cost": "2×H10080GB；B1 3epochs 76k；B2平均13.2轮×2epochs×9.5k；VAL verifier12ex/s",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当validator用GT框与检测区域时，应隔离student输入与验收信号；把refinement集记为训练暴露集，不称独立验证。"
+ }
+}

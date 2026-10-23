@@ -1,0 +1,160 @@
+{
+ "paper_key": "litscan:3814",
+ "title": "The Role of Visual Modality in Multimodal Mathematical Reasoning: Challenges and Insights (HC-M3D)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3814.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3–6/Table1–7",
+   "Limitations",
+   "Appendix Table8/Table11"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在统一数学SFT模型中打乱/移除图文配对，另造题干相同而图与答案不同的配对测试。",
+  "key_step": "把视觉依赖从单题答对率拆成图像干预下双题同时正确与答案一致率。",
+  "why_non_obvious": "单题答对可来自题干或选项；模型加视觉编码器也未必使用图中关系。",
+  "trigger_condition": "When accuracy may come from text shortcuts, alter only the image and measure paired correctness.",
+  "contribution_type": "controlled diagnostic benchmark",
+  "abstract_strategy": "Break a presumed information dependency while controlling alternatives.",
+  "abstract_trigger_condition": "When aggregate success can hide reliance on a shortcut.",
+  "abstract_key_step": "Hold the question fixed and change evidence so the correct response changes.",
+  "abstract_why_non_obvious": "Response invariance is desirable for nuisance changes but failure for answer-changing evidence.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3814#s1",
+   "object": "图像依赖配对评测",
+   "information": "1851人工整理数学题；429题各两图共858 DI样本，题干固定但正确答案改变。",
+   "operation": "分别算全体准确率、DI逐样本准确率、配对双正确率BC、同答案率AG（越低越好）。",
+   "claimed_effect": "GPT4o ALL49.0/DI45.8/BC19.1/AG42.0；MultiMath49.2/44.8/16.6/56.9。",
+   "conditions": [
+    "修改图像确实改答案",
+    "题干不泄漏",
+    "配对单位一致"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5",
+    "quote": "GPT-4o                   /         49.0      45.8      19.1      42.0"
+   },
+   "failure_boundary": "属于图依赖诊断，不是crop增量价值；AG低可能只是随机改变。",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "correct/shuffled/no-image math SFT; text-only models; option permutations; multi-encoder variants",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅1851样本，数学SFT研究未覆盖CoT阶段。",
+   "quote": "reasoning stages such as chain-of-thought",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table1 G-LLaVA正确图训练均分35.2，打乱34.6、无图35.4；其他模型与部分数据集下降更明显。",
+  "load_bearing_assumption": "数学基准分数提升反映视觉证据利用。",
+  "scope": "统一LLaVA架构数学SFT和几何配对题",
+  "success_criterion": "改变图和正确答案后双题仍答对，且不盲目保持原答案",
+  "why_open": "题干/选项可替代图像"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "3.2 image shuffling/removal controls"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "5 same question/different image/different answer"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "BC=(1/N_pairs) sum_i 1[correct(i,1) and correct(i,2)]",
+    "locator": "5 Metrics; reader notation of prose"
+   },
+   {
+    "latex": "AG=(1/N_pairs) sum_i 1[pred(i,1)=pred(i,2)]",
+    "locator": "5 Metrics; reader notation of prose"
+   }
+  ],
+  "signal_routing": "无RL；图像打乱/删除只在Math SFT阶段，保留原QA，非将测试时图像移除；评测paired指标不作为训练reward。",
+  "normalization": "other: accuracy averages; BC/AG pair units, DI sample units; no group std",
+  "invariance": "主动要求对答案改变的图像不保持答案不变；非PBRS。",
+  "baseline_or_potential": "正确图训练、打乱/无图训练、text-only及编码器替换对照。",
+  "degenerate_cases": "随机答案也可低AG，必须结合BC；训练阶段既有视觉预训练不会被本次移除实验排除；p≈0/1和全对组非PG问题。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "统一架构仅改变Math SFT图文对齐；测试集固定题干的答案改变图像对。",
+  "negative_results": [
+   {
+    "text": "MathLLaVA在MathVista打乱图45.3→34.4，不能概括所有任务图像均无作用。",
+    "locator": "Table1"
+   },
+   {
+    "text": "三编码器MathPOPE F1升73.7→81.0但数学任务未同步改善，减少点名幻觉不等于关系推理增强。",
+    "locator": "6/Table6–7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者建议：caption+crop固定题干构造成对证据改变；如只有答案变化但BC不提高，拒绝视觉依赖已改善的结论。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "统一LLaVA架构；G-LLaVA/MathLLaVA/MAVIS/MultiMath数据",
+   "framework": "pretrain/general SFT/math SFT",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "Table11 8GPU：预训练batch32/GPU lr1e-3 1epoch；general/math SFT batch8/GPU lr2e-5，分别1/2epochs；GPU时未知。",
+  "pitfalls": [
+   {
+    "text": "Table8第二行标MathLLaVA但分数对应Table5 MultiMath，按源保留标签冲突，不用作模型特异结论。",
+    "locator": "Table5/Table8"
+   },
+   {
+    "text": "All vs DI vs BC分母不同；训练期扰动不等于推理期无图试验。",
+    "locator": "3.2/5"
+   }
+  ],
+  "code": "https://github.com/Yufang-Liu/visual_modality_role",
+  "lesson": "当题干足以作答时，总准确率会掩盖视觉无关，应先做固定题干、答案必须改变的图像对，并联合报告双正确率。"
+ },
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "构造视觉证据干预与caption忠实性评测，区分任务答对和真正看图。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "诊断文字捷径，不能替代盲读者语义一致性训练。",
+   "strength": 2
+  }
+ ]
+}

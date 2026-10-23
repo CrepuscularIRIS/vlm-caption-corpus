@@ -1,0 +1,398 @@
+{
+ "paper_key": "2602.06040",
+ "title": "SwimBird: Eliciting Switchable Reasoning Mode in Hybrid Autoregressive MLLMs",
+ "source": "candidates",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2602.06040.pdf",
+  "version": "v1",
+  "version_url": "https://arxiv.org/abs/2602.06040v1",
+  "observed_version_date": "2026-02-05",
+  "latest_version_checked": false,
+  "fulltext_path": "2602.06040.txt",
+  "sections_read": [
+   "Abstract",
+   "1 Introduction; Figure 1",
+   "2 Related Works (2.1–2.2)",
+   "3 Method (3.1–3.3); Eqs.1–5; Figures 2–3; Table 1",
+   "4 Experiments; Training Details; Baselines and Benchmarks",
+   "4.1 Main Results; Tables 2–3",
+   "4.2 Ablation Studies; Tables 4–5",
+   "4.3 Analysis of Switchable Reasoning Mode; Figures 4–5",
+   "5 Prompt; Figure 6",
+   "6 Conclusion",
+   "References pp.10–13; no appendix in this 13-page source"
+  ],
+  "visual_inspection": [
+   "p.4 Figure 2 and Eqs.1–5",
+   "p.5 Table 1, Figure 3, delimiter and budget description",
+   "p.6 Table 2 and data curation",
+   "p.7 Table 3",
+   "p.8 Tables 4–5 and Figure 4",
+   "p.9 Figure 5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把预先固定的 text/latent/interleaved 推理模板改成由单一模型自回归选择的模式；用分模式 SFT 样本和不同损失建立文本与连续视觉生成能力。",
+  "key_step": "先用 Qwen3VL-8B 对原图与附中间图分别作八次答案测量，过滤/标记 vision-only 或 interleaved 样本；再加入 50K text-only traces，以 CE+MSE 学习 delimiter 路由和连续 latent spans。",
+  "why_non_obvious": "统一生成接口不足以避免所有题都注入 latent；监督数据必须同时包含无需 latent 的路径和视觉/混合路径，且连续 span 的长度不能强行统一。本文没有将这个主张独立于数据规模、来源和计算预算作因果验证。",
+  "trigger_condition": "When heterogeneous queries need different intermediate representations, apply mode-labeled supervision and autoregressive delimiters to achieve conditional representation selection.",
+  "reviewer_praise": [
+   "low_evidence: no OpenReview review file or review source identified in the local manifest/corpus lookup."
+  ],
+  "reviewer_concern": [
+   "low_evidence: reviewer concerns unavailable; reader limitations are recorded separately."
+  ],
+  "acceptance_signal": null,
+  "contribution_type": "methodological",
+  "abstract_strategy": "Make a fixed processing format selectable and supervise all supported execution paths.",
+  "abstract_key_step": "Compare unaided and assisted responses, assign training paths, and combine path-specific losses under generated boundary markers.",
+  "abstract_why_non_obvious": "Preserve the inexpensive path in the training distribution while accommodating continuous intermediates whose needed length varies.",
+  "abstract_trigger_condition": "When one fixed processing format mismatches heterogeneous inputs, learn conditional switches from coverage of distinct successful paths.",
+  "evidence": [
+   {
+    "quote": "it performs standard next-token\nprediction for textual thoughts, optimized with a shifted cross-entropy loss, and performs next-\nembedding prediction for visual thoughts, optimized with a MSE loss to reconstruct the embeddings\nof intermediate thinking images.",
+    "locator": "§3 p.4"
+   },
+   {
+    "quote": "During inference, SwimBird generates these delimiters autoregressively,\nwhich makes mode selection query-adaptive: the model can decide whether to enter a latent visual-\nthinking phase, remain in text-only reasoning, or alternate between the two",
+    "locator": "§3.1 p.5"
+   }
+  ]
+ },
+ "signatures": [
+  {
+   "sig_id": "2602.06040#s1",
+   "object": "Hybrid autoregressive SFT targets and inference mode boundaries",
+   "information": "训练可见问题、原图、文本链、答案及中间 thinking images；target embeddings 由同一冻结视觉编码器/projector 编码。推理可见原始输入和已生成状态，不提供 GT 中间图、GT 答案或新 crop 返回。",
+   "operation": "Train textual spans with shifted CE and latent spans with shifted embedding MSE; generate learned start/end delimiters to enter or leave continuous visual reasoning.",
+   "output": "同一个模型输出 text-only、vision-only 或 interleaved traces，最终输出文本答案。",
+   "claimed_effect": "完整系统作者报告 Table 2: V*=85.5, HR4K=79.0, HR8K=74.9, MME-RW=65.3，vs reproduced Qwen3-VL-8B-Instruct 83.8/76.5/71.3/61.9；Table 3: WeMath 49.5 vs 38.8。未隔离 hybrid objective 单项贡献。",
+   "conditions": [
+    "Qwen3-VL-8B backbone; vision encoder/projector frozen",
+    "Mode-covered SwimBird-SFT-92K and intermediate-image embeddings",
+    "Default visual MSE coefficient 0.2; supported latent delimiter decoding"
+   ],
+   "evidence": {
+    "quote": "it performs standard next-token\nprediction for textual thoughts, optimized with a shifted cross-entropy loss, and performs next-\nembedding prediction for visual thoughts, optimized with a MSE loss to reconstruct the embeddings\nof intermediate thinking images.",
+    "locator": "§3 p.4; §3.1 Eqs.1–5 pp.4–5; Tables 2–3 pp.6–7",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "No matched same-data fixed-mode baseline or delimiter ablation; no RL, crop-use or recovery evaluation. Does not acquire pixels unavailable in the inference input; exact continuous-to-discrete stop implementation not specified.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2602.06040#s2",
+   "object": "SFT example selection and reasoning-mode labels",
+   "information": "Qwen3VL-8B 原图答案及加入 GT intermediate images 后的答案；Qwen3-235B-Instruct judge 见问题、prediction、GT。不是训练后当前策略的自然 crop 分支，也不能观测单次工具必要性的真值。",
+   "operation": "Remove originally solved candidate examples; compare original-only and intermediate-image-hinted pass@8, retain hint>=base, label hint>=0.75 vision-only and the rest interleaved; add 50K text-only CoT examples.",
+   "output": "Table 1: 92.3K samples = 50K text-only + 8.8K vision-only + 33.5K interleaved; visual-chain sources Zebra-CoT/ThinkMorph/MathCanvas, text-only source OpenMMReasoner.",
+   "claimed_effect": "作者声称多模式数据启用按 query 选模式；Fig.4 展示 DynaMath/MathVerse_MINI 几乎全 text-only，V*/HR 更多 latent/interleaved。没有移除某类数据的独立消融，故不把整体分数差归因于该标注规则。",
+   "conditions": [
+    "Existing intermediate thinking images and verified task answers",
+    "Eight-sample measurements by base Qwen3VL-8B and a larger answer judge",
+    "Separate text-only source used to restore non-latent training coverage"
+   ],
+   "evidence": {
+    "quote": "For each remaining sample, we compute two pass@8 scores with Qwen3VL-8B:",
+    "locator": "§3.3 Stage 2 p.6; Table 1 p.5; Fig.4 p.8",
+    "kind": "author_claim"
+   },
+   "failure_boundary": "pass@8 estimator/formula and sampling temperature are unspecified; threshold semantics resemble empirical success rate but are not defined. Nonnegative hint gain admits equality, including both scores zero, so retained interleaved labels need not prove useful hints. Different sources are confounded with modes; threshold and judge calibration untested.",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2602.06040#s3",
+   "object": "Intermediate-image encoding budget and inferred continuous span length",
+   "information": "训练依赖中间图 resolution、独立 pixel/patch limits 与冻结 encoder；推理仅有输入/已生成隐状态，无真实难度标签或未来 crop收益。",
+   "operation": "Encode intermediate thinking images at their variable resolutions under independent minimum/maximum visual-token budgets instead of fixed-length pooling; autoregress latent states until the model emits the ending delimiter.",
+   "output": "Variable-length visual spans, default training target range Nmin=2,Nmax=32; qualitative examples K=18/24 in Fig.5.",
+   "claimed_effect": "Table 4: increasing maximum from 16 to 32 raises HR4K 76.4→79.0 and HR8K 71.4→74.9 with RealWorldQA 73.1 unchanged; 64/128 degrade HR8K to 73.4/71.8. This tests maximum budget, not dynamic versus fixed budget at matched compute.",
+   "conditions": [
+    "Resolution-aware Qwen ViT and separate intermediate-image budget",
+    "Training targets remain bounded; latent termination delimiter supported"
+   ],
+   "evidence": {
+    "quote": "Concretely, we allow the vision encoder to output a variable number of visual tokens according to image resolution, bounded by an independent range",
+    "locator": "§3.2 p.5; §4.2 Table 4 p.8",
+    "kind": "reported_experiment"
+   },
+   "failure_boundary": "No mean inference token/latency/GPU-hour measurements or stop-accuracy analysis. Paper switches notation between </latent> and <|latent_end|>; exact hard inference cap and failure handling not reported.",
+   "verified": "fulltext"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Qwen3-VL-8B-Instruct (author reproduced)",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-VL-8B-Thinking",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen2.5-VL-7B/32B-Instruct",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-4o",
+   "kind": "method"
+  },
+  {
+   "name": "GPT-5-mini",
+   "kind": "method"
+  },
+  {
+   "name": "InternVL3-8B",
+   "kind": "method"
+  },
+  {
+   "name": "LLaVA-OneVision",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-R1",
+   "kind": "method"
+  },
+  {
+   "name": "Monet",
+   "kind": "method"
+  },
+  {
+   "name": "LVR",
+   "kind": "method"
+  },
+  {
+   "name": "SkiLa",
+   "kind": "method"
+  },
+  {
+   "name": "SEAL",
+   "kind": "method"
+  },
+  {
+   "name": "Pixel Reasoner",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "Thyme",
+   "kind": "method"
+  },
+  {
+   "name": "DeepEyesV2",
+   "kind": "method"
+  },
+  {
+   "name": "V* Bench",
+   "kind": "benchmark"
+  },
+  {
+   "name": "HR-Bench 4K/8K",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MME-RealWorld",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MMStar",
+   "kind": "benchmark"
+  },
+  {
+   "name": "RealWorldQA",
+   "kind": "benchmark"
+  },
+  {
+   "name": "WeMath",
+   "kind": "benchmark"
+  },
+  {
+   "name": "DynaMath",
+   "kind": "benchmark"
+  },
+  {
+   "name": "MathVerse_MINI",
+   "kind": "benchmark"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者报告更大 latent 上限反而降分；不支持越长越好。",
+   "quote": "However, further expanding Nmax to 64 or 128 does not help and even degrades performance",
+   "locator": "§4.2 Table 4 p.8"
+  },
+  {
+   "text": "增大视觉 MSE 权重存在跨任务权衡，不能把重构加强等同于通用推理加强。",
+   "quote": "In contrast, increasing λvis to 0.5 improves HRBench8K (75.9) but degrades RealWorldQA (72.0),",
+   "locator": "§4.2 Table 5 p.8"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table 2: Qwen3-VL-8B-Thinking 在 V*/HR4K/HR8K 为77.5/72.4/68.1，低于 Instruct 83.8/76.5/71.3；这是跨模型配置相关性，不是固定模板的受控因果效应。Table 4 还直接显示 latent 上限32→128时 HR8K 74.9→71.8。",
+  "load_bearing_assumption": "单一固定 reasoning mode 与固定 latent 长度足以应付异质视觉/符号任务。",
+  "scope": "Qwen3-VL-8B 上有中间图监督的 hybrid SFT 和三模式生成；不涉及多轮 crop RL。",
+  "success_criterion": "视觉密集任务和文本主导多模态任务准确率同时提升，并观察到跨任务模式分布差异；没有正式准确率非劣界或效率成本门槛。",
+  "why_open": "相关工作中的文本、视觉、交替范式和固定长度限制了选择；本文改变监督覆盖和生成边界，未完全隔离路由本身的作用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "quote": "To complete the three-mode training set, we sample 50K text-only CoT instances from OpenMMReasoner",
+   "locator": "§3.3 Stage 3 p.6"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "quote": "We ablate the weight of the visual-thought reconstruction loss by varying λvis while keeping other settings fixed.",
+   "locator": "§4.2 p.8"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "role": "primary",
+   "quote": "During inference, SwimBird generates these delimiters autoregressively,\nwhich makes mode selection query-adaptive: the model can decide whether to enter a latent visual-\nthinking phase, remain in text-only reasoning, or alternate between the two",
+   "locator": "§3.1 p.5"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "role": "supporting",
+   "quote": "A training instance may contain pure textual CoT, pure visual CoT, or interleaved segments. We optimize a unified objective that sums modality-specific losses over the activated segments:",
+   "locator": "§3.1 p.4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "p_\\theta(w_t\\mid w_{<t},x)",
+    "locator": "Eq.1 p.4"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{text}}=-\\sum_{t=1}^{T}\\log p_\\theta(w_t\\mid w_{<t},x)",
+    "locator": "Eq.2 p.4"
+   },
+   {
+    "latex": "\\hat z_k=f_\\theta(z_{<k},w_{\\le T},x)",
+    "locator": "Eq.3 p.4"
+   },
+   {
+    "latex": "\\mathcal L_{\\mathrm{vis}}=\\sum_{k=1}^{K}\\|\\hat z_k-z_k\\|_2^2",
+    "locator": "Eq.4 p.4"
+   },
+   {
+    "latex": "\\mathcal L=\\lambda_{\\mathrm{text}}\\mathcal L_{\\mathrm{text}}+\\lambda_{\\mathrm{vis}}\\mathcal L_{\\mathrm{vis}}",
+    "locator": "Eq.5 p.4"
+   }
+  ],
+  "signal_routing": "Textual spans receive shifted CE; continuous latent spans receive shifted MSE against intermediate-image encoder embeddings. Only activated segments contribute. Delimiters define routing; exact delimiter/answer masks are not enumerated. Only LLM parameters update; encoder and projector frozen. No per-action advantages/rewards/PG.",
+  "normalization": "other: Eqs.2/4 show sums over text positions and latent positions; no group mean/std, leave-one-out, or KL objective. Implementation reduction over batch, token count or embedding dimension is not specified; do not infer actual length normalization from the MSE name.",
+  "invariance": "No optimal-policy invariance theorem or potential-based shaping. Objective and SFT distribution change; retaining symbolic reasoning is an empirical author claim, not a guarantee.",
+  "baseline_or_potential": "No value baseline, critic or potential. Reconstruction targets are frozen vision encoder/projector outputs. Offline Qwen3VL-8B and Qwen3-235B judge curate data, not online reward baselines.",
+  "degenerate_cases": "K=0/text-only has no visual MSE; vision-only still emits a discrete final answer, not zero text supervision. λvis=0 removes explicit latent reconstruction (not experimentally tested here). No GRPO all-correct/all-wrong groups. Under Stage2 passhint=passbase=0, written retention rule retains sample and labels interleaved; reader deduction, not author-tested behavior. No reported guarantee against mode collapse after later RL; p≈0 is not solved by this SFT paper."
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Actual controlled tests are Nmax sweep (Nmin=2;16/32/64/128) and λvis sweep (0.1/0.2/0.5/1.0). Missing decisive test: same data, training budget and inference budget with adaptive versus forced fixed modes, shuffled mode labels, plus source-balanced controls.",
+  "controls": [
+   "Table 4 maximum latent budget, with minimum fixed at 2",
+   "Table 5 visual loss coefficient with other settings fixed",
+   "Tables 2–3 broad baselines; only starred Qwen3-VL-8B-Instruct explicitly author-reproduced",
+   "Figure 4 mode distributions and Figure 5 cases are descriptive, not counterfactual correctness-by-mode tests"
+  ],
+  "negative_results": [
+   {
+    "text": "Nmax above 32 reduces HR8K performance; 128 gives 71.8 vs 74.9.",
+    "quote": "However, further expanding Nmax to 64 or 128 does not help and even degrades performance",
+    "locator": "§4.2 Table 4 p.8"
+   },
+   {
+    "text": "λvis 0.5 raises HR8K but reduces RealWorldQA; λvis1.0 also lowers HR8K/RealWorldQA vs0.2.",
+    "quote": "In contrast, increasing λvis to 0.5 improves HRBench8K (75.9) but degrades RealWorldQA (72.0),",
+    "locator": "§4.2 Table 5 p.8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "Reader-proposed: on held-out source-balanced examples and matched budgets, forced modes or shuffled labels match adaptive mode selection, or inferred mode fails to predict per-example utility of latent computation; then mode-routing explanation is unsupported. For efficiency, require measured costs and prespecified accuracy noninferiority."
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-8B (paper wording; exact starting checkpoint not specified in training details)",
+   "framework": null,
+   "group_size": null,
+   "rollouts": null,
+   "steps": null,
+   "kl": null,
+   "temperature": null,
+   "max_turns": null,
+   "training_type": "SFT only",
+   "global_batch_size": 128,
+   "initial_learning_rate": 1e-05,
+   "scheduler": "cosine",
+   "trainable_parameters": "LLM only; frozen vision encoder and multimodal projector",
+   "lambda_vis": 0.2,
+   "lambda_text": null,
+   "latent_target_range": [
+    2,
+    32
+   ],
+   "data_curation_samples_per_condition": 8
+  },
+  "cost": "A100-80G GPUs reported; GPU count, hours, epochs/updates, total trained tokens, inference average tokens/latency, and curation call totals not reported. Dataset Table1 92.3K; eight samples in each of two conditions for each Stage2 candidate, candidate count unspecified.",
+  "pitfalls": [
+   {
+    "text": "Do not assume larger latent capacity helps: default maximum32 chosen because64/128 hurt HR8K; tune alongside general benchmarks.",
+    "quote": "However, further expanding Nmax to 64 or 128 does not help and even degrades performance",
+    "locator": "§4.2 Table 4 p.8"
+   },
+   {
+    "text": "Do not increase MSE weighting on one visual metric alone; 0.5 helps HR8K while harming RealWorldQA.",
+    "quote": "In contrast, increasing λvis to 0.5 improves HRBench8K (75.9) but degrades RealWorldQA (72.0),",
+    "locator": "§4.2 Table 5 p.8"
+   }
+  ],
+  "code": "https://github.com/Accio-Lab/SwimBird",
+  "code_inspected": false,
+  "lesson": "当模型需要兼容无需额外视觉计算与视觉密集任务时，应在 SFT 中保留不同路径并分别监督；增加 latent 长度或重构权重会产生跨任务退化，应报告分任务准确率与实际成本，不能把模式分布或总分增益当必要性证据。"
+ },
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "用50K text-only和42.3K视觉/混合样本显式覆盖各模式，是先种行为的同类机制；并未测试 RL 新行为或保留。",
+   "strength": 2
+  },
+  {
+   "problem": "P26",
+   "how": "按模型对有/无中间图的成功测量构造模式标签，可启发按需求分层，但不含不确定性触发或真实 crop 决策。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "离线固定8B读者对 privileged 中间图的收益不等于当前4B策略自然crop收益，提供迁移边界而非解决方案。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "分开原图/中间图像素预算并保留可变分辨率，提示应检查教师中间图目标与学生可见细节是否对齐。",
+   "strength": 2
+  },
+  {
+   "problem": "P63",
+   "how": "同时报告视觉密集、一般VQA、数学任务，提供检查多路径训练是否伤害其他能力的评测组织方式。",
+   "strength": 2
+  }
+ ],
+ "reviews_source": null,
+ "reviews_evidence": []
+}

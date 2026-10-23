@@ -1,0 +1,158 @@
+{
+ "paper_key": "litscan:56625",
+ "title": "ALDEN",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_56625.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.1–3.2",
+   "§4.1–4.3 Eq2–7",
+   "Tables1–2",
+   "Limitations",
+   "Appendix B null-space argument",
+   "Appendix training hyperparameters",
+   "Algorithm1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "分离turn动作收益与query重复token惩罚，先turn GAE生成价值目标再token GAE；生成/观察两类KL。",
+  "why_non_obvious": "导航动作后果延迟而重复发生在局部query词段；同一终局标量无法直接标记这两种信用。",
+  "trigger_condition": "当长文档导航同时有结构索引、重复query和视觉漂移时，分层定义动作空间及监督。",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当长文档导航同时有结构索引、重复query和视觉漂移时，分层定义动作空间及监督。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "分离turn动作收益与query重复token惩罚，先turn GAE生成价值目标再token GAE；生成/观察两类KL。",
+  "abstract_why_non_obvious": "导航动作后果延迟而重复发生在局部query词段；同一终局标量无法直接标记这两种信用。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:56625#s1",
+   "object": "多页文档导航PPO",
+   "information": "训练知道证据页集G和答案；推理search返回实际页面图与物理索引，fetch直接访问页面",
+   "operation": "fetch/search/answer动作；新证据页与页距奖励；turnGAE回传，query重复n-gram按token分摊；观察KL另权重",
+   "claimed_effect": "平均answer accuracy .386，去fetch .322、去cross-level .356、去视觉anchoring .373。",
+   "conditions": [
+    "Qwen2.5VL7B actor/critic，GT证据页监督，最多6turn"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2; §4",
+    "quote": "Full ALDEN                                    0.335              0.513         0.201      0.342        0.542     0.386"
+   },
+   "failure_boundary": "并非无GT视觉证据奖励；证据页距可能诱导靠近而非真正读到；KL分布与符号实现未核。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "turn未来收益与query局部重复信号分别分配，不是全轨迹单A。",
+   "strength": 3
+  },
+  {
+   "problem": "P30",
+   "how": "检索重复和历史页重取有明确惩罚，可迁移重复crop诊断。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "过程视觉reward依赖GT页，必须明确标注成本和可用边界。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "M3DocRAG",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO visual RAG",
+   "kind": "method"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "去cross-level平均.386→.356；去fetch→.322；视觉anchor→.373。",
+  "load_bearing_assumption": "页距/新增GT页与最终答案同向，并且两层GAE价值target可稳定训练。",
+  "scope": "有证据页标注的多页检索/直取/回答",
+  "success_criterion": "分别消融turn新证据与token重复项，比较正确率、重复率、提前stop；避免只报聚合。",
+  "why_open": "Table2同时去多种cross-level项，未分开GAE结构与reward信息的作用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_t=f_t+u_t;\\ f_t=0\\ (valid),-1\\ (invalid);\\ u_t=\\alpha F_1\\ (answer),\\ e^{-|G|^{-1}\\sum_{g\\in G}|p-g|}-f_{rep}\\ (fetch),\\ |(C_t\\cap G)\\setminus H_{t-1}|\\ (search)",
+    "locator": "Eq2–4"
+   },
+   {
+    "latex": "\\hat V_t=V_\\phi(s_t^L)+\\sum_{k=0}^{T-1-t}(\\gamma_{turn}\\lambda_{turn})^k\\delta_{t+k};\\quad \\delta_t=r_t+\\gamma_{turn}V_\\phi(s_{t+1}^L)-V_\\phi(s_t^L)",
+    "locator": "§4.2"
+   },
+   {
+    "latex": "r_t^i=\\hat V_t\\ (i=L);\\quad -w_i\\,overlap_t\\ (search\\ query, t>1);\\quad0\\ (otherwise)",
+    "locator": "Eq6"
+   }
+  ],
+  "signal_routing": "末生成token放turnGAE价值target，search query重叠token分担惩罚，再tokenGAE传递给生成token；observation没有PPO动作梯度，但独立reference KL。Eq7把KL写成正项且Algorithm1说maximize，与penalty文字冲突，不能默默改号。",
+  "normalization": "other",
+  "invariance": "GAE critic基线；重复权重w_i=c_i/sum c按重叠计数归一，非组std。不是gammaΦ(next)-Φ(current) PBRS；页距/重复/格式项会改变目标。",
+  "baseline_or_potential": "learned Vφ两层GAE；不是冻结reader ΔV。",
+  "degenerate_cases": "无重叠时w_i分母0处理未写；G为空页距未定义；全对/全错仍有过程信号；单轮退化标准PPO但KL实现仍待核。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2三主部件消融；Fig4 top-K性能/成本比较（正文报+3.2%与约3×token减少）。",
+  "negative_results": [
+   {
+    "text": "Visual RAG ColQwen在PaperText .345低于M3DocRAG .350。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若无GT证据页时收益消失，则不能直接迁移到无bbox标签crop；若词汇不同但语义重复仍循环，n-gram惩罚不够。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B actor/value",
+   "framework": "PPO",
+   "group_size": null,
+   "max_turns": 6,
+   "kl": {
+    "generated": 0.001,
+    "observation": 0.01
+   }
+  },
+  "cost": "16 A10080G，19000最大trajectory tokens，train top1；γtoken1 γturn.9 λ均1，α5 repetition η.5。",
+  "pitfalls": [
+   {
+    "text": "Eq7视觉概率分布如何从hidden state构造未明确；null-space论证不能直接证明KL保证Lipschitz连续。",
+    "locator": "§4.3; Appendix B"
+   },
+   {
+    "text": "Eq3/Eq6展示未含η，但超参给η=.5；具体加权位置未代码核验。",
+    "locator": "Eq3,6; Appendix hyperparameters"
+   }
+  ],
+  "code": null,
+  "lesson": "当用过程reward优化工具时，先声明GT可用信息、动作token和观察token路由，并核对两层价值目标与正则符号。"
+ }
+}

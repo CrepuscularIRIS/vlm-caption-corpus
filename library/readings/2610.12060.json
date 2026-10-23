@@ -1,0 +1,160 @@
+{
+ "paper_key": "2610.12060",
+ "title": "Look Back, Think Ahead: Visual Memory on Demand for Efficient Multimodal Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2610.12060.txt",
+  "sections_read": [
+   "Abstract/contributions; §3 Eqs1-9; Tables1/3/4; §4.4/5 limitations",
+   "AppA.3 Eqs21-29; AppB settings/Table6-8; AppC.1-C.4 budget/cost"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "冻结VLM保留可恢复FineKV与压缩CoarseKV，TRACE按历史动态HOLD/UPDATE；正确性与答对子集占用成本分通道训练。",
+  "key_step": "DART训练容量与分组，TRACE先teacher监督再RLOO；成本只权重region选择，correctness权重gate+region。",
+  "why_non_obvious": "固定压缩会丢未来证据，少active token可能诱发更长响应；驻留成本不等于调用次数。",
+  "trigger_condition": "When evidence demand shifts during decoding, retain recoverable memory and optimize selective access over full responses.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "解耦长期存储与即时访问，并分别路由准确性与资源目标。",
+  "abstract_trigger_condition": "When removing information is irreversible, preserve storage but make active access selective.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "以成功条件中心化成本构造独立资源梯度。",
+  "abstract_why_non_obvious": "保留结果通道同时节流不保证准确率约束，且gate与region路由影响不同。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.12060#s1",
+   "object": "外部TRACE的gate及Bernoulli region actions",
+   "information": "推理仅causal隐藏状态/既有active set；在线teacher见图问题prefix，不见GT和future student text；offline teacher产轨迹及boxes",
+   "operation": "正确性RLOO到全部router动作；答对组中心化Fine驻留cost只到UPDATE的region logprob，另teacher BCE和无UPDATE全错辅助",
+   "claimed_effect": "20%预算八任务归一化均值80.33 vsDivPrune57.78；30% MMMU25.03 vs单recall16.91",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1/3; AppA.3 Eq23-29",
+    "quote": "Cost\nadvantages are not divided by their standard deviation."
+   },
+   "failure_boundary": "收益依赖teacher/SFT/可恢复KV，20%是平均active occupancy而非峰值显存或硬预算。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P12",
+   "strength": 3,
+   "how": "独立correctness与成功条件cost通道并分动作路由，直接涉及卡C核心设计。"
+  },
+  {
+   "problem": "P05",
+   "strength": 2,
+   "how": "区分访问占用/响应长度/端到端成本。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Full/FastV/VisionZip/DivPrune；同DART的DSTP；single/no recall、mean pooling、SFTonly",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "保留双KV增显存；短响应/广泛访问可能不抵初始化成本；固定16token间隔/分组会漏证据，跨骨干和其他解码未验证。",
+   "locator": "§5"
+  }
+ ],
+ "question": {
+  "observed_failure": "30% MMMU单recall16.91 vs反复25.03；单步节省被长回答抵消，FastV总成本可能增加。",
+  "load_bearing_assumption": "推理开始选一次证据就够，per-token节省等于端到端节省。",
+  "scope": "冻结Qwen3VL4B的动态视觉KV访问",
+  "success_criterion": "同准确率/realized occupancy下更低完整响应时间；分开报告TTFT/峰值显存",
+  "why_open": "视觉需求时变且coarse压缩不可逆，推理长度也受缺失证据影响。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "AppC.3-C.4"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Fig6"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "Eq26"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i^{acc}=2Y_i-\\frac1{G-1}\\sum_{j\\ne i}2Y_j;\\ C_i=(N_iT_i)^{-1}\\sum_n|F_{i,t(n)}|;\\ A_i^C=1_{i\\in I^+}(\\bar C_+-C_i)",
+    "locator": "Eq23-24; |I+|<2时cost优势0"
+   },
+   {
+    "latex": "L_{policy}=-G^{-1}\\sum_i[A_i^{acc}\\ell_i^{all}+.5A_i^C\\ell_i^{region}];\\ L_{RL}=L_{policy}+.3L_{Teacher}+.1L_{call}",
+    "locator": "Eqs26/29"
+   },
+   {
+    "latex": "L_{call,i}=-\\log[1-\\prod_t(1-q_{i,t})]",
+    "locator": "Eq28; 全组失败且所有轨迹无autonomous UPDATE时"
+   }
+  ],
+  "signal_routing": "只训练TRACE，冻结VLM和DART；acc到gate+region，cost只到UPDATE时Bernoulli选/不选region，不直接到HOLD/UPDATE gate；共享表示仍可间接改gate。teacher BCE到region/threshold/shared；call项到无update失败状态。不是语言token PG。",
+  "normalization": "leave-one-out correctness G16；cost在答对子集mean-only中心化，无std，|I+|<2置0；trajectory logprobs求和后问题均值，不PPOclip；teacherBCE validregion均值。",
+  "invariance": "非PBRS；success-conditioned cost及aux改变目标，无硬准确率或计算约束。",
+  "baseline_or_potential": "correctness LOO；cost均值含自身，非LOO；无critic。",
+  "degenerate_cases": "全错correctness与cost为0，teacher仍可训练，且无update触发call；全对acc0成本可区分；少于2成功cost0；全HOLD region梯度为空；p≈0时gate bias/aux促探索但不保证精准调用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同DART比较DSTP，no/single/repeated recall，meanpool和SFTonly；完整响应时间/TTFT/显存分算。",
+  "negative_results": [
+   {
+    "text": "peak42.67GiB高于Full38.40；20–50%下TTFT比one-shot高；短回答收益未保证。",
+    "locator": "§4.4/5"
+   },
+   {
+    "text": "Full MMMU30.92远低于外部报告53.2，greedy/presence0与推荐解码不同；未隔离原因，不能推广对外排名。",
+    "locator": "AppC.1"
+   }
+  ],
+  "seeds": "未读到多训练seed；Fig2误差带属于诊断，不当主表非劣CI。",
+  "falsifier": "若匹配输出长度/真实占用后动态路由无优势，节省不来自选择；打乱成功组cost保持通道可区分资源语义。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "frozen Qwen3VL4B; teacher Qwen3.8-27B",
+   "framework": null,
+   "group_size": 16,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2.421M trainable(.0546%)；DART57420/1200steps，TRACE SFT80000两阶段各3epochs，RL4800题50×96prompt/G16，H200；推理1×H200 batch8。",
+  "pitfalls": [
+   {
+    "text": "HOLD期间Fine仍占用，cost不能只计UPDATE；active比例不是释放显存；动态阈值闭环占用不保证单调。",
+    "locator": "Eq24/AppC.2-C.4"
+   }
+  ],
+  "code": null,
+  "lesson": "当优化视觉访问成本时，把驻留时长和输出长度计入，并保留端到端时间、TTFT、显存分别测量；更少激活不代表更少存储。"
+ }
+}

@@ -1,0 +1,158 @@
+{
+ "paper_key": "litscan:2430",
+ "title": "VisDiaHalBench",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2430.txt",
+  "sections_read": [
+   "Abstract p1",
+   "贡献p2",
+   "§3 pp3–6",
+   "§4 Tables3–8 pp7–9",
+   "局限节未定位，附录未读"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以唯一scenegraph路径生成五轮问答，先编辑目标图，再加入不存在对象问题，最后换回原图同问，测视觉更新与历史污染。",
+  "key_step": "保持可追溯对象和问题，改变图像与对话顺序以拆分感知失败、不可答识别和历史影响。",
+  "why_non_obvious": "单轮幻觉抑制可损害多轮，先前正确答案在图像更新后也会成为误导。",
+  "trigger_condition": "When earlier answers may conflict with a new view, test matched original/edited images and preserve reference chains.",
+  "contribution_type": "diagnostic_benchmark",
+  "abstract_strategy": "Create controlled evidence changes while preserving query identity.",
+  "abstract_trigger_condition": "When memory can become stale, compare behavior before and after a controlled observation change.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null;无reviews",
+  "abstract_key_step": "Swap observations at a fixed question after building coherent history.",
+  "abstract_why_non_obvious": "A formerly correct answer can become harmful after evidence changes."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2430#s1",
+   "object": "多轮新证据与历史一致性测试",
+   "information": "GQA标注scenegraph、SAMmask、编辑图和原图；GPT4仅将路径/答案生成自然语言问句。",
+   "operation": "5K图×5轮：改目标→指代问→原对象不存在问→承接不可答问→原图复用首问；重排34125及scenegraph输入做对照。",
+   "claimed_effect": "GPT4V image平均EM33.01，对scenegraph59.12；Turn5无历史77.16，首轮答对的误导历史组38.35。",
+   "conditions": [
+    "编辑实际成功",
+    "路径唯一且指代保持"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7",
+    "quote": "33.01  48.26"
+   },
+   "failure_boundary": "两组按首轮正确性条件化并非随机对照；scenegraph包含答案信息，增益不能单独定位视觉encoder。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P50",
+   "how": "提供新图与历史冲突的恢复诊断设计，需改造成真实crop状态。",
+   "strength": 2
+  },
+  {
+   "problem": "P28",
+   "how": "明确不可答行为缺失与固定轮次捷径。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "区分文字历史与视觉更新。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "BLIP2/Cheetah/MiniGPT4/LRV/HalluDoctor/LLaVA/GPT4V；Q-Probing；scenegraph替图",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "人类发现第3/4轮恒不可答后得到100%，存在模板捷径。",
+   "locator": "§4.5 p9",
+   "quote": "ﬁxed answer \"unanswerable,\" resulting in a 100%"
+  }
+ ],
+ "question": {
+  "observed_failure": "MiniGPT4 Turn3 EM.07/Turn4 .36；GPT4V仅38.72/17.83。",
+  "load_bearing_assumption": "单轮VQA/幻觉改善能转化成多轮证据更新和拒答。",
+  "scope": "编辑图五轮问答，包含两轮不可答与末轮换图。",
+  "success_criterion": "在相同对象上随视觉证据更新，拒绝错误预设且保指代。",
+  "why_open": "传统评测少覆盖长历史及跨视图冲突。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "locator": "§3定义五轮诊断"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.4排序与scenegraph控制"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§3–4"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "无RL训练；scenegraph支持答案，所有模型读取自己生成的历史。Q-Probing额外生成相关问题再提示作答，不产生过程reward。",
+  "normalization": "other：答案关键词抽取后EM/wordmacroF1；未涉及优势归一化。",
+  "invariance": "非shaping/PBRS。",
+  "baseline_or_potential": "scenegraph替换是信息对照，不是策略价值baseline。",
+  "degenerate_cases": "固定第3/4轮不可答可被轮次捷径解决；图编辑失败/代词失配造成伪错误，常量拒答对一部分轮次获益。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "五轮原序vs34125、imagevsGTscenegraph、Turn5历史/无历史；50图2人编辑检查、50对话250QA核验。",
+  "negative_results": [
+   {
+    "text": "HalluDoctor首轮39.95优于MiniGPT4 5.31，但末轮35.79远低于71.74；Q-Probing末轮61.57也低于MiniGPT4。",
+    "locator": "Table3 p7"
+   },
+   {
+    "text": "25K题里改属性19760、改对象105，编辑类型严重不平衡。",
+    "locator": "Table2 p6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "proposed：随机化不可答轮次与恢复轮次，保证改图/原图同源配对，测有证据后答错→答对且排除固定拒答/固定最后答题捷径。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "多种LVLM;Q-Probing基于MiniGPT4",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 5,
+   "kl": null
+  },
+  "cost": null,
+  "pitfalls": [
+   {
+    "text": "唯一性按scenegraph而非完整像素验证；人审GT正确98%且编辑评分1.8/2，非全样本无误。",
+    "locator": "§3.1/§4.5"
+   }
+  ],
+  "code": "https://github.com/qingxingcao/VisDiaHalBench",
+  "lesson": "当恢复能力通过固定轮次任务评测时，应随机化证据变化与不可答位置，否则学会模板也会被算作恢复。"
+ }
+}
