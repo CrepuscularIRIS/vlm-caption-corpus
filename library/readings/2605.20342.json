@@ -327,7 +327,7 @@
     0.3
    ]
   },
-  "cost": "Appendix B 报告可用两台8卡机器（每卡≥80GB）；RL 用一节点7卡FSDP+1卡SGLang。每步约50分钟（rollout35、更新15）；流水线后等待从约500秒降至<2秒，不代表 rollout 计算只需2秒。总GPU小时、训练token与主运行总步数未报告。Eq.4 在作者假设每帧256视觉token下估计 K=2.5 时主上下文输入节省约60%；未计所有子代理视觉编码/摘要生成，也不是实测延迟，本项目不沿用该token常数。",
+  "cost": "[redacted: project-internal]",
   "pitfalls": [
    {
     "text": "Asyncvideoembeddingcacheneedsroom;increasecache4096MBunderreportedconfig.",

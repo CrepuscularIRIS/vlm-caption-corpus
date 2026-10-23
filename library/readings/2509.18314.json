@@ -1,0 +1,63 @@
+{
+ "paper_key": "2509.18314",
+ "title": "Exploiting Tree Structure for Credit Assignment in RL Training of LLMs",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2509.18314.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§4 prefix values/combined advantage/Eq1",
+   "§5 setup",
+   "§6 Table1/group-size and branch-count analyses",
+   "§7 conclusion",
+   "AppTable2 hyperparameters"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把已采样的普通回答转成精确token前缀树，从后代终奖估值，不额外树采样。",
+  "key_step": "V(prefix)=后代reward均值；所有token保留GRPO outcome项，仅分叉处加V(next)−V(current)，再共享组std。",
+  "why_non_obvious": "复用已有样本给分叉token局部信号，但样本内value含自身结果，不能直接称无偏因果credit。",
+  "trigger_condition": "同题多回答存在共享前缀且终答可核验时，从其分叉结构提取额外信用。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "复用采样轨迹的结构信息，在保留全局监督的同时只修正可比较的决策位置。",
+  "abstract_trigger_condition": "同题多回答存在共享前缀且终答可核验时，从其分叉结构提取额外信用。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2509.18314#s1",
+   "object": "精确共享前缀处的token advantage",
+   "information": "同题G条回答及二值终奖",
+   "operation": "P2T后代均值value+branch TD correction叠加组中心化结果",
+   "claimed_effect": "Qwen3-4B MATH91.0 vs GRPO87.6；MedQA79.18 vs76.12，四个OOD表列也提升。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen3-4B TEMPO row",
+    "quote": "+ TEMPO           91.0         62.32          92.5       79.18    62.51             85.49"
+   },
+   "failure_boundary": "独立rollout很早分叉后，后续语义同态状态不会自动合并；无法给每次实际工具动作都提供比较。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "直接在分叉token增加credit且保留全序列结果。",
+   "strength": 3
+  },
+  {
+   "problem": "P15",
+   "how": "没有把非分叉/工具段结果信用置零。",
+   "strength": 3
+  },
+  {
+   "problem": "P58",
+   "how": "从已有rollouts构树，无需额外续跑但共享覆盖有限。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

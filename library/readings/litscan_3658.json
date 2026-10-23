@@ -1,0 +1,59 @@
+{
+ "paper_key": "litscan:3658",
+ "title": "SP-PRM — From Outcomes to Processes: Guiding PRM Learning from ORM for Inference-Time Alignment",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3658.txt",
+  "sections_read": [
+   "Abstract; §4.1–4.2 Eq2–3",
+   "Tables1/4/5; §5.3 ablations; §8 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "从完整回答偏好构造随机截断前缀偏好，参考ORM筛除不一致前缀并按低熵置信加权训练PRM。",
+  "key_step": "保留reference认可原winner的prefix对，weight=1/H(sigmoid绝对reward差)，其余0；加权Bradley-Terry训练后用于多种推理搜索。",
+  "why_non_obvious": "完整回答的偏好不必在每个prefix成立；强推前缀一致性会损害语义，所以需reference过滤和置信权重。",
+  "trigger_condition": "搜索按部分文本评分，但现成ORM只在完整回答偏好上训练。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以终局偏好作弱标签，再通过参考一致性与不确定性控制将监督下沉到部分序列。",
+  "abstract_trigger_condition": "搜索按部分文本评分，但现成ORM只在完整回答偏好上训练。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3658#s1",
+   "object": "部分回答reward model",
+   "information": "完整chosen/rejected对、随机token截断、reference ORM的两前缀分数",
+   "operation": "SST构造前缀对，reference同向才保留，逆entropy加权pairwise logistic loss，替换推理搜索评分器",
+   "claimed_effect": "GSM8K Table4 CBS+SP-PRM在1B/3B Acc61.0/68.0，原CBS57.5/65.5；HH-RLHF Table1去reference的TBS diversity .78/.77低于完整.88/.87。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4 Eq2–3; Table4 p19298",
+    "quote": "+Ours            -0.52    61.00    1.68       68.00"
+   },
+   "failure_boundary": "reference不是人类真值，强置信错误会被放大；保证score consistency不等于保证正确推理或策略增益。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "提供无逐步人工标签的PRM构造，但需适配视觉证据和检验prefix弱标签。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "reference ORM偏好不能当当前actor工具效用；这里用途是筛训练标签。",
+   "strength": 2
+  },
+  {
+   "problem": "P37",
+   "how": "一致性过滤会丢掉最终好但早期较差的prefix，需要保留合理探索对照。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

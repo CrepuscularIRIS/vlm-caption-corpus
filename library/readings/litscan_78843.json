@@ -1,0 +1,212 @@
+{
+ "paper_key": "litscan:78843",
+ "title": "DR2Seg",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78843.txt",
+  "sections_read": [
+   "pp1–9 abstract/contributions/method/main tables/ablations/conclusion",
+   "Appendix A pp12–13 GRPO and B pp13–15 formula clarification",
+   "Appendix C p15 reward/hyperparameters"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "同一MLLM先用原图和隐式问题生成推理、显式目标描述和坐标，再用原图+描述替换问题续推理定位，以第二遍定位奖励及比较长度塑造第一遍。",
+  "key_step": "Rbase加Rdesc乘条件长度奖励；训练双pass，推理只firstpass；长度比较加绝对anchor抑制双遍共同变长。",
+  "why_non_obvious": "不是外部无图reader：第二遍仍看原图，且由GT框/点验证。它能检验描述是否足以定位，却不证明第一遍推理忠实或新增证据。",
+  "trigger_condition": "VisionReasoner长推理可能把定位注意转向非目标；ReasonSeg少样本继续RL退化。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以任务分解后的自生成显式描述作为辅助验证条件，联合准确率与有条件的资源约束。",
+  "abstract_trigger_condition": "VisionReasoner长推理可能把定位注意转向非目标；ReasonSeg少样本继续RL退化。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "Rbase加Rdesc乘条件长度奖励；训练双pass，推理只firstpass；长度比较加绝对anchor抑制双遍共同变长。",
+  "abstract_why_non_obvious": "不是外部无图reader：第二遍仍看原图，且由GT框/点验证。它能检验描述是否足以定位，却不证明第一遍推理忠实或新增证据。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78843#s1",
+   "object": "双遍描述验证",
+   "information": "first原图+Q，second原图+D，无原Q；GT框/点只奖励，部署只第一遍",
+   "operation": "第二遍定位质量变成first轨迹辅助reward，samepolicy，无额外teacher",
+   "claimed_effect": "zero-shot test gIoU63.6→64.8，tokens84.8→55.4；fewshot66.1/27.2",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p6 Table1 DR2Seg row, Val tokens/gIoU/cIoU then Test tokens/gIoU/cIoU",
+    "quote": "DR2 Seg (Ours)         Qwen2.5VL-7B         46.2         67.5       60.0       55.4        64.8       62.8"
+   },
+   "failure_boundary": "第二遍可借原图补全含糊D；Rdesc不是推理正确性gold。zero-shot没有Rlen。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78843#s2",
+   "object": "条件长度自奖励",
+   "information": "两遍reasoning token数N1/N2、anchor45、gamma.05，当前组是否有定位奖励>0",
+   "operation": "比较奖励减超长penalty后clip，乘Rdesc；全组失败置长度factor1",
+   "claimed_effect": "Table3 Rdesc alone56.1tokens/gIoU67.6→full26.9/68.5",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p8 Table4 N0=25, Tokens/gIoU/cIoU",
+    "quote": "25     70.7       66.3        57.7"
+   },
+   "failure_boundary": "N0过小25导致准确率/长度冲突并解除约束，输出70.7tokens；非单调预算控制。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P05",
+   "strength": 3,
+   "how": "token效率与定位准确率共同评估，非仅工具率。"
+  },
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "描述替换query仍看图，检验充分性不等于原推理因果贡献。"
+  },
+  {
+   "problem": "P32",
+   "strength": 3,
+   "how": "准确率门使长度约束可失效，存在反向长度变化。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "VisionReasoner",
+   "kind": "method"
+  },
+  {
+   "name": "PixelThink",
+   "kind": "method"
+  },
+  {
+   "name": "Seg-Zero",
+   "kind": "method"
+  },
+  {
+   "name": "Rdesc-only and length-anchor/penalty ablations",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "reader：辅助reward改变目标，附录方差降低和potential不变性无充分证明；D充分统计量/IB训练是假设不是本方法实际优化。",
+   "quote": null,
+   "locator": "AppB Eqs27–37 pp13–14"
+  },
+  {
+   "text": "reader：zero-shot仅Rdesc，fewshot额外239训练样本；不能把全模型结果全归因长度机制。",
+   "quote": null,
+   "locator": "§4.1–4.2 pp5–6"
+  }
+ ],
+ "question": {
+  "observed_failure": "VisionReasoner ReasonSeg fewshot test gIoU63.6→62.3；长推理可能干扰定位。",
+  "load_bearing_assumption": "description-conditioned定位奖励提供比冗长自由文本更有用的训练反馈。",
+  "scope": "Qwen2.5VL7B+SAM2、ReasonSeg first-pass部署。",
+  "success_criterion": "匹配训练数据后gIoU不降且reasoningtokens减少，包含all-fail组。",
+  "why_open": "描述辅助验证依赖原图、GT与同policy；长度门和normalization可能主导效果。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table1准确率/长度联合比较"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3/4分离Rdesc与长度anchor"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§3.3拆隐式推理与指代表达定位"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "Eqs1–8双遍反馈"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Rlen=clip(1[N2<N1]−γmax(0,N1−N0),0,1); Rtotal=Rformat+Rnonrepeat+Racc(A1,A*)+Rdesc(A2,A*)·R̃len",
+    "locator": "Eqs2–7 p4"
+   },
+   {
+    "latex": "R̃len=Rlen if ∃i Racc^(i)>0 else 1; A_i=r_i−mean_j r_j (optional /(sqrt(mean centered squares+ε)))",
+    "locator": "Eq8 p4; AppA Eqs18–19 p12"
+   },
+   {
+    "latex": "L=E[(1/K)Σ_i A_i logπθ(y_i|x)]−βKL; Var(Racc+Rdesc)=Var(Racc)+Var(Rdesc)+2Cov",
+    "locator": "AppA Eqs21–22 p12; AppB Eq28 p13"
+   }
+  ],
+  "signal_routing": "图2和正文指双pass奖励优化第一pass；AppA使用整响应logprob，无专属D/推理token路由，second pass是否也入loss未明确，不补实现。SAM2 GT匹配框IoU>.5/框L1<10/点L1<30，各成功pair加1/max(N,K)；Racc可达3，不是图2简化的binary。",
+  "normalization": "奖励各匹配项按max(GT数,预测数)归一；空集合0/0未说明。组mean必需/std optional未给实际配置；KLβ/length loss归一未给。",
+  "invariance": "AppB把正相关Rdesc直接相加类比control variate不成立：非负Cov时方差增大；行动依赖baseline b(S)也不一般无偏。无已实现potential差分。",
+  "baseline_or_potential": "AppB仅条件性提potential，未构造Φ；Eq33对R1→D→A2的DPI方向写反，应I(R1;A2|I)≤I(D;A2|I)。D依赖Q，不能仅凭given I deterministic声称等号。Eq37跨A1/A2无给定DPI链。",
+  "degenerate_cases": [
+   "N2≥N1令Rlen0；N1≥N0+1/γ且N2<N1也饱和0，长度区间失去区分。",
+   "全组Racc0令R̃len1仍保留Rdesc，不能说全部reward清零。",
+   "条件熵下降到token减少需要额外编码假设；实际未优化IB Eq35，Eq36替换Q为D非一般熵不等式。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：固定7K+239数据预算，比Rdesc-only、绝对长度惩罚、比较+anchor门；单独统计全失败组门触发率，D交换/无D控制检验second是否读D。",
+  "negative_results": [
+   {
+    "text": "N0=25 tokens70.7，比45的26.9更长；gIoU66.3低于68.5。",
+    "locator": "Table4 p8"
+   },
+   {
+    "text": "refCOCOtestA zero-shot78.7低于VisionReasoner78.9/Seg-Zero80.3。",
+    "locator": "Table2 p6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若随机交换D仍保留辅助奖励增益，描述信息瓶颈解释削弱；若匹配token预算后gIoU不再提升，不支持结构本身的优势。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/3B; SAM2-Large and SAM3",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": 2,
+   "kl": null
+  },
+  "cost": "7K1epoch再239样本5epoch；batch16 lr1e-6 wd.01。双pass训练/单pass部署；硬件与时延未读到。",
+  "pitfalls": [
+   {
+    "text": "SAM3 API需xyxy到归一cxcywh且过滤非法框；不能把SAM2坐标reward直接当maskIoU。",
+    "locator": "AppC.3 p15"
+   },
+   {
+    "text": "N0过小触发全失败门而取消长度约束。",
+    "locator": "§4.3 p8"
+   }
+  ],
+  "code": "https://github.com/harrylin-hyl/DR2Seg (not executed/read)",
+  "lesson": "预算约束应监测失败条件下是否自动关闭；先用无长度模型平均长度附近3–4候选选anchor，报告门触发与总训练双pass成本。"
+ }
+}

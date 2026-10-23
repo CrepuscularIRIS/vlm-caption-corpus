@@ -1,0 +1,213 @@
+{
+ "paper_key": "2505.11896",
+ "title": "AdaCoT: Pareto-Optimal Adaptive Chain-of-Thought Triggering via Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.11896.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§2 Eqs1–5 pp3–4",
+   "§3 Tables1–2/Fig1 pp5–7",
+   "§4/Table3 pp7–9",
+   "AppB标签规则 pp19–20"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "SFT混合空/非空think；Math PPO屏蔽think后首token直接loss以保留决策；General PPO用错漏/过用标签罚系数调门。",
+  "why_non_obvious": "专业数学RL会把此前学到的混合路由推成alwaysCoT；只mask一个token可经验缓解但不等于冻结路由参数。",
+  "trigger_condition": "When specialized RL collapses an adaptive reasoning gate, mask its direct token loss and later tune routing penalties on broad data.",
+  "contribution_type": "决策token mask+有标签门控reward",
+  "abstract_strategy": "把决策和执行阶段的训练信号分开",
+  "abstract_trigger_condition": "同一参数模型既路由又生成且训练分布偏一类",
+  "abstract_key_step": "偏置阶段屏蔽首决策loss，通用阶段调二类错罚",
+  "abstract_why_non_obvious": "少一个loss项仍有共享参数耦合，标签也非反事实necessity。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.11896#s1",
+   "object": "15B active/150B total MoE adaptiveCoT",
+   "information": "内部15B按原则标是否需CoT，SFT67%/RL40%需；Math规则reward/General训练RM",
+   "operation": "RL-Math对think后一个decision token mask，保留其余PPO；General reward减miss/overuse/format罚",
+   "claimed_effect": "1000平衡日常题Math无SLM触发分类acc.506 recall1；有SLMacc.813 recall.670 precision.938。",
+   "conditions": [
+    "SLM只在Math阶段",
+    "分类gold来自原则标签+人工核查",
+    "不是冻结共享参数"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p7 Accuracy/F1/Recall/Precision",
+    "quote": "RL-Math (with SLM)                                         0.813          0.781        0.670         0.938"
+   },
+   "failure_boundary": "后续非决策token仍更新共享参数；不能保证决策概率不变或恢复已塌支持",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.11896#s2",
+   "object": "Exp2 production mobile traffic",
+   "information": "自然用户分布与独立15benchmark",
+   "operation": "alphaMiss.2,alphaOver.3,format1获得较少CoT路由",
+   "claimed_effect": "mobile377.18→116.70tokens、CoT3.18%；15benchmark分62.8 vs FullCoT65.0、触发53.3%。",
+   "conditions": [
+    "生产节约与benchmark准确率不是同一分布",
+    "未建立非劣置信界"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p7 mobile tokens/trigger",
+    "quote": "AdaCoT RL Model Exp2 (Adaptive)           116.70 (↓69.1%)               3.18%"
+   },
+   "failure_boundary": "整体平均分仍降2.2pp，forcedAlways分65.3仅说明不同推理模式上限",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P24",
+   "strength": 3,
+   "how": "token mask缓解路由塌缩但共享参数间接影响仍存在。"
+  },
+  {
+   "problem": "P21",
+   "strength": 3,
+   "how": "决策token与后续执行token不同待遇直接先例。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "混合SFT先给两种行为，RL不是从零发现。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "FullCoT SFT/RL",
+   "kind": "method"
+  },
+  {
+   "name": "NoCoT SFT/RL",
+   "kind": "method"
+  },
+  {
+   "name": "AdaptiveSFT",
+   "kind": "method"
+  },
+  {
+   "name": "Math with/without SLM",
+   "kind": "method"
+  },
+  {
+   "name": "Meta-reasoningSFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "触发最优依赖模型能力，二分类忽略推理深度，领域/个性化泛化未解决。",
+   "locator": "§4.1"
+  },
+  {
+   "text": "原始数据、模型与rewardmodel内部；PPO clip/GAE/adv标准化/训练步数和batch未详给。",
+   "locator": "§3 reader scope"
+  },
+  {
+   "text": "生产token收益无同集准确率非劣证据；经验点构成tradeoff，不证明全局Pareto最优。",
+   "locator": "§3.2 reader qualification"
+  }
+ ],
+ "question": {
+  "observed_failure": "Math无mask分类acc.506、recall1；有mask.813、recall.670。",
+  "load_bearing_assumption": "SFT学到的标签路由值得保留，专业阶段直接decision梯度是塌缩来源之一。",
+  "scope": "内部MoE二值CoT；Math→General两阶段PPO",
+  "success_criterion": "分类routing、任务分、tokens分别报告；不得把标签准确率当任务正确率",
+  "why_open": "特殊训练域几乎都需CoT，抹去一般域混合路由。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table1 with/without SLM"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "SFT双行为warmup→Math→General"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Fig1分数/触发tradeoff"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=R_{base}-\\alpha_1P_{miss}-\\alpha_2P_{over}-\\gamma P_{fmt}",
+    "locator": "Eq4;Exp1(.1,.3),Exp2(.2,.3),Exp3(.3,.3),Exp4(.3,.1);gamma1"
+   },
+   {
+    "latex": "L_{SLM}=\\sum_{k\\ne k_{decision}}\\ell_k,\\quad k_{decision}=\\text{token immediately after <think>}",
+    "locator": "Eq5"
+   }
+  ],
+  "signal_routing": "Math只去掉decision token原PPO直接loss，其余生成token仍训练；不是只训gate、不是冻结head。General根据原则标签binary miss/over和任务RM加format罚，完整PPO具体mask/adv未列。SFT空think与有think模式；meta-reasoning额外token仅SFT探索，不是默认后续RL。",
+  "normalization": null,
+  "invariance": "非PBRS，修改目标和loss。Eq3λP P−λT T是概念scalarization，实际Eq4惩罚标签不匹配而非每触发统一cost。mask使直接∂loss项0不使共享参数对decision logit变化0。不能据PPO名字推组std/GAE。",
+  "baseline_or_potential": "need标签由外部原则annotator，不是相同学生有/无CoT回报差；PPO baseline具体未知。",
+  "degenerate_cases": "已always/never时SLM不能自动恢复丢失分支；全需CoT数据去directloss仍有间接漂移；标签错误时miss/over罚会奖励错误路由。格式不合法也罚，cost并非仅成功样本。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Math with/without mask；四对miss/over罚系数形成benchmarktradeoff；强制Always检验潜在解题能力，不能当自适应模式同精度。",
+  "negative_results": [
+   {
+    "text": "Exp2 62.8低于FullCoT65.0；Exp3/4最高64.3/64.4仍略低。",
+    "locator": "§3.2.1"
+   },
+   {
+    "text": "Exp4 benchmark触发67.7%但日常标签recall.370，不同分布且非单调；meta-reasoning提升F1.750→.840但额外token所以未用于默认RL。",
+    "locator": "Table1/§4.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "只mask与独立冻结router对照；若共享骨干变化仍让选择率漂移，则mask不能提供结构性冻结保证。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "internal15B/150B MoE;15B标签辅助",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "生产mobile token−69.1%、PC−70.6%；具体训练GPU/步数未知；benchmark部分重采样/多推理平均，需按其协议比较。",
+  "pitfalls": [
+   {
+    "text": "SLM首token必须按实际tokenizer定位，不能仅字符串think结束就假定整动作前缀被冻结。",
+    "locator": "Eq5 reader transfer"
+   },
+   {
+    "text": "mask不隔离参数，外接head和隐状态漂移仍需独立验证。",
+    "locator": "reader analysis"
+   }
+  ],
+  "code": null,
+  "lesson": "当特化RL破坏路由时先做单决策token loss消融；区分直接梯度屏蔽与参数冻结，并用同域任务分和成本评估。"
+ }
+}

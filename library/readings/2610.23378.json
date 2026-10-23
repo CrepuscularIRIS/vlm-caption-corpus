@@ -1,0 +1,157 @@
+{
+ "paper_key": "2610.23378",
+ "title": "Look Before You Act: Bridging Active Perception and Vision-Language-Action Models via Observation-Aligned Data Adaptation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2610.23378.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "III",
+   "TablesI–VI,VIII",
+   "V Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "从部署AP模块的真实终点起，用demo早期prefix最近EE状态匹配+闭环对齐+成功suffix replay构造VLA监督。",
+  "why_non_obvious": "更好视角同时改变robotstate，原policy不一定能消费；不能只增强图片。",
+  "trigger_condition": "When sensing changes the deployment handoff distribution, rebuild executable demonstrations from its endpoints.",
+  "contribution_type": "observation-aligned imitation data",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When a preprocessing policy shifts downstream states, construct supervision from its actual outputs.",
+  "abstract_key_step": "记录对齐动作及可回放suffix，排除active approach本身。",
+  "abstract_why_non_obvious": "几何接近并不保证object/contact状态兼容。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.23378#s1",
+   "object": "AP→VLA handoff训练分布",
+   "information": "RGBD+instruction，部署viewpoint module，resettable scene与demo",
+   "operation": "匹配[.05T,.30T]→20step OSC对齐→成功replay过滤→原生VLA SFT",
+   "claimed_effect": "π0.5平均46.3→naive11.5→aligned72.7；Spatial matchedstate54.6 vsaligned78.2。",
+   "conditions": [
+    "perturbed-startLIBERO",
+    "四VLA"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "TableIV",
+    "quote": "ActiveAlign                         78.2"
+   },
+   "failure_boundary": "成功过滤后的训练分布只是可行子集；一次precontact看图非持续主动感知。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P39",
+   "how": "视觉信息变好不代表student能消费；需重构handoff状态监督。",
+   "strength": 3
+  },
+  {
+   "problem": "P37",
+   "how": "部署状态对齐的可执行轨迹构造。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Naive Active",
+   "kind": "handoff ablation"
+  },
+  {
+   "name": "matched-state camera extrinsics",
+   "kind": "state/suffix control"
+  },
+  {
+   "name": "random view/broad jitter",
+   "kind": "data-matched control"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "需要可重置场景和replayable demo；成功过滤低估困难终点。",
+   "locator": "V"
+  },
+  {
+   "text": "只一次pre-manipulation视角选择，无movingoccluder再观察。",
+   "locator": "V"
+  }
+ ],
+ "question": {
+  "observed_failure": "naiveπ0.5成功46.3→11.5%。",
+  "load_bearing_assumption": "有效观测和可执行后续动作必须联合匹配训练分布。",
+  "scope": "AP/VLA接口",
+  "success_criterion": "相同state/data控制下端到端成功提高",
+  "why_open": "难终点被过滤，实际部署分布仍不完全匹配。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "TablesIII/IV/VI controlled comparisons"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "theta*=argmin_theta E_(o,l,a)~Dtrain L_VLA(theta;o,l,a)",
+    "locator": "Eq1"
+   },
+   {
+    "latex": "k*=nearest end-effector demo state within [.05T,.30T]; keep alignment+suffix only if replay succeeds",
+    "locator": "Algorithm1"
+   }
+  ],
+  "signal_routing": "SFT目标是对齐段与manipulation suffix的action/chunk；AP approach不作VLA训练target。原模型token预测或continuousaction loss，success只筛数据/评测，非RL reward。",
+  "normalization": "other: 原生VLA loss细节依backbone，未统一给出；无advantage/std。",
+  "invariance": "非PBRS；成功筛选改变训练分布，不能证明与部署pA相等。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "无可回放suffix则该终点无监督；换AP需再构造数据；末端noise大则失效。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "matchedstate固定demo step/suffix；random/jitter同训练预算；匹配窗口与终点noise扫。",
+  "negative_results": [
+   {
+    "text": "标准benchmark init aligned96.6略低于standard96.8；收益随startshift增大。",
+    "locator": "TableIII"
+   },
+   {
+    "text": "终点noise .10m success78.2→42.6。",
+    "locator": "TableVI"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：同state和图像信息控制后收益若消失，则不能归因部署观测对齐。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "π0/π0.5/OpenVLA/GR00TN1",
+   "framework": "native supervised VLA; OSC",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "simulation1736/2000成功保留，physical86/100；AP训练20k/1200pairs",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当主动观察改变handoff状态时，需同时记录从该状态离开的可执行动作，单换图片不够。"
+ }
+}

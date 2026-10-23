@@ -1,0 +1,62 @@
+{
+ "paper_key": "2502.11435",
+ "title": "SMART: Self-Aware Agent for Tool Overuse Mitigation",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2502.11435.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§4.1–4.3",
+   "Table3/§5.3",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "GPT4o按子目标标工具/参数知识并生成解释，执行工具串成交错推理，再SFT下一段至工具调用。",
+  "why_non_obvious": "工具必要性由外部教师和源数据启发式赋值，不是训练中实时测当前actor能力。",
+  "trigger_condition": "当模型会工具但过度调用时，构造包含可直答与需工具子步骤及显式理由的SFT轨迹。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "当模型会工具但过度调用时，构造包含可直答与需工具子步骤及显式理由的SFT轨迹。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2502.11435#s1",
+   "object": "工具使用SFT数据",
+   "information": "MATH/FreshQA/意图数据ground truth启发式，GPT4o标A(si)，真实执行Code/Search/AskUser",
+   "operation": "过滤全tool或全parametric样本，只保混合；按工具边界切input/output instruction pairs训练",
+   "claimed_effect": "Llama3.1-8B Math工具1.93→.88，准确51.0→54.75；Small24B Math准确76.0→69.75，非无条件不降。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "Llama-3.1-8B          0.88↓1.05    54.75↑1.75       1.05↓1.00   67.00↑11.00    3.80↑0.03   81.40↑26.64 / 67.41↑24.92         78.28↑8.08\n                         Mistral-Nemo(12B)     0.82↓1.53    49.50↑2.50       1.00↓0.19   70.00↑11.00    3.34↑1.54   77.91↑33.72 / 62.15↑33.78         82.30↑23.03\nSMARTAgent"
+   },
+   "failure_boundary": "相同教师必要性标签不是模型自适应能力真值；Intention调用可能上升且有益，少工具不普遍等于更好。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P26",
+   "strength": 2,
+   "how": "SFT显式学何时调用，但需改为当前VLM能力条件标签。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "混合工具/直答轨迹建立行为支持。"
+  },
+  {
+   "problem": "P61",
+   "strength": 2,
+   "how": "存在减少调用同时准确下降的模型。"
+  }
+ ],
+ "scientific_replication": false
+}

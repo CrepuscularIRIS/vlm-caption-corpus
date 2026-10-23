@@ -1,0 +1,163 @@
+{
+ "paper_key": "2601.18779",
+ "title": "POPE: Learning to Reason on Hard Problems via Privileged On-Policy Exploration",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2601.18779.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 loss",
+   "§4 POPE",
+   "§5.2 overlap intervention",
+   "§6/Table2",
+   "conclusion limitations",
+   "AppE.2 hyperparameters"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把不可采到的oracle策略改为输入侧短前缀，保留模型自身on-policy输出。",
+  "key_step": "基座搜索最短能产生正确续写的oracle前缀；guided/unguided难题1:1混合RL。",
+  "why_non_obvious": "guided解题更容易不等于unguided迁移，禁止重述的指令提高前者却降低后者。",
+  "trigger_condition": "When hard problems yield no positive rollout, condition training exploration on short oracle prefixes and mix with unguided problems.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "外部信息改变探索起点，输出仍来自当前策略。",
+  "abstract_trigger_condition": "When reward support vanishes, introduce privileged states with overlap to reachable states.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "引导/无引导混合与允许回溯建立状态覆盖重叠。",
+  "abstract_why_non_obvious": "额外帮助可能形成条件依赖，需验证撤去帮助后的表现。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.18779#s1",
+   "object": "难题探索/采样构造",
+   "information": "训练有oracle正确解与最终answer verifier；测试无prefix",
+   "operation": "以最短可成功prefix扩增难题，混合自身rollout强化",
+   "claimed_effect": "hard pass@1 13.55→15.50，pass@16 32.89→42.53；AIME53.12/HMMT37.81 pass@1",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 hard+guide row; columns hard/AIME/HMMT each pass@1/pass@16",
+    "quote": "+ hard + guide (POPE)                       15.50 +14%     42.53 +29%     53.12 +7%      82.61 +1%        37.81 +22%   67.49 +6%"
+   },
+   "failure_boundary": "训练hard集合表现非heldout泛化；非证明学会原本完全缺失知识。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P07",
+   "strength": 2,
+   "how": "恢复零正确组的探索支持，需oracle与迁移"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "输入侧引导而非强制输出target的轨迹构造"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "hard-only RL",
+   "kind": "method"
+  },
+  {
+   "name": "hard+easy RL",
+   "kind": "method"
+  },
+  {
+   "name": "Full-oracle SFT",
+   "kind": "method"
+  },
+  {
+   "name": "Prefix+rejection-sampled SFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "更难题若基座缺知识，oracle前缀也可能不足；迁移理论未建立。",
+   "locator": "§8 conclusion"
+  },
+  {
+   "text": "LUFFY未稳定训练而省略比较，不能声称全面优于off-policy方法。",
+   "locator": "§6 result4"
+  }
+ ],
+ "question": {
+  "observed_failure": "hard+1K easy pass@1 2.24，加guide13.98；全oracleSFT hard2.00。",
+  "load_bearing_assumption": "单靠更长/更多当前策略rollout可从零正确支撑恢复。",
+  "scope": "Qwen3-4B math nearzero128sample hard集合",
+  "success_criterion": "无prefix评估pass@1/16与heldout AIME/HMMT",
+  "why_open": "初始零reward与easy数据竞争不由传统entropy鼓励自动解决。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§4 oracle targets→input prefixes"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§5.2禁止重述干预"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=r_i-\\frac1n\\sum_j r_j",
+    "locator": "§2"
+   },
+   {
+    "latex": "y\\sim\\pi_\\theta(\\cdot|x,z_{0:i^*(x)},I);D=D_{hard}\\cup D^{guided}_{hard}\\quad(1:1)",
+    "locator": "§4 Eq3"
+   }
+  ],
+  "signal_routing": "oracle prefix是prompt条件，无oracle token imitation loss；terminal二元correctness产生trajectory A并用于生成续写的PG。Eq2写sequence ratio，§6另说明token importance clip；不推定额外token credit/mask细节。",
+  "normalization": "mean-only：§2明确组均值相减，没有std；算法名GRPO不补写std。",
+  "invariance": "改变训练状态/问题分布；非PBRS，无无引导policy不变性保证。",
+  "baseline_or_potential": "同prompt rollout组均值，非潜势。",
+  "degenerate_cases": "p=0无引导组仍全零；guide若也失败仍无信号；全对组亦零；guidance依赖不能直接保证无guide行为。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "§5.2禁止重复/回溯prompt使guided更好但unguided更差；Table2分别加easy/guide及SFT对照。",
+  "negative_results": [
+   {
+    "text": "easy混合引发ray interference；oracleSFT降低hard/heldout；修改prompt抑制迁移。",
+    "locator": "§5.2/§6"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "等token/采样计算下，短prefix引导对无prefix测试无收益，或只背诵训练题则迁移机制受限。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-4B-Instruct-2507",
+   "framework": "Pipeline-RL; verl preliminary",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "hard筛选128 samples×32k；训练max16,384，8GPU/1000steps，评估32,768；prefix搜索额外成本。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当训练需要privileged帮助时，必须单独测撤去帮助后的收益，并保留探索轨迹与目标场景的状态重叠。"
+ }
+}

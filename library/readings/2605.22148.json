@@ -1,0 +1,56 @@
+{
+ "paper_key": "2605.22148",
+ "title": "Ratchet: How Reliable Must an LLM Judge Be to Retire a Skill?",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_html_extract",
+  "locator": "2605.22148.txt",
+  "sections_read": [
+   "Abstract",
+   "1 contributions (truncated)",
+   "2 drift/control",
+   "3 roles/eviction (truncated)",
+   "7 scope/limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "identify_hidden_assumption",
+  "key_step": "固定模型的技能库按每技能有符号结果统计淘汰，并限制库容量；单独审计judge假阳性与假阴性。",
+  "why_non_obvious": "总体pass率可能被router拒用掩盖；误把失败判成功会偏移淘汰统计均值，不能靠更多样本消除偏差。",
+  "trigger_condition": "When a noisy judge controls persistent-artifact retirement, audit its directional errors against the retirement threshold before using more samples.",
+  "contribution_type": "theory and maintenance framework",
+  "abstract_strategy": "identify_hidden_assumption",
+  "abstract_trigger_condition": "When a noisy judge controls persistent-artifact retirement, audit its directional errors against the retirement threshold before using more samples."
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.22148#s1",
+   "object": "技能库按贡献淘汰的judge信号",
+   "information": "router每次最多一个skill或none、逐次有符号成绩、失败模式与历史log",
+   "operation": "按最低证据数及负贡献阈值淘汰、容量上限、约束合成；把judge视二元误差通道",
+   "claimed_effect": "摘要声称失败判通过率≥(1−τ)/2会使淘汰失效，更多样本不能修复；核心证明未在缓存中。",
+   "conditions": [
+    "固定模型",
+    "外生误差通道",
+    "仅枚举缺陷类审计",
+    "贡献是routed-conditional association"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Abstract; missing §4/6 proof",
+    "quote": "a judge scoring failures as passes at rate $(1-τ)/2$ or above retires nothing, at any sample size, for eviction margin $τ$."
+   },
+   "failure_boundary": "缓存缺公式/§4–6，未验证界、默认参数或全部实验；关联贡献含router选择和存活偏差。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P52",
+   "how": "judge应按假阳性/假阴性及动作阈值审计，整体一致率不足。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false
+}

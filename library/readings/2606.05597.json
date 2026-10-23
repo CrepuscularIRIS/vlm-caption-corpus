@@ -1,0 +1,167 @@
+{
+ "paper_key": "2606.05597",
+ "title": "AsyncWebRL: Efficient Asynchronous Reinforcement Learning for Multi-Step Visual Web Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_html_extract",
+  "locator": "2606.05597.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1 system",
+   "3.2 loss factors and advantage",
+   "4/Table1/off-policy and normalization ablations",
+   "5/Table2/memory prompt/horizon ablations",
+   "6 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "identify_hidden_assumption",
+  "key_step": "异步连续rollout+截图引用传递；分解旧策略IS与更新ratio，并把trajectory步数平均改成常数1/10。",
+  "why_non_obvious": "失败轨迹更长时1/步数会减弱失败token惩罚，诱导更长memory；这与reward std是两种不同尺度机制。",
+  "trigger_condition": "When long failed trajectories receive weaker per-step gradients, separate rollout staleness correction from length-independent loss weighting.",
+  "contribution_type": "method",
+  "abstract_strategy": "identify_hidden_assumption",
+  "abstract_trigger_condition": "When long failed trajectories receive weaker per-step gradients, separate rollout staleness correction from length-independent loss weighting.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "异步连续rollout+截图引用传递；分解旧策略IS与更新ratio，并把trajectory步数平均改成常数1/10。",
+  "abstract_why_non_obvious": "失败轨迹更长时1/步数会减弱失败token惩罚，诱导更长memory；这与reward std是两种不同尺度机制。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.05597#s1",
+   "object": "多步视觉agent异步训练及长度损失",
+   "information": "逐token行为策略概率、当前update近端snapshot、WebGymGPT4o终局reward、截图引用",
+   "operation": "continuous workers+ref images；stale factor不clip/current factorclip；1/trajectory steps改1/10",
+   "claimed_effect": "Instruct OOD peak45.4% vs WebGym42.9%；throughput约3100/h vs1300/1050，2.4–2.9x；长度修复在作者曲线上matched reward缩短。",
+   "conditions": [
+    "Qwen3VL8B",
+    "单seed",
+    "1167 OOD tasks",
+    "horizons10/20/30 actions"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2 Table1",
+    "quote": "AsyncWebRL (full) 52.4 34.3 7.1 45.4"
+   },
+   "failure_boundary": "系统与loss共同变化，peak测试分数与单seed不构成稳定非劣证明；完整Eq1/2未在HTML显出。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P55",
+   "how": "视觉多步训练图片跨worker传递与持续pool影响吞吐，应保引用对应真实观测。",
+   "strength": 3
+  },
+  {
+   "problem": "P60",
+   "how": "不同策略snapshot可拼接一trajectory，逐token记录behavior并解耦clip。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "这是loss步数权重修复，reward仍mean+std，不能当no-std证据。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "WebGym sync filteredBC; async RAFT++; coupled IS; trajectory-normalizedGRPO",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "单seed、peak测试、附录缺失，不能核完整dualclip和训练实现。",
+   "quote": null,
+   "locator": "§4.1/Table1/local cache"
+  }
+ ],
+ "question": {
+  "observed_failure": "失败均12.5steps、成功5.1，原分母使失败每步权重约小2.4倍；RAFT++39.3低于同步42.9。",
+  "load_bearing_assumption": "冗长失败由损失权重诱导且采样版本概率可准确记录；图片引用不丢失状态。",
+  "scope": "WebGym多步网页，上一张截图+上一response memory。",
+  "success_criterion": "同硬件吞吐、matched reward轨迹长度、ISclip率分开测。",
+  "why_open": "异步提高吞吐但带滞后；长度平均又减弱长期失败惩罚。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\frac{\\pi_\\theta}{\\pi_{behave}}=\\frac{\\pi_{prox}}{\\pi_{behave}}\\frac{\\pi_\\theta}{\\pi_{prox}},\\quad\\hat A_i=\\frac{r_i-\\mathrm{mean}(\\mathbf r)}{\\mathrm{std}(\\mathbf r)}",
+    "locator": "§3.2 prose/formulas"
+   },
+   {
+    "latex": "1/|\\tau_i|\\longrightarrow1/k,\\quad k=10",
+    "locator": "§3.2; |τ_i| is action-step count"
+   }
+  ],
+  "signal_routing": "每trajectory一个normalizedA广播所有生成token。staleness πprox/πbehave保持unclipped权重，PPOclip仅πθ/πprox。每trajectory外层step分母改常数；完整Eq1/dualclipEq2和每步token分母在缓存缺失，未补写。环境截图是observations非生成token；具体mask未示。drop referenceKL，动态跳过全对/全错组。",
+  "normalization": "mean+std",
+  "invariance": "[redacted: project-internal]",
+  "baseline_or_potential": "groupmean；近端snapshot用于clip基准，非reward baseline。",
+  "degenerate_cases": "全对/全错组过滤；p0任务无法入mixed组；k常数主要缩放，而去|τ|改长度相对权重；若失败不比成功长，本文诊断未必适用；高滞后unclipped权重仍有方差风险。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "coupled vsdecoupled IS约半clip率；1/|τ| vs1/k matched reward；压缩memory prompt不能消漂移；加倍horizon放大漂移。",
+  "negative_results": [
+   {
+    "text": "异步RAFT++39.3低于同步WebGym42.9，不能说仅异步就提高正确率。",
+    "locator": "Table1"
+   },
+   {
+    "text": "全部单seed、报告peak test；不构成跨seed稳定收益或严格非劣。",
+    "locator": "§4.1/Table1"
+   }
+  ],
+  "seeds": "single seed throughout",
+  "falsifier": "固定任务/策略版本/长度分布后分母效果消失，或真实crop轨迹失败长度关系相反，则不能直接迁移其效率结论。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VL8B Instruct/Thinking",
+   "framework": "AsyncWebRL WebGym；完整训练软件配置附录未载",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0,
+   "action_horizons": [
+    10,
+    20,
+    30
+   ]
+  },
+  "cost": "128mixed trajectories=16groups/step，约3100traj/h；最大staleness2；GPU配置未在缓存中。",
+  "pitfalls": [
+   {
+    "text": "同trajectory内行为policy可变，不能仅存episode起始snapshot。",
+    "locator": "§3.1–3.2"
+   },
+   {
+    "text": "截图tensor塞共享store导致diskspill；引用必须能恢复对应截图且按生命周期保留。",
+    "locator": "§3.1"
+   },
+   {
+    "text": "结论称额外1.80x per-step，而§4.3报18–19% walltime下降；来源口径不一致，未合并成总speedup。",
+    "locator": "§4.3/6"
+   }
+  ],
+  "code": null,
+  "lesson": "当视觉异步训练变慢时，先看图片搬运与尾部worker等待；同时核轨迹步数分母是否减弱长失败惩罚，避免把系统吞吐误当算法正确率。"
+ }
+}

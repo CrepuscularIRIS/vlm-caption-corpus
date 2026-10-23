@@ -1,0 +1,55 @@
+{
+ "paper_key": "litscan:38344",
+ "title": "VideoSalmon",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_38344.txt",
+  "sections_read": [
+   "Abstract",
+   "§4 pDPO and contrastive step selection",
+   "Table 4",
+   "§7 step-selection ablation",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "以视频扰动的每token KL筛选步骤，再用同前缀的Monte Carlo成功率构造step-DPO偏好，配合整解PPRM。",
+  "why_non_obvious": "视频敏感度只用于选候选步骤，偏好方向另由终答成功率决定；敏感不等于正确。",
+  "trigger_condition": "视频推理错误集中在感知相关步骤，能采样续写并判断终答。",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "视频推理错误集中在感知相关步骤，能采样续写并判断终答。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:38344#s1",
+   "object": "音视频推理的中间步骤",
+   "information": "输入音视频、扰动后音视频、同前缀候选步骤及续写终答判分",
+   "operation": "按长度归一化KL取top3步骤；采样比较构造偏好并训练",
+   "claimed_effect": "Table4 SFT+pDPO单样本在VideoMME/NExT-QA/StandUp/Academic分别65.6/82.3/76.7/48.3%，SFT为62.9/78.2/68.6/42.5%。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 4",
+    "quote": "SFT + pDPO                  1-best           65.6%                 82.3%        76.7%                48.3%"
+   },
+   "failure_boundary": "扰动敏感度不是信息必要性；MC依赖判分器/采样策略，训练有参考答案，不能当无GT测试价值。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "按中间步骤偏好替代整轨迹均匀信用；与RL advantage非同一对象",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "以终答续写结果形成过程监督，但非人工过程真值",
+   "strength": 2
+  }
+ ]
+}

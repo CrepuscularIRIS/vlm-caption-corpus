@@ -1,0 +1,152 @@
+{
+ "paper_key": "2604.22779",
+ "title": "KARL: Mitigating Hallucinations in LLMs via Knowledge-Boundary-Aware Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2604.22779.txt",
+  "sections_read": [
+   "Abstract",
+   "2 failure analysis",
+   "3.1–3.2",
+   "Table1",
+   "4.5/Table3/limitations",
+   "B GRPO",
+   "C.2 settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "以当前组是否出现正确答案切换弃答reward，先混合binary/KAR保探索，再全KAR校准弃答。",
+  "why_non_obvious": "错答+弃答组中只要弃答reward更高，std归一化会持续强化弃答；光缩小其reward不能消除方向偏差。",
+  "trigger_condition": "When abstention wins before correct answers have sampling support, preserve exploration first and calibrate abstention after it.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When abstention wins before correct answers have sampling support, preserve exploration first and calibrate abstention after it.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "以当前组是否出现正确答案切换弃答reward，先混合binary/KAR保探索，再全KAR校准弃答。",
+  "abstract_why_non_obvious": "错答+弃答组中只要弃答reward更高，std归一化会持续强化弃答；光缩小其reward不能消除方向偏差。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.22779#s1",
+   "object": "答案/弃答分布",
+   "information": "同题G8回答、GT与Llama70B正确性judge",
+   "operation": "StageI一半题binary一半KAR；StageII全KAR，至少一个正确时弃答和错答同罚，否则奖弃答",
+   "claimed_effect": "NQ Llama8B正确38.7→42.7，幻觉55.3→16.7；移除StageII正确50.6但幻觉31.4",
+   "conditions": [
+    "NQ19,200训练题",
+    "固定阶段切换"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables1,3",
+    "quote": "Ours                    42.7 40.6     16.7    66.8   67.9 23.5    8.6    85.9   57.7 32.8     9.5     79.7   80.0    9.1   10.9   88.3"
+   },
+   "failure_boundary": "采样组无正确不代表真实无能力；StageII会牺牲StageI部分正确率",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "how": "直接诊断弃答坍缩与保留弃答支持之间的两阶段权衡。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "组std使错答/弃答二元组优势方向不受奖励幅度缩小解决。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Binary GRPO, TruthRL ternary, R-Tuning, RLKF",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "离散奖励使同质组无PG更新。",
+   "quote": "incorrect, and abstention. As a result, sampled groups that yield uniform rewards produce\n zero advantage and contribute no gradient updates. Furthermore, this discrete structure",
+   "locator": "§4.5"
+  }
+ ],
+ "question": {
+  "observed_failure": "α100% binary第一阶段导致最终弃答0；α0纯KAR正确36%，默认42.7%。",
+  "load_bearing_assumption": "有限组至少一条正确可作在线可解性proxy，且保留弃答动作支持。",
+  "scope": "短答案知识QA，推广到视觉证据缺失尚未验证。",
+  "success_criterion": "同时追踪正确/弃答/错误及两类动作的rollout支持。",
+  "why_open": "早期奖励弃答压探索，完全不奖弃答又使其从支持中消失。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "I=\\mathbf1[\\exists i:\\mathrm{correct}(o_i)],\\quad (r_T,r_U,r_F)=\\begin{cases}(1,-1,-1)&I=1\\\\(N/A,1,-1)&I=0\\end{cases}",
+    "locator": "Eq2–3"
+   },
+   {
+    "latex": "\\hat A_i=(r_i-\\mu(r))/(\\sigma(r)+\\delta)",
+    "locator": "B Eq6"
+   }
+  ],
+  "signal_routing": "终局分类reward得到组优势；附录用输出序列ratio写GRPO，无明确token展开/mask，不能推定只训练弃答token。StageI binary组全错/弃答时PG优势0（KL仍可有梯度）；混合比例按数据子集而非把两reward线性相加。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS，条件式奖励改变回答/弃答偏好，无准确率守恒。组内正仿射不变只近似受δ影响；有限G误判概率随成功率变化。",
+  "baseline_or_potential": "group mean，无势函数",
+  "degenerate_cases": "全对、全错、全弃答均同reward零PG；无正确但混合错/弃答则KAR促弃答；p0或弃答p0不产生缺失动作梯度；若低p偶然无正确会被视为unknown。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "α0/25/50/75/100及去StageII，直接分离探索与校准。",
+  "negative_results": [
+   {
+    "text": "StageII使正确50.6→42.7；TriviaQA正确71.6→67.9低于原prompt，故不是全面保准确。",
+    "locator": "Tables1,3"
+   },
+   {
+    "text": "α100%不能在StageII恢复弃答，最终U0。",
+    "locator": "§4.5/Table3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "增大G或使用外部独立能力标签后优势消失，说明原作online可解性proxy不稳定；迁移须检验。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Llama3.1-8B/Qwen2.5-7B Instruct",
+   "framework": "verl GRPO; vLLM",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": 0.001
+  },
+  "cost": "8A80040G full-param1epoch，lr1e−6；batch64/128/256搜索；短答案64tokens、推理512。",
+  "pitfalls": [
+   {
+    "text": "judge标签非客观独立gold；训练评测都Llama3.3-70B。",
+    "locator": "§4.3"
+   },
+   {
+    "text": "阶段是固定schedule，非实时边界事件自动切换。",
+    "locator": "§4.5 limitations"
+   }
+  ],
+  "code": null,
+  "lesson": "当保守动作与探索竞争时，先确保两类动作都在采样支持中，再用状态条件奖励校准，不能只调一个静态奖励幅度。"
+ }
+}

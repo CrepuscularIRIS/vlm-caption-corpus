@@ -1,0 +1,166 @@
+{
+ "paper_key": "2410.14803",
+ "title": "DistRL: An Asynchronous Distributed Reinforcement Learning Framework for On-Device Control Agents",
+ "tier": "full",
+ "decision": "poster",
+ "access": {
+  "source": "local_html_extract",
+  "locator": "2410.14803.txt",
+  "sections_read": [
+   "Abstract",
+   "1 contributions",
+   "4 system",
+   "5.1 and opening 5.2 (cache truncates remainder)",
+   "6.1–6.6/Table 1",
+   "7 conclusion",
+   "four official reviews"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "异步worker持续交互，集中learner用循环回放及off-policy校正学习，避免慢模拟器阻塞全批。",
+  "why_non_obvious": "提高吞吐同时引入旧策略轨迹，必须将系统异步与算法校正共同评估。",
+  "trigger_condition": "When environment collection is heterogeneous and slow, decouple collection from learning and correct stale-policy updates.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When environment collection is heterogeneous and slow, decouple collection from learning and correct stale-policy updates.",
+  "reviewer_praise": [
+   {
+    "text": "认可异步数据采集与集中更新的系统价值及重复实验/消融。",
+    "source": "2410.14803.json",
+    "note_id": "XbmzonAj5R"
+   }
+  ],
+  "reviewer_concern": [
+   {
+    "text": "模型描述冲突、与IMPALA/Retrace的算法增量不清。",
+    "source": "2410.14803.json",
+    "note_id": "jXSIjDiYOS"
+   },
+   {
+    "text": "超参敏感性及Gemini奖励可信度尚需支持。",
+    "source": "2410.14803.json",
+    "note_id": "EYPz789plQ"
+   }
+  ],
+  "acceptance_signal": "todo decision=poster；ICLR2025 Accept (Poster)。",
+  "abstract_key_step": "异步worker持续交互，集中learner用循环回放及off-policy校正学习，避免慢模拟器阻塞全批。",
+  "abstract_why_non_obvious": "提高吞吐同时引入旧策略轨迹，必须将系统异步与算法校正共同评估。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2410.14803#s1",
+   "object": "分布式手机控制轨迹",
+   "information": "截图、动作、Gemini终局判定、行为策略概率与价值估计",
+   "operation": "分离异步采集和集中更新，加入Retrace与分布式优先回放",
+   "claimed_effect": "General test 73.2±1.1 vs DigiRL multi 61.2±2.4；去DPER降低8%，去Retrace降低6%。",
+   "conditions": [
+    "3 runs",
+    "128 instructions",
+    "相同任务但基线允许更长训练时间"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6.6",
+    "quote": "Removing DPER results in an 8% decrease in the success rate"
+   },
+   "failure_boundary": "缓存缺失完整Retrace/DPER公式，不能确认重采样IS或token级实现。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P60",
+   "how": "直接处理异步回放中的策略滞后；应分别核行为IS与回放采样偏差。",
+   "strength": 3
+  },
+  {
+   "problem": "P52",
+   "how": "Gemini奖励与评测可能共享误差，作者小规模人评差异不是普遍gold证明。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "DigiRL single/multi/DistRL Async",
+   "kind": "method"
+  },
+  {
+   "name": "AutoUI and prompted AppAgent",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "全文缓存截断且无附录，完整优先回放/修正公式与最终模型配置未核实。",
+   "quote": null,
+   "locator": "local §5 truncation"
+  }
+ ],
+ "question": {
+  "observed_failure": "DigiRL multi General test 61.2%，DistRL73.2%；移除Retrace下降6%。",
+  "load_bearing_assumption": "行为概率可追踪且价值/奖励标签足够准确，使旧轨迹有用。",
+  "scope": "Android General/WebShopping在线任务。",
+  "success_criterion": "墙钟吞吐与成功率同时提高，分离异步框架和算法贡献。",
+  "why_open": "设备延迟异构，纯同步采集浪费计算，而不校正回放会引入策略失配。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\rho_t=\\pi(a_t|s_t)/\\mu(a_t|s_t),\\quad A_t=r_t+\\gamma V(s_{t+1})-V(s_t)",
+    "locator": "§5.1 before Eq.1"
+   },
+   {
+    "latex": "\\mathcal L=-\\mathbb E_\\mu[\\rho_t A_t\\log\\pi(a_t|s_t)]-\\beta\\mathbb E_\\mu[H(\\pi(\\cdot|s_t))]+\\lambda\\mathbb E_\\mu[P_{invalid}(a_t)]",
+    "locator": "Eq.1"
+   }
+  ],
+  "signal_routing": "末截图+最后两动作由Gemini判成功，trajectory value用终局reward的BCE；state value用1[G_t>0]的BCE。一步TD优势与行为IS驱动动作策略，另加熵及无效动作惩罚。文本未完整展示Retrace修正、DPER优先级和语言token mask。",
+  "normalization": "other",
+  "invariance": "非PBRS。熵与动作惩罚会改目标；行为IS不自动消除优先采样偏差。正回报分类值与任意稠密回报期望并不普遍等价，需核奖励条件。",
+  "baseline_or_potential": "学习V(s)作baseline；trajectory value另负责高价值回放筛选。",
+  "degenerate_cases": "全失败/近零成功会让分类价值及筛选退化；行为概率接近零会产生高IS方差；无延迟时系统收益可能变小。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "DigiRL算法放进异步DistRL框架仍比完整方法低约10%；去DPER与去Retrace分别下降8%和6%。",
+  "negative_results": [
+   {
+    "text": "给Gemini更长轨迹上下文反而降低与人评一致性，作者认为成功证据偏好及上下文膨胀导致误判。",
+    "locator": "§6.3"
+   }
+  ],
+  "seeds": "3 repeats，Table1 mean±std",
+  "falsifier": "等模型/设备/任务预算，若仅异步框架即可复现全部增益，或独立成功验证取消优势，则算法/奖励主张不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "引言称1.3B T5 multimodal；历史审稿指出附录GPT2/Roberta表述冲突，当前缓存不含附录，未消解。",
+   "framework": "DistRL Android emulators",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "learner 4V100；2 workers各8T4/96vCPU，共32 emulators；报告约3x训练效率。",
+  "pitfalls": [
+   {
+    "text": "缓存在§5.2截断，DPER概率和修正权重未知，不能按标准PER猜填。",
+    "locator": "local extracted §5"
+   },
+   {
+    "text": "AI evaluator小于2%人评分歧只限作者校验设置。",
+    "locator": "§6.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当环境异步产生旧轨迹时，应保存行为概率及版本，分别检验框架吞吐、off-policy修正和奖励可靠性。"
+ }
+}

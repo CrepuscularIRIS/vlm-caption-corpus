@@ -1,0 +1,179 @@
+{
+ "paper_key": "litscan:79300",
+ "title": "Mitigating Visual Hallucinations via Semantic Curriculum Preference Optimization in MLLMs (SCPO)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79300.txt",
+  "sections_read": [
+   "Abstract",
+   "3",
+   "4 Tables1–5",
+   "5 reversed curriculum Table6",
+   "Appendix C limitations",
+   "D.3 audit",
+   "E normalization",
+   "H theoretical motivation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "将图文对偏好拆成text/image CCO与matched/noimage/mismatched CSO，按语义难度三阶段训练，每阶段重置reference。",
+  "why_non_obvious": "只做固定图像文本偏好允许语言捷径；对两侧图文都排序才能增加视觉一致性约束。",
+  "trigger_condition": "When preference optimization exploits language shortcuts, jointly optimize paired textual and visual contrasts under an easy-to-hard curriculum.",
+  "contribution_type": "objective plus curriculum",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When one preference relation leaves a modality unconstrained, split complementary and symmetric constraints.",
+  "abstract_key_step": "对每个文本施加匹配图、无图、错误图的相对reference增益排序。",
+  "abstract_why_non_obvious": "无图是基线而不是希望输出的目标；相对增益排序不等于绝对概率保证。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79300#s1",
+   "object": "图文偏好训练",
+   "information": "SCPP21000对；matching/mismatching images与双方回答；CLIP/DINO/entropy难度",
+   "operation": "CCO+0.2CSO；5k/9k/7k easy→hard，每阶段reference←上阶段policy",
+   "claimed_effect": "LLaVA1.6-7B ObjectHal CS12→7、CI6.8→4.4；AMBER HalRate49.7→27.1；同SCPP DPO CS10.7。",
+   "conditions": [
+    "β=β1=β2=.1",
+    "每阶段1epoch",
+    "SCPP"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "7.0(↓5.0)       4.4(↓2.4)"
+   },
+   "failure_boundary": "未证工具必要性或单任务严格不降；LLaVA1.6 MMBench-CN60.6→59.4。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "caption图像依赖约束可作为SFT后偏好优化替代路径。",
+   "strength": 2
+  },
+  {
+   "problem": "P39",
+   "how": "需要可验证精细图像差异与匹配文本，低分辨率可破坏偏好标签。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DPO(SCPP)",
+   "kind": "matched-data objective"
+  },
+  {
+   "name": "SymMPO",
+   "kind": "alignment"
+  },
+  {
+   "name": "CCO-only/CSO-only",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "效果依赖SCPP质量、多样性与覆盖，不能消除所有幻觉。",
+   "quote": "depends on the quality, diversity, and coverage of the constructed SCPP preference pairs.",
+   "locator": "Appendix C"
+  },
+  {
+   "text": "CSO约束的是相对reference log ratio；无图消融的绝对依赖仍需评估。",
+   "locator": "Eqs10–12; reader"
+  },
+  {
+   "text": "阶段收益不单调，general capability也非全不降。",
+   "locator": "Tables2–3"
+  }
+ ],
+ "question": {
+  "observed_failure": "LLaVA1.6同SCPP DPO CS10.7，完整SCPO7.0；去CSO MMHal HalRate.46 vs完整.32。",
+  "load_bearing_assumption": "语言先验可满足文本偏好而不建立视觉grounding。",
+  "scope": "细粒度最小图文对的偏好优化",
+  "success_criterion": "减少ObjectHal/AMBER幻觉且检查general和coverage",
+  "why_open": "单一DPO偏好关系不足以识别模态捷径。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables4–6"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "u(I,y)=log(pi_theta(y|I,Q)/pi_ref(y|I,Q)); f_b(a)=-log sigmoid(b*a); L_CCO=f_beta(u(Iw,yw)-u(Iw,yl))+f_beta(u(Iw,yw)-u(Il,yw))",
+    "locator": "Eqs7–9"
+   },
+   {
+    "latex": "L_CSO=sum_{(I,y,Iprime) in {(Iw,yw,Il),(Il,yl,Iw)}}[f_beta1(u(I,y)-u(empty,y))+f_beta2(u(empty,y)-u(Iprime,y))]; L=L_CCO+lambda*L_CSO",
+    "locator": "Eqs10–13"
+   },
+   {
+    "latex": "difficulty=z(H)+z(s_CLIP)+z(d_OT); pi_ref^(t+1)=pi_t",
+    "locator": "Eq6;3.3"
+   }
+  ],
+  "signal_routing": "多图/无图条件下完整response likelihood差构建六个logsigmoid项；训练参数同时收到这些偏好梯度。没有逐crop/逐caption token独立credit，具体prompt mask和sequence length reduction未给。",
+  "normalization": "other: difficulty各项在整个SCPP全局Z-score再求和；β=.1 λ=.2；非group mean/std。sequence logprob长度归一化未确认。",
+  "invariance": "非PBRS，无policy invariance。每个差分共享常数会抵消；跨图像条件的DPO partition term一般不自动抵消，因此其视觉偏好式作为设计目标，不能机械套单条件reward等价。reference重置当刻KL=0，不保证全过程KL或单调指标。",
+  "baseline_or_potential": "无图条件是相对增益比较基线；非RL value baseline。动态reference在阶段边界更新。",
+  "degenerate_cases": "policy=reference时所有u=0但sigmoid梯度不为0；若图像无法分辨，互斥偏好可能无法满足；全同/错标对无可靠grounding信号；reference极小概率本身不保证初始梯度消失，H.1承认初始化比值抵消。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4组件、Table5排序×reference reset、Table6反向课程。",
+  "negative_results": [
+   {
+    "text": "LLaVA1.6最终MMBench-CN59.4低于base60.6；AMBER cover60.2低于61.1。",
+    "locator": "Tables2–3"
+   },
+   {
+    "text": "LLaVA1.5-13B从medium到hard MMHal Score2.84→2.63、HalRate.39→.46，不支持全指标阶段单调。",
+    "locator": "Table2"
+   },
+   {
+    "text": "逆课程最终CS12.3/CI7.51比base12/6.8更差。",
+    "locator": "Table6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：等数据/等课程/reference下加入真实image-swap测试；若仅降低描述覆盖而非提高细粒度对应，grounding解释不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5-7B/13B,1.6-7B",
+   "framework": "preference optimization",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "4 H20，batch32，lr5e-7，21000 pairs，每阶段1epoch。",
+  "pitfalls": [
+   {
+    "text": "100对人工抽查96%正确仅有限标签可靠性证据。",
+    "locator": "D.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当对比图像只差细节时，先核模型实际可见差异，再用matched-data DPO与覆盖率对照，避免把课程/数据增益全归因损失。"
+ }
+}

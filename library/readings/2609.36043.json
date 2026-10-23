@@ -1,0 +1,62 @@
+{
+ "paper_key": "2609.36043",
+ "title": "SAGE: A Statistical Acceptance Gate for Self-Evolving Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_html",
+  "locator": "2609.36043.txt",
+  "sections_read": [
+   "local HTML Abstract",
+   "§1",
+   "available§3.1–3.3 (truncated)",
+   "§4.1–4.3 prose",
+   "§5.1–5.2"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "同题配对candidate/incumbent成功，显式计wins与regressions，非对称惩罚及单侧paired test决定接受或abstain。",
+  "key_step": "从平均分改成逐item配对账本与保守门槛。",
+  "why_non_obvious": "平均增益能掩盖已会题退化，最优候选选择受噪声偏差。",
+  "trigger_condition": "When repeated prompt edits are selected on noisy finite validation, compare paired wins/losses and abstain without reliable gains.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把候选验收变成有回归约束的统计决策。",
+  "abstract_trigger_condition": "When repeated prompt edits are selected on noisy finite validation, compare paired wins/losses and abstain without reliable gains."
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.36043#s1",
+   "object": "persistent skill edit acceptance",
+   "information": "同验证item二值成功对照",
+   "operation": "非对称paired criterion加单侧检验，优化器与预算匹配",
+   "claimed_effect": "作者报告19/20配置回归率下降、1持平；DeepSeek-V4 LiveMath36.5%→0，最终34.15→48.78。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Abstract",
+    "quote": "SAGE lowers the regression rate in 19 of 20 settings and matches the baseline in the remaining one"
+   },
+   "failure_boundary": "HTML公式/table数值大部缺失，§3.3截断；具体test statistic、阈值及样本量未知。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P47",
+   "strength": 3,
+   "how": "复用验证集自适应选择不能获trajectory-level error control。"
+  },
+  {
+   "problem": "P51",
+   "strength": 3,
+   "how": "逐itemwins/losses暴露平均分掩盖退化。"
+  },
+  {
+   "problem": "P69",
+   "strength": 2,
+   "how": "配对固定candidate统计与全流程选择需区分。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

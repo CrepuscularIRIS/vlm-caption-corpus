@@ -1,0 +1,200 @@
+{
+ "paper_key": "2505.22617",
+ "title": "The Entropy Mechanism of Reinforcement Learning for Reasoning Language Models",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.22617.txt",
+  "sections_read": [
+   "Abstract/contributions pp1,3–4",
+   "§2 settings/fitting/discussion pp4–8",
+   "§3 theory and validation pp8–10",
+   "§4 mechanism/Table2/regularization comparisons pp10–15",
+   "AppendixA p20 settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以tabular softmax的一阶熵变化协方差解释塌缩，提出Clip-Cov停止少量高中心乘积token梯度，KL-Cov只约束最高分token。",
+  "key_step": "batch所有rollout token的(logp−meanlogp)(A−meanA)排序/区间筛选；干预.02%–.2%token，而非全局熵奖励。",
+  "why_non_obvious": "理论PG有πA、NPG无π；实际token heuristic取NPG形式跨不同prefix聚合，不能称LLM Adam下精确定理。",
+  "trigger_condition": "11个RLrun前200/2400steps消耗73%熵并取得76%收益，后期停滞。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "定位驱动集中化的少数梯度项，局部抑制以保探索。",
+  "abstract_trigger_condition": "11个RLrun前200/2400steps消耗73%熵并取得76%收益，后期停滞。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "batch所有rollout token的(logp−meanlogp)(A−meanA)排序/区间筛选；干预.02%–.2%token，而非全局熵奖励。",
+  "abstract_why_non_obvious": "理论PG有πA、NPG无π；实际token heuristic取NPG形式跨不同prefix聚合，不能称LLM Adam下精确定理。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.22617#s1",
+   "object": "稀疏token梯度干预",
+   "information": "当前tokenlogprob与group advantage、batchcenter；无额外GT除答案reward",
+   "operation": "ClipCov随机detach高分区间token；KLCov最高分token加oldpolicy约束",
+   "claimed_effect": "7B均值38.6→40.6，32B45.8→52.2",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p12 Table2 Qwen2.5-32B KL-Cov row AIME24/25/AMC/MATH500/OMNI/Olympiad/Minerva/avg",
+    "quote": "w. KL-Cov            36.8     30.8      74.5       84.6          39.1            49.0          46.3      52.2"
+   },
+   "failure_boundary": "response长度升高，非工具效率奖励；伪代码abslogratio不等于正文KL。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.22617#s2",
+   "object": "熵与性能经验拟合",
+   "information": "无熵干预训练数据与validation结果",
+   "operation": "R=−a expH+b，前36step拟合预测后200step",
+   "claimed_effect": "math/code最终RMSE .5/1.9个百分点",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p7 Figure5 caption",
+    "quote": "0.5% and 1.9% for final step"
+   },
+   "failure_boundary": "经验曲线不是理论最优上界，作者明确非普适。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P29",
+   "strength": 3,
+   "how": "解释首动作熵塌缩并提供token局部控制候选。"
+  },
+  {
+   "problem": "P32",
+   "strength": 3,
+   "how": "熵正则/阈值控制高度敏感。"
+  },
+  {
+   "problem": "P24",
+   "strength": 2,
+   "how": "共享参数LLM不能直接套独立logit定理。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "clip-higher .28",
+   "kind": "method"
+  },
+  {
+   "name": "global entropy loss",
+   "kind": "method"
+  },
+  {
+   "name": "reference KL",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明确predictability非普适，干预后的entropy与performance未见稳定关系，最优熵未知。",
+   "quote": "is not arguably universal",
+   "locator": "§2.6 p8"
+  }
+ ],
+ "question": {
+  "observed_failure": "大部分收益早期完成，32BGRPO均值45.8。",
+  "load_bearing_assumption": "少数高中心乘积token的更新主导可避免的熵损失，控制这些项可提高探索。",
+  "scope": "数学RL训练tokenmask/局部regularization。",
+  "success_criterion": "固定预算高分token干预优于随机同量mask且任务表现更好。",
+  "why_open": "实际mask统计与理论stateconditional covariance不同，随机同量对照未读到。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§3–4理论/实际token统计单位不同"
+  },
+  {
+   "vocab": "rs",
+   "id": "characterize_limit_then_surpass",
+   "locator": "§2拟合瓶颈→§4干预"
+  },
+  {
+   "vocab": "rs",
+   "id": "targeted_self_supervised_objective",
+   "locator": "Eq10–14"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "tabular first-order ΔH_s≈−Cov_(a∼π)(logπ_a,Δz_a); PG Δz=ηπA, NPG ΔH≈−ηCov(logπ,A)",
+    "locator": "Lemma1/Theorems1–2 pp8–9"
+   },
+   {
+    "latex": "c_i=(logp_i−mean_j logp_j)(A_i−mean_j A_j); ClipCov sample floor(rN) from 1≤c≤5; KLCov top kN",
+    "locator": "Eqs10–13 p12"
+   },
+   {
+    "latex": "printed KLCov ratio*A−β KL(πold||πθ); Listing1 instead penalty β|logp−oldlogp|",
+    "locator": "Eq14 p12 vsListing1 p13"
+   }
+  ],
+  "signal_routing": "答案reward→每响应groupzscore→生成token；ClipCov被选token PG梯度detach，其他保留。KLCov仅选token额外oldpolicy罚，不是referenceKL；globalmask不专属firstaction。",
+  "normalization": "Eq3groupmean/std；Eq10跨batch tokenscenter。实验响应bandit Eq9将sequence logprob除长度，指数后不再原trajectory概率分布。",
+  "invariance": "共同logitshift不改entropy；firstorder/固定state及tabular条件不可推广精确sharedparamLLM。非PBRS，mask/局部约束改变更新。",
+  "baseline_or_potential": "groupmean；序列zscore非NPG预条件证明。",
+  "degenerate_cases": [
+   "全对/全错组被过滤，没有直接支持改善。",
+   "kN/rN取整为0会无干预；候选数不足如何处理未知。",
+   "平均token熵可维持但首动作仍塌；高置信低A也可能正cov，不能一概称正确高概率token。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：固定batch离线算firstaction与全tokencov占比，再同量随机mask vsCovmask，测directsupport/非劣/长度，不把熵提升当成功。",
+  "negative_results": [
+   {
+    "text": "熵loss .01爆炸，.005稳定却无更好性能；referenceKL稳定但性能退化。",
+    "locator": "Figs9–10 p11"
+   },
+   {
+    "text": "32B ClipCov AMC67.2<GRPO69.7；更高熵伴随更长响应。",
+    "locator": "Table2/Fig11 pp12–14"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同量随机mask同样有效或firstaction仍失去support，则cov特异机制或工具迁移不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B/32B; broader11model study",
+   "framework": "veRL",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "DAPOmath256prompts×8、8updates，max8192 T1；Clip r2e-4；KL k7B2e-3/32B2e-4 β1；默认referenceKL0。",
+  "pitfalls": [
+   {
+    "text": "Listing1为伪代码，其abs-logratio和detach索引逻辑不能视可运行精确KL实现。",
+    "locator": "Listing1 p13"
+   }
+  ],
+  "code": "https://github.com/PRIME-RL/Entropy-Mechanism-of-RL (not executed)",
+  "lesson": "熵指标先对齐动作粒度与实际优化器；保存被mask token及梯度贡献，防止全局熵改善掩盖工具模式塌缩。"
+ }
+}

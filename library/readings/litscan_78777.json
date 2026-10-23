@@ -1,0 +1,201 @@
+{
+ "paper_key": "litscan:78777",
+ "title": "Look on Demand: A Cognitive Scheduling Framework for Visual Evidence Acquisition in Multimodal Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78777.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–6 pp3–8 Tables1–3",
+   "Conclusion/Impact p9",
+   "Appendix B–C pp15–16"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "独立语言推理器维护历史，按当前缺失证据查询VLM并自选停止。",
+  "key_step": "LLM生成query或answer，regex路由；PVP只见原图+当前query，返回文本拼接入LLMhistory；6000token总预算。",
+  "why_non_obvious": "需要随返回证据调整下一query，而非起始固定所有子问题；earlystop同时减冗余与错误。",
+  "trigger_condition": "When a fixed caption misses evidence needed later, let a text reasoner request focused descriptions and terminate when sufficient.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "分离感知与控制，按反馈条件化证据获取。",
+  "abstract_trigger_condition": "When a fixed caption misses evidence needed later, let a text reasoner request focused descriptions and terminate when sufficient.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "LLM生成query或answer，regex路由；PVP只见原图+当前query，返回文本拼接入LLMhistory；6000token总预算。",
+  "abstract_why_non_obvious": "需要随返回证据调整下一query，而非起始固定所有子问题；earlystop同时减冗余与错误。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78777#s1",
+   "object": "证据查询/停止",
+   "information": "CRC仅题干和累计推理/evidence；PVP原图及单次query",
+   "operation": "regex解析query/answer迭代，状态串接；无训练",
+   "claimed_effect": "M3CoT45.7/24.34s vs单query40.0/12.35、预计划40.1/23.36、固定7轮42.7/72.48",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq10–13/Table2 pp4–7",
+    "quote": "w/ Fixed-Step CRC               42.7           72.48"
+   },
+   "failure_boundary": "生成tokenbudgetfallback/非法格式处理未知；不是真新视角或crop，仍可反复问错。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78777#s2",
+   "object": "可替换推理模块",
+   "information": "固定Qwen2VL7B或Qwen3VL8B感知，Qwen3-8B推理",
+   "operation": "动态query与同双模型静态caption/DDCoT对照",
+   "claimed_effect": "Qwen3VL+Qwen3 CSMR53.6 vsDDCoT50.3、caption45.2；23.1s vs54.6/6.8",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7",
+    "quote": "CSMR (Ours)                53.6                  23.1"
+   },
+   "failure_boundary": "比单caption昂贵；对统一VLM基线多引用既有结果而非全同计算量。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P26",
+   "strength": 3,
+   "how": "按状态缺证据发起relook的明确推理调度协议。"
+  },
+  {
+   "problem": "P33",
+   "strength": 3,
+   "how": "固定轮数比earlystop慢且差，停止判断可迁移评测。"
+  },
+  {
+   "problem": "P38",
+   "strength": 2,
+   "how": "可用作动态query轨迹构造线索，未做SFT/RL。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Caption",
+   "kind": "method"
+  },
+  {
+   "name": "DDCoT",
+   "kind": "method"
+  },
+  {
+   "name": "ICoT",
+   "kind": "method"
+  },
+  {
+   "name": "singlequery",
+   "kind": "method"
+  },
+  {
+   "name": "preplannedqueries",
+   "kind": "method"
+  },
+  {
+   "name": "fixed7steps",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者承认多模型/动态查询推理开销；training-free域适应上限未验证。",
+   "quote": "",
+   "locator": "Conclusion/Impact p9"
+  },
+  {
+   "text": "Reader：原图PVP仍是VLM且query由语言生成，不保证摆脱语言偏见。",
+   "quote": "",
+   "locator": "§5.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "固定7步42.7比动态45.7低3pp且72.48s约3倍。",
+  "load_bearing_assumption": "CRC能识别证据缺口并可靠判充分，PVP能回答定向query。",
+  "scope": "多轮文字视觉查询",
+  "success_criterion": "相同双模型同token预算的动态/固定query对比，并测stop过早与错答回看。",
+  "why_open": "未对自信错误/错误PVP做受控故障注入。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table2 acc/time"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "single/preplanned/fixedstep"
+  },
+  {
+   "vocab": "rs",
+   "id": "decompose_and_delegate",
+   "locator": "CRC/PVP"
+  },
+  {
+   "vocab": "rs",
+   "id": "adapt_via_conditioning",
+   "locator": "stateconditionedquery"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_t=LLM(Prompt_CRC(q),h_t−1); a_t^v=VLM(I,q_t^v); h_t=concat(h_t−1,r_t,a_t^v)",
+    "locator": "Eq10–13"
+   }
+  ],
+  "signal_routing": "无训练gradient；regex只解析LLM输出，真正query/stop决策在生成。CRC不看图，PVP不看完整推理史；每次原图未裁剪，输出文本非像素返回。",
+  "normalization": "other：无优势；attention诊断softmax与pre-softmax均值不可互换。",
+  "invariance": "rawattentionlogit比例2.5×不具常数平移不变性，不能单独证明结构语言优势；非PBRS。",
+  "baseline_or_potential": "history为文本拼接，不是状态value或最优停止势能。",
+  "degenerate_cases": "h0空时可依先验直答；证据不足却自信停；重复query可耗尽budget；上下文上限强制终止不代表已解。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2最接近同系统控制；200随机M3CoT对话由GPT5判断，nohallucination+9pp但为模型评审不是独立事实审计。",
+  "negative_results": [
+   {
+    "text": "Caption更快：Qwen3组合6.8s vsCSMR23.1。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": "hallucination sample uses same random seed; number null",
+  "falsifier": "注入错误/无信息PVP返回，若CRC继续肯定并早停，证据驱动而非文本自洽的解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2-7B CRC+Qwen2VL7B PVP; Qwen3 variants",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2L40 zero-shot；CRC T.3 topk30 max2048/PVP T.7 topk80 max512；topP.9,Tmax6000,maxmodel8192。",
+  "pitfalls": [
+   {
+    "text": "不是固定7轮主方法；7轮仅ablation。PVP模板/parsefallback未给。",
+    "locator": "§6.5/AppendixB–C"
+   }
+  ],
+  "code": "https://github.com/YangZhang2511/CSMR (not read)",
+  "lesson": "当重复观察可以定向提问时，将“再看什么”和“何时停”分开对照，避免用固定轮数制造冗余信息。"
+ }
+}

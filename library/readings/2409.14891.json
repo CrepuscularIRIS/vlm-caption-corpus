@@ -1,0 +1,160 @@
+{
+ "paper_key": "2409.14891",
+ "title": "Observe Then Act: Asynchronous Active Vision-Action Model for Robotic Manipulation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2409.14891.txt",
+  "sections_read": [
+   "Abstract",
+   "III problem setup",
+   "IV.A–D",
+   "VI Tables I–V and ablations",
+   "VII conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "把主动取景 NBV 与抓取 NBP 拆成顺序发生的两个 DQN；取景获取新 RGB-D 后才决策抓取。",
+  "why_non_obvious": "观测不是固定输入：相机动作改变后续动作可用的信息，两个策略的空间尺度及辅助奖励不同。",
+  "trigger_condition": "When manipulation is occluded, choose a viewpoint and ROI before selecting the motor action.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When manipulation is occluded, choose a viewpoint and ROI before selecting the motor action.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "把主动取景 NBV 与抓取 NBP 拆成顺序发生的两个 DQN；取景获取新 RGB-D 后才决策抓取。",
+  "abstract_why_non_obvious": "观测不是固定输入：相机动作改变后续动作可用的信息，两个策略的空间尺度及辅助奖励不同。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2409.14891#s1",
+   "object": "相机取景→局部抓取策略",
+   "information": "当前场景RGB-D、取景后新RGB-D、示范与任务结果",
+   "operation": "分别训练NBV/NBP，共享任务/交互奖励，仅NBV加ROI占据熵下降；对齐坐标并扩充示范",
+   "claimed_effect": "8任务平均SR .76，固定前相机C2F .50；去对齐 .34、去扩充 .31、去辅助奖励 .70",
+   "conditions": [
+    "30 demos/task",
+    "RLBench limited visibility"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables I, IV",
+    "quote": "Ours (active)              0.81±0.02          0.56±0.04         0.73±0.04      0.50±0.03    0.85±0.03     0.96±0.01     0.78±0.02   0.92±0.01    0.76±0.15"
+   },
+   "failure_boundary": "每轮固定先观察再动作，不是学习是否付费观察；新视角像素不等于同一图像裁切",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P30",
+   "how": "区分相机新增信息与动作可达性，提示重复crop不能只凭信息增益给奖励。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "熵下降可奖励视觉探索但不是任务正确率代理。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "C2FARM fixed/front+wrist/oracle",
+   "kind": "method"
+  },
+  {
+   "name": "behavior cloning and random NBV",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "缺少示范时仅8%成功，信息奖励不能替代任务动作先验。",
+   "quote": "any demos, the success rate dropped to 8%, highlighting the           Recognition, CVPR 2022, June 18-24, 2022. IEEE, 2022, pp. 13 739–",
+   "locator": "VI demo ablation"
+  }
+ ],
+ "question": {
+  "observed_failure": "固定前相机SR .50；无示范 .08；完整 .76。",
+  "load_bearing_assumption": "可用视角与ROI能减少遮挡，并能由少量示范建立动作支持。",
+  "scope": "8个RLBench受遮挡操作任务。",
+  "success_criterion": "提高成功率并减少动作步数，同时区分对齐/示范扩充/奖励贡献。",
+  "why_open": "视角动作改变观测，静态视角策略在遮挡任务失败。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "IV.C demo augmentation"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_{NBV}=r_{task}+r_i+r_e,\\quad r_{NBP}=r_{task}+r_i",
+    "locator": "Eq.5–6"
+   },
+   {
+    "latex": "r_e=k\\Delta E,\\quad\\Delta E=\\frac1n\\sum_i(e_i(t)-e_i(t\\prime)),\\quad e_i=-p_o\\log_2p_o-(1-p_o)\\log_2(1-p_o)",
+    "locator": "IV.D Eq.8"
+   }
+  ],
+  "signal_routing": "二元任务成功与可达/非空ROI交互奖励给两个DQN；占据熵下降仅给NBV。真实相机移动后取新深度图，ROI体素输入NBP。无语言token优势分发；DQN具体TD损失/回放权重未在已读方法中明确。",
+  "normalization": "other",
+  "invariance": "ROI内体素平均熵差，k=1；ri为+.02/0/−.02。未建立严格PBRS条件：ROI随动作变、折扣/终端势条件未证明，因此不能声称保持最优策略。",
+  "baseline_or_potential": "不是组均值/标准差基线；信息增益是辅助奖励。",
+  "degenerate_cases": "无示范SR .08；短期熵增益可存在但任务仍失败；所有任务成功也仍可受辅助奖励影响。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table IV去对齐、去示范扩充、去辅助奖励；Table V 0/15/30 demos对应 .08/.51/.76。",
+  "negative_results": [
+   {
+    "text": "无对齐ASSIG .082高于完整 .035，但SR .34低于 .76；局部信息指标不保证任务收益。",
+    "locator": "Table IV"
+   },
+   {
+    "text": "静态相机在低遮挡任务偶尔持平或更好；多相机oracle最强。",
+    "locator": "VI main performance"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若等预算、同示范下熵奖励只增加无效取景而不改善成功率，则信息奖励迁移失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "两个3D U-Net DQN",
+   "framework": "RLBench",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "4 RTX4090，40k updates，Adam lr .0005；每任务30示范，100测试episodes。",
+  "pitfalls": [
+   {
+    "text": "视角旋转需先对齐体素再把动作逆变换回世界坐标。",
+    "locator": "IV.B"
+   },
+   {
+    "text": "无示范仍可优化短期熵却难找到稀疏任务奖励。",
+    "locator": "VI demo ablation"
+   }
+  ],
+  "code": null,
+  "lesson": "当视角变化引入坐标分布漂移时，先统一几何坐标并保留可达性检查；奖励设计的收益不能代替表示与数据消融。"
+ }
+}

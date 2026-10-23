@@ -1,0 +1,162 @@
+{
+ "paper_key": "litscan:76529",
+ "title": "MED crop-and-zoom",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_76529.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs2–8",
+   "§4 Figs2–5/Tables1–4",
+   "§5 limitations",
+   "AppB5–7/Table6",
+   "AppC variants",
+   "AppD aggregation",
+   "AppH/Table8",
+   "Eq4 PDFp4 via parent confirmed visual inspection"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把工具可用/不可用性能漂移分解成intrinsic与tool差，再拆call/schema gain/harm。",
+  "key_step": "每checkpoint配对评估，以tool-free成功/失败分层，再拆调用率与条件正确率。",
+  "why_non_obvious": "净工具增益不变可同时来自收益饱和和伤害减少；失败集难度随训练变化。",
+  "trigger_condition": "When tool-enabled accuracy improves, pair tool-free evaluation and decompose gains and harms before attributing tool mastery.",
+  "contribution_type": "empirical diagnostic framework",
+  "abstract_strategy": "将净指标拆成互斥事件及mass/policy/quality因子。",
+  "abstract_trigger_condition": "When an aggregate gain confounds base capability and intervention behavior, compare paired protocols and track changing cohorts.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "先恒等分解，再以固定/持续失败集检验移动集合偏差。",
+  "abstract_why_non_obvious": "条件执行率不是随机干预效应，分母变化可改变趋势。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76529#s1",
+   "object": "多checkpoint crop-and-zoom学习动态",
+   "information": "同checkpoint同题greedy有/无工具输出与GT；调用事件；没有训练时逐动作标签",
+   "operation": "计算四项gain/harm及Mass×Policy×Quality，控制动态/固定/交集失败集",
+   "claimed_effect": "工具漂移占比正文Qwen2.5约.30/Qwen3约.22；Qwen3条件call-harm .1567→.0680",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq8/Fig2/Table8",
+    "quote": "Term(D, a, o) = P (D) · P (a | D) · P (o | a, D)"
+   },
+   "failure_boundary": "是协议级accounting，非调用随机化或像素替换因果效应；不能直接产生逐token必要性标签。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "直接说明整轨迹结果不能证明逐次crop贡献，提供收益/伤害评测分解。"
+  },
+  {
+   "problem": "P18",
+   "strength": 2,
+   "how": "区分不调用漏机会、裁错、裁对未利用；失败不可自动免责。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "paired tool-free/tool-available/schema-only forbidden execution/no-tool RL/+0.1 correct-call bonus",
+   "kind": "evaluation and training variants"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只研究crop-and-zoom、两个7–8B骨干、六benchmark；未提出新RL目标，重点准确率不含完整效率分析。",
+   "locator": "§5"
+  },
+  {
+   "text": "tool-free为操作性intrinsic参考，非完美隔离所有工具无关能力；schema gain仅条件no-call recovery。",
+   "locator": "§3.2/4.5"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen3 call-gain quality .4105→.3658，call-harm quality .1567→.0680；改善可能主要减少伤害。",
+  "load_bearing_assumption": "工具可用准确率提高即工具技能提高。",
+  "scope": "冻结视觉encoder的7B/8B crop-and-zoom GRPO",
+  "success_criterion": "四项分解、失败cohort固定及no-tool/schema对照",
+  "why_open": "只看总准确率隐藏本体学习与工具伤害消退。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.5固定cohort/no-tool/schema对照"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq7因果边界与AppD符号核对"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "G(t)=Acc_w(t)-Acc_{wo}(t);\\Delta_{tool}(t)=G(t)-G(0);f_w=f_{wo}+\\Delta_{tool};B_{wo}=\\int_0^T|f_{wo}(t)|dt;B_{tool}=\\int_0^T|\\Delta_{tool}(t)|dt;S_{tool}=B_{tool}/(B_{wo}+B_{tool})",
+    "locator": "Eqs2–5；Eq4绝对值由parent核PDFp4"
+   },
+   {
+    "latex": "G=P(D_f,c,\\checkmark)+P(D_f,\\neg c,\\checkmark)-P(D_s,c,\\times)-P(D_s,\\neg c,\\times);T(D,a,o)=P(D)P(a|D)P(o|a,D)",
+    "locator": "Eqs7–8"
+   }
+  ],
+  "signal_routing": "MED只诊断，不改训练credit。主训练GT最终正确性binary outcome→GRPO token-mean；不列优势公式/具体std设置，不能从命名推断实现。工具返回图加入完整历史；无逐调用reward。",
+  "normalization": "other：诊断漂移每benchmark最大绝对值缩放，同benchmark两协议共尺度，再均值；绝对准确率/四项/因子直接跨benchmark均值。GRPO实现归一化未明确。",
+  "invariance": "Eq3/7统计恒等式非PBRS；S为累计绝对漂移比例而非最终准确率增益百分比，也非训练因果贡献。",
+  "baseline_or_potential": "tool-free同checkpoint参考；Dfail(t)随训练变化。不是动作state value或潜势。",
+  "degenerate_cases": "累计漂移分母≈0则S无定义/不稳定；无调用或空失败集条件质量不可识别；质量固定而mass变也会改变gain；c=任意调用，不能逐次归因。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig5固定初始/动态/持续失败cohort；同200-step pipeline no-tool RL；schema存在却禁止执行；+0.1 correct-call bonus。",
+  "negative_results": [
+   {
+    "text": "固定初始失败集的工具纠正质量上升，但当前/持续失败集改善有限；不能宣称所有hard-case或工具技能均无提升。",
+    "locator": "Fig5/§4.5"
+   },
+   {
+    "text": "+0.1答对且调用bonus在Qwen2.5同时增call-gain与call-harm；Qwen3更相似。schema-only禁执行比no-schema准确率低5.8/13.0pp。",
+    "locator": "AppC/Table3"
+   }
+  ],
+  "seeds": "训练seed数未报告于所读；AppH每checkpoint paired bootstrap1000次，95%CI，不能替代训练seed方差；重采样单位/跨benchmark层级未详。",
+  "falsifier": "固定cohort随机强制crop/无crop且共享前缀对照若显示持续纠正收益，则对纯安全共存的泛化结论不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/Qwen3VL8B，视觉冻结",
+   "framework": "verl0.6.1/FSDP2/PyTorch2.8/SGLang0.5.5",
+   "group_size": 8,
+   "max_turns": 10,
+   "kl": 0
+  },
+  "cost": "14745训练样本；1600gradientupdates、每80保存；batch256/minibatch32、maxresponse8192、eval greedy；GPU型号/总时长所读未知。",
+  "pitfalls": [
+   {
+    "text": "正文21checkpoint含初始，AppB写20与240runs未计初始/两协议口径；不得当完整成本。AppD.4 Eq25负面积与Eq26直接相加有符号疑点，正文Eq4–5为绝对面积。",
+    "locator": "Fig2/AppB7/AppD4"
+   }
+  ],
+  "code": null,
+  "lesson": "当工具准确率上升时，先对齐同checkpoint的无工具参考与固定失败cohort，并报告gain和harm两边；不要只看调用率或净差。"
+ }
+}

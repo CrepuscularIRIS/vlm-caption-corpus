@@ -1,0 +1,65 @@
+{
+ "paper_key": "2508.03556",
+ "title": "VRPRM: Process Reward Modeling via Visual Reasoning",
+ "tier": "lite",
+ "decision": "reject",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2508.03556.txt",
+  "sections_read": [
+   "v5 Abstract/contributions",
+   "§3 Eq1–11",
+   "§4 Tables2–3 ablations",
+   "Limitations",
+   "two historical review records"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先用带全局视觉推理的多轮step标签SFT，再用不含CoT标注的过程标签RL训练judge。",
+  "key_step": "MC双阈值筛标签；SFT推理与label加权0.5/2；RL按单样本macroF1、数量/格式、适中thinking长度给reward。",
+  "why_non_obvious": "把推理能力用于评审全解但用便宜MC标签扩展；标签不等于人工过程真值。",
+  "trigger_condition": "标量PRM缺少全局错误分析且CoT监督昂贵时，先教协议再以过程标签训练判别。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "分离评分推理格式的冷启动与低成本标签驱动的判别优化。",
+  "abstract_trigger_condition": "标量PRM缺少全局错误分析且CoT监督昂贵时，先教协议再以过程标签训练判别。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2508.03556#s1",
+   "object": "视觉过程judge的SFT→RL",
+   "information": "图像、问题、完整候选解、MC step标签；teacher额外见reference answer",
+   "operation": "5.5K可训练step标签冷启动+40K高置信无CoT池，macroF1 reward RL",
+   "claimed_effect": "VisualProcessBench overall macroF1 SFT66.77→RL69.18；continued SFT61.22；RL去thinking65.47。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 VRPRM-RL row",
+    "quote": "VRPRM-RL                            5.5K+40K       72.31        60.12       68.32       69.01       71.12    69.18"
+   },
+   "failure_boundary": "训练MC而非人工标签；global完整解包含后续信息，不能作为在线当步可观测信用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "提供视觉step judge可用作过程评分组件，需验证实际crop证据。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "标签保守筛选和masked uncertain历史提供轨迹质控线索。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "reviews_source": {
+  "path": "research/reviews/2508.03556.json",
+  "note_ids": [
+   "oBP6fSdtyM",
+   "HOZIloAGYy"
+  ],
+  "note": "读取两条review，讨论的是旧3.6K/50K/Claude版本；当前v5为5.5K step labels/40K/Kimi，不能以旧审稿确认新版方法。旧review关心跨family泛化、推理成本、实验协议可比性。"
+ }
+}

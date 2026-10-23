@@ -1,0 +1,52 @@
+{
+ "paper_key": "2312.10812",
+ "title": "Learning to Act without Actions",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2312.10812.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§3.3–3.4",
+   "§4",
+   "§5",
+   "§6.1–6.4/Figure 3–5 descriptions"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "从无动作标签视频中通过逆/正动力学一致性学习潜在动作，再行为克隆。",
+  "key_step": "IDM能看下一帧，FDM不能；用VQ瓶颈传递状态转移信息，防止完整复制未来帧。",
+  "why_non_obvious": "可以先学潜在控制结构再少量真实动作解码，但该表示未必状态不变或等同真实动作。",
+  "trigger_condition": "当有丰富观察序列而真实动作标签少时，用瓶颈转移预测构造可克隆潜在动作。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "targeted_self_supervised_objective：用受限未来预测通道训练可表达转移的潜在动作。",
+  "abstract_trigger_condition": "观测易得、行为标签稀缺且转移可辨识时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2312.10812#s1",
+   "object": "Procgen 16游戏视频预训练策略",
+   "information": "约8M无动作标签帧、后续4M在线交互",
+   "operation": "LAPO潜在BC后以监督decoder与RL适配真实动作",
+   "claimed_effect": "4M frames恢复expert表现，PPO from scratch同预算只达expert 44%；9/16任务超expert。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6.1/Figure 3文字结果",
+    "quote": "using LAPO’s latent policy we are able to fully\nrecover expert performance within only 4M frames, while PPO from scratch reaches only 44% of\nexpert performance in the same period."
+   },
+   "failure_boundary": "离线预训练数据和在线预算不同于从零；不是无需任何action labels即可部署。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "离线潜在行为预训练能补充RL初始化支持，但caption/crop已有显式动作，不是直接替代。",
+   "strength": 1
+  }
+ ]
+}

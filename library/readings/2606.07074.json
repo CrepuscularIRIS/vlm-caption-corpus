@@ -1,0 +1,61 @@
+{
+ "paper_key": "2606.07074",
+ "title": "SlimSearcher: Training Efficiency-Aware Web Agents via Adaptive Reward Gating",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.07074.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq1–12",
+   "Table2 training/ablation",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以同题成功候选中最低工具数/长度为锚，乘性效率reward配合成功轨迹SFT筛选。",
+  "key_step": "R=correct×2/(1+exp((C−Cmin)/(Cmin+ε)))×同式长度因子，再组标准化。",
+  "why_non_obvious": "相对成功锚减少绝对长度偏置，但不保证准确率非劣，也会在零工具锚下变得极尖锐。",
+  "trigger_condition": "成功工具轨迹冗长且组内有更经济成功候选时，用相对成本塑形。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先维持成功门，再按可达的经验低成本解调整训练排序。",
+  "abstract_trigger_condition": "成功工具轨迹冗长且组内有更经济成功候选时，用相对成本塑形。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.07074#s1",
+   "object": "成功轨迹效率奖励",
+   "information": "答案标签、同题成功集Cmin/Lmin、所有工具调用计数",
+   "operation": "三门相乘后GRPO标准化，SFT也用效率过滤",
+   "claimed_effect": "Table2 Full GAIA .699/20.13rounds，对无AEA .641/25.42；Browsecomp .328/47.22低于无AEA .339/74.10准确率。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 SlimSearcher Full row",
+    "quote": "SlimSearcher (Full)                    0.770   10.87   5092   0.328     47.22     10883   0.699   20.13   7237   0.278   19.51   11497"
+   },
+   "failure_boundary": "部分基准准确率下降；成功门不能严格保证从不以准确率换效率。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "乘性成功效率reward再组std，直接相关归一化风险。",
+   "strength": 3
+  },
+  {
+   "problem": "P03",
+   "how": "失败轨迹效率免费，成功之间才比较成本。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "效率锚依赖SFT可采到成功行为。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

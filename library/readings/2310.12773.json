@@ -1,0 +1,157 @@
+{
+ "paper_key": "2310.12773",
+ "title": "Safe RLHF: Safe Reinforcement Learning from Human Feedback",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2310.12773.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.2–3.3/Eq5–12",
+   "4.2/Table1/Fig5 discussion/Fig6 ablations",
+   "6 Limitations",
+   "B.2–B.3/Eq22–31",
+   "C.1/Table4"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把两目标混合偏好改成分开建模的约束优化",
+  "key_step": "helpfulness reward与带零点安全分类的cost分离，动态λ约束期望cost",
+  "why_non_obvious": "相对偏好只识别排序，不能给安全预算锚点；cost额外分类建立可控制零点",
+  "trigger_condition": "当固定权重无法同时满足质量与成本边界时，建立可测cost阈值并原始-对偶更新",
+  "contribution_type": "method",
+  "abstract_strategy": "reframe_as_solvable_object：将价值冲突变为期望约束优化，用Lagrangian交替求解；非全局最优保证",
+  "abstract_trigger_condition": "当固定权重无法同时满足质量与成本边界时，建立可测cost阈值并原始-对偶更新",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "helpfulness reward与带零点安全分类的cost分离，动态λ约束期望cost",
+  "abstract_why_non_obvious": "相对偏好只识别排序，不能给安全预算锚点；cost额外分类建立可控制零点"
+ },
+ "signatures": [
+  {
+   "sig_id": "2310.12773#s1",
+   "object": "文本RLHF策略及双偏好模型",
+   "information": "人类分别标helpfulness排序、安全排序和每答案安全标签",
+   "operation": "reward最大化同时约束E[cost]+d≤0，更新logλ；奖励/成本独立GAE PPO损失",
+   "claimed_effect": "三轮后人工有害率53.08%→2.45%；helpfulness人类Elo+363.86，harmlessness+237.98",
+   "conditions": [
+    "Alpaca7B三轮迭代",
+    "每轮再收偏好与red teaming"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2.1/Fig5",
+    "quote": "harmful responses on the evaluation set decreased from 53.08% for Alpaca-7B to 2.45%. For the"
+   },
+   "failure_boundary": "期望cost约束不保证每条答案安全；学习cost误差和数据迭代混杂",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "动态预算和独立cost损失的尺度机制",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "RLHF unified preference",
+   "kind": "method"
+  },
+  {
+   "name": "fixed reward shaping / classifier-only cost",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅单轮，成本高且PTX无原预训练数据",
+   "locator": "§6",
+   "quote": "RLHF studies (Bai et al., 2022a), the financial costs are substantial."
+  }
+ ],
+ "question": {
+  "observed_failure": "统一偏好标注一致率61.65%，分开helpfulness69.00%、safety66.53%",
+  "load_bearing_assumption": "cost的符号/尺度及移动均值可可靠表示约束违反",
+  "scope": "单轮文本生成的质量-安全双目标",
+  "success_criterion": "同偏好数据比较固定权重与动态λ，独立评价质量和违规率",
+  "why_open": "非凸policy与不准cost下无逐样本或全局安全保证"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§3.3 constrained optimization→Lagrangian"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.2.3 static ν sweep"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\max_\\theta J_R(\\theta),\\quad J_C(\\theta)=\\mathbb E C_\\psi(y,x)+d\\le0;\\quad \\min_\\theta\\max_{\\lambda\\ge0}[-J_R+\\lambda J_C]",
+    "locator": "Eq10–12"
+   },
+   {
+    "latex": "\\hat r_t=r^{RM}_t+\\frac\\beta2r^{KL}_t,\\quad\\hat c_t=c^{CM}_t-\\frac\\beta2r^{KL}_t;\\quad L_{SafeRL}=\\frac{L_R-\\lambda L_C}{1+\\lambda}",
+    "locator": "Eq22–29"
+   },
+   {
+    "latex": "\\log\\lambda_{k+1}=\\log\\lambda_k+\\alpha\\lambda_k J_C(\\theta_k)",
+    "locator": "Eq31"
+   }
+  ],
+  "signal_routing": "RM/CM仅末token输出，KL逐token；reward/cost各GAE优势并各PPO surrogate再合并，另PTX保持SFT。不是组相对GRPO，不把λ塞入同一组std；优势是否另外whiten未见。",
+  "normalization": "other",
+  "invariance": "1/(1+λ)归一化两个loss而非mean+std；动态约束改变最优解，非PBRS。期望cost放宽逐样本约束，无直接概率界推导。",
+  "baseline_or_potential": "GAE critic value，非同题组均；λ更新用cost移动均值，PTX引用Alpaca而非不可得pretrain。",
+  "degenerate_cases": "λ极小log更新含λ因子可能慢；λ=0不能直接取log，实际λ0正值。cost全同无法区分动作但仍可提高λ；p≈0动作无额外支持恢复；只单轮。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig6比较静态ν=.01,.5,1,2,5,10,100；高低均偏一目标，适中仍逊动态；分类only cost也逊排序+分类。",
+  "negative_results": [
+   {
+    "text": "较高/较低静态权重过优化单目标，分类only cost约束效果弱。",
+    "locator": "§4.2.3–4.2.4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "匹配数据/阈值后调好的固定λ达到同Pareto点，或cost低而人工违规不低，则动态预算解释不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Alpaca-7B / Llama1",
+   "framework": "PPO with GAE",
+   "group_size": null,
+   "max_turns": 1,
+   "kl": 0.1
+  },
+  "cost": "三轮人工偏好/red teaming，财务成本作者称高；精确训练卡时未读",
+  "pitfalls": [
+   {
+    "text": "Eq30梯度括号和PTX Eq19–20未写log有记号问题，未用代码修正原文。",
+    "locator": "B.2–B.3"
+   }
+  ],
+  "code": "https://github.com/PKU-Alignment/safe-rlhf",
+  "lesson": "当代价尺度被组std抵消时，首先确认代价进入reward还是独立loss；动态λ需要校准约束反馈，不可仅换一个调参公式。"
+ }
+}

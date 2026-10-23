@@ -1,0 +1,60 @@
+{
+ "paper_key": "2607.03702",
+ "title": "Agent Reinforcement Learning via Pivotal-Aware Self-Feedback Retry",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.03702.txt",
+  "sections_read": [
+   "Abstract; §3.1–3.3",
+   "§4.1–4.3 Tables 1–3",
+   "Conclusion limitations; Appendix C.3 equations 12–15"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把失败后的整局重试改为自反思定位错误边界后的局部重试，并按该边界隔离跨episode回报。",
+  "key_step": "生成remark和最早错误turn k；复用k前状态/动作，重试成功的未来回报只传回旧轨迹k前动作，反思另获下一次成功重试折扣回报。",
+  "why_non_obvious": "同一成功重试可同时说明旧前缀有用、旧错误后缀无用；直接传播成功会奖励原来的错误。",
+  "trigger_condition": "长轨迹允许恢复到历史状态，且失败反思能定位可修复的最早错误。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以可恢复状态和错误边界为单位，把经验复用与跨尝试信用隔离耦合。",
+  "abstract_trigger_condition": "长轨迹允许恢复到历史状态，且失败反思能定位可修复的最早错误。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.03702#s1",
+   "object": "多episode失败重试及前缀动作",
+   "information": "完整失败轨迹、同policy反思remark和k、后续重试成功/奖励、同环境状态动作组",
+   "operation": "复用前缀；Eq7仅t<k累加下一episode折扣回报；Eq8训练反思；Eq15结合episode与同状态step优势",
+   "claimed_effect": "Table1 Minesweeper Suc@1/2/3为48.4/71.8/78.1，整体Avg83.9；GiGPO对应42.2/46.1/48.4、73.9。Table3去isolation后Minesweeper54.6 vs完整78.1。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.1–3.2 Eq4–9; §4 Table1 p6; Table3 p7",
+    "quote": "PivoARL (Ours)        89.8   93.4      94.5   66.7     81.5       83.8   48.4      71.8   78.1    98.4     100      100      83.9"
+   },
+   "failure_boundary": "反思k是模型判断，不是已验证因果错误点；恢复状态与真实不可逆工具环境不同。WebShop Suc@1低于GiGPO。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "按错误边界及同状态替代动作定位跨尝试回报，提供比全轨迹统一结果信用更细的结构。",
+   "strength": 3
+  },
+  {
+   "problem": "P23",
+   "how": "复用前缀依赖环境状态可恢复；remark加入prompt后不能默认为同一actor信息状态。",
+   "strength": 3
+  },
+  {
+   "problem": "P58",
+   "how": "局部重试节约前缀交互，但额外反思和多次rollout仍增加单次训练成本。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

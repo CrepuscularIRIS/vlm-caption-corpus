@@ -1,0 +1,59 @@
+{
+ "paper_key": "litscan:3498",
+ "title": "AgenticLU — Self-Taught Agentic Long-Context Understanding",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3498.txt",
+  "sections_read": [
+   "Abstract; §4–5 methods",
+   "Table2; §7.2–7.3 Tables4–5; Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先用多分支自澄清和逐段相关性查询构造证据定位轨迹，再蒸馏成直接输出段落索引的模型。",
+  "key_step": "CoC生成澄清问题、pointback相关段落、回答澄清再答原题；树搜索结果形成SFT轨迹与DPO正负偏好。",
+  "why_non_obvious": "训练时昂贵的逐段检索可转为部署时一次生成段落索引，但两种访问协议和成本不能混为一谈。",
+  "trigger_condition": "长文本已在输入中但模型有效使用范围远小于名义窗口。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把昂贵搜索获得的分解和证据定位过程蒸馏到低调用成本的结构化输出。",
+  "abstract_trigger_condition": "长文本已在输入中但模型有效使用范围远小于名义窗口。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3498#s1",
+   "object": "长上下文澄清及pointback轨迹",
+   "information": "完整NarrativeQA上下文、原问题、512-token片段、GT与GPT4o-mini判分",
+   "operation": "分支8/深度≤3搜索；优良轨迹next-token CE；错误轨迹作DPO负例；推理直接生成段落索引",
+   "claimed_effect": "Table4四个128K RAG任务平均75.7，去澄清62.1、去pointback62.2，基座58.2；Table2长任务平均+14.7pp，短任务−.6pp。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5; Table4 p5531",
+    "quote": "AgenticLU-8B              71.1       77.8       65.5       88.3     75.7"
+   },
+   "failure_boundary": "文本段落定位不是重新取得像素；无法自主选择停止轮数，固定步数存在过早/多余推理。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "以搜索构造澄清和定位行为支持，再SFT→DPO，可映射caption和证据请求的数据构造。",
+   "strength": 2
+  },
+  {
+   "problem": "P23",
+   "how": "数据收集逐片查询与部署整上下文生成索引的协议不同，必须保留信息边界。",
+   "strength": 2
+  },
+  {
+   "problem": "P31",
+   "how": "作者明确模型尚不能自主停止多轮推理。",
+   "strength": 3
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

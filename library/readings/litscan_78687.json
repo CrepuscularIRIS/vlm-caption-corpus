@@ -1,0 +1,158 @@
+{
+ "paper_key": "litscan:78687",
+ "title": "QUATRO: Query-Adaptive Trust Region Policy Optimization for LLM Fine-tuning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78687.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3 Eqs7–19",
+   "4 Tables1–2/logratio ablation",
+   "6 Limitation",
+   "AppendixB"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "每prompt求KL-constrained reward maximization的scalar dualλ/µ；以derived advantage减detached current/old logratio作更新校正。",
+  "why_non_obvious": "clip超出边界后无回拉信号，精确policy-space解给对称纠偏；实现仍是有限样本参数投影。",
+  "trigger_condition": "When clipping masks corrective gradients, solve a prompt-specific KL-constrained policy problem and use its dual target.",
+  "contribution_type": "trust-region objective",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "When a heuristic constraint is brittle, reformulate it as constrained optimization and use dual machinery.",
+  "abstract_key_step": "将query-level更新映射为KL约束与可解一维dual。",
+  "abstract_why_non_obvious": "有限sample和共享网络使理论最优policy与实际训练约束需区分。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78687#s1",
+   "object": "prompt-level policy update",
+   "information": "旧policy rollout及scalar rewards、δ、current/old probabilities",
+   "operation": "求dual→A=(R−µ)/λ−1，减detached logratio，另加refKL",
+   "claimed_effect": "1.5B δ.001 Pass1=29.73低于GRPO31.66，但Pass256=68.68高于64.36；7B δ.01 Pass25671.72 vsGSPO65.70。",
+   "conditions": [
+    "MATH7500",
+    "6mathbenchmarks"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "Ours δ=0.001   29.73   36.18    41.91   46.96   51.52   55.82   59.96   64.10   68.68"
+   },
+   "failure_boundary": "较高探索/Passk不等于Pass1不降；实际有限SGD不保证每prompt真实KL严格≤δ。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P62",
+   "how": "直接改变policy trustregion更新，适合审查staleness/entropycollapse。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "取消启发组std但dual仍决定reward尺度。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO/GSPO/DAPO/CISPO",
+   "kind": "trust-region heuristic"
+  },
+  {
+   "name": "without logratio stabilizer",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "δ仍手调；rewarddistribution及response多样性影响结果。",
+   "locator": "6"
+  },
+  {
+   "text": "7B仅main tables无ablation；有限样本dual与共享参数policy只近似目标。",
+   "locator": "AppendixB/3.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "δ.001使Pass1 29.73低于GRPO31.66但Pass25668.68高于64.36；最终entropy.23 vsGSPO.05。",
+  "load_bearing_assumption": "显式prompt KL目标与对称logratio校正可抑制过快集中。",
+  "scope": "LLM RL更新稳定性",
+  "success_criterion": "同rollout预算/innerupdates下稳定并同时报告Pass1/Passk",
+  "why_open": "采样dual、ratio估计与实际网络优化误差未由闭式policy解自动消除。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Fig4 staleness/lr/logratio ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "maximize_pi E_pi R subject to KL(pi(.|q)||pi_old(.|q))<=delta; f_q(lambda)=lambda*(delta+log E_old exp(R/lambda))",
+    "locator": "Eqs7,11"
+   },
+   {
+    "latex": "lambda*=argmin f; mu*=f(lambda*)-lambda*(delta+1); A_i=(R_i-mu*)/lambda*-1; pi*=pi_old*exp(A)",
+    "locator": "Eqs12–15"
+   },
+   {
+    "latex": "L_q=-sum_i [pi_theta(o_i|q)/pi_old(o_i|q)]*[A_i-stopgrad(log(pi_theta(o_i|q)/pi_old(o_i|q)))]; L_total=E_q L_q+beta KL(pi_theta||pi_pre)",
+    "locator": "Eqs14,17"
+   }
+  ],
+  "signal_routing": "trajectoryreward导出的A按sequence probability项优化；logratio显式detach而outerratio反传。无局部工具credit/观察mask实验。实际token化实现和loss分母未知，不凭GSPO关系补geometric mean ratio。",
+  "normalization": "other:每prompt Nsample logpartition估scalarλ/µ；没有GRPO mean/std；附加固定refKL β=.001与oldpolicy trustregion不同。",
+  "invariance": "非PBRS。精确优化下R→aR+b(a>0)可由λ→aλ、µ→aµ+b吸收，使A不变；数值边界/优化误差可能破坏。closedform无限policy空间不等于实际每步真实KL硬保证。",
+  "baseline_or_potential": "µ+λ作为querybaseline，λ定尺度；非valuecritic。",
+  "degenerate_cases": "常数reward dual最优趋λ0，A出现0/0需实现保护但未披露；δ趋0更新趋旧policy；过宽δ可到边界λ0；单rewardclass无法由样本知道未采支撑。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "固定N8比较innerupdates1/2/5与lr1e-6/1e-5；δ.1两次innerupdate删除stabilizer导致rewardcollapse/KLspike。",
+  "negative_results": [
+   {
+    "text": "δ更小增加Passk但1.5B与7B Pass1均可下降。",
+    "locator": "Table1"
+   },
+   {
+    "text": "1.5B δ.1 Pass25663.65低于GRPO64.36，非每配置全面优越。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：独立估真实promptKL与有效梯度；若有限样本dual不能限制实测偏移则收窄精确约束解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5Math1.5/7B; Coder1.5B",
+   "framework": "verl",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "N8 batch256 mini64；2/4H200；maxresponse1024/3072；无额外rollout仅scalar求解",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用闭式policy解指导共享网络时记录真实KL与dual边界，不能把理论约束等同每个SGD步满足。"
+ }
+}

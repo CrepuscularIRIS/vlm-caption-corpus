@@ -286,7 +286,7 @@
    }
   ],
   "seeds": null,
-  "falsifier": "读者提出而非作者执行：先在保存的同一reward batch上核对Eq2→Eq3是否只有恒等/全局尺度变化，明确group拆分与零方差约定；再在匹配token/rollout预算及多种子下比较GSPO与BN-GSPO。若正确对齐后优势无额外变化或收益不能复现，则否定“额外跨group标准化解释性能收益”的因果归因。若降低调用只来自提前错答，则不支持本课题非劣效率目标。",
+  "falsifier": "[redacted: project-internal]",
   "unreported": "训练种子数、训练重复次数及置信区间未报告。Avg@8是每题八次评估而不是八个训练种子；Appendix C.4同时说全评估temperature=0和用Avg@8降低sampling-temperature方差，随机来源未解释。"
  },
  "engineering": {
@@ -355,7 +355,7 @@
   },
   {
    "problem": "P48",
-   "how": "提供V*全191、HR4K/8K各800、MME-RW23599的评测口径及Avg@8/Pass@1区别；HR-MMSearch包含外部检索任务，不能直接替换我们的crop-only任务。",
+   "how": "[redacted: project-internal]",
    "strength": 2
   },
   {

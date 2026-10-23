@@ -1,0 +1,56 @@
+{
+ "paper_key": "2606.29476",
+ "title": "CRAFT: Counterfactual Credit Assignment from Free Sibling Rollouts for Self-Distilled Agentic Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.29476.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–4 Eq5–13/propositions",
+   "§5 Tables2–3/setup",
+   "§7 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以teacher/student概率比重权现有兄弟轨迹，所得组级优势差变为辅助token信用，并调节蒸馏与reference约束。",
+  "key_step": "CTI_i=Σ_{j≠i}softmax(Δ_j/τ)A_j−A_i；signed sigmoid后stop-gradient乘logπ，主GRPO不变。",
+  "why_non_obvious": "复用兄弟无需新rollout，但同token位置通常是不同prefix；该量不是固定状态下一次动作干预。",
+  "trigger_condition": "已有privileged-context self-distillation和同题多rollout，想让辅助蒸馏考虑结果符号时。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "从已有样本做带重要性权重的组级比较，并把辅助更新与主结果目标分开。",
+  "abstract_trigger_condition": "已有privileged-context self-distillation和同题多rollout，想让辅助蒸馏考虑结果符号时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.29476#s1",
+   "object": "辅助CTI信用与controller",
+   "information": "G8兄弟A、teacher privileged技能context、teacher/student log gap",
+   "operation": "SNIS siblings→detached signed credit，EMA活动率升λ降µ，符号选KL方向",
+   "claimed_effect": "Table3 Qwen2.5-3B Full87.0/46.1/87.3，noCTI84.2/43.5/84.8（ALF/Search/WebShop）。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 CRAFT Full row",
+    "quote": "CRAFT-Full                     87.0       46.1          87.3"
+   },
+   "failure_boundary": "baseline多行来自既有SDAR论文，不是全方法同次复现；源论文unit/bitexact报告未在此运行。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "辅助token信用仍受状态对齐与有限组估值边界约束。",
+   "strength": 3
+  },
+  {
+   "problem": "P17",
+   "how": "兄弟state-marginal tilt与固定状态反事实严格不同。",
+   "strength": 3
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

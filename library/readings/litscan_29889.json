@@ -1,0 +1,57 @@
+{
+ "paper_key": "litscan:29889",
+ "title": "OpenPRM",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_29889.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3",
+   "Table2/§5.2 discussion",
+   "§7 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "unify_into_shared_representation",
+  "key_step": "把并行完整回答按句子相似性聚为前缀树，用后代leaf outcome均值给节点弱标注，再统一过程与结果偏好训练。",
+  "why_non_obvious": "无需每前缀新采样，但edit-distance合并把不同语义状态当同节点，弱过程监督继承聚合假设。",
+  "trigger_condition": "当开放域缺乏过程标签时，从已采完整答案及ORM构造共享句子节点和局部偏好。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "unify_into_shared_representation",
+  "abstract_trigger_condition": "当开放域缺乏过程标签时，从已采完整答案及ORM构造共享句子节点和局部偏好。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:29889#s1",
+   "object": "开放域PRM",
+   "information": "并行7B/70B候选，ORM leaf scores；句子edit distance阈值合并",
+   "operation": "V(node)=Σdescendant R/leaf count；L=LORM+λLPRM，各为−logσ(scorechosen−scorerejected)，混过程/结果与数学/开放域",
+   "claimed_effect": "OpenPRM InternRM Table2 RewardBench91.1、PRM800k68.1，原Intern2RM为87.6/61.0。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "O PEN PRM (InternRM)    UF Tree + HS 2             78.5         91.1     98.0     81.6     89.5      95.1        68.1"
+   },
+   "failure_boundary": "聚合不是同actor同状态反事实续采样；ORM偏见可继承；coverage@N近满分不代表verifier可选中。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "从结果奖反推过程价值仍受proxy与状态聚合误差。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "可作低成本过程偏好构造，不提供准确因果credit。"
+  }
+ ],
+ "scientific_replication": false
+}

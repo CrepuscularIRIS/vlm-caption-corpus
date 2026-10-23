@@ -1,0 +1,59 @@
+{
+ "paper_key": "2610.18683",
+ "title": "ProAS: A Progress-Aware Advantage Shaping Framework for Multi-Turn Agentic Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2610.18683.txt",
+  "sections_read": [
+   "摘要/贡献",
+   "§3.2 GRPO",
+   "§4.1–4.3 Eq5–7",
+   "§5.1 设置",
+   "Table1–2/§6.2",
+   "结论",
+   "AppB 各baseline归一化（定向）"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "利用成功轨迹形成可演进任务参考图，正优势屏蔽不合理动作，负优势按未来不推进次数重分配。",
+  "key_step": "区分结构合理和实际推进，对正负优势采用不同动作权重。",
+  "why_non_obvious": "失败末尾的无进展可能源于早期偏离，均匀惩罚与成功轨迹均匀强化都有误导。",
+  "trigger_condition": "任务子目标和状态转移可可靠定义时，用参考图改动作级信用。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "structural_prior_encoding",
+  "abstract_trigger_condition": "终局标签缺少可利用的已知任务推进结构。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.18683#s1",
+   "object": "正负优势动作",
+   "information": "官方/成功轨迹子目标图、历史访问状态、未来不推进动作计数",
+   "operation": "正A乘合理性mask，负A乘Future-Drift/同优势组均值",
+   "claimed_effect": "Qwen1.5B Table2 ALFWorld SR由GRPO70.3±2.8到87.0±2.3；WebShop57.0±3.1到64.6±1.2。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 2",
+    "quote": "GRPO + ProAS          90.9±5.2 * 86.1±4.8 *   90.7±2.3     91.7±8.3 * 83.3±4.2 *   78.8±5.2   87.0±2.3 * 85.3±2.4 *   64.6±1.2"
+   },
+   "failure_boundary": "依赖ARG质量和子目标匹配；单案例抑制实验不能证明Future-Drift一般因果归因。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "正负分支的动作权重可迁移，但caption/crop缺乏官方任务状态图。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "进展标签必须可靠，随机图标签导致退化。",
+   "strength": 2
+  }
+ ]
+}

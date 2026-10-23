@@ -1,0 +1,171 @@
+{
+ "paper_key": "2512.21540",
+ "title": "LEASH: Adaptive Length Penalty for Efficient Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2512.21540.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "2 Method and Algorithm1",
+   "3 setup",
+   "4 Tables2–3 and training analysis",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "带上界的对偶λ跟踪signed平均超预算，policy只罚正超长并把总奖励clip到[-1,1]。",
+  "why_non_obvious": "常数惩罚无法匹配随训练变化的长度；实际policy penalty与dual constraint不完全同一函数。",
+  "trigger_condition": "When reasoning lengths exceed a target budget, adapt a length penalty from batch constraint violation.",
+  "contribution_type": "constrained RL reward shaping",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When a fixed cost tradeoff drifts during training, update its multiplier from observed constraint violation.",
+  "abstract_key_step": "双更新λ与policy。",
+  "abstract_why_non_obvious": "不是不同问题对象→现成solver的重构，也不保证每条response满足限制。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2512.21540#s1",
+   "object": "reasoning rollout reward",
+   "information": "GT正确性、生成长度、固定预算Lt",
+   "operation": "one-sided clipped reward加batch adaptive dual",
+   "claimed_effect": "1.5B总体accuracy33.1→33.9，tokens15727→5873；4B target8k accuracy75.5→70.1。",
+   "conditions": [
+    "math RL",
+    "compact 1.5B/4B"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "LEASH -1.5BLt =4k        30.4    6,779   24.6    6,126   14.2        6,358   66.4    4,230   33.9    5,873   +0.8      -62.7%"
+   },
+   "failure_boundary": "小预算会损准确率；mean constraint不限制每条样本且部署仍可超预算。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "组std在特定组内可消去λ尺度，需逐情况检查。",
+   "strength": 3
+  },
+  {
+   "problem": "P32",
+   "how": "直接长度奖励与自适应预算控制。",
+   "strength": 3
+  }
+ ],
+ "baselines": [
+  {
+   "name": "LEASH-C",
+   "kind": "fixed lambda ablation"
+  },
+  {
+   "name": "LASER-DE",
+   "kind": "length penalty baseline"
+  },
+  {
+   "name": "L1/ThinkPrune",
+   "kind": "length control"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只测试两个compact模型，larger/tool/multiturn仍未来工作。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "Lt固定；4B8k明显损失in-domain accuracy。",
+   "locator": "Limitations/Table2"
+  }
+ ],
+ "question": {
+  "observed_failure": "4B fixedλ target8k总体75.5→69.9；adaptive70.1仍低于原模型。",
+  "load_bearing_assumption": "惩罚强度需随policy长度分布调节，但可行预算与准确率存在冲突。",
+  "scope": "math reasoning length",
+  "success_criterion": "在明确accuracy约束下减少tokens，而非仅以较高比率描述成功",
+  "why_open": "标准化和奖励clip使λ并非总是有效连续控制量。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2 LEASH-C comparison"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Tables2–3 token/accuracy reporting"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=+1(correct),-1(wrong); Delta=max(0,L/Lt-1); rtilde=clip(r-lambda*Delta,-1,1)",
+    "locator": "2 reward shaping"
+   },
+   {
+    "latex": "A=(rtilde-mean_group(rtilde))/(std_group(rtilde)+1e-8)",
+    "locator": "Algorithm1"
+   },
+   {
+    "latex": "Jp_hat=mean_{B*G}(L/Lt-1); lambda_next=clip(lambda+alpha_lambda*Jp_hat,0,1)",
+    "locator": "2 dual update/Algorithm1"
+   }
+  ],
+  "signal_routing": "长度/正确性混合的sequence reward先组标准化，再用于DAPO policy；未定义分步骤credit。训练去掉dynamic sampling和DAPO overlong penalty，KL/entropy系数0；token loss reduction未核实现。",
+  "normalization": "mean+std per prompt；signed violation跨batch B*G均值更新dual，不用已clip reward来估计violation。",
+  "invariance": "非严格PBRS。实际policy采用one-sided且clip的惩罚，dual用signed未clip约束；不能由原始Lagrangian直接推出实际算法的严格可行/最优保证。读者：全正确、均超长且未clip组内，λ>0时std可消去其尺度（忽略eps）。",
+  "baseline_or_potential": "组均值为baseline；无potential；λ由预算违反更新。",
+  "degenerate_cases": "全错rtilde均-1，长度无信号；全正确且均under budget奖励1也无信号；正确但λDelta≥2会clip到-1与错误同分；λ0退化正确性RL。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同target的adaptive vs constantλ；1.5B4k、4B12k/8k；OOD GPQA/MMLUPro。",
+  "negative_results": [
+   {
+    "text": "4B8k整体accuracy75.5→70.1（表报-5.5pp），tokens仅达12042而非8k硬限制。",
+    "locator": "Table2"
+   },
+   {
+    "text": "4B12k OOD adaptive70.4低于constant71.2，尽管tokens5541低于5742。",
+    "locator": "Table3"
+   },
+   {
+    "text": "1.5B AIME24 31.4→30.4、HMMT25 14.5→14.2，macro提高不代表每项不降。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：分组检查λ变化对advantage梯度是否仍有效，并以准确率非劣界比较固定λ；若控制收益仅来自更多训练则否定adaptive归因。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeekR1DistillQwen1.5B/Qwen3-4BThinking2507",
+   "framework": "VeRL DAPO",
+   "group_size": null,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "3939题，32H20，batch64 lr1e-6；eval math32samples per prompt",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当加入长度惩罚时同时记录原始violation、clip比例和标准化后的advantage，不能只监控λ。"
+ }
+}

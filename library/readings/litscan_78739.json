@@ -53,7 +53,7 @@
    "object": "PV代理质量",
    "information": "979个Q、感知文本、gold triplet；三人多数判文本可推gold",
    "operation": "盲14B答案正确作为RP，对比人工充分性",
-   "claimed_effect": "accuracy86.31%, κ.707；FN90/9799.19%，FP44/9794.49%",
+   "claimed_effect": "accuracy 86.31%, κ=.707；FN 90/979 = 9.19%，FP 44/979 = 4.49%",
    "conditions": [],
    "evidence": {
     "kind": "reported_experiment",

@@ -1,0 +1,55 @@
+{
+ "paper_key": "2608.13179",
+ "title": "Teach the Magnitude, Not the Direction: Verifier-Anchored Credit Assignment for Multi-Turn Multi-Step LLM Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.13179.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3 Eqs3–10",
+   "Tables2–3",
+   "6 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "先按有独立verifier的turn分别groupstd，后用GT-conditioned selfteacher对token做方向一致、surprisal门控的有界放大。",
+  "why_non_obvious": "隔开turn结果和token重要性，保scalar符号但不保共享参数整体梯度方向。",
+  "trigger_condition": "When independent turn outcomes are diluted by trajectory rewards, normalize credit by turn and gate teacher modulation within each turn.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When independent turn outcomes are diluted by trajectory rewards, normalize credit by turn and gate teacher modulation within each turn."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.13179#s1",
+   "object": "multi-turn multi-step policy tokens",
+   "information": "perturn verifier、same-model GT teacher、sampled-token surprisal",
+   "operation": "Aturn=(Rturn−groupmean)/groupstd；A_token=Aturn*phi",
+   "claimed_effect": "4B BFCL43.63 GRPO→52.00；WildTool session4.69→7.03；8B session5.47→9.38。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "+ Both (C R EST)    52.00   67.0    48.0     38.0"
+   },
+   "failure_boundary": "只有单trainingseed，3decode非3训练种子；surprisal只是重要性proxy；全错turn组adv为0并非负。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "独立turn verifier可减少跨请求稀释，crop多步共享终局需改造。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "每turnstd消除共同scale且同质组为0。",
+   "strength": 3
+  }
+ ]
+}

@@ -1,0 +1,64 @@
+{
+ "paper_key": "2501.04686",
+ "title": "Unlocking Multimodal Mathematical Reasoning via Process Reward Model",
+ "tier": "lite",
+ "decision": "poster",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2501.04686.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 BEL/MIE/PRM",
+   "§4 Eq5–6",
+   "Table1/4/§6.3",
+   "Appendix B.1 Eq7–8",
+   "review e6FYGGK146 summary/strengths_weaknesses"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "把PRM连续步骤的相对骤降转为correct-rollout惩罚，不直接最大化原始process分。",
+  "why_non_obvious": "直接加标量PRM会被长度偏差与reward hacking放大，而阈值事件保留终答正确性。",
+  "trigger_condition": "当PRM标量不可靠但错误定位相对稳定时，测试正确轨迹中相对骤降事件的有限惩罚。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "当PRM标量不可靠但错误定位相对稳定时，测试正确轨迹中相对骤降事件的有限惩罚。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2501.04686#s1",
+   "object": "多模态数学在线RL奖励",
+   "information": "图像与步骤PRM；BEL采样后续是否有正确答案，MIE人工插入视觉误读",
+   "operation": "R=1（正确无drop）、1−γ（正确有drop）、0（错），组mean/std后全response token共享",
+   "claimed_effect": "γ=.5/ρ=.3六benchmark均值58.2；γ=1/ρ=.3降到56.3。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "0.5    0.3      50.9            31.5             83.2             60.7                47.4           75.6          58.2\n    0.5    0.4      49.9            30.8             81.2             59.9                46.9           75.0          57.3\n    0.5    0.2      49.6            30.5             80.9             59.6                46.6           74.7          57.0\n    1.0    0.3      49.0            29.4             79.8             58.8                45.3           72.5          56.3"
+   },
+   "failure_boundary": "PRM并非真实动作因果价值；γ1可令正确样本归零；全部正确样本同惩罚时在组std下退化成vanillaGRPO。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "视觉过程监督通过错误插入和后续采样构造。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "process-as-outcome仍整回答广播，没有分步A。"
+  },
+  {
+   "problem": "P66",
+   "strength": 2,
+   "how": "试图区别幸运正确与过程可靠，需核PRM误惩罚。"
+  }
+ ],
+ "scientific_replication": false
+}

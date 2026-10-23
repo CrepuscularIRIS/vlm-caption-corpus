@@ -80,7 +80,7 @@
     "locator": "Sec.3.2.2 p.4; Table4a p.8; App.B.3 p.18, App.E p.22",
     "quote": "For training samples equipped with task-critical evidence annotations, we represent the intermediate\nvisual information required for answer formation as a set of K textualized visual evidence units,"
    },
-   "failure_boundary": "本课题未有此类金证据单元，不能用现有未核验caption当GT直接搬运。只留正增益不惩罚丢失证据，可能让噪声/反复失而复得获益；概率可恢复性不等于像素使用因果性。",
+   "failure_boundary": "[redacted: project-internal]",
    "verified": "fulltext"
   },
   {

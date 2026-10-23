@@ -1,0 +1,157 @@
+{
+ "paper_key": "litscan:77320",
+ "title": "MADRAG",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77320.txt",
+  "sections_read": [
+   "Abstract",
+   "4–5/Eq2–5",
+   "6/Table1–4",
+   "7",
+   "Appendix failure-boundary paragraph p18"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "分离纯视觉问题表征和被检索上下文污染的问题表征",
+  "key_step": "[I,QI,C,QC]重复问题，以先于C的QI注意力混入QC",
+  "why_non_obvious": "利用因果mask保留不受检索影响的视觉参照，并非简单增加图像token权重",
+  "trigger_condition": "当相关检索文本反而使正确视觉答案翻错时，保留上下文前视觉表征并混合",
+  "contribution_type": "method",
+  "abstract_strategy": "分离纯视觉问题表征和被检索上下文污染的问题表征",
+  "abstract_trigger_condition": "当相关检索文本反而使正确视觉答案翻错时，保留上下文前视觉表征并混合",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "[I,QI,C,QC]重复问题，以先于C的QI注意力混入QC",
+  "abstract_why_non_obvious": "利用因果mask保留不受检索影响的视觉参照，并非简单增加图像token权重"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77320#s1",
+   "object": "检索增强VLM的中间注意力",
+   "information": "同图、同问题重复两次、检索文本；无额外GT或训练",
+   "operation": "每层将QI视觉注意力注入QC；默认alpha .5",
+   "claimed_effect": "LLaVA7B OKVQA65.46→70.22；仅重复问题69.65；Qwen7B63.80→64.91，重复63.85",
+   "conditions": [
+    "开放权重attention访问",
+    "oracle主表+真实CLIP检索补测"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "MAD-RAG (ours)          [I, QI , C, QC ]     70.22      64.91"
+   },
+   "failure_boundary": "原模型视觉表征错误时混合会伤害原来靠文本答对的样本",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "文字上下文可压制图像证据，提供caption遮蔽的机制候选",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "验证视觉参照通路，不是奖励attention本身",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Vanilla RAG / duplicated question",
+   "kind": "ablation"
+  },
+  {
+   "name": "ALFAR",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "足够视觉grounding是前提",
+   "locator": "Appendix p18",
+   "quote": "mixing process can become counterproductive."
+  }
+ ],
+ "question": {
+  "observed_failure": "RAG使图像注意力下降12.1–41.1%，且部分closed-book正确样本翻错",
+  "load_bearing_assumption": "检索前QI包含可靠视觉grounding",
+  "scope": "KB-VQA推理阶段attention干预",
+  "success_criterion": "同检索同预算优于重复问题、换顺序及普通RAG",
+  "why_open": "更多注意力并非自动正确，弱视觉基座会引入噪声"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§5.1 visual/context question roles"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "X=[I,Q_I,C,Q_C];\\quad \\hat A_{Q_C,All}=\\alpha[A_{Q_I,I},0_{Q_I},0_C]+(1-\\alpha)A_{Q_C,All}",
+    "locator": "Eq2–3"
+   },
+   {
+    "latex": "\\hat O(Q_C)=\\alpha O(Q_I)+(1-\\alpha)O(Q_C)",
+    "locator": "Eq5（作者称等价）"
+   }
+  ],
+  "signal_routing": "推理时逐层改QC注意力/输出，随后解码答案；无梯度、无新crop像素、无奖励。QI在C之前故因果mask隔离检索。",
+  "normalization": "other",
+  "invariance": "不是PBRS或奖励不变；Eq3只取QI→I子块，可能行和<1，未写重新归一化。若Eq5的O(QI)含QI自身及其他非图token，和Eq3严格等价需额外假设，未核代码。",
+  "baseline_or_potential": "输入内部的无检索视觉参照；不是value baseline。",
+  "degenerate_cases": "alpha0退化双问题prompt，alpha1依赖纯QI输出；视觉错时噪声增加；无检索时重复成本仍在；单次推理不含stop策略。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4重复问题/换位置/混合三臂；Table3真实CLIP top5 vanilla9.86 vs MAD21.20，主表是oracle上下文不能当普通检索值。",
+  "negative_results": [
+   {
+    "text": "Qwen换Q/C顺序63.80→61.92；弱视觉grounding时MAD可把正确文本答案改错。",
+    "locator": "Table4 / Appendix p18"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "匹配重复prompt后混合无增益，或随机视觉attention同样好，则保留视觉参照解释不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5 7B/13B; Qwen2.5VL3B/7B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "单A100；LLaVA13B约1.09–1.11×延迟，非零开销",
+  "pitfalls": [
+   {
+    "text": "动态视觉token化使部分attention基线乱码；需核token索引与归一化。",
+    "locator": "Table1 caption"
+   }
+  ],
+  "code": "https://github.com/ubc-tea/MAD-RAG",
+  "lesson": "当新增文字导致视觉回答退化时，先用重复问题对照拆prompt收益，再验证attention混合，而不是直接认定新证据有害。"
+ }
+}

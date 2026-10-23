@@ -1,0 +1,56 @@
+{
+ "paper_key": "2608.02181",
+ "title": "Start Classifying: Categorical Critics for LLM Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.02181.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3",
+   "Table1",
+   "Tables3–4",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "critic scalar MSE换categorical softmax+Gaussian-smoothed target CE，decode期望给同一GAE/PPO。",
+  "why_non_obvious": "分布只是优化surrogate；不把binary return误称scalar regression统计不合法，也不把actor变成distributional RL。",
+  "trigger_condition": "When sparse returns make critic optimization difficult, replace scalar regression with a smoothed categorical surrogate while preserving the scalar actor interface.",
+  "contribution_type": "method",
+  "abstract_strategy": "architectural_operator_substitution",
+  "abstract_trigger_condition": "When sparse returns make critic optimization difficult, replace scalar regression with a smoothed categorical surrogate while preserving the scalar actor interface."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.02181#s1",
+   "object": "PPO critic training",
+   "information": "GAE bootstrap scalar target、fixed value support",
+   "operation": "HL-Gauss target CE训练，V=sum_i p_i z_i",
+   "claimed_effect": "Qwen2.5-Math7B avg@256 15.88→18.74；pass@25638.48→48.06；prefix Brier.2031→.1637。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 avg@256",
+    "quote": "+ HL-Gauss PPO (ours)        35.20      23.80       4.78         8.50         21.40    18.74"
+   },
+   "failure_boundary": "仅Qwen4–7B；校准/adv对称诊断不证明唯一因果中介；support与bandwidth需按reward选。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "可提升PPO critic/token advantage可靠性，但本流水线critic-free须改架构。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "用commonprefix MC oracle检验value校准。",
+   "strength": 2
+  }
+ ]
+}

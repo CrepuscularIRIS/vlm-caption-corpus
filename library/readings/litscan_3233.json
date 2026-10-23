@@ -1,0 +1,64 @@
+{
+ "paper_key": "litscan:3233",
+ "title": "Think-Cite",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3233.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§4 pp3–5 Eq1–6/progress reward",
+   "§5 Tables1–2 pp6–8",
+   "Limitations targeted"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "逐句think-query/retrieve/verbalize/cite，在MCTS扩展前自反思query；用DPO logratio生成质量与NLI citation F1评估部分路径。",
+  "why_non_obvious": "引用质量需检索/生成共同规划，终局反思太晚；部分路径质量可引导后续扩展。",
+  "trigger_condition": "当长文引用误差会累积时，先校正检索再树搜索句子路径。",
+  "contribution_type": "inference tree search与进度评分",
+  "abstract_strategy": "在状态扩展前验证证据，并用累计路径评分指导搜索。",
+  "abstract_trigger_condition": "早期证据错误会污染后续生成。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3233#s1",
+   "object": "attributed generation tree",
+   "information": "检索passages、DPO policy/reference logp、NLI entailment",
+   "operation": "reflection-guided query rewrite+MCTS，Rg+Ra评新节点并回写祖先均值",
+   "claimed_effect": "Table2 ASQA EM50.1/citation recall89.5/precision87.1；无MCTS42.1/78.2/75.0，无reflection46.5/83.6/80.3。",
+   "conditions": [
+    "GPT4o policy",
+    "每query候选top100内检索top3",
+    "30iterations/6layers/最多10reflection"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p7",
+    "quote": "w/o Reflection          46.5        83.6     80.3"
+   },
+   "failure_boundary": "额外搜索算力未等预算；NLI搜索评分与评测citation指标同源可能偏好该judge。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 3,
+   "how": "证据支持和生成质量分开评价，可借caption grounding检查。"
+  },
+  {
+   "problem": "P30",
+   "strength": 2,
+   "how": "更多反思/检索可引入噪声而非单调增益。"
+  },
+  {
+   "problem": "P58",
+   "strength": 2,
+   "how": "树搜索成本必须同质量收益一起衡量。"
+  }
+ ],
+ "scientific_replication": false
+}

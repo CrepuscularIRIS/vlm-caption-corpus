@@ -1,0 +1,197 @@
+{
+ "paper_key": "litscan:75306",
+ "title": "DualCOIL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_75306.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 Eqs1–9/Alg1",
+   "§6 Table1/results",
+   "§7 Limitations",
+   "AppA QW-BC proof",
+   "AppC dataset/setup",
+   "AppD.4 QWvsAW",
+   "AppD.6–D.7 bad coverage",
+   "AppD.12 surrogate ablation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用occupancy KL靠近good并远离bad，借mixeddata支持学习，再从QweightedBC提取policy。",
+  "key_step": "两个discriminator估good/union和bad/union密度比，构造Ψ；α<1 dualsurrogate学Q/V，用exp(Q/β)做BC权重。",
+  "why_non_obvious": "负例不仅是不模仿，还作为densityratio改变implicitreward；凸性由α权重而非good/bad样本数量决定。",
+  "trigger_condition": "When offline data includes labeled undesirable behavior, contrast its occupancy with expert behavior while retaining mixed-data support.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把正/负经验转换成分布对比，并通过数据支持约束避免无界排斥。",
+  "abstract_trigger_condition": "When unlabeled behavior is mixed quality, use sparse positive and negative labels to reweight supported actions.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "KL差重写为unionKLregularizedimplicitreward，再nonadversarial surrogate。",
+  "abstract_why_non_obvious": "分布凸性不等神经网络全局优化，lowerbound也不等原目标同解。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75306#s1",
+   "object": "offline imitationpolicy",
+   "information": "smallgood/bad labels与largeunlabeledstate-action transitions，不需环境reward训练",
+   "operation": "occupancy contrastive ratios+surrogateQ/V+QWBC",
+   "claimed_effect": "18dataset平均normalizedscore94.1，DualCOIL-G78.8/ReCOIL56.6；Kitchen mixed48.9低ReCOIL50.6",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Average row; BC-MIX/BC-G/SMODICE/ILID/ReCOIL/DualCOIL-G/SafeDICE/DWBC-GB/DualCOIL",
+    "quote": "Average                                       26.4              2.9              21.2                32.4         56.6           78.8              19.5           9.2               94.1"
+   },
+   "failure_boundary": "continuouscontrol数据支持限定，不是VLM/token实验，也不保证所有任务胜出。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P36",
+   "strength": 2,
+   "how": "可迁移离线失败/成功轨迹对比与support受限，需重构语言state/action和bad定义"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "BC-MIX/BC-G",
+   "kind": "method"
+  },
+  {
+   "name": "SMODICE",
+   "kind": "method"
+  },
+  {
+   "name": "ILID",
+   "kind": "method"
+  },
+  {
+   "name": "ReCOIL",
+   "kind": "method"
+  },
+  {
+   "name": "SafeDICE",
+   "kind": "method"
+  },
+  {
+   "name": "DWBC-GB",
+   "kind": "method"
+  },
+  {
+   "name": "DualCOIL-G α0",
+   "kind": "method"
+  },
+  {
+   "name": "AW-BC",
+   "kind": "method"
+  },
+  {
+   "name": "original exponential objective clipped",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "α≤1凸性只在occupancy/functionspace；α1公式分母退化另转offlineRL，实用α<1；神经参数优化不自动凸。",
+   "locator": "Props4.1–4.4/§7"
+  },
+  {
+   "text": "bad为suboptimal非必须零容忍catastrophic；不是hard safety约束。",
+   "locator": "§4.1/§7"
+  },
+  {
+   "text": "Table1caption称standarderror，§6evaluation文字称standarddeviation；离散度语义冲突保留。",
+   "locator": "Table1/§6.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "ReCOILavg56.6，DualCOIL-G78.8，完整94.1；negativeweight算法可有更强signal但更多badmix仍降。",
+  "load_bearing_assumption": "unlabeled接近expert或只使用good就足够；加repulsion一定导致非凸难解。",
+  "scope": "18D4RLcontinuouscontrol组合，少量good/bad+largeunlabeled",
+  "success_criterion": "同union覆盖/seed预算，α0、ratio reward供其它offlineRL、QW/AW与surrogate比较",
+  "why_open": "显式bad信息可揭示不应模仿部分，但densityratio/覆盖与非凸优化受限。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Props4.1–4.2 KL差分解"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "DualCOIL-G/AppendixD4,D12"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\min_d KL(d\\Vert d_G)-\\alpha KL(d\\Vert d_B)=(1-\\alpha)KL(d\\Vert d_U)-E_d\\Psi;\\Psi=\\log(d_G/d_U)-\\alpha\\log(d_B/d_U)",
+    "locator": "Eqs1–2/Prop4.2"
+   },
+   {
+    "latex": "\\delta(s,a)=e^{\\Psi/(1-\\alpha)};\\widetilde L=(1-\\gamma)E_{p_0}V_Q-E_{d_U}[\\delta TQ]+(1-\\alpha)E_{d_U}\\delta;TQ=Q-\\gamma E_{s\\prime}V_Q(s\\prime)",
+    "locator": "Eq5/7（T使用前文nextstate定义）"
+   },
+   {
+    "latex": "\\max_\\pi E_{(s,a)\\sim d_U}[e^{Q(s,a)/\\beta}\\log\\pi(a|s)];\\pi^*(a|s)\\propto\\mu_U(a|s)e^{Q(s,a)/\\beta}",
+    "locator": "Eq9/Prop5.1 proof"
+   }
+  ],
+  "signal_routing": "discriminator BCE用good/bad vsunion估occupancyratio，标签不需要当前/未来环境reward。Q/Vbootstrap跨transition，policy为正权BC而非negative-example tokenPG；无语言tokenmask。BU=BG∪BMIX，BB与BMIX可重叠。",
+  "normalization": "other：classifierodds c/(1−c)是densityratio(等classprior目标)；expΨ/(1−α)与expQ/β权重，未用groupstd。QW最优policy在每state actions上归一。",
+  "invariance": "非PBRS，显式改变occupancy目标。AW→QW移除state因子e^(−V/β)在无限制每state最优conditionalpolicy相同，但共享参数/有限训练时改变stateweight，不是逐步梯度不变。",
+  "baseline_or_potential": "V是Extreme-V估计辅助，QWpolicy提取避免减近似V；并非因果actionnecessity。lowerbound原L在TQ0才tight，minlowerbound无一般原目标同opt保证；χ²regularizer为实用稳定项。",
+  "degenerate_cases": "α0不使用bad；α1原primal线性但surrogate分母奇异须另处理；α>1凸性不保证。dB≈0或classifier饱和让Ψ/exponential爆炸；离线support0无法由weightedBC恢复未见action。dG=dB时变成(1−α)同KL。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "full vsα0、badcount、QWvsAW、originalexpclip[−7,7] vssurrogate；其它offlineRL用同Ψ但regularization/优化不同，不能仅称reward效果。",
+  "negative_results": [
+   {
+    "text": "Kitchen mixedcomplete Dual48.9<ReCOIL50.6；增bad比例普遍降；更多冗余bad标签收益有限或略降。",
+    "locator": "Table1/AppD6–7"
+   },
+   {
+    "text": "originalexp clipping避免NaN但部分task学不动；AW用近似V不稳定。",
+    "locator": "AppD4/D12"
+   }
+  ],
+  "seeds": "5trainingseeds，每seed最后10次eval×10environmentseeds；Table1 SE vs正文SD冲突不替作者选。",
+  "falsifier": "固定同unioncoverage，随机badlabel/α0效果同等则负例语义无增量；只按return切坏trajectory误伤其中好action则迁移失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "2layer256units Q/V/discriminators/policy; TanhGaussian policy",
+   "framework": "JAX0.4.28",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "1Msteps；singleL40 Cheetah约25min含两个classifier约5min；非LLM成本。主MuJoCo good1expert/bad10random或medium，union含fullsuboptimal+30expert；不是只有1条expert支持。",
+  "pitfalls": [
+   {
+    "text": "同rawexponential仍需ratio校准/clip/regularizer，避免把理论lowerbound当绝对数值稳定；badtrajectory标签不等每stateaction有害。",
+    "locator": "§5/AppD12（迁移限制）"
+   }
+  ],
+  "code": null,
+  "lesson": "当从失败轨迹学负例时，先分清分布标签与局部动作标签，再控制union覆盖；不要把statewise最优等价解释成共享模型更新等价。"
+ }
+}

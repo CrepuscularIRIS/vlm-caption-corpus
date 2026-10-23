@@ -1,0 +1,64 @@
+{
+ "paper_key": "litscan:3070",
+ "title": "FRACTAL",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3070.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3–4 pp4–6 Eq1–9",
+   "§5–6/Tables2–7 pp6–9",
+   "§8 limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把response标签视为句子bag的MIN/MAX/AVG，bagloss加句子相似性prior；再求满足aggregate标签的最大似然pseudo-label重训。",
+  "why_non_obvious": "聚合标签可约束局部预测但不能唯一识别；先验和约束校准提供额外结构。",
+  "trigger_condition": "当仅有response评分而需句子级反馈时，用已知聚合规则与弱先验拆解。",
+  "contribution_type": "弱监督细粒度reward model",
+  "abstract_strategy": "借聚合约束和先验恢复局部标签。",
+  "abstract_trigger_condition": "局部监督稀缺但整体标签与局部结构相关。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3070#s1",
+   "object": "response→sentence feedback",
+   "information": "aggregate label及cosine/correlation/NLI priors",
+   "operation": "weighted bag/prior loss→constrained ML pseudo-label→sentence scorer",
+   "claimed_effect": "Table6数学FRACTAL-RLHF accuracy24.17 vsresponse RLHF18.93；QA judge preference37.269低于baseline62.731。",
+   "conditions": [
+    "PRM800K",
+    "math答案由Claude3Opus判分",
+    "聚合标签假设依task"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table6 p8",
+    "quote": "SFT + FG RLHF (FRACTAL)             43.221       37.269        24.17"
+   },
+   "failure_boundary": "局部pseudo标签不是因果动作价值，独立句子丢顺序context；QA preference指标未改善。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "可借用于caption句级弱监督，但需视觉grounding先验。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "细粒度reward构造而非明确GRPO信用路由。"
+  },
+  {
+   "problem": "P44",
+   "strength": 2,
+   "how": "聚合约束不保证各局部pseudo标签真实。"
+  }
+ ],
+ "scientific_replication": false
+}

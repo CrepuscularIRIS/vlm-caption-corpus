@@ -1,0 +1,63 @@
+{
+ "paper_key": "litscan:31854",
+ "title": "FutureTurns",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_31854.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§2–4 pp3–7",
+   "§5/Tables1–4 pp8–9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "比较澄清/直答时模拟后续用户答复与固定answerer的终答，跨用户意图平均EM作偏好，平局选直答，再DPO训练首响应。",
+  "why_non_obvious": "单轮偏好把未回答的澄清误判较差；有用澄清需按本系统后续回答能力而非人类模糊性判定。",
+  "trigger_condition": "当信息获取动作被单轮评估低估时，用下游交互成功构造偏好。",
+  "contribution_type": "future-turn preference labeling",
+  "abstract_strategy": "以获取信息后的任务表现评价当前询问动作。",
+  "abstract_trigger_condition": "当前动作的效益只能在额外交互后显现。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:31854#s1",
+   "object": "clarify versus direct response",
+   "information": "各意图gold answer、simulated user answer、固定T4 answerer EM",
+   "operation": "双turn outcome偏好+平局偏直答+DPO",
+   "claimed_effect": "Table1 Llama2 clarify-Match F1 32.8 vsRM28.3；selective DPO F1 24.3/1.56turn，SFT21.3/1.12turn。",
+   "conditions": [
+    "AmbigQA1960test",
+    "training learned simulator/eval GPT4",
+    "系统assistant turns不是全部speaker turns"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p8",
+    "quote": "DPO                  1.56     28.9 / 21.1 / 24.3   1.57      35.2 / 25.1 / 29.1     1.61    28.2 / 22.2 / 24.6"
+   },
+   "failure_boundary": "alwaysclarify最强F1不等必要性最优；平局直答是离散tie规则，非校准成本约束。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P05",
+   "strength": 3,
+   "how": "工具必要性须以额外信息是否改善当前系统结果衡量。"
+  },
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "固定T4 answerer使标签只对该续写模型有效。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "先SFT澄清支持再DPO选择。"
+  }
+ ],
+ "scientific_replication": false
+}

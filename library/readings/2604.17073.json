@@ -1,0 +1,176 @@
+{
+ "paper_key": "2604.17073",
+ "title": "Abstain-R1: Calibrated Abstention and Post-Refusal Clarification via Verifiable RL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2604.17073.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 dataset",
+   "§4 reward/Eqs1–6",
+   "§5/Table1",
+   "§6 Tables2–3",
+   "Limitations",
+   "App Tables5–6 hyperparameters"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将拒答与指出缺失信息作为两个可奖励行为，用SFT植入后RL平衡拒答/回答。",
+  "key_step": "answerable拒答−1；unanswerable明确拒答.3+referenceclarification judge正确.7，另加format。",
+  "why_non_obvious": "拒答能学会不等于会澄清；无SFT U-Clar8.5远低full55.1，answerability混合决定退化。",
+  "trigger_condition": "When a query is semantically clear but unresolvable, train explicit abstention plus a verified missing-information clarification.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把失败处置分成停止与可恢复的信息请求，并维持可答子集能力。",
+  "abstract_trigger_condition": "When refusal alone is unhelpful, seed and verify the follow-up behavior.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "条件式refusal/clarification reward与false-refusal penalty。",
+  "abstract_why_non_obvious": "“可验证”仍依赖LLM reference/judge，不是完全客观gold。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.17073#s1",
+   "object": "拒答后clarification输出",
+   "information": "训练可答/不可答标签、GTanswer及referenceclarification；训练judge xVerify3B",
+   "operation": "SFTcoldstart后混30%unanswerable RL，条件澄清奖励",
+   "claimed_effect": "AbstainTest AAcc57.2 vsbase48.8；URef68.1 vs9.4，UClar55.1 vs.6；AFU20.4恶化于18.8",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Abstain-R1 row; six AbstainTest then three AbstainQA then SelfAware metrics",
+    "quote": "Abstain-R1             57.2     20.4     71.9     68.1     55.1     80.9     53.3       16.8      40.1       91.4"
+   },
+   "failure_boundary": "误拒答仍上升；只测单轮clarification正确性，未验证用户补信息后的任务恢复。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "strength": 2,
+   "how": "训练失败处理而非乱猜，有SFT支撑证据"
+  },
+  {
+   "problem": "P35",
+   "strength": 2,
+   "how": "停止/继续信息请求的校准与过停权衡"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "w/o SFT",
+   "kind": "method"
+  },
+  {
+   "name": "w/o RL",
+   "kind": "method"
+  },
+  {
+   "name": "w/o Unans",
+   "kind": "method"
+  },
+  {
+   "name": "w/o clarification reward",
+   "kind": "method"
+  },
+  {
+   "name": "ICL",
+   "kind": "method"
+  },
+  {
+   "name": "SFT-All",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "EnglishQA；reference生成与LLMjudge偏差；未知开放/多语/tool迁移。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "正文GRPO无critic与AppTable6 GAE(γ1λ1)矛盾，实际advantage实现未知。",
+   "locator": "§4.2/Table6"
+  },
+  {
+   "text": "SFT checkpoint按Abstain-Test-SUM最佳选，测试子集参与selection限制独立泛化解读。",
+   "locator": "Table5"
+  }
+ ],
+ "question": {
+  "observed_failure": "baseUClar.6%，无SFT8.5 vsfull55.1；不罚false-refusal AAcc46.1 AFU36.2。",
+  "load_bearing_assumption": "只奖拒答或增加模型规模自然产生有用澄清。",
+  "scope": "明确语义但缺条件/假前提/knownunknown的QA",
+  "success_criterion": "AAcc/AFU与URef/UClar同时报告，不只条件accuracy",
+  "why_open": "模型可能拒答过多、模板澄清或猜填缺条件。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Eq2–6条件reward"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2去SFT/去不可答"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=r_{fmt}+1[q\\in D_{ans}]r_{ans}+1[q\\in D_{unans}]1[abstain](.3+.7V(q,c^*,\\hat c));r_{ans}\\in\\{1\\ correct,-1\\ abstain,0\\ other\\}",
+    "locator": "Eqs2–6"
+   }
+  ],
+  "signal_routing": "terminal composite reward→response-level groupA用于PG；未列token-specific routing。clarification judge看问题/reference和完整候选clarification，训练特权信息；推理不读取GT。rfmt单独+1，因此“只有拒答才nonzero”只适用于rref而非totalr。",
+  "normalization": "other：正文只称group-wise reward normalization，未明列均值/std公式；AppTable6列GAE，与正文不一致，不能从GRPO名补实现。",
+  "invariance": "非PBRS；拒答与format奖励改变目标/coverage-risk权衡。",
+  "baseline_or_potential": "未实现核验；正文无critic group-relative与附录GAE冲突。",
+  "degenerate_cases": "全组同reward若标准组中心化则zero；拒答不罚会过拒答；无unanswerable训练时URef4.4；仅拒答reward不能充分建立澄清。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2去SFT URef65.1仍高但UClar8.5；去clarrewardUClar50.2，显示大部分clar基础来自SFT；Table3误拒答惩罚。",
+  "negative_results": [
+   {
+    "text": "full AFU20.4高于base18.8；无Unans AAcc67.5最高但URef4.4；unpenalizedabstention AAcc46.1。",
+    "locator": "Tables1–3"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "独立人工核clarification且补信息再答无收益，或holdout去同源teacher偏好后优势消失，不能称真实恢复协作。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B Instruct; xVerify-3B-Ia trainjudge; o4-mini evaljudge",
+   "framework": null,
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "4A100；SFT4.6K，RL SUM50Kpaired mixed70/30、100updates，maxresponse4096；teacher/judge额外成本未总计。",
+  "pitfalls": [
+   {
+    "text": "judge语义等价匹配只覆盖reference认可答案；boxed规则会把表达变体当行为错误。",
+    "locator": "§4.3/§5.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当希望RL学会失败后的恢复动作时，先用去SFT消融确认支撑，再把拒答频率、有效澄清与误拒答分开测。"
+ }
+}

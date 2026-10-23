@@ -1,0 +1,56 @@
+{
+ "paper_key": "2506.01939",
+ "title": "Beyond the 80/20 Rule: High-Entropy Minority Tokens Drive Effective Reinforcement Learning for LLM Reasoning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2506.01939.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 Eq3–4",
+   "§5 Eq6/Table2/setup",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "按batch内预测分布熵筛选policy-gradient位置，集中更新分叉token。",
+  "key_step": "保留最高20%熵token的PPO项，并把聚合分母改成入选token数量；其余位置无直接policy-loss项。",
+  "why_non_obvious": "句子大多数低熵token只是续写；但熵只是决策相关代理，非因果必要动作标签。",
+  "trigger_condition": "大量确定性续写稀释有分歧的推理位置时，检验熵分位mask。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "在保留相同结果优势的情况下对更新位置做稀疏选择。",
+  "abstract_trigger_condition": "大量确定性续写稀释有分歧的推理位置时，检验熵分位mask。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2506.01939#s1",
+   "object": "token级policy gradient mask及归一化",
+   "information": "同一micro/batch内各token熵和轨迹结果优势",
+   "operation": "top20% entropy mask，selected-token mean，DAPO动态采样",
+   "claimed_effect": "32B AIME25 45.63→56.67，长度9037.48→11842.25；8B六集均值仅53.71→54.23。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Qwen3-32B AIME25 row; Qwen3-8B average",
+    "quote": "AIME’25          45.63      9037.48       56.67        11842.25             +11.04        +2804.77"
+   },
+   "failure_boundary": "不等于20% FLOPs；完整rollout/forward仍需；新策略共享参数也会改变masked位置。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "改变哪些token承载结果优势，需比较首动作与高熵mask是否一致。",
+   "strength": 3
+  },
+  {
+   "problem": "P08",
+   "how": "随机mask改变loss分母与轨迹权重。",
+   "strength": 3
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

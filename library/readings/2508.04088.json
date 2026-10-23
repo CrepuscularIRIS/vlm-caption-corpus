@@ -1,0 +1,56 @@
+{
+ "paper_key": "2508.04088",
+ "title": "GM-PRM: A Generative Multimodal Process Reward Model for Multimodal Mathematical Reasoning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2508.04088.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq3–9/data construction/Refined-BoN",
+   "§4 setup/Table2/aggregation ablation",
+   "§5 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "PRM除判错还生成第一处错误的修正版，以修正前缀指导policy续写。",
+  "key_step": "N/2独立候选评审→保留正确前缀并替换首错步→policy补全N/2候选→评分选最佳。",
+  "why_non_obvious": "提高候选池质量而不只是从固定候选中挑选；但纠正依赖外部judge，非actor自主recover。",
+  "trigger_condition": "静态BoN池含可修复的视觉/逻辑中间错误时，用首错修复扩展候选池。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把验证反馈转为具体前缀编辑，使重新生成集中在可修复分支。",
+  "abstract_trigger_condition": "静态BoN池含可修复的视觉/逻辑中间错误时，用首错修复扩展候选池。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2508.04088#s1",
+   "object": "多模态推理候选池",
+   "information": "原图/题目/解答、GM-PRM的step意图/视觉对齐/逻辑判断与纠错",
+   "operation": "Refined-BoN以4原始+4修正或重采样构成N8候选",
+   "claimed_effect": "Llama3.2-11B-Vision跨五集Pass@8 62.7→64.0；MiniCPM62.5→63.4，InternVL3-8B65.3→66.2。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Llama row",
+    "quote": "Llama-3.2-11B-Vision      62.7         64.0         +1.3"
+   },
+   "failure_boundary": "Pass@8是候选池存在正确答案比例，不是被judge选中答案准确率；修复需要额外judge/续写成本。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P27",
+   "how": "明确构造“首错步改写+后续更新”的recover行为。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "生成视觉/逻辑分析后与MC一致性筛选，标签仍非人工gold。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

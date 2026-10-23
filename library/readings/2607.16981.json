@@ -1,0 +1,194 @@
+{
+ "paper_key": "2607.16981",
+ "title": "Expected Free Energy as Belief-Dependent Utility for rho-POMDPs",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.16981.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3 Eqs1–5/Props1–3 pp5–10",
+   "Tables4–7 pp12–17",
+   "§6 pp17–18"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "algebraic_equivalence_unification",
+  "key_step": "递归EFE取负后等价于同horizon R+expectedIG的belief Bellman，observation不改hidden state，canonical w1。",
+  "why_non_obvious": "代数等价来自特定静态hidden-state结构；不能把nat尺度默认等同任意任务reward数值。",
+  "trigger_condition": "When information-gathering preserves hidden state and beliefs are modelled exactly, optimize observation versus commitment using reward plus expected information gain.",
+  "contribution_type": "belief reward/停止规划的形式等价",
+  "abstract_strategy": "用可计算belief效用连接信息价值与承诺",
+  "abstract_trigger_condition": "已知Bayes生成模型、观测成本与终端reward",
+  "abstract_key_step": "observe价值−cost+IG+futureV，commit价值Ebelief reward",
+  "abstract_why_non_obvious": "增强目标和原reward最优不同，权重选择仍依赖单位与模型。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.16981#s1",
+   "object": "已知模型observe-then-commit POMDP",
+   "information": "真实transition/observation likelihood、belief、成本、reward；无LLM",
+   "operation": "γ1同horizon精确Bayes树搜索，rho(obs)=expected entropy reduction、rho(commit)=0，w1",
+   "claimed_effect": "Diagnosis97.1%/−1.50 vsPlanning89.2%/−2.37；但InspectionN16 w5在accuracy91.4/reward−43.51均胜w1 86.1/−45.71。",
+   "conditions": [
+    "5seeds core5000episodes",
+    "static hidden state for observe/nav",
+    "same-horizon comparison"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p12 Diagnosis EFE Obs/Success/Reward",
+    "quote": "EFE         9.73 97.1% −1.50 ± 0.15"
+   },
+   "failure_boundary": "unknown观测模型、作用改变隐藏状态、低γ不适用直接等价/收益主张",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "strength": 3,
+   "how": "明确stop/observe用信息与任务价值联合决策而非固定预算。"
+  },
+  {
+   "problem": "P19",
+   "strength": 2,
+   "how": "信息效用改变任务目标，非免费PBRS效率。"
+  },
+  {
+   "problem": "P34",
+   "strength": 2,
+   "how": "belief需真实校准，LLM文字自信不等价。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "same-horizon Planning w0",
+   "kind": "method"
+  },
+  {
+   "name": "Planning+IG tuned w",
+   "kind": "method"
+  },
+  {
+   "name": "Epistemic-only",
+   "kind": "method"
+  },
+  {
+   "name": "myopic",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "没有LLM/VLM训练；全部agent已知生成模型精确Bayes，crop世界虽静态但模型内部belief未知。",
+   "locator": "Table3"
+  },
+  {
+   "text": "w1固定不能对任意reward重标度保持相同策略。正文直接用reward矩阵又宣称同nat单位，不能据此推出无隐藏效用尺度。",
+   "locator": "§3.2/6 reader qualification"
+  },
+  {
+   "text": "Prop2 w阈值判别增强目标偏好observe，不自动保证真实reward更高：若无IG的净收益负，w跨阈值仍可能牺牲reward。",
+   "locator": "Prop2 reader qualification"
+  }
+ ],
+ "question": {
+  "observed_failure": "Diagnosis w100观察13.21次比w1 9.73更多但reward−3.63比−1.50低；short-horizon planning可能欠探索。",
+  "load_bearing_assumption": "固定hiddenstate、精确Bayes更新且reward/IG尺度有意义",
+  "scope": "经典可建模POMDP而非开放视觉agent",
+  "success_criterion": "success与netreward两轴及成本，非单success最优",
+  "why_open": "有限horizon任务reward可能看不到信息长期用途。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "nat/utility尺度讨论"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "same-horizon w0/w1/sweep"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "success–reward双轴"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "I_a(b)=H(b)-\\mathbb E_oH(b'_o),\\quad V(obs_a,b)=-c_a+I_a(b)+\\mathbb E_o\\max_{a'}V(a',b'_o),\\quad V(commit_i,b)=\\mathbb E_bR_i",
+    "locator": "Eqs3–5 Prop1 γ1"
+   },
+   {
+    "latex": "\\rho(b,a)=I_a(b)\\ (a\\in A_{obs}),\\quad 0\\ (a\\in A_{com/nav})",
+    "locator": "Props1/3,nav无informative observation"
+   }
+  ],
+  "signal_routing": "非policy-gradient/token训练，效用进入belief树Bellman动作评价；deterministic argmax，softmaxprecision取∞；不存在token mask/advantage。",
+  "normalization": "other",
+  "invariance": "等价到R+IG增强ρPOMDP，不等价原reward-only最优策略；entropy差的累计terminal entropy可不同且commit不给补偿，非严格PBRS策略不变。reward按a正scale而IG不scale会改变权衡；若R以nat保留而I改bits，保持效用需系数ln2，正文写1/ln2需明确是否连pragmatic一起换单位。",
+  "baseline_or_potential": "真实belief entropy，不是固定reader GT点态概率；观测前对可能结果求期望。",
+  "degenerate_cases": "belief确定/无信息观测I0；纯IG无pragmatic会chance提交；单obs Tiger与planning差小；hiddenstate被干预改变则coupling项不可忽略。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "w sweep和同horizonplanning隔离IG；epistemic-only Tiger50.1%、Bandit25.1%；非structured扫描仍小幅reward差。",
+  "negative_results": [
+   {
+    "text": "InspectionN8 EFEreward−20.60差于Planning−17.85；N16 w5双轴胜w1，不能普称Pareto最优。",
+    "locator": "Table7"
+   },
+   {
+    "text": "RS11,11 EFE与Planning同13.64，horizon3不可承受；γ.90 Diagnosis优势反转−1.6pp。",
+    "locator": "§5.4/6"
+   },
+   {
+    "text": "Table4部分reward与正文bootstrap点估计不同，未合并为同一数。",
+    "locator": "§5.1/Table4"
+   }
+  ],
+  "seeds": "core5seeds;RS11,11仅2seeds",
+  "falsifier": "给同样R/c整体乘常数，固定w1若决策/最优性变，则其无调参性只在给定单位而非任务无关。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "exact Bayes known POMDP",
+   "framework": "Gymnasium",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "主5000episodes/配置；多horizon tree指数成本；未读POMCP appendixT墙钟。",
+  "pitfalls": [
+   {
+    "text": "success-max tuned w与reward-optimal w不同，不能把选错目标的强weight当通用tuning失败。",
+    "locator": "§5.2"
+   },
+   {
+    "text": "Table6不列steps/checks，不能据搜索评估所有action就等同执行成本。",
+    "locator": "Table6"
+   }
+  ],
+  "code": null,
+  "lesson": "把停止形式化前先明确belief、观测是否改变世界、reward单位与优化指标，不能用1这个系数替代校准。"
+ }
+}

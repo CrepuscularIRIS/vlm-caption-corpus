@@ -1,0 +1,65 @@
+{
+ "paper_key": "2606.05263",
+ "title": "Policy-Conditioned Counterfactual Credit for Verifiable Reinforcement Learning of Long-Horizon Language Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.05263.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 pp3–6 Eq1–10/Alg1",
+   "Table1–5 pp6–8",
+   "§5 discussion p10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "限定四种干预及冻结continuation，gate无效干预，选择概率加权DR outcome差进入dense reward与额外adv，同时约束hacking。",
+  "why_non_obvious": "删除/替换/工具扰动不是同一因果量；冻结续写、选择规则和环境有效性都影响可解释范围。",
+  "trigger_condition": "当相关性过程奖励鼓励shortcut时，定义可执行干预与条件续写成功差并记录有效性。",
+  "contribution_type": "约束RL与policy-conditioned counterfactual credit",
+  "abstract_strategy": "先限定干预估计对象和信息边界，再将其作受约束优化辅助。",
+  "abstract_trigger_condition": "局部行为看似合理却未贡献可验证终局成功。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.05263#s1",
+   "object": "长horizon agent action credit",
+   "information": "冻结μ续写成功、四干预、outcome model、selection概率、verifier状态",
+   "operation": "validity gate→selection-adjusted DR差→tanh reward与GAE附加信用+augmented Lagrangian",
+   "claimed_effect": "Table3 success78.9±.8 vsinformation-matched75.4±.8，Hack3.9 vs7.2；Table4reward-only77.3，adv-only76.2。",
+   "conditions": [
+    "Qwen2.5-7B LoRA64",
+    "5seeds作者报告",
+    "四任务组unweightedmean",
+    "信息匹配对照同semantic continuations"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7",
+    "quote": "CVT-RL                         82.7 77.4 75.9 79.6 78.9±0.8               82.8     3.9     0.175"
+   },
+   "failure_boundary": "未独立复现；需要exchangeability/positivity/正确nuisance与selection模型；裁剪及hidden state会偏。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "明确μ续写反事实不等当前actor价值。"
+  },
+  {
+   "problem": "P17",
+   "strength": 3,
+   "how": "干预有效性和support门控是必要测量条件。"
+  },
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "PCCC既进reward经GAE回传早期，又直接加到对应step adv，需分开。"
+  }
+ ],
+ "scientific_replication": false
+}

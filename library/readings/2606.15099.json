@@ -1,0 +1,57 @@
+{
+ "paper_key": "2606.15099",
+ "title": "Think Less, Act Early: Reinforced Latent Reasoning with Early Exit in Vision-Language-Action Models",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.15099.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 latent Gaussian/reward/PPO/early exit",
+   "Tables1–5",
+   "AppB training/calibration",
+   "AppD limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "连续Gaussian latent更新用任务reward+熵/平滑惩罚训练，再以单独校准的置信gate停止内部推理。",
+  "key_step": "latent update动作u与机器人动作a分开；PPO/critic给latent动作信用，g(z)>τ后调用动作policy。",
+  "why_non_obvious": "终止内部计算与终止环境交互不同；平滑latent不代表视觉信息充分。",
+  "trigger_condition": "内部latent迭代占用机器人延迟且后续迭代边际收益低时，用校准gate提前动作。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将内部计算做可控动作，训练稳定性后以边际收益标签校准退出。",
+  "abstract_trigger_condition": "内部latent迭代占用机器人延迟且后续迭代边际收益低时，用校准gate提前动作。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.15099#s1",
+   "object": "内部latent推理退出gate",
+   "information": "当前z和校准阶段额外推理的边际改善标签",
+   "operation": "τ=.55阈值退出，最多5次latent更新",
+   "claimed_effect": "Table2均值312→145ms，latent5→2.3次；Table5 SR98.0→98.3；对CoT892ms约6.15倍，但慢于OpenVLA127ms。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Ours Full row",
+    "quote": "Ours (Full)                                         2.3                        145                 189                 6.9"
+   },
+   "failure_boundary": "不是工具调用数减少或感知查询提前停止；无真实部署安全保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "状态充分性门控可启发停止，但本文只停内部latent推理。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "独立校准边际收益标签而非直接把置信当可靠证据。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

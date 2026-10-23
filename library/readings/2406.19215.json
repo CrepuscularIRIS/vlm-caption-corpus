@@ -1,0 +1,144 @@
+{
+ "paper_key": "2406.19215",
+ "title": "SeaKR: Self-aware Knowledge Retrieval for Adaptive Retrieval Augmented Generation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2406.19215.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.4",
+   "4/Table1–2",
+   "5.1/Table3",
+   "5.3 hyperparameter discussion",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把内部表征一致性用于检索触发、证据重排与最终策略选择",
+  "key_step": "同上下文多次生成EOS隐状态，以regularized Gram determinant估不确定性，选使其最低的检索片段",
+  "why_non_obvious": "最相关检索不一定最有用；内部一致性避免纯文本自我肯定，但不保证事实正确",
+  "trigger_condition": "当当前推理内部不一致时检索，并按降低不确定性选择证据与答案路径",
+  "contribution_type": "method",
+  "abstract_strategy": "把内部表征一致性用于检索触发、证据重排与最终策略选择",
+  "abstract_trigger_condition": "当当前推理内部不一致时检索，并按降低不确定性选择证据与答案路径",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "同上下文多次生成EOS隐状态，以regularized Gram determinant估不确定性，选使其最低的检索片段",
+  "abstract_why_non_obvious": "最相关检索不一定最有用；内部一致性避免纯文本自我肯定，但不保证事实正确"
+ },
+ "signatures": [
+  {
+   "sig_id": "2406.19215#s1",
+   "object": "自适应多步文本RAG",
+   "information": "同模型20次EOS中层隐状态、BM25/DPR检索top3、历史rationale",
+   "operation": "U>δ触发检索；分别试top3并最小U重排；最后rationale-only和knowledge-only二选一",
+   "claimed_effect": "2Wiki/Hotpot/IIRC F1 36.0/39.7/23.5 vs DRAGIN30.0/34.2/22.9；NQ35.5低于Self-RAG40.2",
+   "conditions": [
+    "LLaMA2-Chat7B主表",
+    "N3,k20,中层",
+    "参数不训练，δ在NQ训练子集调"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables1–2",
+    "quote": "S EA KR    30.2 36.0 27.9 39.7 19.5 23.5"
+   },
+   "failure_boundary": "一致错误可低U；文字检索效用不是crop必要性，需校准真实任务",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P26",
+   "how": "条件触发取证的推理协议",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "内部不确定性需作检索收益校准",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "DRAGIN / FLARE / Self-RAG",
+   "kind": "method"
+  },
+  {
+   "name": "without self-aware retrieval / rerank",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "500题消融2Wiki F1完整37.8、无rerank35.0、无动态检索35.7",
+  "load_bearing_assumption": "EOS隐状态一致性与答对/证据增益同向",
+  "scope": "文本QA每步检索及top3片段选择",
+  "success_criterion": "同推理预算对比概率熵/提示自评，测检索必要性与准确率成本",
+  "why_open": "减少U可能只是增强错误信念，原文未提供视觉动作价值校准"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§5.1 uncertainty estimator comparison"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\operatorname{retrieve}\\iff U(c_r)>\\delta;\\quad k^*=\\arg\\min_{k\\in\\mathcal K_{topN}}U(c_r\\oplus k)",
+    "locator": "§3.1–3.2 文字转写"
+   }
+  ],
+  "signal_routing": "推理时多样本隐状态计算检索gate/rerank，不反传。search query先伪生成再删低概率token；生成下一rationale纳入历史。最终选rationale/knowledge两种prompt中U低者。无reward/advantage。",
+  "normalization": "other",
+  "invariance": "U为regularized Gram determinant，正文未给具体regularizer/向量归一化公式，不能补常用logdet公式；非PBRS。",
+  "baseline_or_potential": "同模型多次生成一致性，非冻结reader value或无检索反事实收益。",
+  "degenerate_cases": "确定但错误不触发；所有候选同U不能择优；检索上限/“So the final answer is”终止，没有学习stop；k小估计不稳，多步成本累加。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3 prompt/perplexity/LN-entropy/energy估计器比较；去rerank损失大于去trigger，不能把总收益全归触发。",
+  "negative_results": [
+   {
+    "text": "NQ不及Self-RAG，后者有NQ式训练；表3是500题子集不能直接与主表做差。",
+    "locator": "Tables2–3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "U不预测错误或retrieval gain，或等成本随机候选重排同样好，则gate解释失效。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaMA2-Chat7B；LLaMA3 8B复核",
+   "framework": "vLLM, ElasticSearch BM25 / DPR",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "每U需20次生成，top3各求U，虽并行仍大量forward；未核总延迟",
+  "pitfalls": [
+   {
+    "text": "参数免训练≠免调阈值/免额外计算；需访问开放模型内部。",
+    "locator": "§4.1/Limitations"
+   }
+  ],
+  "code": null,
+  "lesson": "当把不确定性作为补看开关时，先测它与信息收益的关系，并把rerank和触发分开消融，避免以总RAG收益证明gate有效。"
+ }
+}

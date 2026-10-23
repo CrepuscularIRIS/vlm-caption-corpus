@@ -1,0 +1,56 @@
+{
+ "paper_key": "2608.24300",
+ "title": "Contrastive Branch Policy Optimization",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.24300.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "4.1–4.3",
+   "Table1",
+   "Table2",
+   "Conclusion/ethical considerations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "预算分配用全response entropy候选与path/node衰减，credit另用exact-prefix续写reward方差；去重prefix并切不重叠segments。",
+  "why_non_obvious": "uncertainty只筛可探索点，outcomevariance才决定调制；仍不是某个孤立动作的因果必要性。",
+  "trigger_condition": "When entropy-based branching conflates exploration with credit, allocate branches separately and estimate continuation sensitivity under exact prefixes.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When entropy-based branching conflates exploration with credit, allocate branches separately and estimate continuation sensitivity under exact prefixes."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.24300#s1",
+   "object": "branch rollout policy tokens",
+   "information": "sameprefix不同续写、terminalreward、topKtoken entropy",
+   "operation": "fixedbudget分支→CBV batch zscore→bounded sign-preserving advantage→segmentedloss",
+   "claimed_effect": "1.7B mathavg66.0/search53.2 vsGiGPO63.1/50.2；去CBV math63.0；4B完整69.3/去CBV66.4。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 1.7B",
+    "quote": "CBPO                     26.7          33.3             86.4      93.2      90.4    66.0"
+   },
+   "failure_boundary": "共享prefix不固定整个后续policy随机性，CBV是续写变化；fullresponse vsboundary-only独立消融缺失。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "branch条件对照和prefix mask可迁移到crop后的suffix训练。",
+   "strength": 3
+  },
+  {
+   "problem": "P34",
+   "how": "entropy不是outcome敏感性，须分开评估。",
+   "strength": 2
+  }
+ ]
+}

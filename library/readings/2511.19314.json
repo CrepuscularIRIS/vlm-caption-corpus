@@ -1,0 +1,61 @@
+{
+ "paper_key": "2511.19314",
+ "title": "PRInTS: Reward Modeling for Long-Horizon Information Seeking",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.19314.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3 Eqs1–5/scorer/summarizer",
+   "Tables1–2/5",
+   "Figure4 discussion",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "用续写MC成功率增量生成step标签和偏好对，训练兼具打分/历史摘要能力的PRM指导step best-of-n。",
+  "why_non_obvious": "以可验证终局结果构造过程监督，避免仅凭语言自评，但有限MC和候选选择仍引入噪声。",
+  "trigger_condition": "When long trajectories make step judgments unreliable, bootstrap process labels from continuation success and compress history for a joint scorer.",
+  "contribution_type": "method",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "When long trajectories make step judgments unreliable, bootstrap process labels from continuation success and compress history for a joint scorer."
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.19314#s1",
+   "object": "information-seeking step PRM",
+   "information": "GT finalanswer、MC续写成功率、历史summary与latest toolresponse",
+   "operation": "估step增益→score/pairwise GRPO训练PRM，摘要SFT；推理挑候选step",
+   "claimed_effect": "Qwen3-32B avg LasJ29.5→38.8，DeepResearch62.9→66.8；reward消融score44.2/comparison43.1/组合46.2/加权47.2。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen3-32B",
+    "quote": "PRInTS                   58.7           49.6        33.3         19.4        39.8        33.3        37.3       38.8"
+   },
+   "failure_boundary": "更大候选池可偏好表面有信息的探索而错过已正确finalanswer；仅English；agent RL训练未做。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "从continuation success生成动作标签，但含reasoning+toolcall整step，非isolatedcrop效应。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "PRM高分探索与停止成功冲突，是停止评测反例。",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "训练时采样policy决定MC含义，冻结PRM跨actor不是同一value。",
+   "strength": 3
+  }
+ ]
+}

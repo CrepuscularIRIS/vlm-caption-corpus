@@ -1,0 +1,159 @@
+{
+ "paper_key": "litscan:77491",
+ "title": "ILVAD",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77491.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.3/Eq4–10/Algorithm1",
+   "Table1,3–5",
+   "Conclusion",
+   "C.3/Table8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "利用层间新激活差异排除持续attention sink，再维持视觉注意力",
+  "key_step": "前T生成token聚合每层高视觉head，二值阈值后只累计相邻层0→1激活",
+  "why_non_obvious": "高attention不等于证据；跨层始终高的sink不会反复贡献新激活",
+  "trigger_condition": "当生成中遗忘视觉细节时，用层间新激活图增强视觉与依视觉文本",
+  "contribution_type": "method",
+  "abstract_strategy": "利用层间新激活差异排除持续attention sink，再维持视觉注意力",
+  "abstract_trigger_condition": "当生成中遗忘视觉细节时，用层间新激活图增强视觉与依视觉文本",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "前T生成token聚合每层高视觉head，二值阈值后只累计相邻层0→1激活",
+  "abstract_why_non_obvious": "高attention不等于证据；跨层始终高的sink不会反复贡献新激活"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77491#s1",
+   "object": "caption/VQA解码attention",
+   "information": "前10生成token的层/头注意力，不引入GT区域或新像素",
+   "operation": "层间差分saliency→视觉exp增强+文本权重→行归一化",
+   "claimed_effect": "LLaVA CHAIRs48.6→32.6、CHAIRi13.52→9.42；去visual49.4、去text34.8",
+   "conditions": [
+    "训练free",
+    "top50%head、tau5、alpha5，beta需选"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "w/o Visual      49.4           13.44      84.44        85.12"
+   },
+   "failure_boundary": "模型自己产生的saliency不保证正确；过早提取可通过缩短caption降低幻觉指标",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "caption生成中视觉遗忘的直接推理干预",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "低幻觉与答案质量/覆盖不等价",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "VHR / SPARC / VAR",
+   "kind": "method"
+  },
+  {
+   "name": "w/o Visual / Text",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "去visual CHAIRs49.4，几乎无改进；加visual后32.6",
+  "load_bearing_assumption": "有效视觉证据跨层反复新激活，而sink始终激活",
+  "scope": "开放VLM推理attention干预",
+  "success_criterion": "控制caption长度/覆盖率后减少幻觉并保持自然度",
+  "why_open": "attention代理不等于因果证据，阈值与文本增强有指标取舍"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "layer/sample/generation-step diagnosis"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\widetilde A_j^l=\\mathbf1[\\bar A_j^l>\\tau mean(\\bar A^l)];\\quad S_j=\\sum_{l=1}^{L-1}\\max(\\widetilde A_j^{l+1}-\\widetilde A_j^l,0)",
+    "locator": "Eq4–6"
+   },
+   {
+    "latex": "\\hat A_{ij}^{l,h}=A_{ij}^{l,h}\\exp(\\alpha\\hat S_j)\\ (j\\in X_v);\\quad \\hat A_{ij}^{l,h}=A_{ij}^{l,h}(\\hat w_i+\\beta)\\ (j\\in X_{<t});\\quad \\hat A_{ij}\\leftarrow\\hat A_{ij}/\\sum_j\\hat A_{ij}",
+    "locator": "Eq8,10及尾部归一化"
+   }
+  ],
+  "signal_routing": "无训练梯度；每步选top50% evidence-ratio heads增强视觉；w根据跨层视觉saliency加权注意力估计。Eq10原文下标w_i是当前query，不是历史key w_j，和强调特定历史文本的解释有差距，保留原式不修写。",
+  "normalization": "other",
+  "invariance": "saliency/w映射到[0,1]具体方式未见，attention最后按行归一化；无PBRS或奖励。",
+  "baseline_or_potential": "无；内部层间参照，不是policy价值。",
+  "degenerate_cases": "S全0归一化处理未知；tau过大无激活、太小sink残留；小T缩短内容，beta0伤正常文本；单层无差分，不能恢复缺失视觉内容。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 visual/text消融；Table8 T1 CHAIRs23.5但caption67.89，T10 32.6/81.82，表明只看幻觉率会偏爱信息损失。",
+  "negative_results": [
+   {
+    "text": "LLaVA自然度7.017→6.867；并非全部质量指标上升。",
+    "locator": "Table3"
+   },
+   {
+    "text": "tau3 CHAIRs25.3优于默认5的32.6，但POPE85.25低于85.76。",
+    "locator": "Table5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "匹配长度与视觉覆盖后增益消失，或随机saliency同样有效，则证据定位解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5/NeXT7B, Qwen2VL7B/Qwen3VL8B, InternVL3-8B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "作者称接近baseline推理时间；未核端到端重跑/缓存实现",
+  "pitfalls": [
+   {
+    "text": "文本下标w_i与按历史文本选择的语义不一致，需查代码才能确定实际机制。",
+    "locator": "Eq9–10"
+   },
+   {
+    "text": "beta需挑选，beta0损正常输出；并非无超参数。",
+    "locator": "§4 ablation"
+   }
+  ],
+  "code": "https://github.com/ytx-ML/ILVAD",
+  "lesson": "当降低caption幻觉时，应同时量长度、覆盖和自然度；不要把少说造成的低CHAIR当视觉感知提升。"
+ }
+}

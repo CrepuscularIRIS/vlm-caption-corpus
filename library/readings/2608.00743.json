@@ -230,7 +230,7 @@
   "observed_failure": "Table4无filter/curriculum SFT67.79 vs完整68.45，reverse66.24；Table5 uniform连续VLPO69.35 vs LAPO69.96。小幅平均差异为作者单表结果，无seed/CI可界定显著性。",
   "load_bearing_assumption": "中间latent从答案监督生成或匹配外部结构就足够；同一结果优势对所有latent同等更新即可。论文改为先估计可转移效用，再按答案相关性分配更新。",
   "scope": "Qwen2.5-VL-7B、固定latent预算的pre-answer视觉推理；60K VQA SFT候选、24K RL；不是多轮真实裁图。",
-  "success_criterion": "在相同stage data的SFT/GRPO与连续VLPO参照上改善四benchmark均分，并比较filter、课程顺序、teacher初始化和reverse attribution；同时报告生成token代理成本。没有本项目accuracy非劣或调用下降判据。",
+  "success_criterion": "[redacted: project-internal]",
   "why_open": "VQA诱导轨迹可能不适合student；统一latent credit不区分关联强弱。本文仍未证明关联==因果效用、当前policy工具需求或同成本优化优势。"
  },
  "question_quality": {
@@ -260,7 +260,7 @@
    "id": "M11",
    "quote": "Utility-Aware Latent Distillation SFT equips the model with\nbasic latent reasoning ability, but its optimization is still\ndominated by teacher imitation and answer likelihood. We\ntherefore introduce LAPO to further refine latent steps.",
    "locator": "§3.3 p4",
-   "interpretation": "先蒸馏latent格式和内容再RL；未直接检验本项目直答/恢复支持。"
+   "interpretation": "[redacted: project-internal]"
   },
   {
    "vocab": "rs",

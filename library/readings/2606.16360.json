@@ -1,0 +1,62 @@
+{
+ "paper_key": "2606.16360",
+ "title": "Tyler: Typed Latent Reasoning for Language Models -- When to Think, What to Compute, and How Much to Allocate",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.16360.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 Eq4–12",
+   "Table1/Table2 ablation",
+   "§7 limitations",
+   "AppF.2 loss/normalization"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把三种latent operator加入next-action词表，与可见token竞争；先训合成器再冻住它训调用policy。",
+  "key_step": "global/local/procedure三个operator生成latent查询token；成功超调用预算才扣reward，额外operator-only surrogate放大稀疏调用梯度。",
+  "why_non_obvious": "可学习调用时间与类型不等于有独立正确性标签；辅助项复用原轨迹优势，只是重新加权。",
+  "trigger_condition": "固定latent位置/类型限制效率时，以带预算的离散调用策略控制冻结合成器。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "分开训练内部能力与调用策略，针对稀疏调用位置补充同一结果梯度。",
+  "abstract_trigger_condition": "固定latent位置/类型限制效率时，以带预算的离散调用策略控制冻结合成器。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.16360#s1",
+   "object": "typed latent调用策略",
+   "information": "上下文、typed query/projection、终奖和调用次数",
+   "operation": "扩展词表三operator+success-gated budget reward+operator anchored GRPO",
+   "claimed_effect": "Qwen3-4B平均Stage1 63.38→Stage2 65.78，对GRPO62.65；类型swap消融降至60.44。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen3-4B Stage2 row",
+    "quote": "T YLER Stage 2    92.87    85.80           43.43          41.02        65.78 (↑9.22)"
+   },
+   "failure_boundary": "文本1.5–4B；operator角色由heuristic监督学得而非结构保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "辅助mask只放大操作位置，不识别每次操作的真实增益。",
+   "strength": 3
+  },
+  {
+   "problem": "P03",
+   "how": "失败无预算罚、预算内成功免费。",
+   "strength": 3
+  },
+  {
+   "problem": "P23",
+   "how": "operator是显式扩展action，需训练推理协议一致。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

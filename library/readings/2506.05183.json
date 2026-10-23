@@ -1,0 +1,61 @@
+{
+ "paper_key": "2506.05183",
+ "title": "TreeRPO: Tree Relative Policy Optimization",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2506.05183.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq1–6",
+   "§4 Table1/setup/Fig6 batch ablation",
+   "§5 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "树状续写用可验证叶奖励估计中间段价值，并在同父兄弟组内产生相对优势。",
+  "key_step": "按固定token长度分段；孩子reward递归平均；过滤兄弟reward范围≤τ的组，再按Bernoulli均值函数缩放中心化价值。",
+  "why_non_obvious": "连续MC价值的微小差异被样本std放大，作者改用µ(1−µ)；但这不是标准差。",
+  "trigger_condition": "终奖缺少中间段指导且能承受多分支续写时，以树共享前缀估计局部价值。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "复用多后续分支的可验证结果，为共享状态下动作生成相对信用。",
+  "abstract_trigger_condition": "终奖缺少中间段指导且能承受多分支续写时，以树共享前缀估计局部价值。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2506.05183#s1",
+   "object": "同父节点的续写段优势",
+   "information": "叶终答对错，树内后代平均价值",
+   "operation": "兄弟中心化/µ(1−µ)归一化及range>.1过滤，再GRPO clipped loss",
+   "claimed_effect": "Table1 1.5B macro32.7→35.6，7B40.7→41.4；较摘要35.5采用表值。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen2.5-Math-1.5B TreeRPO row",
+    "quote": "TreeRPO          16.8 (↑+3.0) 70.7 (↑+2.8) 30.9 (↑+2.6) 24.0 (↑+3.5)                 35.6 (↑+2.9)"
+   },
+   "failure_boundary": "树段是384tokens非工具动作或语义步骤；分支稀少时价值估计噪声仍大。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "直接提供段级结果信用。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "替换std使连续价值小差异不总被归一化为±1，但reward尺度性质改变。",
+   "strength": 3
+  },
+  {
+   "problem": "P58",
+   "how": "树共享前缀减重复生成，实际branch总量需核。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

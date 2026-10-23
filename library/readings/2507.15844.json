@@ -1,0 +1,61 @@
+{
+ "paper_key": "2507.15844",
+ "title": "Hierarchical Budget Policy Optimization for Adaptive Reasoning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2507.15844.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq1–6",
+   "§4 Tables1–2/setup",
+   "§5.1 Tables3–4 hierarchy ablation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用预算提示强制覆盖多个长度层，在预算内成功奖励恒定，超预算成功回答才扣长度偏差。",
+  "key_step": "16rollouts分四预算组512/1024/2048/2560；优势=组均值减预算基准+跨全部样本标准化reward。",
+  "why_non_obvious": "全局长度惩罚会抹掉长推理支持；强制预算探索保留候选，但prompt预算不是自然停止策略保证。",
+  "trigger_condition": "效率训练因惩罚长解而探索塌缩时，在训练时保留不同预算条件采样。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先保留多个成本档的探索支持，再以跨档结果和档内基准共同学习。",
+  "abstract_trigger_condition": "效率训练因惩罚长解而探索塌缩时，在训练时保留不同预算条件采样。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2507.15844#s1",
+   "object": "预算条件rollout与层次优势",
+   "information": "答案正确性、生成长度、assigned budget",
+   "operation": "正确且预算内用f2(b)，超预算用cosine−偏差；分层强制采样",
+   "claimed_effect": "Table3单预算平均59.8%/1842tokens，四预算63.7%/2364tokens；四预算优于六/八预算62.9%。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 4-budget row",
+    "quote": "4-budget                 87.6   790    86.2     1,818     50.0     2,861     31.1   3,988    63.7     2,364"
+   },
+   "failure_boundary": "改进相对单预算伴随更长回答；非准确率非劣统计保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "预算条件探索可改造为crop轮数档位，但本文预算是token。",
+   "strength": 2
+  },
+  {
+   "problem": "P29",
+   "how": "外生分层采样维护训练支持。",
+   "strength": 3
+  },
+  {
+   "problem": "P35",
+   "how": "预算内不给长度下降奖励以保留必要长推理。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

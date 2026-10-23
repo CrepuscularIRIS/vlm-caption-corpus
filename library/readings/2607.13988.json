@@ -1,0 +1,201 @@
+{
+ "paper_key": "2607.13988",
+ "title": "TRACE: Turn-level Reward Assignment via Credit Estimation for Long-Horizon Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.13988.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3 Eqs5–12 pp4–7",
+   "Table1/Figs3–5/Table2 pp8–11",
+   "Limitations p12",
+   "AppA.1–3 pp19–21"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "冻结初始化模型读每工具边界GT平均logprob，取负logprob gap的log-ratio差，再K步折扣平均+终端fill后加到序列GRPO优势。",
+  "why_non_obvious": "同等绝对logprob提升按剩余gap相对化，但这只是冻结reader可读性而非policy因果收益。",
+  "trigger_condition": "When sparse outcome credit misses intermediate evidence, add unnormalized log-ratio prefix-readiness changes to tool-turn advantages.",
+  "contribution_type": "冻结answer-readiness TD辅助信用",
+  "abstract_strategy": "相邻状态的相对剩余误差缩减",
+  "abstract_trigger_condition": "GT短答案可teacher-force且有可靠固定读者",
+  "abstract_key_step": "局部差分加延迟lookahead，再与outcome分离混合",
+  "abstract_why_non_obvious": "单步telescoping不自动继承到有限窗口/末端填充/每token loss。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.13988#s1",
+   "object": "Qwen3-4B/30B-A3B Thinking search",
+   "information": "训练GT短答案、完整prefix(工具输出+reasoning)、冻结初始化reader",
+   "operation": "δ=log(dk/dk+1),d=-meanlogp+.1；K3γ.8平均，加terminal2*Aout，再Aout+.2turncredit；obs mask",
+   "claimed_effect": "4B四benchmark均分29.5→34.0；BCPlus30→35.6；30B均分32.5→38.1。",
+   "conditions": [
+    "G8 mean/std仅outcome",
+    "工具turn≤60",
+    "dense无groupnorm"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p8 4B BCPlus/BC/GAIA/xbench/Avg",
+    "quote": "TRACE                            35.6                  6.7        44.6             49.0            34.0"
+   },
+   "failure_boundary": "鼓励更长交互，非省工具；frozenreader与policy能力差、answer-tail权重定义不全",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P14",
+   "strength": 3,
+   "how": "保留outcome并加turncredit，区别于直接替换。"
+  },
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "初始化冻结reader显式不是当前policy。"
+  },
+  {
+   "problem": "P19",
+   "strength": 3,
+   "how": "单步potential差不等于全训练目标严格PBRS。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "GSPO",
+   "kind": "method"
+  },
+  {
+   "name": "GiGRPO",
+   "kind": "method"
+  },
+  {
+   "name": "raw delta",
+   "kind": "method"
+  },
+  {
+   "name": "remaining gap",
+   "kind": "method"
+  },
+  {
+   "name": "log-ratio",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "短且已知GT答案；长代码patch/开放输出状态价值未验证。",
+   "locator": "§6"
+  },
+  {
+   "text": "Fig5(a)写coefficient但横轴1/3/5/7，(b)写K却横轴0/.1/.2/.5，与K整数定义/主参数不一致，不能从图推确切各消融值。",
+   "locator": "Fig5/§4.4"
+  },
+  {
+   "text": "单run消融；正文/Table2 log-ratio35.6/35.5有差异，保留各自数值。",
+   "locator": "§4.1/Table2"
+  }
+ ],
+ "question": {
+  "observed_failure": "4B GRPO BCPlus30.0；raw32.4/gap34.6/logratio35.5同设置消融。",
+  "load_bearing_assumption": "冻结reader GT可预测性提升代表有用证据，短答案没有泄漏。",
+  "scope": "闭网训练到开网长搜索",
+  "success_criterion": "同模型/数据对照任务分及实际token成本",
+  "why_open": "有用search直到后续open才显示答案信息。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2 credit形式、Fig5reference0/200消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq6剩余gap相对尺度"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\bar\\ell_k=|y^*|^{-1}\\sum_t\\log\\pi_{ref}(y_t^*|S_k,y^*_{<t}),\\ d_k=-\\bar\\ell_k+\\epsilon,\\ V_k=\\log(d_0/d_k),\\ \\delta_k=\\log(d_k/d_{k+1})",
+    "locator": "Eqs5–7"
+   },
+   {
+    "latex": "c_k^{(K)}=\\frac{\\sum_{u=k}^{h_k}\\gamma^{u-k}\\delta_u}{\\sum_{u=k}^{h_k}\\gamma^{u-k}},\\quad r_k^{turn}=c_k^{(K)}+\\mathbf1[h_k=T-1]\\lambda_{term}\\gamma^{T-k}A^{out}",
+    "locator": "Eqs8–10 h=min(k+K−1,T−1)"
+   },
+   {
+    "latex": "\\hat A_t=\\alpha_{out}A^{out}+\\alpha_{turn}r^{turn}_{turn(t)}",
+    "locator": "Eq11;αout1,αturn.2"
+   }
+  ],
+  "signal_routing": "每tool interaction的assistant reasoning+call token用混合adv，环境obs完全mask；final answer用outcome component及所称group-mean rule scale.05，具体rule公式未见不能推定。Eq12每response按assistant token数平均再G平均；AppA写per-token loss仅概括，是否实现完全同Eq12未验。",
+  "normalization": "per-channel",
+  "invariance": "outcome组mean/std、std0设0；turn无组标准化且无postgroupnorm/.2保尺度。单步δ望远镜到Vterminal，但terminal potential不固定且直接用δ作局部adv；K窗口加权平均/terminal fill/变长token weighting打破总endpoint形式，不保证严格PBRS或最优策略不变。",
+  "baseline_or_potential": "冻结initial模型作固定probe不是learnedcritic/currentQ；Aout终端fill双重使用outcome。",
+  "degenerate_cases": "全错或全对outcomeA0但dense仍可更新；重复无新信息δ0但K窗口可分得后续正信用；d趋eps有限，initiald取消于局部δ；K0关dense但末端fill规则需注意。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "raw/gap/logratio对照；reference step0得35.6/step200得36.1不证明与currentpolicy无差；过强局部信号降性能。",
+  "negative_results": [
+   {
+    "text": "Fig5最大设置28.9低于GRPO30，但横轴/标题冲突，未明确归属参数。",
+    "locator": "Fig5"
+   },
+   {
+    "text": "30B BrowseComp12.9仍远低于TongyiDS43.4，外部比较不受控。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": "controlled ablations single training runs",
+  "falsifier": "同状态真crop/无关crop和policy续写配对；若reader提升但policy效用不升，固定probe信用不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-4B/30B-A3B-Thinking2507",
+   "framework": "Search-R1/SGLang",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0,
+   "max_tool_turns": 60,
+   "eval_max_tool_turns": 80,
+   "turn_limit_source": "AppA hyperparameter table: Max tool turns 60; Eval max tool turns 80. Total assistant turns including final answer not specified."
+  },
+  "cost": "batch128 Adam1e-6；maxtrajectory48k/每response4096/obs2048；remote reference batched scoring，额外算力总量未知；clip.2/.28，TIS启用。",
+  "pitfalls": [
+   {
+    "text": "training gap offset .1不等于diagnostic .001或legacy stabilizer .001。",
+    "locator": "AppA.1–2"
+   },
+   {
+    "text": "answer-tail .05被描述但其group-mean规则未展开，不能称所有token同adv。",
+    "locator": "§4.1"
+   }
+  ],
+  "code": null,
+  "lesson": "加入冻结reader信号时把outcome/std与dense原尺度分开记录，同时核端点定理是否被实际window和token权重改变。"
+ }
+}

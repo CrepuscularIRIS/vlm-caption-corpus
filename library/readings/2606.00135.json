@@ -1,0 +1,63 @@
+{
+ "paper_key": "2606.00135",
+ "title": "On Effectiveness and Efficiency of Agentic Tool-calling and RL Training",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.00135.txt",
+  "sections_read": [
+   "Abstract/§2 pp1–2 Eq1–7",
+   "§3–4 pp3–8 Tables2–5",
+   "Conclusion p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "先隔离template/history/prompt的评测敏感性，再跳过近期全对prompt并只用最大reward方差子集做backprop。",
+  "why_non_obvious": "工具轨迹拆turn训练使update比rollout更贵；少做无梯度rollout和少更新样本是两处不同瓶颈。",
+  "trigger_condition": "当多轮评测受serialization影响且训练大多全对组时，先固定评测再削减冗余计算。",
+  "contribution_type": "评测控制与训练效率诊断",
+  "abstract_strategy": "分解计算阶段与评测混杂，按实测瓶颈减负。",
+  "abstract_trigger_condition": "表面方法增益与隐藏harness改动混在一起。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.00135#s1",
+   "object": "BFCL多轮evaluation",
+   "information": "同模型不同system prompt、native history、3seed评测",
+   "operation": "固定harness对照默认/增强prompt/增强后RL",
+   "claimed_effect": "Table4 multi-turn22.7±.9→37.2±1.4(强prompt)→39.4±.7(RL)；§4.3训练single/multi相同表现wallclock加速1.7×/2.6×。",
+   "conditions": [
+    "Qwen3-4B",
+    "评测seed不等独立训练seed",
+    "强化prompt不是RL贡献"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p8",
+    "quote": "Qwen3-4B w. stronger       37.2±1.4 84.8±0.7 61.0±0.8"
+   },
+   "failure_boundary": "BFCL/API调用结论不直接证明crop准确率/必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P54",
+   "strength": 3,
+   "how": "serialization/history/prompt可覆盖算法增益。"
+  },
+  {
+   "problem": "P45",
+   "strength": 3,
+   "how": "多轮seed波动较大，单次结果不稳。"
+  },
+  {
+   "problem": "P58",
+   "strength": 2,
+   "how": "先profiling再决定减少rollout还是backprop。"
+  }
+ ],
+ "scientific_replication": false
+}

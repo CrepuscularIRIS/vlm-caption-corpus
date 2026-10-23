@@ -1,0 +1,152 @@
+{
+ "paper_key": "2605.27788",
+ "title": "Knowing When to Ask: Segment-Level Credit Assignment for LLM Tool Use",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.27788.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3.1–3.4 Eq1–3",
+   "4/Table2",
+   "5 limitations",
+   "A telescoping footnote",
+   "D/Table5",
+   "H/Table9 and H.1/Table10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "按invoke/raw-result、assimilate/context、commit边界分段；训练自身rollout critic，TD差只广播到对应段。",
+  "why_non_obvious": "一次终局奖励通过可观测边界价值估计分开查询和信息提取；更细token级并不自动得到更好信用。",
+  "trigger_condition": "When tools create observable state transitions, estimate value at those boundaries and assign separate segment advantages.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When tools create observable state transitions, estimate value at those boundaries and assign separate segment advantages.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "按invoke/raw-result、assimilate/context、commit边界分段；训练自身rollout critic，TD差只广播到对应段。",
+  "abstract_why_non_obvious": "一次终局奖励通过可观测边界价值估计分开查询和信息提取；更细token级并不自动得到更好信用。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.27788#s1",
+   "object": "工具调用、输出提取、最终回答的信用",
+   "information": "自身rollout终局EM及各结构边界上下文，critic warm-up数据",
+   "operation": "γ1、λ0：中间段V后−V前，末段R−V；每段token平均PPO并求段和",
+   "claimed_effect": "7B Hotpot47.9 vsmatched-warmup SearchR1PPO42.8；三search平均42.2 vs35.5；λ1时HQ42.5",
+   "conditions": [
+    "训练critic并校准",
+    "原始工具输出用生成context替换"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2/H.1 Table10",
+    "quote": "CARL (ours)          91.5±0.2 341 47.9±0.3 1193 48.3±0.4 1139 59.3±0.4 1389 30.4±0.4 2511 55.5 / 42.2 1315 / 1614"
+   },
+   "failure_boundary": "不是直接把冻结reader dV替换GRPO A；没有逐调用反事实识别",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "直接把统一trajectory信用分成调用与读取/提取段。",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "强调policy自身rollout critic校准，不能以冻结reader信心等同。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Search-R1 PPO/GRPO and rejection SFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "同段所有token共享信用。",
+   "quote": "Segment granularity. All tokens within a segment share one advantage value, so intra-segment\nvariation (e.g., a partly useful extraction) is not captured; credit is uniform within each segment even",
+   "locator": "§5"
+  }
+ ],
+ "question": {
+  "observed_failure": "7B冷critic CARL HQ39.0，校准后47.9；λ0→1为47.9→42.5。",
+  "load_bearing_assumption": "边界critic近似当前policy成功概率，且segment抽象保存必要状态。",
+  "scope": "Python/search工具、可结构切分上下文，无视觉crop实验。",
+  "success_criterion": "同warmup对比粒度，并测critic calibration和查询/提取段相反信用。",
+  "why_open": "终局正确不能定位好查询和坏提取，但任意边界值差也可能错误。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_k=V_\\phi(s_{k+1})-V_\\phi(s_k)\\ (k<N),\\quad A_N=R-V_\\phi(s_N),\\quad\\sum_k A_k=R-V_\\phi(s_0)",
+    "locator": "Eq1–2; γ1 λ0"
+   },
+   {
+    "latex": "L=-\\sum_k\\frac1{|g_k|}\\sum_{t\\in g_k}\\min(r_tA_k,\\mathrm{clip}(r_t,1-\\epsilon,1+\\epsilon)A_k)+c_v\\frac1{N+1}\\sum_k(V_\\phi(s_k)-R)^2",
+    "locator": "Eq3 and §3.4"
+   }
+  ],
+  "signal_routing": "invoke含思考和代码，raw stdout进入瞬时边界；assimilate产生context替换raw结果，随后commit。训练target仅本段模型生成token，环境结果仅conditioning；所以不是把外部返回也求梯度。A在actor更新stop-gradient；critic head及共享backbone由MC MSE更新，后者lr是head1/10。额外KL/entropy Table5有但正文Eq3未列。",
+  "normalization": "other",
+  "invariance": "精确telescoping仅是数值和恒等式，不保证按段长度平均的PG等价trajectory PG。形似PBRS但实际是学习critic的TD advantage；脚注明确势随policy学习，不能称严格固定势PBRS或准确率守恒。固定终端势/状态充分性等仍需条件。",
+  "baseline_or_potential": "V(s_k)作段baseline；bounded sigmoid critic，MC终局标签。",
+  "degenerate_cases": "无工具只剩R−V的commit段；恒定critic中间A0；λ1为各段R−V(s_k)，因R二元/V[0,1]同号但幅度仍可不同；全错组仍有critic学习，不同于组mean归零。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "H对两方法匹配cold/random/curated warmup；H.1λ0/.5/.95/1单seed保持其余设置。",
+  "negative_results": [
+   {
+    "text": "GSM8K7B91.5略低always-tools91.8；非每基准都胜。",
+    "locator": "Table2"
+   },
+   {
+    "text": "冷critic使HQ比完整低8.9；段内部分有用/有害token仍同A。",
+    "locator": "H/§5"
+   }
+  ],
+  "seeds": "CARL/SearchR1PPO 3seeds{1,2,3}；其他baseline及H消融单run",
+  "falsifier": "同架构critic/相同上下文压缩/同λ后粒度收益消失，或critic不能预测本policy crop续写成功，则迁移不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5 3B/7B Instruct",
+   "framework": "OpenRLHF CARL vs verl SearchR1PPO",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "每run8H100；7B50h约400GPUh，3B22h；warmup1800–2400steps；max15segments，actor1e−6/head5e−6/backbone5e−7。",
+  "pitfalls": [
+   {
+    "text": "平台需工具边界pause、KVcache变更、re-prefill；不是无开销segment。",
+    "locator": "§5"
+   },
+   {
+    "text": "比较虽matched warmup，critic架构、backbone是否冻结、框架/上下文处理仍不同，粒度不是唯一变化。",
+    "locator": "Table5"
+   }
+  ],
+  "code": null,
+  "lesson": "当以before-after值做信用时，先校准当前policy的边界critic并保留末段真实结果，再检验分段粒度与上下文压缩各自收益。"
+ }
+}

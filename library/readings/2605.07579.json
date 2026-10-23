@@ -1,0 +1,65 @@
+{
+ "paper_key": "2605.07579",
+ "title": "Your Language Model is Its Own Critic: Reinforcement Learning with Value Estimation from Actor's Internal States",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.07579.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§2–3 pp3–7 Eq1–13",
+   "Table1–3/§4–5 pp8–9",
+   "§6 limitations p10",
+   "§7 limitations p10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "轻量linear probe从actor hidden/entropy预测prompt成功值；同题两独立rollout交叉使用probe baseline，先算baseline再更新probe。",
+  "why_non_obvious": "生成后内部特征更好预测value但若直接用于自身baseline会偏；跨rollout保信息同时隔离本样本。",
+  "trigger_condition": "当大critic昂贵且G大压缩prompt多样性时，用交叉内部状态probe降方差。",
+  "contribution_type": "低成本在线baseline估计",
+  "abstract_strategy": "将有用但依赖行动的信息通过独立样本交叉使用。",
+  "abstract_trigger_condition": "预测准确性与无偏控制变量信息边界冲突。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.07579#s1",
+   "object": "RLVR baseline",
+   "information": "另一rollout hidden-state pools/entropy；buffer LOO reward targets",
+   "operation": "两rollout交叉baseline，A=R−b；online linear regression并PPO clipping",
+   "claimed_effect": "Table1 Qwen3-4B Avg58.10 vsDAPO56.75/RLOO56.42；Table3无cross-rollout40.7 vsfull50.1。",
+   "conditions": [
+    "六域GURU",
+    "full m2 vs无cross m1，后者改变prompt allocation",
+    "probe当前batch更新前计算baseline"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p9",
+    "quote": "POISE (no cross-rollout)                 1        40.7"
+   },
+   "failure_boundary": "独立baseline保证原始PG baseline项零期望，不保证clipped/按response长度缩放的完整目标无偏。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P09",
+   "strength": 3,
+   "how": "prompt-value baseline在线学习，并显式防response leakage。"
+  },
+  {
+   "problem": "P23",
+   "strength": 3,
+   "how": "cross-rollout条件独立而非任意状态近邻。"
+  },
+  {
+   "problem": "P08",
+   "strength": 2,
+   "how": "Eq13仍按各response长度平均，不能混同无偏原始PG。"
+  }
+ ],
+ "scientific_replication": false
+}

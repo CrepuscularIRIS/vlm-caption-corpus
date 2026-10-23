@@ -1,0 +1,54 @@
+{
+ "paper_key": "2509.25810",
+ "title": "Learning to Reason as Action Abstractions with Scalable Mid-Training RL",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2509.25810.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "5 Algorithm1",
+   "7 setup/Table1/Figure7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "以跨多行保持的latent intention替代每token重推理；RL发现是否生成comment，再NTP蒸馏专家code+latent。",
+  "why_non_obvious": "将推理生成频率作为可优化自由度，兼顾动作压缩与后续RL可学性。",
+  "trigger_condition": "When dense rationales make mid-training costly, learn temporally persistent abstractions and distill them with expert actions.",
+  "contribution_type": "method",
+  "abstract_strategy": "generative_process_redesign",
+  "abstract_trigger_condition": "When dense rationales make mid-training costly, learn temporally persistent abstractions and distill them with expert actions."
+ },
+ "signatures": [
+  {
+   "sig_id": "2509.25810#s1",
+   "object": "mid-training latent rationales",
+   "information": "专家code lines、条件loglikelihood、latent history",
+   "operation": "交替E步RL学latent和M步NTP学code；think收固定cost",
+   "claimed_effect": "Qwen2.5-1.5B avg pass1：base37.9/NTP41.7/RA3 46.6；Llama8B48.9 vsNTP47.7。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen2.5-1.5B",
+    "quote": "RA3          48.2                 63.6    45.8       61.3           42.7   59.0                 49.7         64.9      46.6         62.2"
+   },
+   "failure_boundary": "只code实验；小c过度think，大c=.2退化NTP，缺乏任务成功奖励校准。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "mid-training先教可选推理/执行行为再RL，需改为caption/crop轨迹。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "以loglikelihood收益是否超过cost控制think频率，非直接工具价值。",
+   "strength": 2
+  }
+ ]
+}

@@ -1,0 +1,195 @@
+{
+ "paper_key": "2507.04103",
+ "title": "How to Train Your LLM Web Agent: A Statistical Diagnosis",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_html",
+  "locator": "2507.04103.txt",
+  "sections_read": [
+   "local HTML Abstract/Introduction",
+   "§3 Methodology incl bootstrap Algorithm1",
+   "§4 settings/§5 Table1 and compute tradeoff",
+   "§6 ablation/§8 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把教师轨迹成本+SFT+在线RL当总预算，从多SFTcheckpoint分叉，1370随机配置用bootstrap分析最佳配置选择不确定性。",
+  "key_step": "重采样run时按HP组大小倒数加权，1000次重采样取各HP最佳表现和胜率，比较SFTwarmup下不同策略。",
+  "why_non_obvious": "统计单位是已有配置run，不能把bootstrap当新独立训练种子，也不能填补未搜索的HP区域。",
+  "trigger_condition": "多轮web稀疏反馈与SFT/RL配置耦合，纯RL WorkArena仅8.0%heldout-goal。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将训练预算分解、对配置选择过程而非单次最优分数量化不确定性。",
+  "abstract_trigger_condition": "多轮web稀疏反馈与SFT/RL配置耦合，纯RL WorkArena仅8.0%heldout-goal。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "重采样run时按HP组大小倒数加权，1000次重采样取各HP最佳表现和胜率，比较SFTwarmup下不同策略。",
+  "abstract_why_non_obvious": "统计单位是已有配置run，不能把bootstrap当新独立训练种子，也不能填补未搜索的HP区域。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2507.04103#s1",
+   "object": "SFT→RL分叉与预算",
+   "information": "teacher70B成功/失败rollout成本、student8B训练与online数据采集FLOPs",
+   "operation": "沿SFTcheckpoint分叉RL，比较同预算teacher/student成本",
+   "claimed_effect": "MiniWob纯SFT峰值约11exaFLOPs，SFT+RL约6exaFLOPs，节省约45%",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "HTML §5 Compute–Performance Trade-Off",
+    "quote": "using only around 6 exaFLOPs translating to roughly 45% of compute saved (11 vs 6 exaFLOPs)"
+   },
+   "failure_boundary": "精选checkpoint/topseeds，不是随机单次run保证；WorkArena仍落后teacher。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2507.04103#s2",
+   "object": "配置选择统计诊断",
+   "information": "1370existingconfigrun/heldoutgoals，随机搜索覆盖不均",
+   "operation": "inverse group-size bootstrap1000次，报告winningHP与conditional max分布",
+   "claimed_effect": "固定配置不可跨SFT阶段通用；14/33WorkArena任务仍完全失败",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "HTML §5 Task Performance Saturation",
+    "quote": "a significant portion of tasks (14 out of 33) remain completely unsolved."
+   },
+   "failure_boundary": "sampling coverage缺口/选择偏差不能靠bootstrap消除；任务未解不等于policy不可学定理。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P69",
+   "strength": 3,
+   "how": "多轮agent训练预算与统计选择方法直接迁移。"
+  },
+  {
+   "problem": "P45",
+   "strength": 3,
+   "how": "提醒seed与配置选择不确定性分离。"
+  },
+  {
+   "problem": "P38",
+   "strength": 2,
+   "how": "成功轨迹SFT和稀疏reward不足以恢复难任务。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "pure SFT",
+   "kind": "method"
+  },
+  {
+   "name": "pure RL",
+   "kind": "method"
+  },
+  {
+   "name": "SFT+RL",
+   "kind": "method"
+  },
+  {
+   "name": "teacher/proprietary agents",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "随机搜索覆盖不足可能改变结论；English接口与有限模型范围。",
+   "quote": "it does not account for the lack of coverage from the random search.",
+   "locator": "HTML §8"
+  }
+ ],
+ "question": {
+  "observed_failure": "WorkArena Llama8B纯RL heldouttask11.5%，SFT26.4，SFT+RL28.8；14/33任务无成功。",
+  "load_bearing_assumption": "有限预算下适当warmstart比全SFT或全RL更能利用可学习任务支持。",
+  "scope": "MiniWob/WorkArena DOM/AxTree agent。",
+  "success_criterion": "匹配含teacher失败采样成本的总FLOPs，heldouttask成功率和不确定性改善。",
+  "why_open": "heldoutgoals选checkpoint/topseeds，配置coverage有限，未必代表新seed普遍收益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3 SFT→RL branch"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "§5 FLOPs前沿"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "§3.1配置bootstrap"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Ftotal(tb)=FSFT(tb)+FRL(TRL), including teacher rejected trajectories and rollout cost",
+    "locator": "Eq5 HTML §3"
+   },
+   {
+    "latex": "resample run i with weight ∝1/count(HPvalue_i); per resample select best and compute HP wins, B=1000",
+    "locator": "Algorithm1"
+   }
+  ],
+  "signal_routing": "Llama为GRPO、Qwen用RFT更稳定；DOM/AxTree观察和高层UIaction。动作/CoT tokenmask、return归一正文未给，不能当视觉crop实施方案。",
+  "normalization": "是否grouprelative、std、IS/trustregion均为HP变量；全局统一配置不存在。Bootstrap逆组大小补采样数量不均，不校正全jointHPcoverage。",
+  "invariance": "不是PBRS；调数据/预算/训练配置。Bootstrap分布条件于已观察run不等于真实globaloptimum概率。",
+  "baseline_or_potential": "rawreward vsgroupadv是比较变量，未给唯一baseline。",
+  "degenerate_cases": [
+   "无SFT稀疏reward纯RL可能零进步；过晚SFT分叉浪费算力。",
+   "warmup后课程/errorfeedback可能反效果。",
+   "共享可写web环境持久状态污染后续agent，success可能来自修改环境shortcut。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "[redacted: project-internal]",
+  "negative_results": [
+   {
+    "text": "WorkArena plateau约40%，14任务无解；SFT+RL仍落后teacher/proprietary。",
+    "locator": "§5"
+   },
+   {
+    "text": "curriculum/errorfeedback在warmstart后不保证有益；std和IS收益依赖warmup。",
+    "locator": "§6"
+   }
+  ],
+  "seeds": "正文称报告四个所选runs，另compute协议top2/10seeds，Table1为两topseeds SE；口径需分别保留，未读取附录澄清。",
+  "falsifier": "若锁定随机seeds及相同总搜索成本后预算收益消失，则精选前沿不能作为普遍策略。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Llama3.3-70B→3.1-8B; Qwen2.5-72B→7B",
+   "framework": "BrowserGym/AgentLab/Torchtune FSDP",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "1370configs/1000bootstrap；16Kctx，activationoffload/checkpoint约40%memory减少；统计研究成本远高于单配方。",
+  "pitfalls": [
+   {
+    "text": "环境admin可永久改UI导致跨session污染；训练收益必须区分操作任务与改评测环境。",
+    "locator": "§5 Shortcut-Seeking"
+   }
+  ],
+  "code": null,
+  "lesson": "当比较SFT和RL，纳入teacher失败生成与配置搜索成本；隔离环境状态，用真实独立seed验证少数候选。"
+ }
+}

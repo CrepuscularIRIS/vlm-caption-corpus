@@ -1,0 +1,62 @@
+{
+ "paper_key": "2512.16883",
+ "title": "AdaSearch: Balancing Parametric Knowledge and Search in Large Language Models via Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2512.16883.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§3.1",
+   "§4.2–4.3/Algorithm1/Eqs4–5",
+   "§5/Tables2–3",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把parametric/search解题训练与是否search的决策训练分两阶段。",
+  "key_step": "先分别训练有/无search的同题组；再以stage1无search采样成功率阈值生成yes/no标签并RL决策。",
+  "why_non_obvious": "降低调用数不等于判断必要性；训练决策标签依赖实际模型能力且存在采样噪声和prompt差异。",
+  "trigger_condition": "当直接结果RL过搜索、代价奖励又欠搜索时，先训练两模式能力再监督显式选择。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "heterogeneous_decomposition：把解题与模式选择分阶段处理。",
+  "abstract_trigger_condition": "混合训练目标对行为选择和任务执行提供冲突信号时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2512.16883#s1",
+   "object": "Qwen2.5-3B-Instruct七QA集",
+   "information": "stage1无search solve-rate标签及binary outcomes",
+   "operation": "AdaSearch两阶段训练与显式decision推理",
+   "claimed_effect": "平均EM36.0/F1dec54.0；Search-R1 EM38.1/F1dec.1，存在准确率折衷。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Qwen2.5-3B block，末两列Avg EM/F1dec",
+    "quote": "AdaSearch (Ours)    37.9   49.0   56.8    71.7   42.8   58.8   33.4   57.5   38.5    65.5   14.4   25.2   28.0   50.0   36.0   54.0"
+   },
+   "failure_boundary": "F1dec正类是无需search，并非检索有收益概率；不能跨不同base的oracle定义直接比较。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "先训练两模式行为再学选择，可迁移但需改变训练协议。",
+   "strength": 2
+  },
+  {
+   "problem": "P24",
+   "how": "显式决策与解题阶段分开，但仍共享模型参数，非独立门控头。",
+   "strength": 2
+  },
+  {
+   "problem": "P35",
+   "how": "少搜索仍有EM下降，需单独验准确率非劣。",
+   "strength": 2
+  }
+ ]
+}

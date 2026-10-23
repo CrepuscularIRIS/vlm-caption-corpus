@@ -1,0 +1,56 @@
+{
+ "paper_key": "2505.18454",
+ "title": "Hybrid Latent Reasoning via Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.18454.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq2–6",
+   "§4 Tables1–3/Fig3–4",
+   "§5 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用离散采样保留随机性，再将输出分布投影到embedding并门控混入下一步输入。",
+  "key_step": "think段用a⊙tokenEmbedding+sqrt(1−a²)⊙(inputGate⊙projectedHidden)，答案段仍离散；每条混合rollout只更新一次。",
+  "why_non_obvious": "直接hidden反馈不在输入embedding流形；纯概率插值又移除采样随机性。",
+  "trigger_condition": "潜在推理直接替换embedding导致生成退化时，以接近离散的初始化逐渐学习混合。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "保留原策略可采样通道，通过可学连续旁路增强内部计算。",
+  "abstract_trigger_condition": "潜在推理直接替换embedding导致生成退化时，以接近离散的初始化逐渐学习混合。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.18454#s1",
+   "object": "think段输入表示与on-policy更新",
+   "information": "采样token、输出分布、正确性终奖",
+   "operation": "门控混合embedding+组内标准化REINFORCE，单次轨迹更新",
+   "claimed_effect": "Table2 Qwen2.5-3B五项均值70.0%，GRPO69.1%；MMLU-ST却59.0%低于60.1%。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Qwen2.5-3B HRPO row",
+    "quote": "HRPO (Ours)          0.845      0.613       0.630          0.590       0.820      0.700"
+   },
+   "failure_boundary": "文本1.5/3B；未验证视觉latent可替代实际crop像素；缓存hidden的更新语义需另核实现。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P56",
+   "how": "latent参与采样与打分条件，rollout/actor输入不一致会改变policy。",
+   "strength": 2
+  },
+  {
+   "problem": "P23",
+   "how": "混合模式仅think段，训练推理状态需一致。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

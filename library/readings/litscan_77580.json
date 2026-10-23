@@ -1,0 +1,177 @@
+{
+ "paper_key": "litscan:77580",
+ "title": "iVGR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77580.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "Table1",
+   "3.2–3.4/Eq1–4",
+   "Table2,4–8",
+   "Limitations",
+   "Appendix judge prompt",
+   "B sampling/C implementation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "训练显式grounding但推理去掉坐标，以跨流一致性保留能力",
+  "key_step": "grounded流按GT框IoU选正确参考并存archive，text流拿外部文本judge一致性reward；两流独立组归一化",
+  "why_non_obvious": "显式框输出可干扰答案，能力训练和行为展现无需同一格式；archive是奖励参考而非PG replay",
+  "trigger_condition": "当强制显式grounding损准确率时，将高质量grounded内容通过一致性监督转到纯文本流",
+  "contribution_type": "method",
+  "abstract_strategy": "训练显式grounding但推理去掉坐标，以跨流一致性保留能力",
+  "abstract_trigger_condition": "当强制显式grounding损准确率时，将高质量grounded内容通过一致性监督转到纯文本流",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "grounded流按GT框IoU选正确参考并存archive，text流拿外部文本judge一致性reward；两流独立组归一化",
+  "abstract_why_non_obvious": "显式框输出可干扰答案，能力训练和行为展现无需同一格式；archive是奖励参考而非PG replay"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77580#s1",
+   "object": "grounded/textual双流VLM",
+   "information": "训练图像/答案/GT框；外部judge只读问题和两段CoT",
+   "operation": "筛格式正确+答案正确+box>tau的最好参考，按query缓存历史最高IoU，文本流加一致性0/.3/.7/1",
+   "claimed_effect": "5基准平均：grounded-only文本测试71.1，dual无consistency71.0，加consistency71.5，加archive72.4；8基准7B76.6 vs base70.1",
+   "conditions": [
+    "Qwen2.5VL7B主消融",
+    "同cold-start模型、每流N5",
+    "有框题双流，无框题仅文本常规reward"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables2,5",
+    "quote": "(5) + Dual-Stream Training w/o Rconsistency                               T   87.4   75.3    72.4          55.0          64.7   71.0"
+   },
+   "failure_boundary": "外部文本judge假设reference视觉描述正确，不独立看图；bbox/答案正确不保证整段描述真实",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "描述一致与答案正确分开且可能冲突",
+   "strength": 3
+  },
+  {
+   "problem": "P43",
+   "how": "视觉参考经文本judge提供额外监督但非独立看图",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "训练和推理格式解耦",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "TreeVGR / DeepEyes",
+   "kind": "method"
+  },
+  {
+   "name": "grounded-only / dual without consistency / no archive",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "依赖GT框，外部judge幻觉，训练没有crop限制细节",
+   "locator": "§5 Limitations",
+   "quote": "design.                                                                  Second, our method relies on an external LLM to score the"
+  }
+ ],
+ "question": {
+  "observed_failure": "DeepEyes/TreeVGR默认grounded平均74.1/74.7，改文本75.1/75.7；双流无consistency71.0≈grounded-only71.1",
+  "load_bearing_assumption": "GT筛选的grounded推理语义可靠，可作文本流视觉事实参考",
+  "scope": "有框训练下的双流结果+语义奖励",
+  "success_criterion": "同预算分开评consistency与archive增量，最终答案/视觉事实和grounding指标均核",
+  "why_open": "注意力增加与答题提升未证明内化了真实定位；reference文本幻觉可传播"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4.1 cold-start"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R^b=R_{format}+R_{acc}+R_{box};\\quad R^t=R_{format}+R_{acc}+R_{consistency};\\quad A_i^s=(R_i^s-mean(R^s))/std(R^s),\\ s\\in\\{b,t\\}",
+    "locator": "Eq1,3及两流归一化文字"
+   },
+   {
+    "latex": "R_{box}=\\frac12\\left[\\frac1{|B_{gt}|}\\sum_{b\\in B_{gt}}\\max_{\\hat b\\in B_{pred}}IoU(b,\\hat b)+\\frac1{|B_{pred}|}\\sum_{\\hat b\\in B_{pred}}\\max_{b\\in B_{gt}}IoU(\\hat b,b)\\right]",
+    "locator": "Eq2"
+   },
+   {
+    "latex": "Z_{archive}^{(q)}\\leftarrow\\arg\\max_{z\\in\\{Z_{archive}^{(q)},o^b_{best}\\}}R_{box}(z),\\quad valid=\\{format=1,acc=1,R_{box}>\\tau\\}",
+    "locator": "Eq4/§3.3"
+   }
+  ],
+  "signal_routing": "两流共享策略、不同prompt；各自reward和mean/std，文本一致性是序列级附加奖励，不是只给视觉token。archive仅作judge参考，无旧轨迹直接PG replay。judge输入问题+参考CoT+target CoT，未给图；prompt明确假定参考描述正确。训练无crop；测试可先框再实际crop和union crop，重新输入原图+局部图。",
+  "normalization": "per-channel",
+  "invariance": "各流mean+std，不是PBRS；一致性加奖改变偏好，可奖励答案错误但描述一致的文本。bbox双向max匹配非一对一Hungarian。",
+  "baseline_or_potential": "每流同题组均值；历史最高IoU参考不是当前策略value，也无staleness修正。",
+  "degenerate_cases": "archive空→consistency0；无框样本不算box/consistency；全相同reward std0未说明。空预测框的分母处理未知；高tau稀疏参考，低tau错参污染；allcorrect仍可能consistency分差。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table5拆text/grounded/dual/consistency/archive；Table6 tau.3 avg72.4而.4仅70.7；Table8高IoU参考72.4低IoU71.5，均较无consistency71.0。",
+  "negative_results": [
+   {
+    "text": "8B CV3D93.5→91.0；32B RealWorldQA79.3→76.3，非全任务保能力。",
+    "locator": "Table2"
+   },
+   {
+    "text": "8B crops-only84.1→83.7；HR8K80.1→78.0。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "打乱reference或匹配通道但不含正确视觉语义仍同样提升，或独立视觉事实评测不增，则内化定位解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B, Qwen3VL8B/32B; Qwen2.5-72B-Instruct judge",
+   "framework": "Llama-Factory / VeRL / vLLM",
+   "group_size": 5,
+   "max_turns": 1,
+   "kl": 0.01
+  },
+  "cost": "8A100训练+4A100 judge；7B39h vs无consistency35h；同总rollout预算但独特query数减半",
+  "pitfalls": [
+   {
+    "text": "35k SFT含32k grounded+3k强teacher文本；训练有GT框而迁移项目缺框。",
+    "locator": "§4.1"
+   },
+   {
+    "text": "45%有框题复制成双流占batch90%，无框10%；judge还用于accuracy评分，非完全机械rule verifier。",
+    "locator": "B/C"
+   }
+  ],
+  "code": "https://visual-ai.github.io/ivgr/",
+  "lesson": "当显式坐标损伤答案时，可把grounding留在训练参照通道；但必须独立审计参考事实，不能把文本一致性当视觉正确性。"
+ }
+}

@@ -1,0 +1,178 @@
+{
+ "paper_key": "2609.16268",
+ "title": "Spurious Tool Use: When RL Agents Learn the Wrong Reason to Act",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2609.16268.txt",
+  "sections_read": [
+   "Abstract",
+   "§1 contributions",
+   "§2–4",
+   "Tables1–5 and §5",
+   "Ethics",
+   "AppendixA.1–A.3"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "配对cue有/无测试与互换cue训练分离工具选择捷径，再用judge不必要调用惩罚训练。",
+  "key_step": "保持题目不变只加无关cue，测工具率差；每次judge标签构成总轨迹reward扣分。",
+  "why_non_obvious": "最终答案正确仍可隐藏无用工具调用；工具能力与语义cue相关，不能由最终准确率识别。",
+  "trigger_condition": "When final reward permits irrelevant tool calls, perturb irrelevant cues and supervise necessity with explicit judge uncertainty.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "干预非因果表面线索，定位中间决策捷径并增加决策来源的反馈。",
+  "abstract_trigger_condition": "When final reward permits irrelevant tool calls, perturb irrelevant cues and supervise necessity with explicit judge uncertainty.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "保持题目不变只加无关cue，测工具率差；每次judge标签构成总轨迹reward扣分。",
+  "abstract_why_non_obvious": "最终答案正确仍可隐藏无用工具调用；工具能力与语义cue相关，不能由最终准确率识别。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.16268#s1",
+   "object": "tool-selection policy",
+   "information": "同题有/无cue，任务reward与judge(q,type,input)",
+   "operation": "加入每个不必要调用−0.5的轨迹总分，GRPO训练",
+   "claimed_effect": "WEB INDEX条件GSM8K search Y/N40.1/0.9、差39.2pp；加reward后0.2/0.2、差0；准确率83.0/84.4→92.8/88.8。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p6 WEB INDEX block",
+    "quote": "Cue ([WEB INDEX) 53.4 / 54.0 22.6 / 2.7 +19.9 83.0 / 84.4 40.1 / 0.9 +39.2"
+   },
+   "failure_boundary": "单seed，judge并非当前actor反事实；数学≠绝对不需search的证明。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P50",
+   "strength": 3,
+   "how": "用同题cue干预测工具选择shortcut，不能只看最终答案。"
+  },
+  {
+   "problem": "P14",
+   "strength": 2,
+   "how": "过程judge惩罚与真实必要性存在信息边界。"
+  },
+  {
+   "problem": "P67",
+   "strength": 2,
+   "how": "工具必要性标签由judge估计，需校准。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "No training",
+   "kind": "method"
+  },
+  {
+   "name": "No cue RL",
+   "kind": "method"
+  },
+  {
+   "name": "Cue RL",
+   "kind": "method"
+  },
+  {
+   "name": "Cue RL + necessity reward",
+   "kind": "method"
+  },
+  {
+   "name": "Swapped cue conditions",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者承认judge偏差，不是必要性的最终标准；单seed且受控小规模任务。",
+   "quote": "we view this as a practical design choice rather than a definitive standard for tool necessity.",
+   "locator": "Ethics p10"
+  }
+ ],
+ "question": {
+  "observed_failure": "无关cue使GSM8K search率差达到39.2pp而最终答案可能仍正确。",
+  "load_bearing_assumption": "cue不改变所需信息、工具功能与任务语义；judge可区分能力相对必要性。",
+  "scope": "NQ/DeepMath各500训练、两种工具与六个cue。",
+  "success_criterion": "cue工具率差接近0且准确率、正确工具召回保持。",
+  "why_open": "能力与任务难度未完全独立干预，judge不访问actor反事实。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§3.3 and §5.4"
+  },
+  {
+   "vocab": "M",
+   "id": "M13",
+   "locator": "paired cue intervention"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "Tables1–5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "DeltaTool=P_hat(Ts|xc,a)-P_hat(Ts|xc); r_total=r_task-0.5 sum_t 1[Judge(q,tau_t,x_t)=0]",
+    "locator": "§2.2; §4.1"
+   }
+  ],
+  "signal_routing": "judge逐调用来源的标量惩罚求和进轨迹总reward。论文称dense/decision-level，但未给每个token优势、局部mask或return计算公式，不能宣称只罚工具token。GRPO细节归一化未明示。judge看原题、工具类型和输入，不看执行观测/当前actor无工具成功率。",
+  "normalization": "other",
+  "invariance": "改变任务目标，非PBRS；共同reward尺度是否被组std抵消依赖未披露实现。cue配对测选择效应，不独立证明工具的零效用。",
+  "baseline_or_potential": "GRPO baseline具体实现未知；无action-conditioned baseline。",
+  "degenerate_cases": "全无调用无惩罚，错误但不调用不受过程罚；多次误判惩罚累加可压过正确reward。无可靠工具能力时捷径未出现仅是本设置观察；p≈0无支持问题未解决。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "互换cue语义与任务，及cue相关度100%→50%干预；70%及以下差接近0，只是本尺度阈值。",
+  "negative_results": [
+   {
+    "text": "Python cue未产生对称强捷径；DeepMath训练能力提升不足。",
+    "locator": "Tables2–4; Fig2"
+   }
+  ],
+  "seeds": "1 per run (Table6)",
+  "falsifier": "固定题目与有效工具收益后，cue差仍存在，或必要工具召回因惩罚显著下降，则否定可靠修复。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B-Instruct, no additional SFT",
+   "framework": "VerlTool GRPO",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "4 H100，30steps batch64，lr1e-6 warmup10，T.75，response4096/observation2048；GPT-5 Nano判答案和必要性。",
+  "pitfalls": [
+   {
+    "text": "judge定义“competent model”不等于当前策略且不给历史/工具返回。",
+    "locator": "A.3"
+   },
+   {
+    "text": "来源逐决策不等于梯度逐决策路由。",
+    "locator": "§4.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当tool率随无关格式改变时，先做同题cue配对与正确工具召回测试，再考虑judge处罚。"
+ }
+}

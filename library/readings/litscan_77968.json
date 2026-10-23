@@ -1,0 +1,187 @@
+{
+ "paper_key": "litscan:77968",
+ "title": "PFlowNet",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77968.txt",
+  "sections_read": [
+   "Abstract",
+   "§2–3 (p3 extraction partially corrupt; readable method p4–5)",
+   "§4 Tables 2–4 pp7–8",
+   "App A.1 pp13–14 assumptions",
+   "App B.1–B.4 pp22–23"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把框选+caption感知流作为潜变量，以Sub-Trajectory Balance平方log比目标拟合冻结奖励模型给出的密集流分布；几何奖励只惩罚专家邻域外。",
+  "why_non_obvious": "专家框的IoU最优不等于推理信息最优；保留邻域约束而不逐框最大化IoU。",
+  "trigger_condition": "When precise expert crops omit reasoning context, learn diverse evidence flows under a soft vicinity constraint.",
+  "contribution_type": "感知流生成与变分强化微调",
+  "abstract_strategy": "用软支持约束替代硬代理指标优化",
+  "abstract_trigger_condition": "代理标注精度与任务效用不一致且可评价中间状态时",
+  "abstract_key_step": "以冻结条件似然比定义中间状态效用，再用子轨迹一致性拟合分布。",
+  "abstract_why_non_obvious": "好的最终答案可能需要低于专家框IoU的上下文扩展。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77968#s1",
+   "object": "Qwen3-VL-8B感知流",
+   "information": "训练可见QA、原专家RoI；冻结p_phi看crop/其补集评价caption、看X和prefix评价目标Y。",
+   "operation": "45k SFT教规划+box/caption；42k变分RFT用caption对比似然、答案似然与邻域惩罚联合训练；生成Z后加入真crop继续答题。",
+   "claimed_effect": "Table3 SFT→联合RFT：TreeBench acc48.3→55.3，mIoU44.2→38.2；V*83.7→90.6；MME-RW54.2→67.0。",
+   "conditions": [
+    "8B主实验",
+    "Table3同表比较",
+    "不是GRPO或当前策略二分支正确率增益"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7",
+    "quote": "(5)   + RFT              ✓          ✓       ±            ✓    55.3       38.2   90.6             67.0"
+   },
+   "failure_boundary": "冻结模型似然可被利用；IoU下降并不保证每个caption忠实；理论不证明有限训练的准确率提升。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "用caption依赖真实crop的似然比与答案效用约束证据，而非仅框IoU。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "困难例提供流SFT、适中例用于RFT；显式先建支持。",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "冻结奖励模型效用不能等同于当前策略看图增益。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "TreeVGR",
+   "kind": "method"
+  },
+  {
+   "name": "SFT only / quality only / efficacy only / no contrast",
+   "kind": "ablation"
+  },
+  {
+   "name": "No flow / no crop at inference",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "理论固定K、确定性planning、crop条件独立、专家邻域包含于真实有效支持、表达能力充分及全局最优；不是通用性能保证。",
+   "locator": "§3.3; App A.1 pp13–14"
+  },
+  {
+   "text": "原文Table2与Table4的Qwen3-VL8B HR4K/8K为72.4/68.1 vs76.1/72.7；Table3 MME基线46.0、Table4为48.6，跨表口径未解释。",
+   "locator": "Tables2–4"
+  }
+ ],
+ "question": {
+  "observed_failure": "SFT的TreeBench mIoU44.2/acc48.3，RFT降至38.2却acc55.3，提示几何指标与效用分离。",
+  "load_bearing_assumption": "冻结模型对比caption似然和条件答案似然能代理真实可用证据，专家附近包含有效流。",
+  "scope": "静态图像的规划+RoI/caption流，两阶段自条件回答。",
+  "success_criterion": "提高视觉问答准确率同时保持有效证据与可接受推理开销。",
+  "why_open": "只优化精确框可能移除关系上下文，纯答案RL又可能漂离图像。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "Fig1专家框等比例扩展诊断"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "AppB Table5 difficulty split: >16失败流SFT、2–16成功RFT"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 reward与输入消融"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R(z_{0:k}\\top)=\\left[\\prod_{i=1}^k p_\\phi(c_i|I_{r_i})/p_\\phi(c_i|I\\setminus I_{r_i})\\right]p_\\phi(Y|z_{0:k}\\top,X)",
+    "locator": "Eq3 p5"
+   },
+   {
+    "latex": "R_\\lambda=R\\exp[-\\lambda\\mathbf1(d_{IoU}(r_{1:k},E)>\\epsilon)],\\quad d_{IoU}=1-(IoU_{A\\to B}+IoU_{B\\to A})/2",
+    "locator": "Eqs4–5 p5"
+   },
+   {
+    "latex": "L=\\mathbb E\\sum_{0\\le i\\le j\\le |Z|}\\left[\\log\\frac{R_\\lambda(z_{0:i}\\top)\\prod_{k=i+1}^j p_\\theta(z_k|z_{0:k-1})p_\\theta(\\top|z_{0:j})}{R_\\lambda(z_{0:j}\\top)p_\\theta(\\top|z_{0:i})}\\right]^2",
+    "locator": "Eq2 p4"
+   }
+  ],
+  "signal_routing": "p_phi冻结并teacher-force caption/参考Y；policy状态转移logprob为状态内token logprob求和，termination概率参与SubTB。RFT rollout在/localize结束，只优化感知流；随后同模型以X+Z+crops继续回答。不是答案token共享GRPO优势。",
+  "normalization": "other",
+  "invariance": "无组内均值/std。将所有prefix奖励乘共同正常数在Eq2比值中抵消；只对某些prefix施加邻域乘数会改变分布。几何shaping非gammaPhi(s')-Phi(s)，不是严格PBRS且有意改变目标。",
+  "baseline_or_potential": "log p_phi(Y|X)对固定样本常数被省去；不是当前policy counterfactual baseline。",
+  "degenerate_cases": "lambda=0移除几何约束；lambda→infty只保专家邻域；epsilon过小惩罚几乎所有流、过大纳入无效流。冻结答案概率全低仍可能有caption比率梯度，但不证明可解决题；不适用GRPO全对/全错组退化。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3 quality-only51.5、efficacy-only52.8、联合55.3；仅p+不用p-为52.2。去crop仍54.5但去Z降49.2，表明文字感知流作用大于单独新增crop。",
+  "negative_results": [
+   {
+    "text": "TreeBench几何mIoU从SFT44.2降到联合38.2；不能宣称定位指标全面提高。",
+    "locator": "Table3"
+   },
+   {
+    "text": "epsilon=.7过宽或lambda过小不稳定；大lambda限制探索。",
+    "locator": "Fig8及§4.3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同等流长度/计算量比较真实crop、错crop、文本流交换；若不依赖正确视觉证据仍保持增益，则忠实grounding主张变弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-8B;另4B/32B",
+   "framework": "LLaMA-Factory SFT; vLLM+TRL RFT;ZeRO3",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "16×H200；SFT45k3epoch batch256 lr1e-5；RFT42k5epoch lr5e-6,lambda4.5 epsilon.5；探索L8不是GRPO组。Fig5 H200按sample latency/context，未抄图数。",
+  "pitfalls": [
+   {
+    "text": "prefix共享可自定义position/attention一次算terminal与答案似然；caption正负图仍需显式crop，原图token遮罩不能模拟Qwen原生分辨率重缩放。",
+    "locator": "AppB.4 p23"
+   },
+   {
+    "text": "Table6 sample rollout batch256与response global1024、探索L8的精确配对未给出，不推断。",
+    "locator": "Table6"
+   }
+  ],
+  "code": null,
+  "lesson": "当奖励依赖裁图后分辨率时，原图特征遮罩不等价于真实裁图，应保留crop重编码并单独核开销。"
+ }
+}

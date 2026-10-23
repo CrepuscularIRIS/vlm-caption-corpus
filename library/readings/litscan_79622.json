@@ -1,0 +1,131 @@
+{
+ "paper_key": "litscan:79622",
+ "title": "PinPoint",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_79622.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs1–7",
+   "§4 annotation",
+   "§5 Tables1–5",
+   "§6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用小对齐模块学习问题相关region并重编码选区，替代全图token裁剪。",
+  "key_step": "共有learnable queries对齐文本/滑窗区域，inter+intra对比训练，再选区至面积比例r并单独重编码。",
+  "why_non_obvious": "保留区域中的原始token仍含全图上下文污染，重编码改变表示而不只删token。",
+  "trigger_condition": "When token pruning loses document evidence, rank coherent regions and re-encode selected crops.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先结构化定位再改变感知分辨率/上下文。",
+  "abstract_trigger_condition": "When compressed features mix relevant and irrelevant context, select and recompute localized evidence.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "区域监督+独立重编码。",
+  "abstract_why_non_obvious": "文本相关性和实际答案充分性并不等价。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79622#s1",
+   "object": "文档/信息图视觉token",
+   "information": "训练GT答案与支持region，推理image/query",
+   "operation": "冻结主模型，仅训练query/MLP对比对齐，选region重编码",
+   "claimed_effect": "LLaVA InfoVQA ANLS .2552→.3024，FLOPs38.98→25.48T；Qwen2全图.7399→.7140",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 LLaVA-NeXT PinPoint row; Info/SP/MP/GQA score+FLOPs then latency",
+    "quote": "PinPoint (Ours)    0.3024     25.48 (65.3%)   0.6472     28.44 (55.0%)   0.3866    28.28 (56.5%)   0.7608    17.96 (59.1%)    381.6"
+   },
+   "failure_boundary": "相对full image并非均无损；GTregion监督非crop必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "支持区域绑定与重编码诊断可迁移。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "FastV/PDrop/SparseVLM/random/ViCrop/no refinement/no intra",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "依赖GT/模型生成支持框；未见独立局限节。r固定面积可漏远距离证据，+Global有用。",
+   "locator": "§4/Table2"
+  }
+ ],
+ "question": {
+  "observed_failure": "LLaVA重编码前InfoVQA.2603后.3024；同区域准确率84%。",
+  "load_bearing_assumption": "筛到相关token即拥有干净局部视觉表示。",
+  "scope": "冻结7B主模型的文档区域选择",
+  "success_criterion": "同选区有/无重编码、负样本对比及FLOPs",
+  "why_open": "全局selfattention将背景写入选区token。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables3–4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L=L_{v\\to t}+L_{t\\to v}+.5L_{intra};L_{intra}=-\\log\\frac{e^{sim(E^t,E^v_{pos})/\\tau}}{\\sum_{E^v_{neg}}e^{sim(E^t,E^v_{neg})/\\tau}}",
+    "locator": "Eqs3–7"
+   }
+  ],
+  "signal_routing": "梯度只到共享queries和两MLP，LLM/视觉encoder/projector冻结；没有RL/token reward。正样本为最靠近GT中心滑窗，负样本排除答案相关区。",
+  "normalization": "other：cosine/temperature与contrastive分母；Eq6按印刷分母仅negative，不擅自加positive，可能负loss。",
+  "invariance": "非PBRS；改变推理输入信息。",
+  "baseline_or_potential": "无policy baseline。",
+  "degenerate_cases": "空负样本分母处理未知；分散证据enclosing box可能大；只留局部丢全局，+Global修复；cosine高≠必要。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4固定region定位率隔离重编码；Table3intra。",
+  "negative_results": [
+   {
+    "text": "Qwen2所有4任务比vanilla更低；LLaVA SPDoc .6628→.6472；+Global .6732，不能声称压缩总无损。",
+    "locator": "Tables1–2"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "相同crop像素预算的无监督区域/不重编码同效会削弱定位/重编码机制。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVANeXT7B/Qwen2VL7B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2A100，InfoVQA3epochs报1.33GPUh；通用设置5epochs batch32；window10×10 stride7 r.6 K100；72.6M/99.4M训练参数。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当只保留局部token时，比较原特征与重编码，并保留+Global对照避免将效率误称无损。"
+ }
+}

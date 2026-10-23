@@ -83,7 +83,7 @@
     "locator": "§3.3 p8 Eq6",
     "quote": "apply the dual-clip PPO surrogate independently to\neach set with separate clipping ranges"
    },
-   "failure_boundary": "分位置不等于分参数；α=2效果下降；PPO ratio若在本项目更新中恒1，改clip不生效。HyLaR没有保护direct采样支撑。",
+   "failure_boundary": "[redacted: project-internal]",
    "verified": "fulltext"
   },
   {
@@ -352,7 +352,7 @@
     "locator": "Supplement §1.3 p22"
    },
    {
-    "text": "全同正确组没有GRPO正确性差异，作者动态丢弃；不应照搬到需要全对组效率信号的本课题。",
+    "text": "[redacted: project-internal]",
     "quote": "we discard any rollout\ngroup whose mean accuracy falls outside the range [0.1, 0.9].",
     "locator": "Supplement §2.2 p25"
    }
@@ -367,7 +367,7 @@
  "relevance": [
   {
    "problem": "P10",
-   "how": "分clip只在ratio离1时作用；本项目每批一次更新的ratio恒1必须先测，不能直接迁移效应。",
+   "how": "[redacted: project-internal]",
    "strength": 2
   },
   {
@@ -392,7 +392,7 @@
   },
   {
    "problem": "P56",
-   "how": "确定性latent回放与实际未归一化score须对齐；可迁移行为/评分契约审计，但不等同本项目logit bias。",
+   "how": "[redacted: project-internal]",
    "strength": 2
   },
   {

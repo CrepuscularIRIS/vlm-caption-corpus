@@ -1,0 +1,62 @@
+{
+ "paper_key": "2610.13821",
+ "title": "Can Language Models Learn When to Abstain? Policy Learning and Calibrated Answer Selection",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2610.13821.txt",
+  "sections_read": [
+   "摘要/贡献",
+   "§3.1–3.4",
+   "§4.1/Table2",
+   "§5–6 局限/结论",
+   "AppD Eq5归一化（定向）"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在同一回答/弃答效用下比较生成策略RL与固定生成器后的校准选择器。",
+  "key_step": "固定候选比较校准、同标签logistic与学习新特征的selector；RL分离组大小、阈值曝光和奖励成本条件。",
+  "why_non_obvious": "弃答效用的阈值成本在全回答的中心化组里消失，而好的排序也不保证分布外正效用。",
+  "trigger_condition": "模型需在回答风险与覆盖间选择时，先测校准选择而非把RL改进默认成可迁移弃答能力。",
+  "contribution_type": "controlled_empirical_study",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "多种干预同时改变生成质量、选择与校准，须拆解效用来源。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.13821#s1",
+   "object": "固定Qwen3-14B生成候选的回答选择",
+   "information": "训练8k问题候选正确性标签；部署只有问题候选，无参考答案",
+   "operation": "单独LoRA以True−False logits做BCE，校准集logistic映射后阈值筛选",
+   "claimed_effect": "Table2 TriviaQA utility .0425/coverage30.9%/risk14.5%，原校准filter .0242/20.2%/23.0%；NQ utility仍−.0120。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 2",
+    "quote": "Learned selector + calibration       +0.0425      30.9    14.5   -0.0120     9.5    43.0"
+   },
+   "failure_boundary": "selector与RL数据/预算不匹配；NQ不胜always abstain，人工审核仅部分非独立验证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P35",
+   "how": "明确停止/弃答与正确率的效用，避免把保守覆盖下降当成功。",
+   "strength": 2
+  },
+  {
+   "problem": "P24",
+   "how": "提供固定生成候选、变化阈值prompt与固定reward成本控制来区分干预来源。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "EM漏判及局部人审边界直接适用于奖励参考可靠性。",
+   "strength": 1
+  }
+ ]
+}

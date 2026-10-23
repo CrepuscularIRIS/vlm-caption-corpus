@@ -1,0 +1,169 @@
+{
+ "paper_key": "2502.04463",
+ "title": "Training Language Models to Reason Efficiently",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2502.04463.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "4 Eq4–5/PPO-RLOO",
+   "4.2 assumptions/propositions",
+   "5.3/Fig1,3",
+   "5.4.1/Fig4",
+   "6 limitations",
+   "A hyperparameters",
+   "G length bias",
+   "J base-model negative result"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "identify_hidden_assumption",
+  "key_step": "仅正确答案按同题正确样本长度z-score的sigmoid扣分，用不除reward-std的RLOO优势训练。",
+  "why_non_obvious": "长度本身的标准化与奖励优势标准化不同；后者在全对组消掉α，导致效率压力失控。",
+  "trigger_condition": "When a bounded efficiency penalty should stay tunable, separate cost normalization from advantage normalization and check the all-correct limit.",
+  "contribution_type": "method",
+  "abstract_strategy": "identify_hidden_assumption",
+  "abstract_trigger_condition": "When a bounded efficiency penalty should stay tunable, separate cost normalization from advantage normalization and check the all-correct limit.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "仅正确答案按同题正确样本长度z-score的sigmoid扣分，用不除reward-std的RLOO优势训练。",
+  "abstract_why_non_obvious": "长度本身的标准化与奖励优势标准化不同；后者在全对组消掉α，导致效率压力失控。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2502.04463#s1",
+   "object": "正确答案上的长度惩罚与RLOO",
+   "information": "在线同题正确答案长度均值/std、终局正确性",
+   "operation": "R=correct·(1−α sigmoid(length z-score))，序列RLOO优势广播给所有生成token",
+   "claimed_effect": "7B MATH α.1 token约4000→2600，准确率降2.2%；全对组std归一化使长度压力与α无关",
+   "conditions": [
+    "α∈[0,1)",
+    "已有推理能力的R1 distilled models"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.3.1/§5.4.1",
+    "quote": "the length of the chain-of-thought of the 7B model on the MATH dataset decreases by 36% (from\n∼ 4000 to ∼ 2600 tokens) while the accuracy loss is only 2.2%. Similarly, in the AIME dataset,\nsetting α = 0.2 reduces token usage by 27% (from ∼ 13,000 to ∼ 9,000) while incurring only a 4%"
+   },
+   "failure_boundary": "保持正确奖励高于错误不等于有限训练准确率不降",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "全对组reward std抵消α，直接支持先验证no-std再设计新信用。",
+   "strength": 3
+  },
+  {
+   "problem": "P03",
+   "how": "效率压力只在正确答案上形成，但仍与准确性共用标量reward。",
+   "strength": 3
+  },
+  {
+   "problem": "P35",
+   "how": "过强缩短或在尚未学会推理的base模型上惩罚长度会伤害准确性。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "generation cutoff, rejection SFT, DPO, O1-Pruner",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "短链通常伴准确率损失。",
+   "quote": "generally accompanied with a small loss in performance. If it is possible to get better performance",
+   "locator": "§6"
+  }
+ ],
+ "question": {
+  "observed_failure": "全对组std使最短/最长优势±√3，与α无关；base Countdown peak67.48%→59.68%。",
+  "load_bearing_assumption": "每题有正确输出支持，代价系数在优化中保留量级，且已有推理能力。",
+  "scope": "R1-Distill-Qwen1.5B/7B数学输出长度。",
+  "success_criterion": "测准确率-实际token曲线，含α0、no-std及无长度平均loss控制。",
+  "why_open": "奖励排序保正确不保证共享参数有限优化保准确；实现可隐含长度压力。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§5.4.1 and G normalization ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R(x,y)=\\mathbf1[y=y^*(x)]\\left(1-\\alpha\\sigma\\left(\\frac{LEN(y)-MEAN_{correct}(x)}{STD_{correct}(x)}\\right)\\right)",
+    "locator": "Eq4–5"
+   },
+   {
+    "latex": "A_i=R_i-\\frac{1}{n-1}\\sum_{j\\ne i}R_j,\\quad A_{i,t}=A_i",
+    "locator": "§4.1"
+   }
+  ],
+  "signal_routing": "正确样本的同题长度均值/std用于cost输入，错误reward0。RLOO减其他轨迹平均回报，不除reward std；同一个序列A广播到全部生成token，再做token PPO ratio/clipping。不是只更新停止/工具token；KL另有系数.001，具体逐tokenKL实现未核。",
+  "normalization": "leave-one-out",
+  "invariance": "非PBRS，明确改变目标偏好短正确答案。对固定严格单调f、tabular可表示每题任意输出分布且正确覆盖、总体全局最优，命题保100%正确并取最短正确；在线均值/std依赖采样并不满足固定f的直接套用，作者承认此差别。",
+  "baseline_or_potential": "其他n−1条回报均值作LOO baseline。长度均值不是优势baseline；sigmoid有界避免长正确的reward降至错误之下。",
+  "degenerate_cases": "全对时A仅来自α长度差，除std会消α；全错R0且正确长度统计空，未说明fallback，不能猜epsilon；仅1正确或长度相同std0的处理未知；α0无显式长度压力但原loss长度平均有偏差。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "§5.4.1对比除/不除优势std；G在α0移除长度平均loss偏差；J在Qwen2.5-3B base比较有无长度惩罚。",
+  "negative_results": [
+   {
+    "text": "长度惩罚普遍伴小幅准确率损失；α不精确指定输出长度。",
+    "locator": "§6"
+   },
+   {
+    "text": "base Countdown α.1到峰值约400steps vs220，peak59.68 vs67.48。",
+    "locator": "J"
+   },
+   {
+    "text": "α0原实现也缩短，修复loss长度偏差后消失；不能把所有缩短归奖励。",
+    "locator": "G"
+   }
+  ],
+  "seeds": "3 seeds per α, Fig1",
+  "falsifier": "在no-std且修复loss归一化后，小α仍明显损失任务准确率，便不满足我们准确率不降的目标。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeekR1-Distill-Qwen1.5B/7B",
+   "framework": "OpenRLHF PPO+RLOO; vLLM",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "100RL steps约200gradient updates；1.5B4GH200，7B8GH200，各约20h；32prompts/iteration，全局batch128，context32K，temperature1。",
+  "pitfalls": [
+   {
+    "text": "cost z-score≠reward advantage std，两者不能混为“无归一化”。",
+    "locator": "Eq5/§5.4.1"
+   },
+   {
+    "text": "按各序列长度平均token loss会隐含长度偏好。",
+    "locator": "G"
+   }
+  ],
+  "code": null,
+  "lesson": "当效率系数需要保持可控时，先在全对组推导advantage量级，并用α0及loss归一化消融隔离隐含长度偏好。"
+ }
+}

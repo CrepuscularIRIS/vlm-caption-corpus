@@ -1,0 +1,56 @@
+{
+ "paper_key": "litscan:38368",
+ "title": "VinePPO",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_38368.txt",
+  "sections_read": [
+   "Abstract",
+   "§4 VinePPO equations 5–6",
+   "§5 setup",
+   "§6 Figures 6–7",
+   "Conclusion",
+   "App C.2 normalization settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "用当前策略从中间前缀采样的Monte Carlo value替代学习critic，再用相邻value差估计优势。",
+  "why_non_obvious": "直接利用语言环境可重置到前缀，辅助rollout只估值、不直接做policy更新。",
+  "trigger_condition": "前缀可重置、有终答奖励、额外推理比训练critic可接受。",
+  "contribution_type": "method",
+  "abstract_strategy": "architectural_operator_substitution",
+  "abstract_trigger_condition": "前缀可重置、有终答奖励、额外推理比训练critic可接受。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:38368#s1",
+   "object": "PPO reasoning-step advantage",
+   "information": "当前策略前缀续写K条的终答0/1奖励",
+   "operation": "Vhat=mean return；Ahat=r+γVhat(next)−Vhat(current)，同一步tokens共享A",
+   "claimed_effect": "作者Fig6报告RhoMath1.1B/DeepSeekMath7B达到PPO峰值精度约少3.0/1.51倍墙钟，约少9/2.8倍更新步；不是每步更快。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6.2/Figure6 accompanying text p7",
+    "quote": "1.1B and DeepSeekMath 7B require about 3.0x and 1.51x"
+   },
+   "failure_boundary": "原始MC/PG无偏结论不自动扩至batch标准化、PPO clipping、有限K及粗化步粒度的完整训练。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "用相邻前缀价值差给step信用，具体识别visual action仍须视觉反事实",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "明确当前策略MC而非冻结reader proxy",
+   "strength": 3
+  }
+ ]
+}

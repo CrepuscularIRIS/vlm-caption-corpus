@@ -1,0 +1,56 @@
+{
+ "paper_key": "2601.07516",
+ "title": "Controlling Multimodal Conversational Agents with Coverage-Enhanced Latent Actions",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2601.07516.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3/Eqs1,3–9/Algorithm1",
+   "§4/Tables1–2",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以小型离散latent action codebook控制冻结language world model，借text-only投影扩大codebook覆盖。",
+  "key_step": "future-conditioned inverse dynamics建latent，再BC当前状态policy；paired双向投影+text-only cycle补模态数据。",
+  "why_non_obvious": "缩小探索词表不必缩短生成序列，也可能限制可达输出；投影补的是表示覆盖，不能生成未知视觉事实。",
+  "trigger_condition": "当多模态配对数据少、文本数据多且token action空间大时，用跨模态投影扩充潜在动作训练。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "unify_into_shared_representation：把text-only与paired embedding映射到共享latent-action训练空间。",
+  "abstract_trigger_condition": "高成本模态配对不足但其他模态数据丰富时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.07516#s1",
+   "object": "Qwen2.5-VL-3B conversational RL",
+   "information": "paired/text-only语料、latent codebook、LLM judge reward",
+   "operation": "跨模态投影+cycle学习codebook后latent GRPO",
+   "claimed_effect": "Table1平均judge .893±.023 vs token GRPO .831±.014。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 3B block；列MMRole ID/OOD、PCog LS1/LS2、Average",
+    "quote": "GRPO (Latent Action)      0.949±0.007   0.915±0.065     0.871±0.011      0.837±0.010       0.893±0.023"
+   },
+   "failure_boundary": "3 runs，LLM-as-judge非人工gold；PCog LS2该臂.837低于token.845。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "以BC与codebook扩覆盖改善RL探索，但冻结decoder的可达行为仍受限。",
+   "strength": 1
+  },
+  {
+   "problem": "P24",
+   "how": "分离latent policy与语言world model，可作架构参照，但不是crop gate。",
+   "strength": 1
+  }
+ ]
+}

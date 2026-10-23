@@ -1,0 +1,65 @@
+{
+ "paper_key": "2505.15612",
+ "title": "Learn to Reason Efficiently with Adaptive Length-based Reward Shaping",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.15612.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§2–5 pp3–7 Eq1–3/Table2",
+   "Table3–4/§6 pp8–9",
+   "§7 p10",
+   "AppE.2 targeted hyperparameters; AppM p23 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把截断与长度奖统一为C+λS，改为只奖正确且短于目标；再以当前rollout正确率分难度并周期更新各难度预算。",
+  "why_non_obvious": "硬截断把过长正确解也判错；纯相对长度奖可能牺牲正确性换更短，而目标阈值留出长解探索。",
+  "trigger_condition": "已有长推理底座，固定短预算对难题损失较大。",
+  "contribution_type": "自适应长度阈值reward shaping",
+  "abstract_strategy": "用成功条件门控效率奖励，再按能力状态调节门槛。",
+  "abstract_trigger_condition": "同一资源上限对不同难度与训练阶段不适配。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.15612#s1",
+   "object": "数学reasoning token预算",
+   "information": "训练GT正确率、rollout长度及monitor集分难度覆盖率",
+   "operation": "LASER-D正确短解+.5；每20步左右用monitor的ECR>=1选最小各组预算",
+   "claimed_effect": "Table3 1.5B LT4096 LASER-D平均accuracy60.3/tokens3520，原56.9/10177；LASER-DE AIME35.0 vs28.9、5789 vs15956tokens。",
+   "conditions": [
+    "每题8训练rollouts",
+    "1.5B多超参frontier",
+    "监测500样本与间隔20是文中示例设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p8",
+    "quote": "L ASER -DLT =4096     84.2     34.2      75.3     47.3       60.3   1872     5750   2981      3474       3520"
+   },
+   "failure_boundary": "32B LASER-DE平均80.95→79.83；不同Pareto点是不同训练，非任意实例均不降精度。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P03",
+   "strength": 3,
+   "how": "LASER/D只在正确分支加效率奖励，DE另奖励错误长解鼓励探索。"
+  },
+  {
+   "problem": "P65",
+   "strength": 3,
+   "how": "按rollout成功数分难度后设不同阈值，不能把group难度当逐题必要性标签。"
+  },
+  {
+   "problem": "P01",
+   "strength": 2,
+   "how": "若同组全正确且奖金二值，标准化会弱化奖金绝对幅度；文中未明确实际adv标准化。"
+  }
+ ],
+ "scientific_replication": false
+}

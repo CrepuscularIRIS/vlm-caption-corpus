@@ -1,0 +1,214 @@
+{
+ "paper_key": "litscan:76463",
+ "title": "TESSY — How to Fine-Tune a Reasoning Model? A Teacher–Student Cooperation Framework to Synthesize Student-Consistent SFT Data",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_76463.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3 pp3–5 Eq1–5/Algorithm1",
+   "§4/Table1 pp5–6",
+   "§5.1–5.6/Figs3–8 pp7–8",
+   "Limitations p9",
+   "AppA.7/A.8 Table3/Fig14 pp14–15; AppB.1 epoch setting p15"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "将思考序列按style/capability分段，学生生成style、教师生成capability，生成20token后由边界预测器截断，只有截断才切换，最后答案全部学生生成。",
+  "why_non_obvious": "教师能力更强不意味着教师全轨迹更适合已有推理模型；同题更强学生的数据也可能不如目标学生自身风格。",
+  "trigger_condition": "当teacher-only SFT使已训练推理模型退化且师生输出分布不同，合成时按内容职责交替。",
+  "contribution_type": "离线SFT轨迹合成",
+  "abstract_strategy": "把需要转移的能力与需保持的表达分开交给不同生成器。",
+  "abstract_trigger_condition": "强来源的内容有用，但整体分布迁移干扰目标模型。",
+  "abstract_key_step": "按局部边界组合来源，维持目标模型表达并借用教师推理。",
+  "abstract_why_non_obvious": "整段重写/按样本混合不能保证局部目标分布一致；风格词本身也可能承担推理功能。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76463#s1",
+   "object": "Qwen3-8B代码SFT数据",
+   "information": "同题共享生成前缀；教师自动标注的style/capability边界；学生自身生成分布",
+   "operation": "20-token generate-rollback、0.6B边界模型、思考交替生成、学生final answer；80k数据SFT",
+   "claimed_effect": "Table1 LCB-Pro25.35→36.69（+11.34pp），OJBench18.75→25.43（+6.68pp）；Teacher-only分别22.10/8.73。",
+   "conditions": [
+    "GPT-OSS-120B teacher/Qwen3-8B student",
+    "80k样本约37k unique问题",
+    "最多9epochs"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p6",
+    "quote": "+ TESSY                  62.87    55.43       36.69      25.43"
+   },
+   "failure_boundary": "不保证真实style/capability可无损分离；其他视觉任务尚未验证。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:76463#s2",
+   "object": "合成轨迹的最终答案归属",
+   "information": "保持TESSY思考生成，替换final-answer生成模型",
+   "operation": "教师final vs学生final对照",
+   "claimed_effect": "教师final LCB-Pro24.36/OJ11.85，学生final36.69/25.43，下降12.33/13.58pp。",
+   "conditions": [
+    "AppA.7/Fig14",
+    "完整合成/训练对照，不是仅词表变化证明"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "AppA.7 p15",
+    "quote": "answer led to performance drops of 12.33% and 13.58%,"
+   },
+   "failure_boundary": "改变final模型同时改变答案质量/分布，不能仅凭此把所有差异因果归于风格。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P36",
+   "strength": 2,
+   "how": "合成学生一致轨迹可能减少教师caption/推理迁移干扰，但不提供视觉正确性筛选。"
+  },
+  {
+   "problem": "P39",
+   "strength": 2,
+   "how": "直接显示更强生成器不一定更好；仍未处理图像分辨率与可见证据差异。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "为SFT前轨迹来源分工，而非依赖RL凭空创造行为。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Teacher-only/Teacher-Mix(1:1)",
+   "kind": "method"
+  },
+  {
+   "name": "Teacher-Think/Teacher-Answer",
+   "kind": "ablation"
+  },
+  {
+   "name": "Self-Distillation/Reject-Sampling(5 candidates)",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "文本代码任务；没有解决教师学生视觉分辨率错配；style标签自动产生且词语可能有推理功能。",
+   "locator": "§2/§3/reader transfer boundary"
+  },
+  {
+   "text": "摘要LCB-Pro +11.25与Table1 36.69−25.35=11.34不一致；采用主表。",
+   "locator": "Abstract/Table1"
+  },
+  {
+   "text": "未将reject sampling集成TESSY；作者承认合成质量仍有损失、实现合成速度未达理论上限。",
+   "locator": "Limitations/Conclusion p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "Teacher-only OJBench18.75→8.73；同师生TESSY25.43。",
+  "load_bearing_assumption": "style与capability存在可预测局部边界，学生style输出能减少不必要分布适应而保留教师内容。",
+  "scope": "文本代码推理模型的离线合成SFT。",
+  "success_criterion": "同题/预算下比较训练后pass@1、师生角色交换、OOD损失及轨迹质量。",
+  "why_open": "已有推理模型已具强风格/能力，整体模仿大教师可能遗忘，teacher-only数据质量不能解释全部训练收益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§5.2跨学生数据对照验证分布匹配"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "AppA.7只替换final生成模型"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3直接改善离线SFT轨迹"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L(M_S)=\\sum_{i=1}^{n}\\mathbb E[KL(P_D(y_i|x,y_{<i})\\Vert P_{M_S}(y_i|x,y_{<i}))]=L_{Cap}+L_{Sty}",
+    "locator": "Eq1–2；作者分布层面SFT解释"
+   },
+   {
+    "latex": "y_i\\sim P_{M_T}\\ (i\\in T_{Cap});\\quad y_i\\sim P_{M_S}\\ (i\\in T_{Sty})",
+    "locator": "Eq3（生成目标），Eq4–5/Alg1具体实现"
+   }
+  ],
+  "signal_routing": "生成时分工而非训练时分loss权重；合成thinking及学生final进入SFT。作者Eq1为forward-KL解释，不代表运行teacher logits的online distillation；实现仅明确SFT，精确assistant/prompt mask和token长度reduction未给。边界模型独立做二分类，teacher自动style标注每种100k segments；不把其标签当人工语义真值。",
+  "normalization": "other",
+  "invariance": "无RL优势归一化、无PBRS。Eq1对token求和的概念表达未确定实际训练batch/token平均；未知不能补。局部学生style仍条件于教师生成前缀，并非纯学生on-policy联合分布。",
+  "baseline_or_potential": "教师/学生数据来源对照，无value baseline。",
+  "degenerate_cases": "所有位置style→学生主导、所有位置capability→教师thinking+学生final；误判边界会引入学生错误推理/教师风格。Alg1在无截断时维持同模型，非每20token必换；若连续边界0空span，防死循环实现未说明。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1多种数据分工；Fig4交叉学生合成/训练，Qwen8用30B数据OJ23.49低于自身25.43，Qwen30用8B27.59低于自身30.39；Fig14final生成角色对照。",
+  "negative_results": [
+   {
+    "text": "TESSY GPQA60.16→59.34，Olympiad69.81→69.80；不是所有指标无下降。",
+    "locator": "Table1"
+   },
+   {
+    "text": "不限于40k长度时教师64k直接生成OJ44.61高于TESSY40k42.89；短预算质量不证明教师能力上限被超越。",
+    "locator": "Fig7/Limitations"
+   },
+   {
+    "text": "训练早期性能先跌、第三epoch恢复，OJ第8epoch26.08比第9epoch25.43高；不能一律把更多epoch视为改进。",
+    "locator": "AppB.1"
+   }
+  ],
+  "seeds": "pass@1多次独立evaluation平均；次数及training seeds未确认",
+  "falsifier": "若控制答案正确性/长度/学生可见证据后，交替生成不优于学生重写或教师轨迹筛选，则不支持迁移；视觉caption保真须另测。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-8B；另Qwen3-30B-A3B；teacher GPT-OSS120B/DS-R1/Qwen235B；boundary Qwen3-0.6B-Base",
+   "framework": "vLLM prefix caching/XTuner/OpenCompass",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "SFT32×H200、batch128、LR5e-5、最多9epochs；80k samples约37k unique；单span20tokens；评测maxreasoning40k/temp.6。合成端walltime/总GPUh未确认。",
+  "pitfalls": [
+   {
+    "text": "不同词表时丢弃最后word以免subword拼接不一致；不能用不同tokenizer token索引直接拼接。",
+    "locator": "§4.1"
+   },
+   {
+    "text": "只在边界截断时切换；final全部学生，无生成正确性保证/未默认reject filter。",
+    "locator": "Algorithm1/Limitations"
+   },
+   {
+    "text": "Table3 predictor500 vs100k训练量比较使用40k合成样本，不能与Table1 80k当同预算；LCB-Pro35.13/35.84。",
+    "locator": "AppA.8/Table3"
+   }
+  ],
+  "code": "https://github.com/CoopReason/TESSY（论文链接，未访问/执行）",
+  "lesson": "当更强教师的整段轨迹使推理学生退化时，先测分布与来源角色，按学生可承受的局部内容合成；不要把换风格当作证据正确性验证。"
+ }
+}

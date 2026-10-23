@@ -1,0 +1,64 @@
+{
+ "paper_key": "2606.02871",
+ "title": "Adaptive Latent Agentic Reasoning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.02871.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3–4 pp3–6",
+   "Table1–4/§5 pp7–8",
+   "Limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "以成功teacher action为锚训练4步latent projector，再随机latent/explicit warmup恢复双模式支持，以成功条件奖励学习turn模式。",
+  "why_non_obvious": "latent不需对齐变长CoT，但只latent SFT会压掉explicit支持，需要额外warmup再做RL。",
+  "trigger_condition": "当很多agent turn只需简短内部计算时，用latent替代显式CoT并保留可升级模式。",
+  "contribution_type": "latent agent reasoning与模式控制",
+  "abstract_strategy": "以环境动作对齐不同推理表示，再学习资源模式选择。",
+  "abstract_trigger_condition": "内部表示不能直接逐token对齐而共享行动输出。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.02871#s1",
+   "object": "多轮推理模式",
+   "information": "成功teacher actions、EM、latent turn fraction",
+   "operation": "action-anchored SFT→50/50模式warmup→AR-GRPO",
+   "claimed_effect": "Table2 BFCL平均86.1/760tokens→Stage2 89.2/117；Table1 search7B42.7/236→41.7/133，存在1点EM下降。",
+   "conditions": [
+    "K4 latent",
+    "search7B与tool4B不同底座",
+    "token数不是walltime"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p7",
+    "quote": "Stage 2     94.2    87      +0.94    90.5     84       +0.75   89.5    145       +1.00     82.5     152        +1.12   89.2   117    +0.95"
+   },
+   "failure_boundary": "平均AE偏好效率可容许EM下降，不是准确率非劣证明；latent仍执行transformer步骤。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "明确识别latent-only SFT导致explicit支持不足，并以warmup修复。"
+  },
+  {
+   "problem": "P03",
+   "strength": 2,
+   "how": "正确latent bonus但错误latent penalty，非failure-free成本。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "双模式初始支持与早期diversity bonus防坍塌。"
+  }
+ ],
+ "scientific_replication": false
+}

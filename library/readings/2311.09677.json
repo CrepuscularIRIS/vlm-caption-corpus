@@ -1,0 +1,154 @@
+{
+ "paper_key": "2311.09677",
+ "title": "R-Tuning: Instructing Large Language Models to Say `I Don't Know'",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2311.09677.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "2.1–2.3",
+   "3.3–4/Table1",
+   "5.1/Table2",
+   "8 Limitations",
+   "A.3 replacement variant"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "按模型自身能否答对为训练样本加不确定性标签",
+  "key_step": "预训练模型一次预测与GT比对分D1/D0，保留GT答案后附sure/unsure，用CE训练",
+  "why_non_obvious": "知识边界是模型条件的标签，不是所有错误都对应同一种安全拒绝；主方法避免丢掉难题答案标签",
+  "trigger_condition": "当SFT从未示范不知道时，将模型错误样本与不确定表达绑定以学选择性回答",
+  "contribution_type": "method",
+  "abstract_strategy": "按模型自身能否答对为训练样本加不确定性标签",
+  "abstract_trigger_condition": "当SFT从未示范不知道时，将模型错误样本与不确定表达绑定以学选择性回答",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "预训练模型一次预测与GT比对分D1/D0，保留GT答案后附sure/unsure，用CE训练",
+  "abstract_why_non_obvious": "知识边界是模型条件的标签，不是所有错误都对应同一种安全拒绝；主方法避免丢掉难题答案标签"
+ },
+ "signatures": [
+  {
+   "sig_id": "2311.09677#s1",
+   "object": "指令微调中的答案与不确定性输出",
+   "information": "基座对训练QA一次预测、GT答案；可用多采样熵替代正确性分组",
+   "operation": "padding保留答案并追加certainty标签；replacement变体才直接拒答",
+   "claimed_effect": "LLaMA13B MMLU OOD AP77.41 vs Vanilla67.38；3B MMLU OOD24.75低于26.08",
+   "conditions": [
+    "LLaMA3/7/13B",
+    "单任务与多任务训练",
+    "AP是排序指标不是coverage100%准确率"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "LLaMA-13B      77.41     67.38"
+   },
+   "failure_boundary": "一次错误不证明知识永久缺失；sure概率不是裁图或补看的收益",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "how": "为缺失abstain构造模型条件的不确定性SFT",
+   "strength": 3
+  },
+  {
+   "problem": "P35",
+   "how": "错误标签若等同不能恢复，会错误拒绝可补看的样本",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Vanilla / Pretrain-T / Pretrain-W",
+   "kind": "method"
+  },
+  {
+   "name": "R-Tuning-U / R-Tuning-R",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只训练二元certainty；知识边界标签是代理",
+   "locator": "§8",
+   "quote": "R-Tuning only possesses the ability to say I am               editing language model hallucinations by denoising\nsure and I am unsure, where the confidence is bi-             language model corruptions."
+  }
+ ],
+ "question": {
+  "observed_failure": "Vanilla LLaMA13B MMLU OOD AP67.38，R-Tuning77.41；非所有模型收益",
+  "load_bearing_assumption": "预训练一次答题正确性可作模型知识/不确定性代理",
+  "scope": "QA中的拒答/置信表达SFT",
+  "success_criterion": "固定覆盖率下accuracy和AP提高且未无差别拒答",
+  "why_open": "自评分标签来自旧checkpoint，一次答错可能是采样或推理错误而非知识不可得"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§2 refusal-aware instruction data"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "D_1=\\{(q,a):M(q)=a\\},\\quad D_0=D\\setminus D_1;\\quad L=-T^{-1}\\sum_i\\log P_\\theta(t_i\\mid t_{<i})",
+    "locator": "§2.1/Eq2"
+   },
+   {
+    "latex": "u(q)=-\\sum_jp(a_j\\mid q)\\log p(a_j\\mid q)",
+    "locator": "Eq7；p为重复预测答案频率"
+   }
+  ],
+  "signal_routing": "CE只算GT答案和certainty表达，question不算；主方法错题仍训练正确答案+I am unsure。测试先生成答案再追加certainty prompt获取置信度；R变体把错题GT替换16类unknown表达。无RL/advantage。",
+  "normalization": "other",
+  "invariance": "token平均CE，不是PBRS；改变监督标签和输出行为，无结果策略不变保证。",
+  "baseline_or_potential": "无；基座一次正确性/采样熵是标签来源，非当前policy value。",
+  "degenerate_cases": "全错训练集可能大幅unsure、全对无拒答样本；一致但错误的多采样答案熵低；更新模型后原D0可能变可答；单轮不知道不等于应终止有信息可取的任务。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 R-Tuning-U不需答案判对来分组，ParaRel13B OOD80.87 vs R77.30；MMLU13B OOD U72.66低于R77.41；A.3替换丢GT标签。",
+  "negative_results": [
+   {
+    "text": "3B MMLU OOD AP24.75<Vanilla26.08；拒答后的条件准确率不能当全量准确率。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同覆盖率随机拒答获得类似改善，或不确定标签只反映旧checkpoint而不预测新模型错误，则迁移失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "OpenLLaMA3B / LLaMA7B,13B",
+   "framework": "LMFlow",
+   "group_size": null,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "A10040GB；1epoch lr2e-5 batch4；卡时未见",
+  "pitfalls": [
+   {
+    "text": "主padding并非不输出错误答案；回答后certainty供选择性过滤。",
+    "locator": "§2.3"
+   }
+  ],
+  "code": "https://github.com/shizhediao/R-Tuning",
+  "lesson": "当数据中没有UNCLEAR行为时，先添加对应监督并校准覆盖率；不要把一次失败标签直接解释成永远不值得再看。"
+ }
+}

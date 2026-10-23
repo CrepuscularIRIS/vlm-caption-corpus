@@ -1,0 +1,57 @@
+{
+ "paper_key": "1806.07857",
+ "title": "RUDDER: Return Decomposition for Delayed Rewards",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "1806.07857.txt",
+  "sections_read": [
+   "Abstract",
+   "§2 theoretical statements",
+   "§3",
+   "§4 Atari results/Table 1",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把延迟回报估计转换成序列预测及贡献分解。",
+  "key_step": "LSTM逐前缀预测整个序列回报，用相邻预测差分配奖励，并保留末端残差补偿。",
+  "why_non_obvious": "预测整个已观察序列回报的g不是通常的V/Q；相邻预测共享记忆可能抵消误差。",
+  "trigger_condition": "当回报长时间延迟且可从轨迹识别关键事件时，用回报预测差分提前分配信用。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "reframe_as_solvable_object：将时间信用分配改成序列监督预测与贡献分解。",
+  "abstract_trigger_condition": "延迟反馈可预测而TD传播慢时，把总信号分解到事件。"
+ },
+ "signatures": [
+  {
+   "sig_id": "1806.07857#s1",
+   "object": "Atari延迟奖励轨迹",
+   "information": "帧差、当前帧、完整训练回报",
+   "operation": "LSTM预测差重分配奖励后训练PPO",
+   "claimed_effect": "Table 1 Bowling 192 vs PPO 56；Seaquest 4770 vs 1616。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4/Table 1，列RUDDER/baseline/delay/delay-event",
+    "quote": "Bowling        192           56        200        strike pins"
+   },
+   "failure_boundary": "选出的延迟奖励游戏；52游戏最终均分29胜23负，并非普遍改善。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "可将轨迹正确性先分解到caption/crop事件，但需验证预测增量是否真正对应有用动作。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "提供无需逐步人工标签的回报分解范式。",
+   "strength": 2
+  }
+ ]
+}

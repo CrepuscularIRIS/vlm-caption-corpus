@@ -1,0 +1,208 @@
+{
+ "paper_key": "2609.20004",
+ "title": "EPIG-Tree: Compute-Optimal Branching for Gradient-Efficient Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2609.20004.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–6 Eq1–13 Algorithm1",
+   "§7.1–7.6",
+   "§8–10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把树rollout当作梯度估计实验，分离新动作分叉与同动作续写的方差预算。",
+  "key_step": "按occupancy×score加权value不确定性/成本选择分叉，按w||score||sigma/sqrt(cost)配续写数。",
+  "why_non_obvious": "高entropy未必有reward相关动作差；branch多样性和suffix噪声需不同采样。",
+  "trigger_condition": "When cloneable states expose measurable value dispersion, allocate branches and suffix samples by estimated gradient variance per cost.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把采样设计化为固定候选上的方差最小化，同时分开拓扑与token信用。",
+  "abstract_trigger_condition": "When cloneable states expose measurable value dispersion, allocate branches and suffix samples by estimated gradient variance per cost.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "按occupancy×score加权value不确定性/成本选择分叉，按w||score||sigma/sqrt(cost)配续写数。",
+  "abstract_why_non_obvious": "高entropy未必有reward相关动作差；branch多样性和suffix噪声需不同采样。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.20004#s1",
+   "object": "multi-turn rollout tree",
+   "information": "pilot local values, policy score, occupancy and suffix cost",
+   "operation": "EPIG-grad分叉加tree-local优势与branch-token mask",
+   "claimed_effect": "Wordle两seed300updates最终win .850 vsEPTree .825、uniform .805、flat .790。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§7.6 pp13–14",
+    "quote": "finishing at 0.850, compared with EPTree (0.825), uniform turn tree (0.805), and flat GRPO (0.790)."
+   },
+   "failure_boundary": "固定updates不等于固定实际compute；只有2seeds，早期tree更差。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2609.20004#s2",
+   "object": "branch-segment credit mask",
+   "information": "thinking输出中完整answer token边界",
+   "operation": "修复只训短窗口并漏answer的mask",
+   "claimed_effect": "GSM8K-hard EPIG .547→.781；uniform .625→.781，拓扑收益弱于mask修复。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§7.4 pp11–12 Fig6",
+    "quote": "and moved uniform-tree from 0.625 to 0.781, while the two non-mask methods barely moved"
+   },
+   "failure_boundary": "单seed、该诊断cosine不是另一个冻结GSM8K参照数值。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P22",
+   "strength": 3,
+   "how": "直接针对有限反事实续写的估计噪声与预算。"
+  },
+  {
+   "problem": "P58",
+   "strength": 3,
+   "how": "克隆状态/共享prefix和分叉采样成本。"
+  },
+  {
+   "problem": "P20",
+   "strength": 3,
+   "how": "局部优势必须绑定真实分支及answer token。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "flat GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "entropy/EPTree",
+   "kind": "method"
+  },
+  {
+   "name": "uniform tree",
+   "kind": "method"
+  },
+  {
+   "name": "value variance EPIG-Lite",
+   "kind": "method"
+  },
+  {
+   "name": "score-weighted EPIG-grad",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者标明若干LLM对比为单seed，Goodhart扩展未大规模测试；pilot无value差时不适用。",
+   "quote": "Several LLM diagnostics use a single seed and should be read as preliminary rather than as ranked benchmarks;",
+   "locator": "§9 p15"
+  }
+ ],
+ "question": {
+  "observed_failure": "mask错误使EPIG GSM8K-hard .547，修复后.781；冻结GSM8K flat cosine.2298反高于EPIG.0748。",
+  "load_bearing_assumption": "能可靠克隆state，并从小pilot估计score-weighted局部value方差。",
+  "scope": "固定候选边及独立suffix样本的预算分配。",
+  "success_criterion": "同总token/环境交互成本，梯度MSE下降且在线任务提升。",
+  "why_open": "自适应候选选择、共享prefix相关性和token mask可能主导误差，理论不是端到端训练最优保证。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Eq9"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq7–11"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§7.4"
+  },
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§5 allocation optimization"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Var(Z_h|h)=mu_h^2 Var_A[psi_h(A)Q_h(A)]+mu_h^2 E_A[psi_h(A)psi_h(A)^T sigma_h^2(A)]",
+    "locator": "Eq7–8"
+   },
+   {
+    "latex": "min sum_e A_e/n_e s.t. sum_e c_e n_e<=B; A_e=w_e^2||psi_e||^2 sigma_e^2; n_e proportional w_e||psi_e||sigma_e/sqrt(c_e)",
+    "locator": "Eq9"
+   },
+   {
+    "latex": "S_EPIG(h)=mu_hat_h^2 tr Var_hat[psi_hat_h(a)Q_hat_h(a)]/[c_hat_h(m_h+1)^2+epsilon]; A(h,a)=V_hat(child)-V_hat(h)",
+    "locator": "Eq11; Algorithm1"
+   }
+  ],
+  "signal_routing": "Algorithm1 tree-local advantage只送action-token/branch-segment mask，可混root-relative优势；具体混合系数、token范围和归一化实现未给。错误mask漏answer是实测bug。不得由PPO/GRPO-style推定所有segment同std或总token平均。",
+  "normalization": "other",
+  "invariance": "分配法是固定边/独立suffix的连续预算最优，不是任意树全局最优。Eq10精确离散gain Bh/[m(m+1)]，Eq11实现用(m+1)^2近似。使用ψQ无baseline时常数Q仍可能有score方差，不能把“Q常数→零branch不确定性”当Eq7严格推论。非PBRS。",
+  "baseline_or_potential": "局部descendant V作为baseline；root-relative混合可选未知。Goodhart Eq12–13扩展作者标理论动机，不当已验证方法。",
+  "degenerate_cases": "稀疏reward pilot全零时无分叉value信号，需额外探索；微小action space uniform已足够。sigma0边理论无续写需求，但有限pilot不能证明真零。共享prefix样本相关与整数至少一次限制未纳入连续最优式。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "冻结clone-state高预算reference32suffix vsB8，分离估计质量；Wordle比较plain value variance与scoreweighted；mask修复对照分离拓扑。",
+  "negative_results": [
+   {
+    "text": "仅9/13控制环境获胜；稀疏/小动作空间无优势。",
+    "locator": "§7.1"
+   },
+   {
+    "text": "冻结GSM8K flat更贴近GRPO参照；单轮math不宣称胜EPTree。",
+    "locator": "§7.3–7.4"
+   }
+  ],
+  "seeds": "frozenGSM8K3; onlineWordle2; several math single seed",
+  "falsifier": "控制总token和mask后EPIG与uniform无差，或pilot不确定性不能预测高预算梯度误差，即否定适用收益。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-8B frozenGSM8K; Wordle-tuned1.7B online",
+   "framework": "TextArena-style Wordle; implementation details sparse",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "Wordle4methods×2seeds×300updates；冻结64prompts/64leaf reference；详细硬件lr/max length未披露。",
+  "pitfalls": [
+   {
+    "text": "mask需覆盖真正分支与后续answer，不能只训短窗口。",
+    "locator": "§7.4"
+   },
+   {
+    "text": "§5.2称所有实验EPIG-grad，§7.3又称EPIG-Lite；按实验具体说明保留版本歧义。",
+    "locator": "§5.2 vs§7.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当树拓扑改动看似有效时，先核每个branch优势覆盖的token，再做相同token预算的拓扑对照。"
+ }
+}

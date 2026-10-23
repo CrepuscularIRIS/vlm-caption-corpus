@@ -1,0 +1,221 @@
+{
+ "paper_key": "2610.08402",
+ "title": "VETTA: Coordinating Turn- and Token-Level Credit Assignment for Multi-Turn LLM Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2610.08402.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq2–8",
+   "§4 Tables1–2 Figures1,3,4",
+   "§6",
+   "AppB.1–B.4",
+   "AppC.4–C.5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "两个value head共享截短critic，分别turn/token GAE；token优势在response内去均值后加turn优势。",
+  "key_step": "让turn优势固定response平均信用，token残差仅调同response内相对标量。",
+  "why_non_obvious": "直接相加会叠加两个response-wide偏置；去均值保留token差却不保证参数梯度为零。",
+  "trigger_condition": "When turn progress and within-response token decisions require different value timescales, combine turn credit with a centered token residual.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "分离粗粒度水平与细粒度残差，共享低成本表征但分开value目标。",
+  "abstract_trigger_condition": "When turn progress and within-response token decisions require different value timescales, combine turn credit with a centered token residual.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "让turn优势固定response平均信用，token残差仅调同response内相对标量。",
+  "abstract_why_non_obvious": "直接相加会叠加两个response-wide偏置；去均值保留token差却不保证参数梯度为零。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.08402#s1",
+   "object": "dual-level actor advantage",
+   "information": "同轨迹turn和token GAE",
+   "operation": "Aturn+3(Atok−response mean)，双head两blockcritic",
+   "claimed_effect": "WebShop同双head对照directadd55.0%→centered72.8%，单decodingseed；任务score79.0→83.6。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 §4.3",
+    "quote": "C3 A turn + αA tok Turn + token 55.0 79.0"
+   },
+   "failure_boundary": "单训练checkpoint/单decodingseed，不能当多训练seed因果估计。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2610.08402#s2",
+   "object": "truncatedcritic",
+   "information": "同valueheads与credit rule保留前2 vs28blocks",
+   "operation": "裁掉后26blocks，保留embedding/RMSNorm且训练",
+   "claimed_effect": "ALFWorld critic时间152.0→19.7s、WebShop92.2→7.9s；是critic侧减少87%/91%，非总训练。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.3 RQ4 Fig4",
+    "quote": "19.7 rather than 152.0 seconds"
+   },
+   "failure_boundary": "总step critic占比25.6→3.8%，模型/任务有限。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P20",
+   "strength": 3,
+   "how": "明确turn/token优势融合与有效token路线。"
+  },
+  {
+   "problem": "P08",
+   "strength": 3,
+   "how": "response中心化不抵消score-weighted梯度。"
+  },
+  {
+   "problem": "P59",
+   "strength": 2,
+   "how": "截短critic缓解额外value成本。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "reported PPO fromGiGPO",
+   "kind": "method"
+  },
+  {
+   "name": "local PPO* cross-turntokenGAE",
+   "kind": "method"
+  },
+  {
+   "name": "Turn-PPO sequence-ratio",
+   "kind": "method"
+  },
+  {
+   "name": "GiGPO",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "directadd",
+   "kind": "method"
+  },
+  {
+   "name": "turnonly",
+   "kind": "method"
+  },
+  {
+   "name": "tokenonly",
+   "kind": "method"
+  },
+  {
+   "name": "2/8/28criticblocks",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者指出标量残差和0不等于参数梯度为0；主表三seed仅decoding。",
+   "quote": "Different tokens have different score-function gradients, so zero scalar sum does not imply a zero parameter-gradient contribution.",
+   "locator": "AppC.4 p16"
+  }
+ ],
+ "question": {
+  "observed_failure": "WebShop directadd55.0低于tokenonly67.4，centered72.8。",
+  "load_bearing_assumption": "turnvalue与prefixvalue可分别学稳，去均值能减少冗余偏置而不丢重要token差。",
+  "scope": "多轮文本环境，稀疏terminal10及invalid−.1。",
+  "success_criterion": "固定critic/ratio/预算，centered优于directadd与单通道，独立trainingseeds复验。",
+  "why_open": "不同γ/λ与actorloss比较混入部分baseline，decoding variance不代表训练稳健。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq5–6"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "dualheads and residual"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "delta_i^b=r_i^b+gamma_b V_old^b(succ(i))-V_old^b(i); A_i^b=delta_i^b+gamma_b lambda_b A_succ^b",
+    "locator": "Eq3–4"
+   },
+   {
+    "latex": "D_kj=A_tok_kj-(1/L_k)sum_j A_tok_kj; A_VETTA_kj=A_turn_k+alpha D_kj",
+    "locator": "Eq5–6"
+   },
+   {
+    "latex": "Ghat_b=stopgrad(Vold_b+A_b); Lactor=-mean_validtokens min(rho A,clip(rho)A)+.01KL; Lcritic=Lturn_mean+Ltok_mean",
+    "locator": "Eq7–8; AppC.3–C.5"
+   }
+  ],
+  "signal_routing": "同turn reward放该turn和token序列最后validtoken；tokenGAE跨turn跳过observation，rollout尾nextvalue/A都0。turnhead读最后context位置；tokenhead读生成前prefix，causalmask。tokenγλ1，turn.95/.95；actorα1ALF/3Web。value target使用融合前各自A并stopgrad，两个value loss各按自己的有效position平均后求和。actorvalidtokenmean，dualclip3只negativeA，referenceKL外置。",
+  "normalization": "mean-only",
+  "invariance": "response scalar mean严格等于Aturn；残差pairwise差保留乘α，且是固定均值约束的Euclideanprojection，非额外训练步。无std公式。γtok=λtok1完整终止且reward仅末token时D=mean(Vtok)−Vtok，公共采样return消掉；不是某token替换的因果效应。不同scoregrad/ratio/clip使残差仍可改变response整体行为。非PBRS。",
+  "baseline_or_potential": "learnedcritic两个head共享前2blocks，独立actor模型；centeredtoken不是独立outcome通道。",
+  "degenerate_cases": "response仅1token残差0；同prefixvalue残差0→turnonly。截断episodenext0可能误把非终止当终止。token与turngamma不同的时间尺度不能简单宣称相同value。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 C1–C4固定双head/2blocks/tokenratio，只改actoradv；C3/C4同α隔离中心化。critic独立vs共享也变参数量/优化，不纯representation隔离。",
+  "negative_results": [
+   {
+    "text": "tokenonly taskscore84.9高于centered83.6，centered仅exactsuccess更高。",
+    "locator": "Table2"
+   },
+   {
+    "text": "α1→3 ALFsuccess91.9→79.8。",
+    "locator": "AppA Fig5"
+   }
+  ],
+  "seeds": "main local3 decodingseeds per fixed checkpoint; Table2/Fig3singledecodingseed0; not3 independenttrainingseeds",
+  "falsifier": "独立训练重复后中心化不优于匹配directadd，或token残差打乱仍有效，则不支持细粒度信用解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-1.5B/7B-Instruct; trainablefirst2blockcritic",
+   "framework": null,
+   "group_size": 1,
+   "max_turns": "50 ALFWorld /15 WebShop",
+   "kl": 0.01
+  },
+  "cost": "128tasks×1rollout/update，150updates，actorlr1e-6 critic1e-5；minibatch256/64；critic时间不是端到端加速。",
+  "pitfalls": [
+   {
+    "text": "value读取位置为当前token之前，不能shift错位泄漏当前token。",
+    "locator": "§3.1"
+   },
+   {
+    "text": "无论终止原因rolloutendnext0；bootstrap截断边界须核。",
+    "locator": "§3.2"
+   }
+  ],
+  "code": "https://github.com/Jiaju-Chen/VETTA-official",
+  "lesson": "当混合层级信用时，先固定critic和ratio对照centered/directadd，并分别报告标量均值、参数梯度与训练seed方差。"
+ }
+}

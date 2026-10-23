@@ -1,0 +1,140 @@
+{
+ "paper_key": "litscan:76396",
+ "title": "SeeThink",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_76396.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.2 Eqs1–6",
+   "Tables1–4",
+   "§4.3.2/4.4/Limitations",
+   "AppA1/Table6/A6–7 Tables11–12"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将感知、纯文本推理、视觉推理的数据按能力阶段解耦。",
+  "key_step": "caption答对而image答错的QA作为感知训练集，再文本数学、视觉推理GRPO。",
+  "why_non_obvious": "相同总步数的混合任务不等于能力先后学习；感知不足可被冗长推理掩盖。",
+  "trigger_condition": "When image QA fails despite caption QA success, train perception before multimodal reasoning.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先补输入能力再训练下游组合。",
+  "abstract_trigger_condition": "When an upstream capability limits downstream learning, isolate its supervision first.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "用模态替换诊断构造前置训练阶段。",
+  "abstract_why_non_obvious": "caption优于image不单独识别视觉encoder因果故障。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76396#s1",
+   "object": "分阶段VLM后训练",
+   "information": "DOCCI细caption生成GT QA，基模image/caption答案过滤；后续数学GT",
+   "operation": "三阶段GRPO，比较相同步数merged",
+   "claimed_effect": "Qwen2.5视觉数学40.74→42.26、感知75.95→77.24；Qwen3总均64.67→65.77",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table2",
+    "quote": "I[Âimg ̸= A] ∧ I[Âcap = A]"
+   },
+   "failure_boundary": "caption包含答案信息且文本路径不同；诊断不等于裁图必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "strength": 2,
+   "how": "用caption/image差异分离感知数据再进行推理训练。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "merged/reverse order/perception SFT/stage ablations",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "7–8B范围，需精细caption，固定粗粒度三阶段。",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen2.5 merged视觉数学40.74，reverse顺序37.70；staged42.26。",
+  "load_bearing_assumption": "混合监督能同时学好感知和推理。",
+  "scope": "7–8B视觉QA三阶段后训练",
+  "success_criterion": "等步数merged、阶段顺序及perception训练对照",
+  "why_open": "感知与下游推理信号相互干扰。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3–4顺序/阶段消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq3与SFT对照的识别范围"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "D_{perc}:1[\\hat A_{img}\\ne A]\\land1[\\hat A_{cap}=A];R=r_{acc}+r_{format};\\hat A_i=(R_i-\\mu)/(\\sigma+\\epsilon)",
+    "locator": "Eqs3–6"
+   }
+  ],
+  "signal_routing": "每完整回答结果+格式reward→组标量advantage→GRPO生成token；caption仅离线生成/过滤，无crop动作信号。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS；改变数据次序而非保持目标等价证明。",
+  "baseline_or_potential": "GRPO组均值；无额外critic。",
+  "degenerate_cases": "全同reward组优势0；caption或image均错不保留，可能删掉最难例；纯文本先于感知也有效，非唯一顺序。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "等训练步数merged和交换顺序；stage1 RLVR对caption SFT，但任务/目标也变化，非纯优化器对照。",
+  "negative_results": [
+   {
+    "text": "Qwen2.5文本→感知→视觉数学42.91优于感知优先42.26；Qwen3 RWQA74.51低于merged75.56。",
+    "locator": "Tables2–3"
+   },
+   {
+    "text": "Qwen3 SFT与RLVR数学51.08/51.10几乎相同；Table12仅6.6–12.6%测试长度降幅，勿套用摘要20.8%。",
+    "locator": "Table4/Table12"
+   }
+  ],
+  "seeds": "Table11为3次独立evaluation runs；不是3个训练seed，无CI，作者noise/robustness措辞超出显著性检验。",
+  "falsifier": "控制perception阶段数据/输出目标后SFT同效，或caption过滤打乱仍同效。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/Qwen3VL8B",
+   "framework": "EasyR1",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8H200；maxresponse2048，后续测试可超过该训练长度；总walltime未读到。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当按能力分阶段训练时，以等步数merged及交换顺序检验，不把数据和目标变化归因给RL本身。"
+ }
+}

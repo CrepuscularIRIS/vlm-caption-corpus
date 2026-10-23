@@ -1,0 +1,56 @@
+{
+ "paper_key": "2610.07349",
+ "title": "RELACE: retrospective likelihood-based action credit estimation for long-horizon language agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2610.07349.txt",
+  "sections_read": [
+   "摘要/贡献",
+   "§3.1–3.4 Eq1–14",
+   "Table1–2",
+   "§5 结论与局限"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将执行动作在原上下文和终态增强上下文下的似然比用于回报加权，再做同观测状态组相对比较。",
+  "key_step": "焦点回报和局部组基线都使用同一加权、平滑后的量，合并轨迹优势与保护成功轨迹的局部优势。",
+  "why_non_obvious": "高hindsight似然可能只是原动作本来概率高；原上下文校正与基线一致加权改变信用。",
+  "trigger_condition": "终局奖励粗且局部组比较受后续决策影响时，引入已执行动作的回顾敏感度。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "单一结果信号混合整体成功和局部动作关联。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.07349#s1",
+   "object": "同观测状态动作组的回报",
+   "information": "训练时冻结行为策略、已执行动作、真实最终观测；终态不进部署或策略更新输入",
+   "operation": "长度归一化似然比→轨迹均值归一化与clip→加权回报→同组均值/std→与宏观优势相加",
+   "claimed_effect": "Table2 WebShop SR：RELACE79.43，hindsight-score weighting75.78，GiGPO73.83；focal-only60.94带星号，不能视为完全等预算终点比较。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 2",
+    "quote": "RELACE                           ρQ                                         ρQ                 79.43"
+   },
+   "failure_boundary": "回顾相关性不是因果贡献；观测匹配不保证同隐状态。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "把轨迹优势细分为动作级局部校正，但每个动作内仍广播同一标量。",
+   "strength": 2
+  },
+  {
+   "problem": "P09",
+   "how": "需要足够同观测状态样本，基线必须和焦点target使用一致统计量。",
+   "strength": 2
+  }
+ ]
+}

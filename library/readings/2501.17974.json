@@ -1,0 +1,59 @@
+{
+ "paper_key": "2501.17974",
+ "title": "Think Smarter not Harder: Adaptive Reasoning with Inference Aware Optimization",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2501.17974.txt",
+  "sections_read": [
+   "Abstract/introduction",
+   "§2 Eq1–3",
+   "§3 Eq6–8/Algorithm1",
+   "main MATH500 comparison table",
+   "§5 unsuccessful case",
+   "§6 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "将长短回答资源分配变成带长回答比例约束的batch线性/整数规划，再对选中正确回答做SFT投影。",
+  "why_non_obvious": "资源应分配给长回答相对短回答正确率提升最大的prompt，不是按长度统一扣分。",
+  "trigger_condition": "当已有策略能生成两类成本回答时，用组间收益差在有限batch预算下选择训练轨迹。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "当已有策略能生成两类成本回答时，用组间收益差在有限batch预算下选择训练轨迹。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2501.17974#s1",
+   "object": "长短推理响应的选择",
+   "information": "当前模型长/短组采样正确率和对reference的sample logratio",
+   "operation": "约束长组总质量≤q+，只选正确且empiricalKL合格回答，最大化rΔ=组正确率−另一组正确率；solver权重stopgrad后CE",
+   "claimed_effect": "MATH500 q+=50%得55.4、比基线+4.14pp，2.16x trials；75%得57.0、+5.74pp、4.32x。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "main comparison table (ASV-IuB rows)",
+    "quote": "q+ = 50%                     55.4      4.14         2.16x           with our (early-stopping) SV responses. It is “nested”\n   q+ = 75%                     57.0      5.74         4.32x           as each SV response is already an voting, as shown in"
+   },
+   "failure_boundary": "训练密度约束不保证测试预算；75%最终checkpoint几乎全长回答失去适应性。trial倍率不是总token倍率或固定max_turns。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "strength": 2,
+   "how": "将crop预算改写成跨prompt资源分配而非单条惩罚。"
+  },
+  {
+   "problem": "P26",
+   "strength": 2,
+   "how": "分配依据组间实际收益差，非难度自报。"
+  }
+ ],
+ "scientific_replication": false
+}

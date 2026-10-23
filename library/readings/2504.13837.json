@@ -1,0 +1,59 @@
+{
+ "paper_key": "2504.13837",
+ "title": "Does Reinforcement Learning Really Incentivize Reasoning Capacity in LLMs Beyond the Base Model?",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2504.13837.txt",
+  "sections_read": [
+   "Abstract local v5",
+   "§2.2–4.3 pp5–9",
+   "§7 pp12–13",
+   "AppA.2 estimator p19"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "用同zero-shot模板与有限大k pass@k、解题覆盖集合、人工CoT子集检查区分采样效率与覆盖范围。",
+  "why_non_obvious": "pass@1提升可伴随高k覆盖下降，不意味着原来不可解题变可解；但有限采样也不能证明绝对能力上界。",
+  "trigger_condition": "When pass@1 gains are interpreted as new reasoning capacity, compare matched-budget pass@k coverage and validate rare successes.",
+  "contribution_type": "RLVR能力诊断，不提出可直接落地的新训练机制",
+  "abstract_strategy": "分离平均利用效率与尾部可达覆盖",
+  "abstract_trigger_condition": "性能增益可能只是重分配已有解的概率时"
+ },
+ "signatures": [
+  {
+   "sig_id": "2504.13837#s1",
+   "object": "base与RLVR的有限采样可解题集合",
+   "information": "GT verifier，通常temp.6 top-p.95 max16384；base与RL同zero-shot模板，代码DeepCoder例32k。",
+   "operation": "比较pass@k直到128/1024与same-task覆盖，并人工检查低于5%成功率题的CoT。",
+   "claimed_effect": "Table2 AIME k1024：双方63.3%、仅base13.3%、仅RL0%；MATH500 k128：双方92.4%、仅base3.6%、仅RL1.0%。",
+   "conditions": [
+    "有限k的经验覆盖不是数学上界",
+    "视觉实验为Geometry3K→过滤选择题的MathVista/MathVision",
+    "oracle验对的pass@k非可部署答案选择"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p8",
+    "quote": "63.3%        92.4%"
+   },
+   "failure_boundary": "有限k未发现不等于概率零；perplexity低不能证明同推理机制；v5承认新交互/课程可突破当前设置。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "支持先测当前支持与pass@k覆盖，不能从pass@1提升推断创造新行为。",
+   "strength": 3
+  },
+  {
+   "problem": "P38",
+   "how": "multi-turn环境反馈是作者提出未来方向，未在该研究检验。",
+   "strength": 1
+  }
+ ],
+ "scientific_replication": false
+}

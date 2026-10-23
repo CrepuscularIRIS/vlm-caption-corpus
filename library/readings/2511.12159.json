@@ -1,0 +1,57 @@
+{
+ "paper_key": "2511.12159",
+ "title": "CriticSearch: Fine-Grained Credit Assignment for Search Agents via a Retrospective Critic",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.12159.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "2.2",
+   "3 Eqs4–10",
+   "Table2",
+   "Table4",
+   "7 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "冻结critic用GT与完整轨迹回顾判断每次search好坏，将非负turncredit按每trajectory正分总和归一，再与终局groupadv混合。",
+  "why_non_obvious": "训练可用hindsight privileged信息，但它是judge监督而非干预确定的search价值。",
+  "trigger_condition": "When sparse outcome rewards hide redundant searches, use a privileged retrospective critic to distribute turn-level credit.",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When sparse outcome rewards hide redundant searches, use a privileged retrospective critic to distribute turn-level credit."
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.12159#s1",
+   "object": "search agent policy",
+   "information": "GT答案、完整search轨迹/返回信息、冻结同scale instructcritic",
+   "operation": "binary good/bad→按trajectorysum归一→与groupmean/std终局adv线性混合",
+   "claimed_effect": "3B avgEM34.3 vsStepSearch29.6；7B38.4 vs36.2；Table4 noGT36.6/full38.4/sparse35.3。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Qwen2.5-7B",
+    "quote": "CriticSearch        44.2            56.0     42.8       50.1     19.4     28.1   47.2   59.2   38.4   48.4"
+   },
+   "failure_boundary": "7B MuSiQue19.4低于StepSearch22.6；Good信用非负且Bad为0，不保证bad动作负总adv；search任务与短horizon为主。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "直接turn级credit混合，可改造crop轨迹但需可靠critic。",
+   "strength": 3
+  },
+  {
+   "problem": "P30",
+   "how": "用回顾上下文识别重复无用调用。",
+   "strength": 2
+  }
+ ]
+}

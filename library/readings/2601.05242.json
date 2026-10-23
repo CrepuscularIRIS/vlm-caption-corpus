@@ -1,0 +1,171 @@
+{
+ "paper_key": "2601.05242",
+ "title": "GDPO: Group reward-Decoupled Normalization Policy Optimization for Multi-reward RL Optimization",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2601.05242.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "2–3 Eqs1–8",
+   "4 Tables1–5",
+   "6 Conclusion",
+   "AppendixC reward final formula",
+   "AppendicesD/E hyperparameters"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "各reward先独立组内mean/std再按权重相加，最后按batch response标准化；简单目标可condition于难目标。",
+  "why_non_obvious": "先sum会使不同奖励组合归一化后合并；独立标准化改变各通道的有效权重，但不能消除所有碰撞。",
+  "trigger_condition": "When heterogeneous rewards collapse after sum-then-normalize, normalize channels independently before aggregation.",
+  "contribution_type": "multi-reward advantage normalization",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When one aggregate statistic hides distinct objective signals, normalize each component before recombination.",
+  "abstract_key_step": "解耦奖励通道尺度，再在合成优势上统一batch尺度。",
+  "abstract_why_non_obvious": "权重须放在通道标准化后，否则正比例尺度可被消去；仍需处理目标难度差。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.05242#s1",
+   "object": "多reward rollout advantages",
+   "information": "GT toolcall格式/正确性，math长度/答案，code测试通过率/运行错误",
+   "operation": "per-channel groupstd→weighted sum→batch response std",
+   "claimed_effect": "BFCL1.5B平均accuracy32.81 vsGRPO30.18，format80.66 vs76.33；去std GRPO format0。",
+   "conditions": [
+    "tool calling5runs",
+    "math/code additional tasks"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "GDPO                              55.36%                      2.50%                   40.58%       32.81%             80.66%"
+   },
+   "failure_boundary": "不是保留所有reward向量信息；依然标量化，可互相抵消且无准确率硬保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "准确定位权重在std前后与归一化如何改变优化。",
+   "strength": 3
+  },
+  {
+   "problem": "P42",
+   "how": "caption质量/答案/成本多通道冲突可借鉴，但不是专门caption实验。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "sum-then-normalize GRPO",
+   "kind": "normalization baseline"
+  },
+  {
+   "name": "GRPO without std",
+   "kind": "ablation"
+  },
+  {
+   "name": "conditioned vs unconditioned length reward",
+   "kind": "reward ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "读者：独立标准化后仍sum为标量，无法保留所有reward向量；互补通道等权可抵消。",
+   "locator": "Eq4–6/3.1"
+  },
+  {
+   "text": "读者：condition只约束获得辅助奖励资格，不证明准确率优先的硬约束或Pareto最优。",
+   "locator": "Eq8/Table4"
+  },
+  {
+   "text": "读者：reward维度仍broadcast整条response，无局部caption/crop因果credit。",
+   "locator": "Eq3–7"
+  }
+ ],
+ "question": {
+  "observed_failure": "BFCL1.5B GRPO30.18/76.33 accuracy/format，去std29.26/0，GDPO32.81/80.66。",
+  "load_bearing_assumption": "同一合成分数的不同奖励构成应保持足够辨别力，而不让容易目标垄断。",
+  "scope": "multi-reward RL",
+  "success_criterion": "相同数据/训练下跨任务指标及约束更好且稳定",
+  "why_open": "独立标准化可增强稀有通道，也可能加噪或产生目标抵消。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2 normalization ablation/Table4 reward conditioning"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_k(i,j)=(r_k(i,j)-mean_{j=1..G}r_k(i,j))/std_{j=1..G}r_k(i,j); S(i,j)=sum_k w_k A_k(i,j)",
+    "locator": "Eqs4,5,7"
+   },
+   {
+    "latex": "A_final(i,j)=(S(i,j)-mean_{i in batch,j}S)/(std_{i in batch,j}S+epsilon)",
+    "locator": "Eq6"
+   },
+   {
+    "latex": "r_length=1[L<=4000]; r_cond_length=1[L<=4000]*1[r_correct=1]; r_tool_correct=6*Rmax/Smax-3",
+    "locator": "4.2/4.2.1/AppendixC"
+   }
+  ],
+  "signal_routing": "每个reward通道产生sequence advantage，合成后广播到response policy tokens，非按reward分配不同token mask。Eq3展示sequence平均内token平均；math/code§4.2明确采用DAPO token-mean，不能把示意Eq3当实际统一reduction。",
+  "normalization": "per-channel group mean+std；weights在该步骤后；最终全batch response-level mean+std（不是SPAE全batch token均值）。通道std的eps/zero处理实现未知；Fig2以0约定描述常数通道。",
+  "invariance": "非PBRS。正仿射变换单通道reward被组标准化消去（忽略eps），故原reward上的正λ可能失效；standardized advantage上的相对w可保留，所有w共同乘正常数又被最终batchstd抵消。更丰富离散advantage不是信息无损或策略不变保证。",
+  "baseline_or_potential": "各通道组均值；合成后batch均值；没有learned value或potential。",
+  "degenerate_cases": "所有通道在组内恒定时为0约定；p≈0/1稀有奖励std使少数样本更大，噪声亦放大。读者代数：r1=(1,1,0),r2=(0,0,1)互补且同std，等权A1+A2=0；与§3.1称非零的例子矛盾。单通道退化单通道组标准化+batchnorm。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "GRPO vs GDPO同超参；去std基线；长度reward条件化与权重扫；2/3reward coding。",
+  "negative_results": [
+   {
+    "text": "Table3 Qwen3 AMC GDPO84.3低于GRPO85.2，Minerva51.9低于52.4；不是逐指标一致提高。",
+    "locator": "Table3"
+   },
+   {
+    "text": "条件长度reward使7B AIME GDPO53.1→57.7，但Exceed0.2→12.3%；优先正确性的收益有预算代价。",
+    "locator": "Table4"
+   },
+   {
+    "text": "3reward Apps GDPOpass67.8低于GRPO68.1，Codeforces69.4低于69.5；bugratio更低但不意味着严格支配。",
+    "locator": "Table5"
+   }
+  ],
+  "seeds": "tool calling5runs；math/code每题16samples，独立训练seed数量未明确",
+  "falsifier": "读者：在caption/answer/crop成本实际reward分布中统计通道std与梯度，比较无std、后置权重和conditioned reward；若收益来自reward gating而非normalization须拆开归因。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5Instruct1.5B/3B; R1Distill1.5B/7B; Qwen3-4B",
+   "framework": "VeRL; token-mean DAPO for math/code",
+   "group_size": "tool4; math/code16",
+   "max_turns": null,
+   "kl": "tool control .001; math/code KL loss .0005 mse"
+  },
+  "cost": "tool4k samples100steps/G4/batch512/max1024；math40k500steps、code24k400steps/G16/max8000；evalmax32k",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当多奖励标准化前加权时，权重可能消失；先记录每个通道的尺度与活跃比例，再把权重放到标准化后的通道上并核目标冲突。"
+ }
+}

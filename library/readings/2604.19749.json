@@ -1,0 +1,149 @@
+{
+ "paper_key": "2604.19749",
+ "title": "The Tool-Overuse Illusion: Why Does LLM Prefer External Tools over Internal Knowledge?",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2604.19749.txt",
+  "sections_read": [
+   "Abstract",
+   "3 protocol/Table1",
+   "4 knowledge measurement/K-DPO",
+   "5/Table2",
+   "6 utility model",
+   "B limitations",
+   "C.1–2 objectives",
+   "E.1–2 settings/ablation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "identify_hidden_assumption",
+  "key_step": "分别测无工具能力与工具收益，随后用少调用正确轨迹偏好DPO或正确答案工具次数惩罚。",
+  "why_non_obvious": "高无工具正确率不等于模型会少用工具；最终正确性奖励无法表达效率，但平均少调用也不能保证准确率不降。",
+  "trigger_condition": "When tools are used despite sufficient internal capability, separate capability calibration from the training cost incentive.",
+  "contribution_type": "method",
+  "abstract_strategy": "identify_hidden_assumption",
+  "abstract_trigger_condition": "When tools are used despite sufficient internal capability, separate capability calibration from the training cost incentive.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "分别测无工具能力与工具收益，随后用少调用正确轨迹偏好DPO或正确答案工具次数惩罚。",
+  "abstract_why_non_obvious": "高无工具正确率不等于模型会少用工具；最终正确性奖励无法表达效率，但平均少调用也不能保证准确率不降。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.19749#s1",
+   "object": "工具增强数学训练",
+   "information": "答案GT、工具调用次数、同题1024次无工具采样",
+   "operation": "正确回答每调用扣.05，最多16轮；DAPO归一化更新",
+   "claimed_effect": "7B GSM92.34→92.44且calls2.2→.3，AIME24却40→35.83；平均calls约5.1→1.7",
+   "conditions": [
+    "Python interpreter",
+    "从RLVR checkpoint继续训练"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "treat this ideal as the ground truth (assigning a +1 reward).                                            + ♡BALANCED                                                92.44 0.3          35.83 2.3            24.17 2.5"
+   },
+   "failure_boundary": "“without sacrificing accuracy”不适用于所有基准或7B平均",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P02",
+   "how": "将过用拆为能力边界误判和成本缺失，且给出成本伤准确率反例。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Outcome-only DAPO and base no-tool/tool",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只研究代码解释器，外推搜索或crop未知。",
+   "quote": "First, our experiments focus exclusively on code-as-tool scenarios (Python interpreters) for mathematical reasoning. While",
+   "locator": "B"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen3-8B高知识区仍2.2次工具；7B balanced AIME24下降4.17点。",
+  "load_bearing_assumption": "无工具采样成功概率能近似内部能力，但必须同时测工具的增量收益。",
+  "scope": "代码解释器数学推理。",
+  "success_criterion": "等预算正确率与调用数的成对变化，不能只汇报调用下降。",
+  "why_open": "能力校准与奖励效率是两个可独立变化的来源。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=\\begin{cases}1-0.05\\min(N_{tool},16)&\\text{correct}\\\\-1&\\text{incorrect}\\end{cases}",
+    "locator": "reader transcription of §5.2; ideal minimal-call +1 wording ambiguous"
+   },
+   {
+    "latex": "\\hat A_i=(R_i-\\mathrm{mean}_jR_j)/\\mathrm{std}_jR_j",
+    "locator": "C.1 Eq10"
+   },
+   {
+    "latex": "\\Delta P>(\\lambda/R)\\Delta C",
+    "locator": "§6 Eq4 stylized utility model"
+   }
+  ],
+  "signal_routing": "实际DAPO是组mean+std，token ratio/clipping，全批token数分母；答案终局回报共享到生成token，工具返回token mask未明。动态采样式要求非全对/全错。K-DPO另用同题少/多工具轨迹偏好，DPO β.05；不是逐工具因果信用。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS，成本显式改目标。效用二动作阈值只描述给定真实ΔP/ΔC的最优选择，不证明现实策略已知这些量或训练保准确。",
+  "baseline_or_potential": "group mean；无势函数。",
+  "degenerate_cases": "[redacted: project-internal]"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 outcome-only vs balanced；E.2同时改变G和temperature，不能把结果单独归因group size。",
+  "negative_results": [
+   {
+    "text": "7B balanced平均准确率约−1.1点；Qwen3-8B K-DPO AIME24 43.33→33.33。",
+    "locator": "§5.2/Table2"
+   }
+  ],
+  "seeds": "DPO平均20/40/60三个checkpoint，非独立seed",
+  "falsifier": "若等正负支持与no-std下成本仍伤准确率，则不满足当前课题硬约束。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B/32B RLVR and Qwen3/ReTool K-DPO",
+   "framework": "verl DAPO / LLaMA-Factory DPO",
+   "group_size": 32,
+   "max_turns": null,
+   "kl": 0,
+   "max_tool_calls": 16
+  },
+  "cost": "7B64 Ascend910B约24h；DPO1epoch约6h。",
+  "pitfalls": [
+   {
+    "text": "正文balanced G32，默认hyperparam表G16；不能混作单一配置。",
+    "locator": "§5.2/Table3"
+   },
+   {
+    "text": "avg@1024不是精确最优工具阈值。",
+    "locator": "B"
+   }
+  ],
+  "code": null,
+  "lesson": "当减少工具调用时，同时报告各基准准确率变化并核成本经过std后的量级，不能以整体宣传替代负结果。"
+ }
+}

@@ -1,0 +1,60 @@
+{
+ "paper_key": "2406.19314",
+ "title": "LiveBench: A Challenging, Contamination-Limited LLM Benchmark",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2406.19314.txt",
+  "sections_read": [
+   "Abstract",
+   "2 overview",
+   "2.7 maintenance",
+   "3/Table1/evaluation aggregation",
+   "3.4 monthly updates",
+   "5 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "按时间更新问题并用客观答案评分，降低污染与judge偏差",
+  "key_step": "每月约替换1/6，延迟一个月公开新题，任务→类别→总体逐层平均",
+  "why_non_obvious": "公开题会迅速进入训练数据；动态题池可降污染但版本不同不能当完全相同测量",
+  "trigger_condition": "当静态公开benchmark暴露过久时，保留暂时私有题并定期刷新客观可判任务",
+  "contribution_type": "benchmark",
+  "abstract_strategy": "更新测量材料并固定可审计评分",
+  "abstract_trigger_condition": "当静态公开benchmark暴露过久时，保留暂时私有题并定期刷新客观可判任务"
+ },
+ "signatures": [
+  {
+   "sig_id": "2406.19314#s1",
+   "object": "动态文本能力评测",
+   "information": "近期竞赛/论文/新闻/数据与合成变体；客观GT",
+   "operation": "六类18任务，固定解析评分，每月更新，最新1/6暂私有",
+   "claimed_effect": "本文快照o1-preview overall64.7；两次更新排名相关均>0.997，但mean/median分约下降1.2%",
+   "conditions": [
+    "2025v2本地论文快照，非当前榜单",
+    "每任务均值→类别均值→六类均值"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 / §3.4",
+    "quote": "o1-preview-2024-09-12                  64.7       50.8         64.0         74.6         68.7     62.9      67.4"
+   },
+   "failure_boundary": "不证明完全无污染；公开更新后仍可能训练泄漏；客观评分覆盖不了开放审美/自由回答",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P47",
+   "how": "长期开发集反复使用应配锁定确认集，时间更新不能代替一次性测试纪律",
+   "strength": 2
+  },
+  {
+   "problem": "P49",
+   "how": "固定版本/解析规则/类别权重，防跨版本成绩误比",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false
+}

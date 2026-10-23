@@ -1,0 +1,198 @@
+{
+ "paper_key": "litscan:78274",
+ "title": "RTAF",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78274.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 pp3–5 Eqs1–3",
+   "§4 Tables1–6 pp5–8",
+   "§5 limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "低分辨率thumbnail负责定位，可要求升级全图；高分crop负责最终答题。RL加bbox与无工具正确奖励，训练按高低分辨率能力差异筛选。",
+  "why_non_obvious": "定位所需分辨率可远低于识别答案；无工具奖励需抵消bbox奖励否则直答天然少一项，但加倍又会过早停止。",
+  "trigger_condition": "When coarse context can localize fine evidence, allocate low resolution to region reasoning and high resolution only to requested evidence.",
+  "contribution_type": "低分定位/高分回答工具策略与奖励/数据配置",
+  "abstract_strategy": "按子任务信息需求分配感知分辨率",
+  "abstract_trigger_condition": "全图高分辨率成本大且问题信息空间局部化时",
+  "abstract_key_step": "分离定位与识别，保留升级全图的逃逸动作，并用分辨率敏感例训练。",
+  "abstract_why_non_obvious": "全图更清晰未必对定位有用，而仅降低分辨率会造成无方向猜框。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78274#s1",
+   "object": "Qwen2.5-VL7B thumbnail/crop/升级分辨率GRPO",
+   "information": "初始低分图与问题；请求后返回原图crop或较高分全图；训练QA与GT bbox，筛选用基座高低分各多次答题。",
+   "operation": "无额外SFT，8k分辨率筛选数据上GRPO；format+accuracy+bbox+正确且无工具奖励，crop与升级全图均可重复最多4turn。",
+   "claimed_effect": "VisCoT平均78.3/471视觉token，Ground-R1†77.8/847、base72.5/391；仅改RTAF为76.2/627，须奖励与数据补足。",
+   "conditions": [
+    "Ground-R1为作者复现且加bbox奖励",
+    "效率是视觉token proxy，不是实测walltime",
+    "bbox监督训练可得"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p7",
+    "quote": "+ Data      ✓        ✓             ✓              471     78.3"
+   },
+   "failure_boundary": "无全局参照的极小目标在thumbnail消失；纯RL依赖基座已有框选/请求能力；平均改善不等于各任务非劣。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P03",
+   "how": "正确且零工具奖励直接对应成功成本权衡，但补偿bbox奖励不是通用少调用目标。",
+   "strength": 3
+  },
+  {
+   "problem": "P05",
+   "how": "高低分辨率成对能力筛选，识别额外视觉信息价值。",
+   "strength": 3
+  },
+  {
+   "problem": "P32",
+   "how": "效率权重翻倍造成token大降/准确率下滑，直接显示权衡。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Ground-R1† reproduced with bbox reward",
+   "kind": "method"
+  },
+  {
+   "name": "RTAF only / +reward / +data",
+   "kind": "ablation"
+  },
+  {
+   "name": "2× no-tool reward",
+   "kind": "ablation"
+  },
+  {
+   "name": "Class1/2/3 data mixtures",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "极小目标没有显著参照物时thumbnail缺结构/上下文，定位失败；升级全图不是免费且上限4turn。",
+   "locator": "§5 p9"
+  },
+  {
+   "text": "原文说答对不论工具与否总reward相同，仅在工具分支bbox成功=1且format相同等条件成立；错误bbox、只升级分辨率、软ROUGE均可能破坏等价。",
+   "locator": "Eqs2–3 pp4–5 reader derivation"
+  },
+  {
+   "text": "正文没有GRPO具体loss/std/observation mask，rollout4/2分别对应两阶段，不能补造单一group或严格token路由。",
+   "locator": "§4.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "仅thumbnail流程降低token847→627却acc77.8→76.2；正确无工具奖励2倍后acc77.1→74.5。",
+  "load_bearing_assumption": "多数问题粗图足以定位相关区域，细节识别再看crop；基座能提出有效框且GT框是有用证据代理。",
+  "scope": "图像QA/GVR，两种获取视觉工具、最多4turn，Qwen2.5VL7B。",
+  "success_criterion": "在可比评测提高准确率与降低累计视觉token，并保留难题取证/直答。",
+  "why_open": "统一高分输入昂贵，过低分无方向猜框；单独工具过程奖励又不利直接答题。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§3.4三类分辨率对照数据"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table5 accuracy/视觉tokens/trajectory length一起报告"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table5效率reward从1倍到2倍"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_{eff}=\\mathbf1[R_{acc}=1\\land N_{tool}=0],\\quad R=R_{format}+R_{acc}+R_{bbox}+R_{eff}",
+    "locator": "Eqs2–3 p4"
+   },
+   {
+    "latex": "R_{bbox}=\\mathbf1[IoU(b,b^*)\\ge0.5],\\quad R_{acc}=EM\\ \\text{or}\\ (ROUGE_1+ROUGE_2+ROUGE_L)/3",
+    "locator": "§3.3 p4"
+   }
+  ],
+  "signal_routing": "四项合成rollout总reward用于GRPO；accuracy超turn/ctx为0。BBox多次调用如何聚合、bbox未输出取值、工具返回token mask及两阶段梯度分配未说明。无工具奖励在soft ROUGE仅精确达到1才触发。推理不见GT，训练数据筛选见高低分答题正确性。",
+  "normalization": null,
+  "invariance": "只声明GRPO，未给实际组归一化公式。若标准mean/std实现，成功内常数缩放可能抵消；此为条件推论不是已证实现。额外R_eff与bbox会改变偏好，非严格PBRS。",
+  "baseline_or_potential": "没有反事实必要性baseline；高低分辨率探测只用于数据选择。假定format1、acc1，直答无bbox+eff1与工具bbox1+eff0均得3，因而默认奖励不给这两者严格成本排序。",
+  "degenerate_cases": "所有正确且bbox成功/直答的同分组，标准GRPO A可能全0，无法继续学更少crop；两种工具中无bbox的分辨率升级不自动获bbox分。双错数据被丢，不能声称恢复全错题支持；加倍eff优待零调用可能过早停止。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table5 format+acc为76.2/627tokens/3.2trajectory；加bbox76.7/592/3.0；加eff77.1/553/2.5；2eff74.5/282/1.4。Table6 fixed8k Class1 2k+Class2 6k最好78.3/471。",
+  "negative_results": [
+   {
+    "text": "原基座Flickr30k64.3→55.3、TextCaps81.5→79.5、InfoVQA67.1→65.9；平均提升不等于保持全部任务。",
+    "locator": "Table1"
+   },
+   {
+    "text": "HR8K本法26772视觉token高于base16269；比较DeepEyes30999才减少，准确率69.5 vsbase62.7。",
+    "locator": "Table3"
+   },
+   {
+    "text": "过高eff直接损害准确率；原文称calibrated optimal只在有限消融内成立。",
+    "locator": "Table5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "按当前caption+crop的难度与必要性分层，同成功条件比较direct/crop分布；若效率下降只来自过早直答而难例准确率掉，则不可迁移该奖励权重。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-Instruct7B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 4,
+   "kl": 0.04
+  },
+  "cost": "8GPU类型未明，1000steps batch8 LR1e-6；两阶段rollout4/2，temperature1 response max512；无实测墙钟。输入边长>4096用1/16 resolution scale，1024–4096用1/9，否则1/4（原文scale口径未进一步统一）。",
+  "pitfalls": [
+   {
+    "text": "Table1累计平均视觉token471比base391多约20%；并非所有对照都节省。trajectory length不是独立实测tool数。",
+    "locator": "Tables1/5"
+   },
+   {
+    "text": "Class1高分独有正确2k+Class2 6k；丢双高低全对/全错，可能失去直答保留/难题探索数据。具体8次成功阈值没有定义。",
+    "locator": "§3.4/4.1"
+   },
+   {
+    "text": "论文结论写5.34%但摘要/主表78.3−72.5=5.8pp；记录表值。",
+    "locator": "§5/Table1"
+   }
+  ],
+  "code": null,
+  "lesson": "当grounding奖励偏向工具分支时，可检查成功直答是否缺一项奖励；补偿之后仍需单独测调用数与难例准确率，避免把更少视觉token当不掉点的必要性学习。"
+ }
+}

@@ -1,0 +1,63 @@
+{
+ "paper_key": "2505.03318",
+ "title": "Unified Multimodal Chain-of-Thought Reward Model through Reinforcement Fine-Tuning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.03318.txt",
+  "sections_read": [
+   "Abstract/contributions pp1/3",
+   "§3 pp4–8 Eq1/GRPO scoring",
+   "§4 Tables1–2 p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "GPT4o冷启动CoT，终局偏好正确的轨迹做rejection SFT，剩余错判题以format+preference accuracy GRPO训练多维打分CoT。",
+  "why_non_obvious": "训练的是reward judge自身的推理能力；多维score汇总可约束结论一致性，但终局对不保证各维事实对。",
+  "trigger_condition": "当统一视觉reward judge短推理易误判时，分阶段强化可检验最终偏好。",
+  "contribution_type": "multimodal reward model强化微调",
+  "abstract_strategy": "将评价者也视为可通过验证最终判定来训练的推理策略。",
+  "abstract_trigger_condition": "有偏好标签但缺大量推理过程标注。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.03318#s1",
+   "object": "UnifiedReward image/video preference judge",
+   "information": "视觉候选/回答对与任务文本；GT偏好只用于训练验证",
+   "operation": "5kCoT cold-start→correct rejection SFT→N8 GRPO，R=format1+final accuracy1",
+   "claimed_effect": "VLRewardBench整体73.8 vs基座67.5；去显式CoT73.1。GenAI image diff72.5 vs70.9，tie评估未提供。",
+   "conditions": [
+    "local v3 Oct29 2025",
+    "多阶段训练",
+    "pairwise correctness不等视觉过程正确"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p9",
+    "quote": "Ours                78.1        72.7             66.0            73.8              72.3"
+   },
+   "failure_boundary": "只能根据final偏好确认标签一致；不保证CoT忠实/各维度得分正确。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "可作为caption-grounding偏好judge候选，但须独立标注校验。"
+  },
+  {
+   "problem": "P44",
+   "strength": 3,
+   "how": "终局标签强化不能自动防过程reward hacking。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "固定judge的评价不是当前actor的工具增益。"
+  }
+ ],
+ "scientific_replication": false
+}

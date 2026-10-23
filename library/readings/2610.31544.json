@@ -1,0 +1,174 @@
+{
+ "paper_key": "2610.31544",
+ "title": "Same Luck, Different Choice: Twin-World Credit Assignment for Agentic Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2610.31544.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3–5",
+   "Tables1–3",
+   "6.6",
+   "Limitations",
+   "AppE Table6 (lead spotcheck)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把确定工具下rollout视为决策+外生噪声确定函数，用turn/line keyed Gumbel实现common-random-number twins；分支按方差/成本预算。",
+  "why_non_obvious": "独立反事实混入后续采样运气；共享噪声仍须每条trajectory边际精确采样。",
+  "trigger_condition": "When branch differences mix actions with sampling luck, couple downstream noise while preserving policy marginals.",
+  "contribution_type": "counterfactual turn credit",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "When a causal contrast is noisy, express rollouts as coupled simulations and apply common random numbers.",
+  "abstract_key_step": "shared keyed noise保留边际并降低差值方差。",
+  "abstract_why_non_obvious": "全局seed因长度错位失配，n-gram重用key破坏精确采样。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.31544#s1",
+   "object": "turn-level policy gradient credit",
+   "information": "actor factualrollout、fresh alternative、相同downstreamnoise、可replay工具",
+   "operation": "paired terminal utility差+HT分支校正→按turn广播",
+   "claimed_effect": "3B avgEM42.7 vsGRPO37.4/CRR40.3；相同1.7x tokens信用错符号6.9% vsCRR21.7%。",
+   "conditions": [
+    "SearchR1 deterministic retrieval",
+    "3seeds"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "T WICE         1.70×     152      6.9     0.23     0.72"
+   },
+   "failure_boundary": "wholeturn不能分开reasoning和actioncredit；低相关/长horizon无大幅variance收益。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "直接改turncredit而非整轨迹统一adv。",
+   "strength": 3
+  },
+  {
+   "problem": "P17",
+   "how": "反事实效果与后续采样噪声分离。",
+   "strength": 3
+  }
+ ],
+ "baselines": [
+  {
+   "name": "CRR independent counterfactual",
+   "kind": "same budget"
+  },
+  {
+   "name": "GRPO2x",
+   "kind": "compute baseline"
+  },
+  {
+   "name": "VinePPO",
+   "kind": "Monte Carlo branching"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "需要replay/cache；长continuation、高温降低coupling，binaryutility采样率结论不能直接扩gradedreward。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "turn级不区分reasoning/action；长数十次调用未测。",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "GRPO信用错符号31.8%，同预算CRR21.7而twins6.9%。",
+  "load_bearing_assumption": "共享外生噪声可削弱非决策因素而不改变rollout边际。",
+  "scope": "replayable agent turns",
+  "success_criterion": "相同token预算降低advantage误差并提高success",
+  "why_open": "coupling质量与真实工具可重复性限制收益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 coupling/allocation ablation"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table2 tokens/time"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "D_t=U-Uprime_t; q_t=clip(lambda*sqrt(eta_hat_t/c_t),qmin,1); Ahat_t=B_t*S_t*D_t/(q_t*qsame^e_t)",
+    "locator": "Eqs1–3"
+   },
+   {
+    "latex": "A_turn=(U-mean_groupU)/std_groupU + omega*Ahat_t/std_batch(nonzero twin credits)",
+    "locator": "Eq4"
+   },
+   {
+    "latex": "Var(D_t)=(1-rho_t)Var(D_ind); rho_t=2Cov(U,Uprime)/Var(D_ind)",
+    "locator": "Proposition2"
+   }
+  ],
+  "signal_routing": "factual turn所有policy tokens共享合成adv，retrieved tokens mask；twintokens只估credit不训练。alternative freshnoise，后续复用factual(turn,line,position)key；selftwin差0。",
+  "normalization": "episode mean+std组内；twin raw HT信用除全batch nonzero信用std，不减其均值；组/信用std为0时保护未给。β控制aux tokens，非reward λ。",
+  "invariance": "非PBRS。raw HT在正确边际/正分支概率/continuation前选择下无偏；clip/随机scale后的实际更新不直接获同保证。binary差值reversal概率prev≤Delta时才有O(Delta^-1)sign样本界。 rho可非正，方差降低还要求正相关，不能笼统保证每个twin更低方差。",
+  "baseline_or_potential": "alternative~current oldpolicy构成反事实Vbaseline，非冻结reader。",
+  "degenerate_cases": "selftwin0；同retrieveddocs只以.25继续并逆概率校正，不能直接丢；qmin=.05保支持；rho≈0无降方差；全twincredit0时std处理未知。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "samebudget independent twins/per-episode seed/no-line-resync；uniform/无HT；128rolloutoracle审1036decisions。",
+  "negative_results": [
+   {
+    "text": "independenttwins avg42.7→41.2；twin-only41.7低于混合，保留episode有用。",
+    "locator": "Table3"
+   },
+   {
+    "text": "n-gram keys错符号6.1优于6.9但违反exact marginal且EM42.4低于42.7，不以低方差替代正确性。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": "3",
+  "falsifier": "读者：保持边际采样与预算后若coupling只改变distribution而非方差，则理论归因失效。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B/7BInstruct",
+   "framework": "verl+vLLM keyed logits",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0.001,
+   "max_search_calls": 4
+  },
+  "cost": "8H100；400updates，256questions G5；β.7；1.70x tokens/152s vsGRPO96s",
+  "pitfalls": [
+   {
+    "text": "分配ct用alternative turn+factual remaining长度作为成本估计，预算匹配是proxy，不等于每个实际counterfactual严格同成本。",
+    "locator": "4.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当反事实分支共享随机数时必须按语义位置同步且key不重用，完整记录分支概率以校正。"
+ }
+}

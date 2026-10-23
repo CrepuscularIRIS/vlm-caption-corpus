@@ -1,0 +1,149 @@
+{
+ "paper_key": "2605.06761",
+ "title": "Weblica: Scalable and Reproducible Training Environments for Visual Web Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_html_extract",
+  "locator": "2605.06761.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3 environment construction",
+   "4 SFT and reward",
+   "5 Tables1–2/Fig4–5",
+   "6 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "construct_informative_experience",
+  "key_step": "用HTTP归一化缓存回放真实站点，并以技能、网站类别、风格因子生成可重置交互站点，供SFT→RL。",
+  "why_non_obvious": "稳定静态网页截图不够，必须保留交互及隔离网络后的任务可完成性；合成技能与外观多样性需要分别控制。",
+  "trigger_condition": "When live websites make RL slow and irreproducible, build resettable interactive replicas and verify replayed task completion.",
+  "contribution_type": "method",
+  "abstract_strategy": "construct_informative_experience",
+  "abstract_trigger_condition": "When live websites make RL slow and irreproducible, build resettable interactive replicas and verify replayed task completion.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "用HTTP归一化缓存回放真实站点，并以技能、网站类别、风格因子生成可重置交互站点，供SFT→RL。",
+  "abstract_why_non_obvious": "稳定静态网页截图不够，必须保留交互及隔离网络后的任务可完成性；合成技能与外观多样性需要分别控制。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.06761#s1",
+   "object": "视觉web agent训练环境和轨迹",
+   "information": "真实HTTP记录、截图、任务及LLM成功judge",
+   "operation": "缓存请求签名归一化+合成环境；成功轨迹SFT后在混合成功组RL",
+   "claimed_effect": "相同30步pass@1 live平均24.8→35.6；单环境动作约1.5s→50–150ms，端到端训练快30–40%。",
+   "conditions": [
+    "Qwen3VL8B",
+    "1280×720screenshots",
+    "3评估重复"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.2 Table1",
+    "quote": "from 24.8% to 35.6% average across the three live benchmarks"
+   },
+   "failure_boundary": "pass@k是oracle任一次成功，不是部署可选出正确一次；judge88%一致率仍有误差。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P59",
+   "how": "固定可重置视觉环境用于隔离策略与环境变化，并明确缓存状态覆盖边界。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "先成功轨迹SFT再RL，小模型更依赖初始化。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen3VL base; Fara7B; MolmoWeb8B",
+   "kind": "model"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "缓存只是部分静态视图，合成仍有sim-to-real gap。",
+   "quote": "Cached environments provide a narrow and partial view of live websites.",
+   "locator": "§6"
+  }
+ ],
+ "question": {
+  "observed_failure": "base live pass@1 24.8，训练后35.6；缓存-only OM2W35.3低于synth39.2。",
+  "load_bearing_assumption": "可重播的交互覆盖能迁到真实web技能，成功筛选不丢掉关键恢复分布。",
+  "scope": "固定任务目标的视觉网页导航。",
+  "success_criterion": "统一action预算和真实环境评测，同时报环境速度与任务成功。",
+  "why_open": "live网页延迟/漂移妨碍可重复RL，纯离线截图不能交互。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4.2 SFT warm-start"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "GPT4o看任务、动作、结果截图判成功；成功轨迹供SFT，RL称Dr.GRPO并oversample保mixed-success组。已读HTML无loss/token mask/归一化展开，不从方法名补std或分母。策略每步reasoning+action入历史；观测是真实执行后截图和URL，stop可终止。",
+  "normalization": "other",
+  "invariance": "无PBRS式或守恒保证；HTTP忽略volatile参数是环境缓存规则，不能与reward归一化混淆。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "全对/全错组被过滤，不能学习零支持；未覆盖状态的缓存请求可能失配；合成静态localStorage不能复制任意backend。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "cache-only vs synth-only；Base→RL vsSFT→RL；UIgrounding前后。",
+  "negative_results": [
+   {
+    "text": "混合cache/synth多种比例未进一步改善；cache在DeepShop35.8略胜synth34.2。",
+    "locator": "§5.4"
+   },
+   {
+    "text": "judge与人评仅88%一致；结果不能视作逐任务无误验证。",
+    "locator": "§4.1"
+   }
+  ],
+  "seeds": "评估3次，训练seed未给",
+  "falsifier": "保持任务/数据量相同后合成多样性不提高真实web表现，或效果仅是评测judge偏差，则迁移不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VL Instruct2B/4B/8B",
+   "framework": "Playwright; RL标为Dr.GRPO，附录配置未提供在缓存中",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "max_action_steps": 30
+  },
+  "cost": "51.7KSFT轨迹，RL从cache/synth各抽10K任务；环境训练2560站44227任务、验证250站500任务。GPU时长未知。",
+  "pitfalls": [
+   {
+    "text": "HTTP volatile参数误删可能合并语义不同请求，必须断网任务回放验收。",
+    "locator": "§3.2"
+   },
+   {
+    "text": "能力来自OM2W轨迹分析，评测技能被用于设计环境；不等于同任务泄漏，但非完全无benchmark先验。",
+    "locator": "§3.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当仿真替代真实环境时，应把请求覆盖、状态复位和任务成功验证作为环境契约，并用真实环境检查迁移。"
+ }
+}

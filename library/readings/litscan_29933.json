@@ -1,0 +1,63 @@
+{
+ "paper_key": "litscan:29933",
+ "title": "TVM",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_29933.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 diagnosis/Table1",
+   "§4.1 Eq5–7/Fig4",
+   "Table2",
+   "§6 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "按完全相同token前缀聚合预采完整路径，用该前缀下正确路径比例监督每token value。",
+  "why_non_obvious": "避免把错误步骤里尚可恢复的早期token都标错；却依赖实际共享前缀数，后段常退化单条终答标签。",
+  "trigger_condition": "当step级标签过粗误剪好前缀时，在现有完整样本中按token-prefix计数估值。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "当step级标签过粗误剪好前缀时，在现有完整样本中按token-prefix计数估值。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:29933#s1",
+   "object": "数学推理token value",
+   "information": "训练query的N条完整轨迹和终答GT，exact-prefix相同计数；测试不见GT",
+   "operation": "label(prefix)=count(correct and prefix)/count(prefix)；ΣpathΣtoken MSE(value,label)，用于beam/REBASE评分而非policy RL",
+   "claimed_effect": "GSM8K step-beam TVM Mistral7B87.69±.22、MetaMath88.70±.16、Llama3-8B89.06±.07、其MetaMath90.35±.19。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 step-by-step beam search TVM",
+    "quote": "TVM (Ours)         87.69±0.22        88.70±0.16         89.06±0.07      90.35±0.19"
+   },
+   "failure_boundary": "有限样本label不是精确真实V；非共享后缀支持数1时退化outcome标签；无证明当前actor外推校准。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "token级value监督区分step内误差。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "前缀价值是采样policy条件成功率，不是工具动作效用。"
+  },
+  {
+   "problem": "P35",
+   "strength": 2,
+   "how": "低false-negative value可减少搜索提前剪枝。"
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,186 @@
+{
+ "paper_key": "2606.05784",
+ "title": "TAPO: Tool-Aware Policy Optimization via Credit Transfer for Multimodal Search Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.05784.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–3",
+   "§3 Eqs1–4 pp3–5",
+   "Tables1–3/Figs4–6 pp6–8",
+   "AppB pp11–12"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "用同题成功轨迹相似工具参数群作reference，按相似度×成功轨迹覆盖率转移正优势，失败步骤纠正后仍≤0。",
+  "why_non_obvious": "不新增采样，以工具参数复用信号；但参数等价未必等于历史条件价值等价。",
+  "trigger_condition": "When useful tool actions occur in failed trajectories, attenuate their negative credit using matched successful in-batch witnesses.",
+  "contribution_type": "batch内工具优势转移",
+  "abstract_strategy": "利用可比动作复用成功信用",
+  "abstract_trigger_condition": "多条同题轨迹包含参数相近的信息获取动作",
+  "abstract_key_step": "相似度和覆盖率门控，再对负优势保守补偿",
+  "abstract_why_non_obvious": "成功共现是相关证据而非同状态干预。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.05784#s1",
+   "object": "Qwen3-VL4B/8B搜索RL",
+   "information": "同题G8 rollout、GT/32B答案judge、工具参数；无新增counterfactual rollout",
+   "operation": "A'jk=min(Aj+β sim*support*mean(A_success),0)，仅通过阈值的失败工具步",
+   "claimed_effect": "4B GRPO平均56.27→59.55(β.25)；8B SAPO62.48→65.21；额外CPU处理.06%训练时间。",
+   "conditions": [
+    "zoomIoU≥.7,αmin.5;textsim≥.8,αmin.5",
+    "image相同输入support1",
+    "β sweep最佳.8"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p7 GRPO+TAPO MMSearch/HR/FVQA/Simple/Live/MAT/Info/Avg",
+    "quote": "+TAPO          54.97        33.11              65.56            68.31          54.05        82.00        58.85       59.55"
+   },
+   "failure_boundary": "全错无reference；无证明降低调用，反而保留更多搜索；参数等价不能排除重复已知信息",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "整轨迹失败负优势改成工具步局部信用。"
+  },
+  {
+   "problem": "P18",
+   "strength": 3,
+   "how": "必要但失败的工具动作不应一律惩罚。"
+  },
+  {
+   "problem": "P68",
+   "strength": 2,
+   "how": "低成本credit路由近邻但无无工具必要性对照。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "GSPO",
+   "kind": "method"
+  },
+  {
+   "name": "SAPO",
+   "kind": "method"
+  },
+  {
+   "name": "TAPO without support/clamp",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "参数确定性是作者假设，尤其crop同bbox在不同历史下可能已知/重复，成功共现不等于正因果作用。",
+   "locator": "Assumption1 reader qualification"
+  },
+  {
+   "text": "Eq1先定义Q=E[R|o]随后用E[normalized A|o]分解，量纲不一致；单失败样本A也不是失败条件期望，所写bias等式需额外条件。",
+   "locator": "§3.2 reader analysis"
+  },
+  {
+   "text": "正文称跨算法提高4–6个百分点，但Table2实际3.28/2.72/2.71pp；4–6是相对百分比。Table1 baseline62.48而正文62.64，按表记录。",
+   "locator": "Tables1–2/§4"
+  }
+ ],
+ "question": {
+  "observed_failure": "θ≈.5时超过半数失败轨迹/动作有成功相似匹配；这是可匹配率非已证miscredit率。",
+  "load_bearing_assumption": "工具参数而非上下文决定信息价值",
+  "scope": "同题同工具type，image/text/zoom",
+  "success_criterion": "matched算法准确率、熵及信用改动，不把工具增加当效率",
+  "why_open": "序列adv不能区分局部有用失败步骤。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Fig2失败动作/轨迹匹配统计"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3去support和clamp"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "AppB.5 CPU成本"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_j=(R_j-\\mu)/(\\sigma+\\epsilon),\\quad R=r_{acc}+r_{format}",
+    "locator": "§3.1/AppB2"
+   },
+   {
+    "latex": "F(o,C)=sim(o,C)\\,\\frac{n(C)}{G^+}\\,\\frac{1}{|C|}\\sum_{o_i\\in C}A_i,\\quad A'_{jk}=\\min(A_j+\\beta F,0)",
+    "locator": "Eqs3–4"
+   }
+  ],
+  "signal_routing": "o_k定义为reasoning+tool-use token segment，匹配按其中tool参数；失败该step的优势被替换，其余及final answer保留序列adv。工具返回r_k另分段，是否完整mask和具体loss分母未明示；不擅自说只tool JSON token。成功reference先组mean/std后转移，无二次std说明。",
+  "normalization": "mean+std",
+  "invariance": "不是PBRS；β在adv标准化后作用，一般不被原std消去。基础reward共同正affine变换在eps忽略时A不变。reference按steps平均可能重复计算同成功轨迹，support则按唯一成功轨迹。",
+  "baseline_or_potential": "成功matched动作均adv非同状态action baseline，也非真实counterfactual。",
+  "degenerate_cases": "[redacted: project-internal]"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "β1去support AVG59.71→55.00低于GRPO56.27；去clamp59.07并熵发散；重要的是门控非纯加正adv。",
+  "negative_results": [
+   {
+    "text": "去support反而低于GRPO；β.8最佳61.18，β1回落59.71。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": "评测3独立runs；独立训练seeds未说明",
+  "falsifier": "相同bbox已看过/未看过分层或真正同状态no-tool对照；若匹配信用奖励冗余重复则参数等价假设失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL8B-Instruct主/4B消融",
+   "framework": "VeRL",
+   "group_size": 8,
+   "max_turns": 10,
+   "kl": null
+  },
+  "cost": "3859题、batch128,LR1e-6；每轮8192/总32768；无新增SFT；匹配CPU<1s/step=.06%；训练本地WikiRAG评测Serper。",
+  "pitfalls": [
+   {
+    "text": "文本相似度为.3Jaccard+.5overlap+.2bigram，非语义embedding。",
+    "locator": "AppB.3"
+   },
+   {
+    "text": "同image输入使反搜support近1，比crop更易通过门。",
+    "locator": "AppB.3"
+   }
+  ],
+  "code": null,
+  "lesson": "同batch动作复用前应验证历史条件可比，并分开报告匹配覆盖率、因果必要性与真实成本。"
+ }
+}

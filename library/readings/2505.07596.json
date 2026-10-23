@@ -1,0 +1,65 @@
+{
+ "paper_key": "2505.07596",
+ "title": "Reinforced Internal-External Knowledge Synergistic Reasoning for Efficient Adaptive Search Agent",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.07596.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§2–3 pp3–5 Eq2–4",
+   "Tables1–2 pp6/8",
+   "§7 limits p9",
+   "AppD settings p14"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "成功奖励额外偏好少搜索，失败但搜索给小正奖励；用probe至少一答对vs全错数据1:1混合GRPO。",
+  "why_non_obvious": "只奖少搜会错误泛化不搜；失败搜索小正奖励维持探索，但不是真实信息增益。",
+  "trigger_condition": "当search agent过度检索或仅学直答时，分别处理成功效率与失败探索且平衡题难。",
+  "contribution_type": "reward/data双向搜索边界塑形",
+  "abstract_strategy": "对结果分支设计不同代价激励，并维持数据分布两侧。",
+  "abstract_trigger_condition": "单向效率惩罚会破坏必要外部证据获取。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.07596#s1",
+   "object": "Qwen2.5-3B-Instruct检索agent",
+   "information": "终局EM、有效检索次数，base knowledge probe分桶",
+   "operation": "成功1+.6(1−RT/3)，失败RT>0给.05/RT0给0，格式错−1；G16 mean/std",
+   "claimed_effect": "Table2 full EM48.41/RT1.07，去全部kb项48.56/1.86；去失败搜索bonus43.17/.89。",
+   "conditions": [
+    "NQ/Hotpot每类4000easy+4000hard",
+    "3B总体平均",
+    "降低调用并非全部子集非劣"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p8",
+    "quote": "IKEA w/o rkb (EM)                                                                          71.09       34.57                                       76.37               32.23      70.12        25.59                                                       53.32               25.20          48.56"
+   },
+   "failure_boundary": "基于终局错不等于缺知识，bonus可能奖无用搜索；全错组标准化可放大小bonus。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P03",
+   "strength": 3,
+   "how": "失败不罚而且给搜索小正奖励，是探索偏置的直接例子。"
+  },
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "全错组0/.05两档经std可能抵消.05绝对量。"
+  },
+  {
+   "problem": "P65",
+   "strength": 3,
+   "how": "probe定义easy/hard并1:1平衡，但标签随政策能力变化。"
+  }
+ ],
+ "scientific_replication": false
+}

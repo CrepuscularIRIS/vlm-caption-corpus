@@ -1,0 +1,58 @@
+{
+ "paper_key": "2402.14740",
+ "title": "Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2402.14740.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2.2–2.3",
+   "§3.2–3.3",
+   "§4 evaluation protocol",
+   "§5/Table 1/Figure 6",
+   "§7 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以完整响应为bandit动作，用其他同题样本均值作leave-one-out baseline。",
+  "key_step": "k个独立响应全参与更新，各自仅扣其他k−1个奖励均值。",
+  "why_non_obvious": "无需critic或丢弃低排名样本；排除自身保证baseline不依赖该采样动作。",
+  "trigger_condition": "当reward只在完整响应结束时给出且初始化强时，使用多样本REINFORCE替代复杂actor-critic。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "assumption_audit_and_pivot：用强初始化和完整响应反馈重新检查critic、clip等组件的必要性。",
+  "abstract_trigger_condition": "多次采样比额外value network便宜且末端反馈为主时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2402.14740#s1",
+   "object": "RLHF完整生成",
+   "information": "同题k个独立样本及KL-shaped reward",
+   "operation": "REINFORCE leave-one-out训练",
+   "claimed_effect": "k4的GPT-4模拟win rates：TL;DR 77.9、HH Pythia43.7、HH Llama64.1；PPO为67.6/29.2/32.0。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5/Table 1，列TL;DR/HH(Pythia)/HH(Llama)",
+    "quote": "RLOO (k=4)                                  77.9          43.7                   64.1"
+   },
+   "failure_boundary": "checkpoint按最高test reward挑选；LLM judge非人工gold；模型与训练设置限定。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P09",
+   "how": "直接可用的mean-only LOO参照，能区分std引入的权重变化。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "完整序列A仍广播全部生成token，LOO本身不解决动作必要性。",
+   "strength": 2
+  }
+ ]
+}

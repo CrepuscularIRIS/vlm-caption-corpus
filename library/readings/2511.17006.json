@@ -1,0 +1,164 @@
+{
+ "paper_key": "2511.17006",
+ "title": "Budget-Aware Tool Use Enables Effective Agent Scaling",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.17006.txt",
+  "sections_read": [
+   "Abstract",
+   "2 cost metric",
+   "3 budget tracker",
+   "4 BATS",
+   "Tables2–4",
+   "5.3 ablations",
+   "AppendixG limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "adapt_via_conditioning",
+  "key_step": "每轮提供各工具已用/剩余budget，BATS维护搜索计划树与逐约束验证，按budget决定continue/pivot及新尝试。",
+  "why_non_obvious": "同预算不等于同实际成本；工具budget显示改变策略，验证成功后继续尝试可胜过早停。",
+  "trigger_condition": "When agents ignore available resources, condition planning and verification on explicit per-tool budgets.",
+  "contribution_type": "inference orchestration",
+  "abstract_strategy": "adapt_via_conditioning",
+  "abstract_trigger_condition": "When task resource constraints vary, represent them explicitly as a conditioning state for the same policy.",
+  "abstract_key_step": "动态budget状态进入reasoning与verification上下文。",
+  "abstract_why_non_obvious": "状态包含可变资源约束而非单纯改输出格式。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.17006#s1",
+   "object": "web search agent budget state",
+   "information": "search/browse剩余量、计划历史、query constraints",
+   "operation": "tracker加树状plan、success/continue/pivot verification和候选答案选择",
+   "claimed_effect": "Gemini2.5Pro BrowseComp ReAct12.6→BATS24.6；BC-ZH31.5→46.0；HLE20.5→27.0。",
+   "conditions": [
+    "budget100 per tool",
+    "training-free"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "24.6                  46.0          27.0"
+   },
+   "failure_boundary": "目标是预算内更强，不是必然减少tool calls；verifier自评不是正确性保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "直接把剩余预算给策略并控制继续/停止，但不学习真实必要性。",
+   "strength": 3
+  },
+  {
+   "problem": "P30",
+   "how": "保存失败/完成计划避免重复低收益查询。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "ReAct",
+   "kind": "agent"
+  },
+  {
+   "name": "SLIM",
+   "kind": "orchestrator"
+  },
+  {
+   "name": "parallel majority vote",
+   "kind": "scaling"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "实际同时受token、latency、tool预算约束，本文未联合优化。",
+   "locator": "AppendixG"
+  },
+  {
+   "text": "models可能低估资源消耗；论文未解决最优分配。",
+   "locator": "AppendixG"
+  },
+  {
+   "text": "API/tool成本限制重复实验规模。",
+   "locator": "AppendixG"
+  }
+ ],
+ "question": {
+  "observed_failure": "ReAct budget100 accuracy12.6，BT budget10达12.8且成本9.9¢→6.8¢。",
+  "load_bearing_assumption": "策略没有显式资源状态会提前停止或无效探索。",
+  "scope": "web-search预算条件推理",
+  "success_criterion": "核同budget与同actualcost两条curve",
+  "why_open": "增预算本身不保证模型使用或正确分配。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Eq2 cost; Table2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "C_unified=c_token+sum_i calls_i*price_i",
+    "locator": "Eq2"
+   }
+  ],
+  "signal_routing": "budget block与plan/verification summary作为推理条件；没有policy训练reward或advantage。验证逐条件分satisfied/contradicted/unverifiable，驱动continue/pivot，完整BATS可继续新尝试并judge选答案。",
+  "normalization": "other: token/tool折算同货币；cached/input/output价格分列；无advantage标准化。",
+  "invariance": "非reward shaping/PBRS；预算条件改变inference policy行为，价格权重改变cost-frontier。",
+  "baseline_or_potential": "无valuebaseline；verification是LLM内部判断。",
+  "degenerate_cases": "budget0无法继续tool；全候选verification误判时可能早停错或继续浪费；有限candidate A为空回last answer（该algorithm未详细读，具体回退不作复现保证）。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "BT低预算与ReAct高预算；BATS去planning/verification；early-stop与完整continuation。",
+  "negative_results": [
+   {
+    "text": "early-stop BATS18.7低于完整24.6；去verification15.4，去两者14.6。",
+    "locator": "Tables3–4"
+   },
+   {
+    "text": "相同budget10下BT成本6.8¢高于ReAct5.2¢，并非恒省成本。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "Table1 averaged3 independent runs; other repetitions limited/unknown",
+  "falsifier": "读者：同实际总成本下随机budget提示或隐藏预算计数对照，若收益不稳定则不能归因预算表示。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Gemini2.5 Pro/Flash; ClaudeSonnet4",
+   "framework": "training-free ReAct+BATS",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "按token+tool实际费用；search/browse每种100预算主比较。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当比较工具效率时，既报授予预算也报实际calls与token费用；区分首次成功早停和用余量重试。"
+ }
+}

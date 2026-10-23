@@ -1,0 +1,61 @@
+{
+ "paper_key": "2402.03300",
+ "title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2402.03300.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§4.1–4.2/Equations 3–4/Algorithm 1/Table 5",
+   "§5.2/Figures 5–7 descriptions",
+   "§6 opening"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用同题多响应的相对奖励替代独立value model，并区分结果与过程监督。",
+  "key_step": "组内mean/std得到优势，直接KL loss正则；过程版累加当前token之后的标准化步骤奖励。",
+  "why_non_obvious": "无critic省资源但group-relative尺度和全token广播仍实质决定信用。",
+  "trigger_condition": "当同题可采多个候选且critic昂贵时，用组比较构造优势。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "architectural_operator_substitution：以同题组相对统计替代单独value model。",
+  "abstract_trigger_condition": "存在可比较的同条件样本、绝对奖励尺度不稳定时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2402.03300#s1",
+   "object": "DeepSeekMath-Instruct 7B",
+   "information": "144k数学SFT问题及reward model",
+   "operation": "GRPO训练、同题采64输出",
+   "claimed_effect": "CoT MATH从46.8%到51.7%，GSM8K从82.9%到88.2%。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2/Table 5 CoT block；列size/GSM8K/MATH/CMATH/GaokaoMathCloze",
+    "quote": "DeepSeekMath-RL       7B          88.2%    51.7%       79.6%      88.8%"
+   },
+   "failure_boundary": "同时依赖强预训练/SFT/奖励模型；不能归因于单独去critic或std。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "原始outcome GRPO明确所有输出token共享A，直接定位现有信用广播。",
+   "strength": 3
+  },
+  {
+   "problem": "P09",
+   "how": "组std与baseline共同改权重，需分别干预。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "Pass@K未改善的实验限制支持集扩张主张。",
+   "strength": 2
+  }
+ ]
+}

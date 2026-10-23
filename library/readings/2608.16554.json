@@ -1,0 +1,195 @@
+{
+ "paper_key": "2608.16554",
+ "title": "Ask, Condition or Abstain: Reinforcement Learning for Missing-Premise Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.16554.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3–4 Eqs1–2 pp2–4",
+   "Tables1–5 pp5–6",
+   "Limitations p8",
+   "AppE/Tables9–10 pp14–15"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "从可解题推理DAG删关键前提，标注具体gap；混合30%缺前提题，以五类终端行为reward训练PPO。",
+  "why_non_obvious": "目标不是只拒答，而是优先澄清/条件表达；需要gap定位而非随机污染。",
+  "trigger_condition": "When problems lack a premise, synthesize localized gaps and reward informative clarification or conditional answers.",
+  "contribution_type": "缺前提轨迹数据与行为reward",
+  "abstract_strategy": "破坏关键依赖生成可定位的不确定案例",
+  "abstract_trigger_condition": "原题解链可靠且缺前提可人工/模型验证",
+  "abstract_key_step": "分开SH/assumption/abstain/condition/elicit等级",
+  "abstract_why_non_obvious": "该偏好层级不是校准概率或下游交互效用。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.16554#s1",
+   "object": "Qwen3-8B/14B与Llama3.1-8B单轮推理",
+   "information": "120K从DeepScaleR合成缺前提题和gap annotation；GPT-based行为judge",
+   "operation": "Qwen先SFT，70%answerable/30%缺前提PPO；reward elicit1,condition.6,abstain.3,explicitassumption−.3,hallucinate−1",
+   "claimed_effect": "8B MPB51.73 vsIDK48.72/PPO8.66；GSM91.50低于PPO93.85，AIME64.16低于64.58。",
+   "conditions": [
+    "MPB274人工核缺前提",
+    "同rubric训练与评测",
+    "asking为终端文本"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p6 Qwen3-8B ACA MPB/UMWP/SUM/GSM/MATH/AIME",
+    "quote": "51.73              51.50     46.91"
+   },
+   "failure_boundary": "不实际获取缺失前提或训练多轮工具；分数提升不是必要性校准",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "strength": 3,
+   "how": "区分拒答、条件答与请求信息，不只输出猜测。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "用定向合成与SFT先引入行为再RL。"
+  },
+  {
+   "problem": "P37",
+   "strength": 2,
+   "how": "缺前提样本过滤不能误判仍可解题。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "ColdstartSFT",
+   "kind": "method"
+  },
+  {
+   "name": "answerable VanillaPPO",
+   "kind": "method"
+  },
+  {
+   "name": "IDK-RL同synthetic data",
+   "kind": "method"
+  },
+  {
+   "name": "Treecut/SUM data",
+   "kind": "method"
+  },
+  {
+   "name": "10/30/50%mixture",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "ActiveElicitation只是单轮文本，无工具/后续用户反馈/完成率。",
+   "locator": "Limitations p8"
+  },
+  {
+   "text": "训练和MPB同taxonomy，分数是rubric偏好而非校准；外部UMWP/SUM仍用同BehaviorScore。",
+   "locator": "§5.1/Limitations"
+  },
+  {
+   "text": "合成逻辑缺口未覆盖真实语义歧义；人工judge一致性仅抽样95/98%未给样本量，非通用独立gold。",
+   "locator": "AppE.4"
+  }
+ ],
+ "question": {
+  "observed_failure": "8B answer-onlyPPO MPB8.66比SFT22.81更差；IDK48.72仍低于ACA51.73。",
+  "load_bearing_assumption": "删掉的premise确为唯一解必要且judge识别正确gap和有用行为",
+  "scope": "数学逻辑文字缺前提单轮",
+  "success_criterion": "独立题的behavior与正常答题性能共同报告",
+  "why_open": "正确答案RL对不可解输入缺目标定义。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Fig5冷启动SFT消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables3–4数据源/比例"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "五行为分区"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_{ACA}(\\tau)=V(Behav(\\tau)),\\quad V(Elicit,Cond,Abs,EA,SH)=(1,.6,.3,-.3,-1)",
+    "locator": "Eq1"
+   },
+   {
+    "latex": "J=E_{s'\\sim D_{ACA},\\tau\\sim\\pi_\\theta}V(Behav(\\tau))",
+    "locator": "Eq2"
+   }
+  ],
+  "signal_routing": "GPT-based judge给整条终端行为类reward；PPO GAE λ1 γ1，非组GRPO；critic学习。具体adv whitening、长度分母和prompt/response mask未列，不从veRL默认补。训练judge确切版本未指定，评测GPT5。",
+  "normalization": null,
+  "invariance": "非PBRS，是明确改任务偏好；reward与BehaviorScore0/25/50/75/100不是同一线性比例（reward间隔不等）。没有因果crop/read信息增益；如果GAE白化，reward尺度可能变化但本文未知。",
+  "baseline_or_potential": "critic baseline；gap标注来自synthetic DAG，不是policy反事实。",
+  "degenerate_cases": "只训练缺前提时总问可高reward，混合answerable约束但仍有normalaccuracy损失；无合适澄清时abstain被较低reward，不能默认问一定更好。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "10K/100steps mixture50% MPB53.19但GSM82.10/AIME52.56，30%43.79/90.14/60.83，10%28.28/92.49/63.33；相同data下IDK对比更有辨别力。",
+  "negative_results": [
+   {
+    "text": "8B SciBench53.7低于PPO56；14BGSM90.60低于94.84；非严格能力保持。",
+    "locator": "Tables1–2"
+   },
+   {
+    "text": "50%缺前提进一步损伤正常答题；没有multi-turn clarification完成率。",
+    "locator": "Table4/Limitations"
+   }
+  ],
+  "seeds": "AIME8次推理平均，独立训练seed数未知",
+  "falsifier": "保留同rubric但加入可解相似题与独立人工问句有效性/澄清后成功；若仅增加通用询问则不是定位信息缺口。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-8/14B ColdSFT;Llama3.1-8B Instruct",
+   "framework": "veRL/vLLM PPO",
+   "group_size": null,
+   "max_turns": 1,
+   "kl": 0
+  },
+  "cost": "4nodes×8GPU,400steps,batch512,mini128,actor/criticLR1e-6,clip.2,entropy0,maxresponse14000,temp/topP1；GPU型号/时间未知。",
+  "pitfalls": [
+   {
+    "text": "Qwen有额外SFT而Llama没有，跨模型结果非只RL方法差。",
+    "locator": "AppE.1"
+   },
+   {
+    "text": "LLMfilter556人工验证acc93/precision94.4/recall91.4，仍会混入错误不可解标签。",
+    "locator": "§3"
+   }
+  ],
+  "code": null,
+  "lesson": "以可定位缺口而非泛拒答构造数据，同时测可解题误拒与澄清后效果；共享rubric增益需独立评估。"
+ }
+}

@@ -1,0 +1,57 @@
+{
+ "paper_key": "2501.03262",
+ "title": "REINFORCE++: Stabilizing Critic-Free Policy Optimization with Global Advantage Normalization",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2501.03262.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3 Eq4–7",
+   "Table1/2/4",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "用跨全batch的mean/std替代prompt内std；复杂任务先减group mean再全batch归一化。",
+  "why_non_obvious": "保留prompt相对基线而换归一化尺度，避免将小组局部std当全局稳定估计。",
+  "trigger_condition": "当小组reward统计使critic-free训练不稳定时，扩大归一化统计范围并保留必要组内baseline。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "architectural_operator_substitution",
+  "abstract_trigger_condition": "当小组reward统计使critic-free训练不稳定时，扩大归一化统计范围并保留必要组内baseline。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2501.03262#s1",
+   "object": "critic-free策略优势",
+   "information": "同batch所有生成response/token的return；无需learned critic",
+   "operation": "k1变体用终答reward减未来累计KL后全batch whiten；baseline变体减组mean再global whiten并独立KL loss",
+   "claimed_effect": "Table4复杂工具数学平均24.10，高于GRPO22.58与PPO21.85。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "GRPO (local norm)                31.66     21.87      16.97       17.70     24.68   22.58\n PPO (critic-based)               30.20     21.66      15.00       18.43     23.95   21.85\n RF++-Baseline (global norm)      30.83     27.18      17.91       18.95     25.62   24.10"
+   },
+   "failure_boundary": "跨任务/长度混合batch仍有尺度耦合；有限batch并非严格无偏；不同variant同时改变KL形式，不把所有提升单归于std。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "直接改变优势std统计范围，但仍存在全局尺度消除。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "k1未来KL使token return不同，terminal任务奖仍整回答共享。"
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,63 @@
+{
+ "paper_key": "2504.05118",
+ "title": "VAPO: Efficient and Reliable Reinforcement Learning for Advanced Reasoning Tasks",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2504.05118.txt",
+  "sections_read": [
+   "Abstract/§1 pp1–3",
+   "§3–4 pp4–7 Eq3–10",
+   "§5/Table1 pp7–9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "critic预训+λcritic1与policy长度自适应λ分离，token总均值PPO配合cliphigher、正确样本NLL与组采样。",
+  "why_non_obvious": "critic的低偏差目标与policy收敛需要不同GAE参数；长度不同不能共用固定衰减。",
+  "trigger_condition": "当长CoT终端信号被固定λ衰减且critic偏差累积时，分别处理value目标和policy优势。",
+  "contribution_type": "PPO系统与长度自适应GAE",
+  "abstract_strategy": "将估计器偏差、序列长度权重和成功样本利用分开改造。",
+  "abstract_trigger_condition": "长短响应混合且稀疏终局reward。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2504.05118#s1",
+   "object": "Qwen2.5-32B数学PPO",
+   "information": "token value/TD errors、响应长度、终端verifier正确性",
+   "operation": "50step critic warmup、λcritic1、λpolicy=1−1/(.05l)、全batch有效token平均、clip .2/.28与correct NLL .1、16采样",
+   "claimed_effect": "Table1 AIME24avg@32 VAPO60，去长度自适应45，去value pretrain11，vanilla5；正文3runs峰值60–61。",
+   "conditions": [
+    "无SFT",
+    "组合消融而非单改λ相对vanilla",
+    "5000gradient steps不等GPU预算"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p8",
+    "quote": "VAPO w/o Length-adaptive GAE                      45"
+   },
+   "failure_boundary": "α=.05时l<20给负λ；文中未交代下截保护，不能补。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P08",
+   "strength": 3,
+   "how": "Eq7按实际全batch有效token和归一化，区别固定MAXTOKENS。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "value+GAE给token不同优势，但不自动识别crop因果信用。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "success-only NLL复用已采样正确行为，不能造缺失支持。"
+  }
+ ],
+ "scientific_replication": false
+}

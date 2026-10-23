@@ -1,0 +1,61 @@
+{
+ "paper_key": "2606.32017",
+ "title": "TRIAGE: Role-Typed Credit Assignment for Agentic Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.32017.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§4 Eq2–9/role context/normalization",
+   "Tables3/5/6",
+   "§6 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "judge把环境动作分为进展/探索/无进展/退步四角色，固定常数加在GRPO优势后再batch whitening。",
+  "key_step": "Asegment=AGRPO+λcrole，c=(1,.5,−.1,−.5)，λSearch .4其余.2；白化后广播对应环境-facing turn生成token。",
+  "why_non_obvious": "探索不等于无进展，但judge可靠性决定固定角色标签是否纠正而非放大偏差。",
+  "trigger_condition": "成功轨迹含退步、失败轨迹含有用探索时，以局部角色增量修正终奖信用。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "保留结果优势，用可审计的语义角色固定映射纠正局部信用。",
+  "abstract_trigger_condition": "成功轨迹含退步、失败轨迹含有用探索时，以局部角色增量修正终奖信用。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.32017#s1",
+   "object": "动作段credit",
+   "information": "judge见前后各至多5 action-observation对，不见final verifier标签",
+   "operation": "固定角色reward叠加+batch whitening，prompt/obs mask0",
+   "claimed_effect": "7B Table6 ALF87.5±2.4/WS77.2±2.2；无regression罚81.4/73.1；无exploration85.8/75.5。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table6 TRIAGE row",
+    "quote": "TRIAGE                                 none                            87.5 ± 2.4       48.1      77.2 ± 2.2"
+   },
+   "failure_boundary": "no-think judge导致ALF/WS低于GRPO；角色不是人工真值，未来context是训练特权。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P18",
+   "how": "显式区分有用探索与无进展。",
+   "strength": 3
+  },
+  {
+   "problem": "P15",
+   "how": "保留结果项但新增白化后局部符号仍可能改变。",
+   "strength": 3
+  },
+  {
+   "problem": "P43",
+   "how": "角色judge迁移视觉证据仍需人工校准。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

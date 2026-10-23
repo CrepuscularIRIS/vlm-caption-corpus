@@ -1,0 +1,53 @@
+{
+ "paper_key": "2610.17747",
+ "title": "Auditing Failure Attribution: Label Predictability and Judge Behavior",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2610.17747.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3 four-test framework",
+   "Tables2–4",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "分别做输入限制、保持错误不变的cue移动、cue失败子集评测、混合比例/指标重加权。",
+  "why_non_obvious": "高judge分可能来自标签可预测性；但cue存在不等于judge实际使用。",
+  "trigger_condition": "When attribution benchmarks admit shortcut cues, intervene on cues and report residual performance.",
+  "contribution_type": "benchmark audit",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "When a high score can come from an unintended signal, separate predictability from actual reliance."
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.17747#s1",
+   "object": "failure-attribution benchmark/judge",
+   "information": "单步文本、位置、reasoning字段和speaker名；paired干预",
+   "operation": "restricted predictors+cue intervention+residual+aggregation",
+   "claimed_effect": "Aegis全speaker规则microF1 49.2近GPT4.1 50.0，但exactset1.5 vs20.7；AFTraj两者平均50.3却injected/natural强弱相反。",
+   "conditions": [
+    "3benchmarks",
+    "cue intervention限ALFAgent"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "Current-turn TF–IDF      65.7    20.0      50.3"
+   },
+   "failure_boundary": "cue intervention只一个注入管线；单步文本可能真能说明错而非纯注入伪迹。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P52",
+   "how": "过程judge应先测局部捷径与cue移动；可用于证据审计但未给训练机制。",
+   "strength": 2
+  }
+ ]
+}

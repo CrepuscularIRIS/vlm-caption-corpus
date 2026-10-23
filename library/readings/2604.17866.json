@@ -1,0 +1,166 @@
+{
+ "paper_key": "2604.17866",
+ "title": "Latent Abstraction for Retrieval-Augmented Generation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2604.17866.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–3 Eqs1–8",
+   "§4 Tables1/3/4",
+   "AppB setup/controlhead",
+   "AppD supervision",
+   "AppF limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "同LLM隐状态同时构造检索向量与停止head，替换文本query生成。",
+  "key_step": "PRED隐状态cosine检索；剩余gold documents更新contrastive目标；head预测是否覆盖全部gold，answerNTP联合训练。",
+  "why_non_obvious": "停止标签来自gold evidence覆盖而非actor答题成功差，不可直接说学得信息必要性。",
+  "trigger_condition": "When multi-hop textual query generation is costly, use a shared latent query and a supervised evidence-coverage controller.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "共享表示，分离检索/停止/生成三个训练目标。",
+  "abstract_trigger_condition": "When repeated communication through text is expensive, act from latent state with explicit residual-evidence supervision.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "每轮去除已取gold，训练残余证据检索。",
+  "abstract_why_non_obvious": "省去在线retriever不等于无离线LLM编码成本，骨干更新需重编码。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.17866#s1",
+   "object": "latent检索与停止",
+   "information": "训练有supportingdoc gold或answer-span弱标签，推理只当前context",
+   "operation": "共享encoder检索+residual contrastive+controlBCE+answerNTP",
+   "claimed_effect": "3B平均EM.418；无controlhead固定5doc .350；无NTPmask .398",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 full row; NQ/Trivia/Hotpot/2Wiki/MuSiQue/Avg/delta",
+    "quote": "LAnR-Instruct                                       0.460          0.613                            0.419             0.408                      0.193        0.418                              —"
+   },
+   "failure_boundary": "去head同时固定预算，不完全隔离状态判别；gold覆盖不是必要性标签。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P31",
+   "strength": 2,
+   "how": "残余证据检索避免重复"
+  },
+  {
+   "problem": "P24",
+   "strength": 2,
+   "how": "hiddenstate controlhead学习是否继续，标签不同于action value"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Search-R1",
+   "kind": "method"
+  },
+  {
+   "name": "AutoRefine",
+   "kind": "method"
+  },
+  {
+   "name": "LAnR-static",
+   "kind": "method"
+  },
+  {
+   "name": "w/o ctrl fixed5documents",
+   "kind": "method"
+  },
+  {
+   "name": "w/o NTP mask",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "全库LLM编码昂贵且backbone更新需重编码；latentquery难解释；EnglishWikipedia限定。",
+   "locator": "AppF"
+  },
+  {
+   "text": "Eq5标签用R(r)含本轮Dr而Eq4输入c(r)只含至r−1；训练时序如何对齐未明确。",
+   "locator": "Eqs4–5/Inference（读者问题）"
+  }
+ ],
+ "question": {
+  "observed_failure": "controlhead消融avg.418→.350，MuSiQue.193→.095；NTP0则avg.003。",
+  "load_bearing_assumption": "每次检索需要文本query与独立retriever，固定预算足够。",
+  "scope": "3B/7B EnglishQA Wikipedia最多4轮",
+  "success_criterion": "EM/等documentbudget recall/在线latency与离线index成本分报",
+  "why_open": "latent检索需可学习方向和停止监督，gold不完备。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Eq8三loss"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 matched doc budget/Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "q^{(r)}=h_{PRED}(c^{(r)});\\hat y=\\sigma(Wq+b);P^{(r)}=P\\setminus R^{(r-1)};y^{(r)}=1[P\\not\\subseteq R^{(r)}]",
+    "locator": "Eqs1/4/5/7;AppB.1"
+   },
+   {
+    "latex": "L=\\sum_r[-\\log\\frac{e^{sim(q^r,d^+)/\\tau}}{e^{sim(q^r,d^+)/\\tau}+\\sum_j e^{sim(q^r,d_j^-)/\\tau}}]+\\lambda L_{NTP}+\\mu L_{BCE}",
+    "locator": "Eqs6–8"
+   }
+  ],
+  "signal_routing": "全参数fine-tune；retrieved/PRED tokens仅不作NTP targets，hiddenstate仍由contrastive/controller梯度训练，不能说完全不更新。head实际single affine+sigmoid，不是复杂MLP；推理ŷ>=.5继续，<.5答；无RL/advantage。",
+  "normalization": "other：cosine embeddings+contrastive temperature；BCE/NTP，无GRPO std。",
+  "invariance": "非PBRS；训练换representation/检索policy；gold覆盖目标与最小必要检索并不等价。",
+  "baseline_or_potential": "无critic/potential；gold set为监督。",
+  "degenerate_cases": "gold漏标/答案span伪相关可错停；覆盖gold仍不会答或未覆盖但参数知识可答；控制标签时序疑问需实现核；Premaining空如何contrastive处理未读到。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3等6/10doc预算分静态/iterative，但不等callcount；Table4无head固定5doc与full对比；NTPmask消融。",
+  "negative_results": [
+   {
+    "text": "forced secondretrieval单hop recall可能下降；AutoRefine单hop仍强；无NTP崩至.003。",
+    "locator": "§4.2/Table4"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "同call/documentbudget的常数停止head匹配EM，或用不完备gold训练导致错误停止，则状态判别增量不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5 3B/7B Base/Instruct",
+   "framework": "FSDP bf16",
+   "group_size": null,
+   "max_turns": 4,
+   "kl": null
+  },
+  "cost": "2H10080GB/250steps，batch256；corpus100wordchunks，retrieved max512tokens/top3；head2049 params3B，额外forward0；全库编码/refresh成本不可忽略。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当停止监督来自证据覆盖时，明确它与当前模型成功价值的区别，并检查决策输入与标签的时间下标。"
+ }
+}

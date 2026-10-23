@@ -1,0 +1,136 @@
+{
+ "paper_key": "litscan:79575",
+ "title": "VRGA",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_79575.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 RRAR/head analysis",
+   "§4 Eqs6–9",
+   "Tables1–3",
+   "§5–6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用注意力熵/图像占比筛head，扣除背景sink再增强相关视觉token。",
+  "key_step": "高Rimg候选中低EFR头定位；减背景头、阈值选视觉token，响应期放大后重归一化。",
+  "why_non_obvious": "高视觉注意力可仍均匀散开；减背景sink与强度选择不同。",
+  "trigger_condition": "When reasoning disperses visual attention, select focused visual heads and amplify localized visual tokens.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "按功能选择内部通道并抑制共享背景。",
+  "abstract_trigger_condition": "When aggregate activation hides functional heterogeneity, isolate useful channels before intervention.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "head选择→位置估计→推理期增强。",
+  "abstract_why_non_obvious": "head重要性不等于定位真值或因果必要性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79575#s1",
+   "object": "VLM推理期视觉注意力",
+   "information": "最终问题token注意力，GTbbox仅RRAR诊断",
+   "operation": "EFR选head、背景减除、相关token乘1+γ并归一",
+   "claimed_effect": "Qwen2.5VL7B HaloQuest66.67→73.96；Qwen3同任务69.20→68.05",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 Qwen2.5-VL-7B+VRGA row; each task ACC/S/I",
+    "quote": "Qwen2.5-VL-7B+VRGA(ours)           73.96         0.549   0.578             55.9      0.444     0.549     48.73      0.388   0.569"
+   },
+   "failure_boundary": "部分指标退化，注意力相关性不是单一因果机制证明。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "内部视觉证据定位/干预诊断可作补充。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "CCoT/ICoT/random/low-visual head masking",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "未见独立limitations节；gamma、阈值及Norm负值处理未在所读明确；不应把选head失活损害解释为crop必要性。",
+   "locator": "§4/6"
+  }
+ ],
+ "question": {
+  "observed_failure": "TextVQA Qwen2.5VL7B baseline86.88，所选head mask40.52，随机86.95。",
+  "load_bearing_assumption": "更多语言推理仍保持视觉相关区域注意力。",
+  "scope": "Qwen系列VQA推理期attention干预",
+  "success_criterion": "head同数量失活对照与下游增强效果",
+  "why_open": "整体注意力掩盖不同head和sink角色。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Table3反例"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "EFR=H_{img}/R_{img};A_{ref}=Norm(mean_{H_v}A-\\lambda mean_{H_b}A);T_q=\\{i:A_{ref}(i)>\\tau\\};\\tilde A_h(i)\\propto A_h(i)(1+\\gamma1[i\\in T_q])",
+    "locator": "§4 Eqs6–9"
+   }
+  ],
+  "signal_routing": "只在响应生成对选中视觉head attention重权，无训练token梯度/reward；GTbox仅诊断RRAR。",
+  "normalization": "other：图像内注意力归一/entropy与重权后attention质量归一；非优势std。",
+  "invariance": "非PBRS；改变推理分布，gamma0退化原模型。",
+  "baseline_or_potential": "背景head减除是表示校正而非policy baseline。",
+  "degenerate_cases": "空Tq或gamma0无增强；Rimg近0 EFR不稳；减背景产生负值如何处理未明；错误区域被选会强化幻觉。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2同数量随机/lowvisual/head失活；Table3下游任务。",
+  "negative_results": [
+   {
+    "text": "Qwen3 HaloQuest掉1.15pp；Qwen2VL MMStar52.37→51.07；部分I和S指标变差，正文consistent措辞过强。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "等视觉注意力总量匹配head/random区域增强同效则空间语义选择解释削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL3/7B、Qwen2VL7B、Qwen3VL30B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "无训练；需抽取并修改attention，GPU/time与memory未报告于所读。失活实验16head选5、32head选10。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用注意力解释行为时，结合失活与增强两方向反例，并匹配被移除注意力质量。"
+ }
+}

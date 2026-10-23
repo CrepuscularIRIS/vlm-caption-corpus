@@ -1,0 +1,61 @@
+{
+ "paper_key": "2609.24290",
+ "title": "When and How Should an Agent Clarify? CIGAsk: Teaching LLMs to Clarify via Counterfactual Information Gain",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2609.24290.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3 Eqs2–8",
+   "Tables2–3",
+   "5.3",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "when由GT歧义标签非对称terminalbonus控制，how由冻结reference对有/无用户回复的GT loglikelihood差控制，两路分别归一。",
+  "why_non_obvious": "局部澄清信息与是否发起澄清拆开；冻结proxy稳定却不等于当前策略真实actionvalue。",
+  "trigger_condition": "When asking and question informativeness require different supervision, separate ambiguity-based initiation credit from response-ablation information credit.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When asking and question informativeness require different supervision, separate ambiguity-based initiation credit from response-ablation information credit."
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.24290#s1",
+   "object": "clarification agent token credit",
+   "information": "GT answer与ambiguity训练标签、real clarification reply、frozenreference、oracleintent simulator",
+   "operation": "固定同questionaction消融reply算logratio；terminal与intrinsic分开zscore后相加",
+   "claimed_effect": "PACIFIC7B F1.795/postclarify.768/ambigclarify.873/clearclarify.260；去CIG.744/.700，去asym.736/.733。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "CIGAsk 7B    ✓     ✓     .795   .768    .873      .260"
+   },
+   "failure_boundary": "clearquery仍26%澄清；oracleintent cooperative simulator限制外推；AbgCoQA为重训迁移非零样本。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "how": "frozenreference loglikelihood gain不能直接当当前policy crop收益。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "局部reward乘alpha后独立std可能抵消alpha。",
+   "strength": 3
+  },
+  {
+   "problem": "P26",
+   "how": "when/how分离可改必要性gate，但GT歧义不总可得。",
+   "strength": 2
+  }
+ ]
+}

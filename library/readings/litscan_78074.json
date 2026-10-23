@@ -1,0 +1,198 @@
+{
+ "paper_key": "litscan:78074",
+ "title": "DR-MMSearchAgent",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78074.txt",
+  "sections_read": [
+   "Abstract and contributions",
+   "§3 Eqs1–12 pp2–6",
+   "Tables1/3/5/6 pp6–9",
+   "AppA pp12–13; AppB/C pp13–14; AppH judge/refiner pp15–16"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "把terminal reward嵌入按长度定位的batch×rollout稀疏矩阵，列L2标准化与TOPSIS理想边界距离给Fi；在GRPO优势之后乘1+Wi；正确/错误另用中心2/4调用的高斯reward。",
+  "why_non_obvious": "同分轨迹在长度群体中的稀有性可改变梯度幅度，但不是逐步证据价值。",
+  "trigger_condition": "When equal-reward trajectories collapse to repeated lengths, reweight nonzero advantages by batch-level length rarity and regularize tool depth.",
+  "contribution_type": "GRPO优势乘性重加权+深搜索数据/压缩系统",
+  "abstract_strategy": "用批次结构统计破除同奖励的部分对称性",
+  "abstract_trigger_condition": "有非零优势但长度分布失去多样性时",
+  "abstract_key_step": "在归一化之后注入结构权重，配合结果条件化的交互先验",
+  "abstract_why_non_obvious": "简单长短奖励不区分轨迹的相对稀有性，而重复长轨迹也可冗余。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78074#s1",
+   "object": "Qwen2.5-VL7B搜索RL",
+   "information": "batch内全部rollout长度/总reward；最终答案正确性由GT judge给出；refiner只看search query与检索结果。",
+   "operation": "SPAI在组均值/std后的A上乘1+Fi或尾部5%的1+Fmax；BGAS正答Gaussian(2,3)、错答(4,1.2)；BridgeVQA和同policy压缩检索输出。",
+   "claimed_effect": "Table3基础57.7→加Bridge59.7→加SPAI63.4→加BGAS64.9→加refiner66.8 FVQA；Table1 MMSearch-R1为58.4。",
+   "conditions": [
+    "各增量不是完全factorial",
+    "本方法RL-only",
+    "三次独立inference平均不是三次训练seed"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7",
+    "quote": "✓             ✓         ✓             ✓         66.8%"
+   },
+   "failure_boundary": "A=0则A'=0；相同长度频次可能同Fi，不能普遍区分所有同奖励轨迹；错误探索收益受固定高斯中心约束。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "均值/std后乘权重可保留该幅度但标量reward通道仍受标准化影响。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "整轨迹优势乘性重加权仍不能区分内部动作信用。",
+   "strength": 3
+  },
+  {
+   "problem": "P07",
+   "how": "全同reward A0时SPAI无法补出梯度。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO / DAPO",
+   "kind": "algorithm"
+  },
+  {
+   "name": "L2 normalization / exactly-four-call reward",
+   "kind": "ablation"
+  },
+  {
+   "name": "MMSearch-R1",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "没有明确独立limitations节；读者推导SPAI保A的零与符号，不能兑现所有同分轨迹区分。长度稀有不等于语义或证据多样。",
+   "locator": "Eqs3–9; AppA.3"
+  },
+  {
+   "text": "训练judge称Qwen3-14B；评测称Qwen2.5-72B-Instruct并接收原图，但AppH模板只有question/gold/response，实际图像输入未知。",
+   "locator": "§4.1/§4.2/AppH"
+  },
+  {
+   "text": "AppC把8H200总显存写1600GB，硬件容量口径可疑；无独立核实。",
+   "locator": "AppC p14"
+  }
+ ],
+ "question": {
+  "observed_failure": "MMSearch-R1约2次工具调用塌缩；FVQA基础57.7，Bridge59.7、SPAI63.4。",
+  "load_bearing_assumption": "终止位置群体分布近似探索多样性且错误常因证据不足，重加权促进有用搜索。",
+  "scope": "图文搜索Agent，最大14交互轮，图像/文本检索，局部缓存工具训练。",
+  "success_criterion": "提高知识VQA准确率且保留多轮搜索；报告同训练时间对照而非只看步数。",
+  "why_open": "相同结果reward与冗长工具反馈可能促使短浅重复路径，终端监督难区分。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Fig1/7长度与reward重复分布"
+  },
+  {
+   "vocab": "M",
+   "id": "M08",
+   "locator": "SPAI/BGAS/refiner Table3模块消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "AppC Table7相同1x/2x训练时间对照"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=(r_i-\\bar r_q)/s_q,\\quad z_{it}=r_i\\mathbf1[t=L_i]/(\\|r_{:t}\\|_2+\\mathbf1[\\|r_{:t}\\|_2=0]),\\quad z_t^+=\\max_i z_{it},\\ z_t^-=\\min_i z_{it}",
+    "locator": "Eqs1–5 pp3–4;结构G=batch×rollout而原A为query group"
+   },
+   {
+    "latex": "D_i^\\pm=\\sqrt{\\sum_t(z_{it}-z_t^\\pm)^2},\\quad F_i=D_i^-/(D_i^++D_i^-+\\epsilon),\\quad A_i'=A_i(1+W_i),\\quad W_i=F_{max}\\text{ for bottom 5\\% else }F_i",
+    "locator": "Eqs6–9 p4"
+   },
+   {
+    "latex": "R=.7R_{acc}+.2R_{format}+.1\\exp[-(N_{tool}-\\mu)^2/(2\\sigma^2)],\\quad (\\mu,\\sigma)=(2,3)\\text{ correct},(4,1.2)\\text{ incorrect}",
+    "locator": "Eqs10–11 pp4–5; parameters p9"
+   }
+  ],
+  "signal_routing": "总reward用于GRPO A；batch结构Fi再乘于原A，仍是response级信号；未明确tool observation mask、refiner输出梯度mask或token loss聚合，不能补造。refiner复用updatable policy而非独立冻结模型；输入query/results不含GT。GT judge分支是最终结果，不是推理每步在线判正确。",
+  "normalization": "mean+std",
+  "invariance": "正共同缩放reward在组A与列L2中抵消（数值epsilon例外）；AppA称affine但实际仅证明alphaR，无平移项。terminal reward平移一般改变稀疏列归一化，不保证Fi不变。列/终止索引同步置换不改欧氏距离，故无绝对长短或相邻长度距离偏好。非严格PBRS。",
+  "baseline_or_potential": "query group均值/std；结构统计跨batch×rollout，不是leave-one-out或state value。奖励固定Gaussian先验而非动作反事实增益。",
+  "degenerate_cases": "全同总reward原A0则任何Fi仍0；同reward但不同长度若各长度密度一样可能同Fi，AppA.3还需A非零且未被Fmax统一。错误全组可因tool reward不同有A，但其推动目标4次不等于正确探索。正确组p≈1可保高斯差异但std抵消.1幅度；没有p0支持恢复。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3逐组件；Table6 SPAI66.8>L2 62.2>静态4调用reward60.3；Table5注入5%优于10%65.3，错误高斯(4,1.2)66.8 vs(3,1.2)65.2。",
+  "negative_results": [
+   {
+    "text": "10%尾部强化损害合法轨迹；最优调用数是数据/压缩配置依赖先验。",
+    "locator": "Table5及p9"
+   },
+   {
+    "text": "Table1 MMSearch61.0<DeepEyesV2 63.7；并非每个搜索任务SOTA。",
+    "locator": "Table1"
+   },
+   {
+    "text": "Google工具1epoch52.7>local50.0，速度换来精度差。",
+    "locator": "Table9"
+   }
+  ],
+  "seeds": "主表3次独立推理平均；训练seeds未报告",
+  "falsifier": "固定reward与长度频次，置换语义轨迹或末端位置；若SPAI统计相同却宣称有语义多样性，应否定该解释。另在全等reward测试A'=0。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B；train judgeQwen3-14B，eval judgeQwen2.5-72B-Instruct（按原文）",
+   "framework": "veRL",
+   "group_size": 8,
+   "max_turns": 14,
+   "kl": null
+  },
+  "cost": "batch128×8rollout=1024结构样本，2epoch；8H200。Table7同1x时本法60.7/100步vsGRPO57.7/200步，2x66.8/160vsGRPO59.9/320；不是每步更快。",
+  "pitfalls": [
+   {
+    "text": "每次串行单tool；9或10 interaction turns与4或5tool calls不同；Table5mean9不是9调用。",
+    "locator": "Table5,p9,AppH"
+   },
+   {
+    "text": "refiner仅top3检索结果并压到<50word，复用policy，原文近零延迟未给独立模块profile。",
+    "locator": "§3.4/AppB/H"
+   },
+   {
+    "text": "BGAS(0,0)在Table5作为移除配置，直接代Eq10除零，需开关语义不能照抄数值执行。",
+    "locator": "Table5"
+   }
+  ],
+  "code": null,
+  "lesson": "当增加结构权重与多轮探索时，应分别测同墙钟训练预算、工具调用数、交互轮数及压缩开销，步数下降不能当总成本下降。"
+ }
+}

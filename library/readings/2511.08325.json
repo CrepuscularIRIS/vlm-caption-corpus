@@ -1,0 +1,56 @@
+{
+ "paper_key": "2511.08325",
+ "title": "AgentPRM: Process Reward Models for LLM Agents via Step-Wise Promise and Progress",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.08325.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3.2–3.3",
+   "Tables1/3",
+   "5.1 Figure4",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "以自身轨迹终局反馈bootstrap Q标签，同时拟合绝对Q和相邻Q差，约束promise与progress。",
+  "why_non_obvious": "相邻差的监督改变value拟合几何，但差值只在特定确定性/稀疏设定对应advantage。",
+  "trigger_condition": "When independent step values omit local progress, jointly fit values and their adjacent differences using bootstrapped trajectory labels.",
+  "contribution_type": "method",
+  "abstract_strategy": "targeted_self_supervised_objective",
+  "abstract_trigger_condition": "When independent step values omit local progress, jointly fit values and their adjacent differences using bootstrapped trajectory labels."
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.08325#s1",
+   "object": "agent process reward model",
+   "information": "终局稀疏奖励、轨迹、前后state-action与自身bootstrap估值",
+   "operation": "L=L_Q+beta L_A，L_A拟合预测Q差和标签Q差；推理BoN/beam选动作",
+   "claimed_effect": "Qwen2.5-3B beam8×8 WebShop PVM54.5→AgentPRM76.0；TextCraft44.3→56.7；TD标注tokens是MC的1/1.9 WebShop、1/2.8 BabyAI。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen2.5-3B",
+    "quote": "AgentPRM            61.0       72.5         76.0       84.4        89.6    89.8   47.4    51.5       56.7"
+   },
+   "failure_boundary": "未保证proxy在更新actor或不同转移分布上校准；2×2时0.5B BabyAI82.9低于PVM84.6。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "用相邻Q差训练过程评估，启发动作级信号但不是crop必要性证明。",
+   "strength": 2
+  },
+  {
+   "problem": "P18",
+   "how": "强调必要绕路不能仅凭离目标近远判错。",
+   "strength": 2
+  }
+ ]
+}

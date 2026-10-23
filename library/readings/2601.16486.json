@@ -1,0 +1,63 @@
+{
+ "paper_key": "2601.16486",
+ "title": "Timely Machine: Awareness of Time Makes Test-Time Scaling Agentic",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2601.16486.txt",
+  "sections_read": [
+   "摘要与贡献",
+   "§3.1 时间成本分解 Eq1–8",
+   "§4.1–4.3 方法 Eq9–10",
+   "§5.2 设置与 Table1–3",
+   "§5.4–5.6 行为和消融",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将 agent 测试预算从 token/调用次数改为生成与工具执行的总墙钟时间，再教模型查询计时器并按时结束。",
+  "key_step": "时间条件 SFT 冷启动后，用超时归零、按时格式奖励和成功条件的时间利用率奖励做 Timely-RL。",
+  "why_non_obvious": "同样的 token 或工具次数可对应不同延迟，模型大小的速度优势与单轮质量在不同工具延迟下互换。",
+  "trigger_condition": "工具延迟占用显著且变化，固定 token 预算不能代表真实截止时间。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "adapt_via_conditioning",
+  "abstract_trigger_condition": "部署资源约束是动态可观测量而非固定离散预算。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.16486#s1",
+   "object": "带截止时间的完整求解轨迹",
+   "information": "计时器给出已经消耗时间，任务设定预算；成功奖励来自任务结果",
+   "operation": "时间条件冷启动后使用分段时间奖励训练",
+   "claimed_effect": "Table3 在0.75×预算下 Timely-RL 的AIME/GPQA/MATH按时完成率53.3/52.0/56.0；SFT为46.7/48.0/56.0，MATH无增益。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 3",
+    "quote": "+ Timely-RL       53.3      52.0      56.0"
+   },
+   "failure_boundary": "按时完成率不等于正确率；Table2 同设置AIME按时53.3但正确33.3。目前只验证文本任务。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P35",
+   "how": "直接区分截止时间、停止行为和任务正确率，帮助识别成本压力下过早结束。",
+   "strength": 2
+  },
+  {
+   "problem": "P24",
+   "how": "时间条件和轨迹奖励仍共同影响推理与工具策略，不识别某次工具的净贡献。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "计时器使用和时间内完成行为由教师SFT先提供，再用RL优化。",
+   "strength": 1
+  }
+ ]
+}

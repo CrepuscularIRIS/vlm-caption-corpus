@@ -1,0 +1,229 @@
+{
+ "paper_key": "2610.15840",
+ "title": "LLM Value Functions for Credit Assignment in Agentic RL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2610.15840.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3",
+   "§4 Tables1–4",
+   "§4.4 MCdiagnosis",
+   "§5 limitations",
+   "AppB.1–B.3",
+   "AppC prompt interfaces"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "冻结强LLM读完整轨迹及3条同组摘要估interior值，首尾锚定组成功率/本条结果；相邻值差除全组stepstd做局部PG，负差门控蒸馏。",
+  "key_step": "把端点标量守恒与内部step重分配解耦；group context动态提示actor能力但不训练critic。",
+  "why_non_obvious": "全失败组仍能有内部正负差，能提供语义进步监督；守恒只限标量而非梯度正确性。",
+  "trigger_condition": "When sparse outcomes hide intermediate progress and a strong hindsight critic is available, calibrate its endpoint values and test action-level value differences against current-policy continuations.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以可观测端点约束自由的内部信用，并用负信用定位教师指导。",
+  "abstract_trigger_condition": "When sparse outcomes hide intermediate progress and a strong hindsight critic is available, calibrate its endpoint values and test action-level value differences against current-policy continuations.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "把端点标量守恒与内部step重分配解耦；group context动态提示actor能力但不训练critic。",
+  "abstract_why_non_obvious": "全失败组仍能有内部正负差，能提供语义进步监督；守恒只限标量而非梯度正确性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.15840#s1",
+   "object": "LVRL stepcredit",
+   "information": "完整target轨迹含未来结果、3条peer摘要、组successrate",
+   "operation": "V0=muG,VT=R；ΔV/stepstd广播actiontokens，tokenPPO",
+   "claimed_effect": "Qwen3-8B AppWorld26.3 vsGRPO19.8；BabyAI75.0ID/65.5OOD vs2.7/0；SWE20.2vs12.0。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p7 LVRLrow",
+    "quote": "+LVRL (ours) 24.3 ± 1.7 26.3 ± 0.5 69.0 ± 2.2 / 52.2 ± 1.6 75.0 ± 2.0 / 65.5 ± 3.0 20.2 ± 1.3 30.9 ± 1.6"
+   },
+   "failure_boundary": "SWE仅1trainingseed；critic能力与查询成本负担。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2610.15840#s2",
+   "object": "value-guided OPD",
+   "information": "负normalizedstepadv与student/teacher token分布",
+   "operation": "max(−A,0)加权reverseKL；与LVRL loss相加",
+   "claimed_effect": "AppWorld4B20.2 vsuniformOPD17.0、trajectorygated19.2；8B23.3 vs22.2/21.2。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p8",
+    "quote": "+LVOPD (ours) 20.2 ± 1.8 23.3 ± 1.6"
+   },
+   "failure_boundary": "同时改RLcredit和gate，未单独隔离gate；BabyAI全部OPD近0。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "冻结reader与policy条件value差异直接实测。"
+  },
+  {
+   "problem": "P14",
+   "strength": 3,
+   "how": "ΔV守恒的局部credit仍可能错定方向。"
+  },
+  {
+   "problem": "P15",
+   "strength": 3,
+   "how": "标量总和保留不等于每action保留outcome信用。"
+  },
+  {
+   "problem": "P22",
+   "strength": 3,
+   "how": "32次MC分叉校验value变化，区分neutral与显著事件。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "matchedGRPO",
+   "kind": "method"
+  },
+  {
+   "name": "shared-backbone PPO critic",
+   "kind": "method"
+  },
+  {
+   "name": "PureOPD",
+   "kind": "method"
+  },
+  {
+   "name": "trajectory-gatedOPD",
+   "kind": "method"
+  },
+  {
+   "name": "withoutcontext+anchors",
+   "kind": "method"
+  },
+  {
+   "name": "Qwen3-235B/GLM5.2/Claudecritics",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者观察critic不是严格on-policy，尤其早期高估学生能力。",
+   "quote": "This pattern suggests that the frozen LLM critic’s value estimates are not strictly on-policy.",
+   "locator": "§4.4 p9"
+  },
+  {
+   "text": "大模型每trajectory查询开销高，另需summary成本。",
+   "quote": "querying the estimator only when its value signal is highly uncertain",
+   "locator": "§5 p10 (future-work suggestion, not implemented)"
+  }
+ ],
+ "question": {
+  "observed_failure": "MC earlyevent符号agreement44%，middle78%、late88%；12/19earlydisagreements对语义进步估值非降但MC实际下降。",
+  "load_bearing_assumption": "完整轨迹hindsight估值经group context可近似当前policy的局部success变化。",
+  "scope": "AppWorld/BabyAI/R2EGym非thinking策略与强冻结critic。",
+  "success_criterion": "独立currentactor MC事件上局部符号/排序有效，且同总模型调用预算优于outcomeRL。",
+  "why_open": "hindsight含未来动作与结果不是adaptedstatevalue；端点守恒无法禁止错梯度和长度权重偏置。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§3.2 telescoping vs tokenmean"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables3–4"
+  },
+  {
+   "vocab": "M",
+   "id": "M13",
+   "locator": "§4.4 MC replay"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "endpointanchors"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "V_i0=mu_G; V_iTi=R_i; D_it=V_i,t+1-V_it; sigma_step=Std({D_jt across all valid environment steps of group}); A_it=D_it/sigma_step",
+    "locator": "§3.2"
+   },
+   {
+    "latex": "sum_t D_it=R_i-mu_G; sum_t A_it=(R_i-mu_G)/sigma_step",
+    "locator": "§3.2 endpoint identity"
+   },
+   {
+    "latex": "LVD=(1/Ntokens)sum_it sum_u max(-A_it,0) KL(student(.|h_itu)||teacher(.|h_itu)); LLVOPD=LLVRL+beta LVD",
+    "locator": "Eq3.2"
+   }
+  ],
+  "signal_routing": "t=environmentstep，整action所有generatedtokens同A，但ratio/clip pertoken，全minibatch validtokenmean。std按全group所有有效step算，只除std不减均值，不是trajectoryterminalstd；更长trajectory贡献更多step到std且更多tokens到loss。critic读完整未来，只训练actor不回传critic；gate固定step权重，teacher/student KL逐tokenvocab。LVOPD β1；teacher/critic同Qwen235B，LVRL默认ClaudeOpus4.6。",
+  "normalization": "other",
+  "invariance": "ΔV telescoping严格仅environmentstep标量和；token重复长度、不同scoregradient、ratio/clip破坏“总梯度方向守恒”。固定端点且未来依赖的hindsight value不是statepotential，直接用差作adv而非在原reward上加gammaPhi(next)−Phi(state)，非严格PBRS。GAEλ0形式仅γ1中间reward0及terminalreward折入VT的等式，不保证unbiasedadvantage。共同ΔV尺度被stepstd除掉。",
+  "baseline_or_potential": "首端groupmean含自身reward，终端实际reward；不加独立AT，全部信用由ΔV分配。3peer摘要+groupstats和anchors联合消融，无法单独归因context校准。",
+  "degenerate_cases": "全失败V0=VT=0仍可内部正负D、sum0且PG非零；说明引入critic语义先验而非无新监督。若所有D0，sigma0处理未给。全成功同理内部起伏可学。只有1action则D=R−mu，退近trajectorycredit但std仍按step。误判负D会蒸馏有益action；terminal长action可能权重大。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "三checkpoint×30tasks各成功/失败轨迹共180/3899states，每state32continuations。difference最大SE .125，pitfall/recovery阈值±.375；neutral|Δ|<.125。76pitfalls38recoveries1533neutral，critic分别72%/66%signagreement，neutral8%负22%正。",
+  "negative_results": [
+   {
+    "text": "earlyagreement44%，29%earlyevents给零；12/19early错高估学生续写能力。",
+    "locator": "§4.4"
+   },
+   {
+    "text": "Qwen235Bcritic AppWorld9.8远低Claude24.3；所有BabyAI OPD近0。",
+    "locator": "Table4/§4.3"
+   }
+  ],
+  "seeds": "AppWorld/BabyAI3trainingseeds each3eval; SWE1trainingseed3eval",
+  "falsifier": "置换interiorvalue或简单progressheuristic在同预算下相同收益，或MC校验显示必要crop被负差系统压制，则否定actor-aware必要性解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-4B/8B/32B nonthinking; LVRLcriticClaudeOpus4.6;LVOPDteacher+criticQwen3-235B",
+   "framework": "FSDP, vLLM; PPOsharedbackbone4layerMLPcritic baseline",
+   "group_size": 8,
+   "max_turns": "LVOPD50AppWorld/128BabyAI; LVRL precise bounds not recovered",
+   "kl": "LVOPD beta1 distillation; generic LVRL referenceKL coefficient unspecified"
+  },
+  "cost": "LVRL500/150/100updatesApp/Baby/R2E；App/Baby64env8GPUs。作者proxytoken成本每trajectory$.061–.140不含近似同成本summary调用，非实际API账单。LVOPD200/150updates，lr1e-5 epoch1clip.2TIS2T1top_p1，无topksampling，entropy0。",
+  "pitfalls": [
+   {
+    "text": "teacher top32，仅student top16支持重归一；缺teacher概率用remainingmass/(vocabsize−32)，是近似reverseKL。",
+    "locator": "B.3"
+   },
+   {
+    "text": "summary用相同大critic缓存复用但独立计费；valuecost统计不含summary。",
+    "locator": "B.1/C"
+   },
+   {
+    "text": "value calibration联合去掉anchors和peercontext，不能分开证明二者贡献。",
+    "locator": "§4.5"
+   }
+  ],
+  "code": null,
+  "lesson": "当用冻结LLM作value时，按真实currentpolicy MC校验早期动作，并同时报告标量守恒、token长度权重、critic和summary成本。"
+ }
+}

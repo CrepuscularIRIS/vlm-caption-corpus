@@ -374,7 +374,7 @@
   },
   {
    "problem": "P42",
-   "how": "只奖励终答可伴随过程模板化/不一致；Appendix I指出过程无显式监督。过程质量漂移需要本项目独立核查，不能从思考不一致直接推断caption幻觉率。",
+   "how": "[redacted: project-internal]",
    "strength": 2
   },
   {
@@ -389,7 +389,7 @@
   },
   {
    "problem": "P45",
-   "how": "seed100且无误差条；提示论文的小幅优势同样无法支持统计持平，不是本项目方差的修复。",
+   "how": "[redacted: project-internal]",
    "strength": 1
   },
   {

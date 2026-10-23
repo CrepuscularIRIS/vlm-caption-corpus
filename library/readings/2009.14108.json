@@ -1,0 +1,136 @@
+{
+ "paper_key": "2009.14108",
+ "title": "Align-RUDDER: Learning From Few Demonstrations by Reward Redistribution",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2009.14108.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–3 Eq1 reward redistribution",
+   "§4 Fig5/Minecraft results",
+   "AppA3 redistribution/A5.4–5 settings",
+   "Conclusion discussion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "少量示范的多序列对齐代替LSTM预测回报，前缀alignment score差分配reward。",
+  "key_step": "状态聚类事件→稀有事件匹配评分→ClustalW/PSSM→前缀score差+终端残差纠正。",
+  "why_non_obvious": "少数据时对齐共同事件比训练return predictor更稳，但共同罕见事件未必因果。",
+  "trigger_condition": "When sparse reward and few demonstrations make return prediction unreliable, align event sequences and redistribute prefix-score increments.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将重复成功路径中的保守结构作为稀疏信用代理。",
+  "abstract_trigger_condition": "When data are too scarce for a sequence predictor, exploit shared event order with an explicit return correction.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "事件对齐预测增量而非模仿整轨迹。",
+  "abstract_why_non_obvious": "总return等价不等于局部credit最优或Markov。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2009.14108#s1",
+   "object": "少示范长程稀疏RL",
+   "information": "成功demo事件序列/环境return；每步仅当前前缀评分，终端取实际return",
+   "operation": "profile score前缀差并以末端残差保总回报",
+   "claimed_effect": "关键事件检出.96 vsLSTM .46；Minecraft10示范/8Msteps，diamond率仅.1%",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4 Minecraft outcome paragraph",
+    "quote": "diamond is obtained in 0.1% of the cases."
+   },
+   "failure_boundary": "稀有对齐事件不保证causal credit，Minecraft仍极低成功。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P37",
+   "strength": 2,
+   "how": "轨迹事件层次与return守恒重分配可迁移。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "RUDDER LSTM/BC+Q/SQIL/DQfD",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "奖励可能高阶非Markov；事件数量/聚类影响对齐；Minecraft后续subtask探索指数困难。",
+   "locator": "§3–4"
+  }
+ ],
+ "question": {
+  "observed_failure": "2/5/10示范时key-event detection总体LSTM.46 vsalignment.96。",
+  "load_bearing_assumption": "少数高reward轨迹足以训练复杂return预测器。",
+  "scope": "γ1有限时域稀疏reward任务",
+  "success_criterion": "相同demo下学习样本数及事件检出，终端return精确守恒",
+  "why_open": "大量失败/很少成功无法训练可靠LSTM。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "关键事件检出对照/100trials"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq1终端纠正和非Markov范围"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_{t+1}=C[S(\\tau_t)-S(\\tau_{t-1})];R_{T+2}=\\tilde G_0-\\sum_{t=0}^{T}R_{t+1};C=E_{demo}\\tilde G_0/E_{demo}\\sum_t[S(\\tau_t)-S(\\tau_{t-1})]",
+    "locator": "Eq1"
+   }
+  ],
+  "signal_routing": "状态→cluster事件（此实现忽略动作）前缀对齐给即时reward；tabular Q或PPO subagents消费它。没有VLM token训练路由，terminal residual使用最终return。",
+  "normalization": "other：demo均值return/总score比例缩放；无组std；Minecraft输入各分量同variance。",
+  "invariance": "源文γ=1有限时域并保留末端residual时逐轨迹return严格等价。不是原state上的标准PBRS证明；prefix history差与原reward替换加纠正，不能删residual。最优局部credit还需Q差条件。",
+  "baseline_or_potential": "profile score预测累计return，不是当前policy V；不保证reward Markov。",
+  "degenerate_cases": "demo总score均值0使C无定义；错误profile可把所有修正推回终端；无关键事件demo不可凭空对齐；稀有噪声事件可获高分。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "key-chest 1000test episodes/10trials；rooms100trials；聚类/随机性附录只读设置未读全部图数。",
+  "negative_results": [
+   {
+    "text": "Minecraft仅.1% diamond；后阶段subagent缺数据和到达支撑。",
+    "locator": "§4"
+   }
+  ],
+  "seeds": "rooms100trials；key-chest10trials；具体seed号/完整CI未读。",
+  "falsifier": "打乱事件语义/顺序但保持稀有频率若同效，则共同顺序机制不成立；去terminal correction会破坏等价。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "tabular Q / Minecraft hierarchical BC+PPO",
+   "framework": "ClustalW",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "Minecraft选10最短diamond demos，19事件clusters，8Mstep上限；alignment动态规划有开销，GPU时间未读。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当使用学习的前缀分数重分配reward时，保存终端残差并验逐轨迹总return，不能把预测差自动当真credit。"
+ }
+}

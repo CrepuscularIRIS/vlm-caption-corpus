@@ -1,0 +1,146 @@
+{
+ "paper_key": "2505.14970",
+ "title": "Self-Evolving Curriculum for LLM Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_html",
+  "locator": "2505.14970.txt",
+  "sections_read": [
+   "local HTML extract Abstract/§1 contributions/§2 method/§3.1–3.2 main-result prose/§5 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "SEC将训练题类别作为非平稳bandit臂，用该类别rollout平均绝对优势作学习增益代理；EMA更新类别分数，Boltzmann抽类别再均匀抽题。",
+  "key_step": "不额外生成候选筛选；复用训练优势更新采样课程。",
+  "why_non_obvious": "以当前可学性替代固定难度顺序，但绝对优势不等于真实梯度范数或最终泛化增益。",
+  "trigger_condition": "固定难度课程与当前policy能力不匹配，3B Countdown OOD easy-to-hard .32低于random .48。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以低成本在线学习信号控制数据分布，保留类别探索。",
+  "abstract_trigger_condition": "固定难度课程与当前policy能力不匹配，3B Countdown OOD easy-to-hard .32低于random .48。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "不额外生成候选筛选；复用训练优势更新采样课程。",
+  "abstract_why_non_obvious": "以当前可学性替代固定难度顺序，但绝对优势不等于真实梯度范数或最终泛化增益。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.14970#s1",
+   "object": "类别课程采样",
+   "information": "预先类别/难度标签、当前rollout advantage；没有测试集在线反馈",
+   "operation": "mean|A|为arm reward，TD(0)/EMA更新，Boltzmann采类后类内均匀",
+   "claimed_effect": "3B Countdown OOD .48→.54；AIME .075→.10",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "HTML §3.2 Main Results",
+    "quote": "SEC significantly improves OOD accuracy by approximately 13% relative (0.48 → 0.54)"
+   },
+   "failure_boundary": "formula/table对象从本地HTML抽取中缺失，§3.3起截断，实际归一化和超参未知。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P65",
+   "strength": 3,
+   "how": "按policy当前训练信号调节问题层采样。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "探索类别有帮助，但不保留同题直答/裁图action support。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "random/no curriculum",
+   "kind": "method"
+  },
+  {
+   "name": "difficulty-ordered curriculum",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者：额外temperature和learning-rate需要调参。",
+   "quote": "SEC introduces extra hyperparameters (e.g., temperature, learning rate) that require tuning.",
+   "locator": "HTML §5 Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "3B Countdown easy-to-hard OOD.32 vsrandom.48。",
+  "load_bearing_assumption": "类别mean|A|与后续泛化学习收益相关且优于固定采样。",
+  "scope": "预分类别题库的RL curriculum。",
+  "success_criterion": "相同rollout预算困难OOD准确率提升且不牺牲多任务平衡。",
+  "why_open": "可读源未提供归一化细节/seed/消融表，代理信号可能仅反映组内成功率。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§2.2审核learninggain proxy"
+  },
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§2.1非平稳bandit课程"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "arm reward由policy已计算的rollout优势聚合，更新数据采样器；policy仍按原RL训练，不额外将arm score加到tokenreward。",
+  "normalization": "文字说明类别内平均绝对advantage；policy GRPO公式、是否std、EMA lr/softmax温度的数值缺失。",
+  "invariance": "reader条件推导：若binary奖励mean-only，E|R−p|=2p(1−p)；若std则2sqrt(p(1−p))，都偏好中等成功率而非真实梯度方向。非PBRS。",
+  "baseline_or_potential": "没有新policybaseline；bandit分数不是状态value critic。",
+  "degenerate_cases": [
+   "全对/全错若组优势0，课程信号0；困难但当前无成功题可能被忽略。",
+   "梯度score范数及跨样本抵消未计入|A|，可能高proxy低真实学习收益。",
+   "类别不均衡时先采类别后类内均匀改变原题库分布。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：固定rollout预算对比随机、p(1−p)与|A|课程，分raw/std优势；预注册H/O2分层避免偏采易题。",
+  "negative_results": [
+   {
+    "text": "7B Countdown和ARC与random接近，作者称强base降低课程边际收益。",
+    "locator": "HTML §3.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "相同类别权重随机课表取得同等收益或困难层长期被饿死，则|A|自适应机制不承重。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B/7B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "复用rollout无额外在线过滤；Count/Zebra/ARC每难度10K训练/200评测，较难层OOD；MATH难度类不均衡；最佳checkpoint八次generation pass@1。",
+  "pitfalls": [
+   {
+    "text": "公式/超参在本地HTML缺失，不可直接落地。",
+    "locator": "§2/AppendixC未包含"
+   }
+  ],
+  "code": null,
+  "lesson": "当用advantage作为采样收益，先记录其归一化与成功率依赖，避免把奖励方差当真正学习进步。"
+ }
+}

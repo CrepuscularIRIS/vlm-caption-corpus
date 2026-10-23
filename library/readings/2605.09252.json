@@ -1,0 +1,154 @@
+{
+ "paper_key": "2605.09252",
+ "title": "LLM Agents Already Know When to Call Tools -- Even Without Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.09252.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "2 label/task protocol",
+   "3 baselines",
+   "4/Table3",
+   "5.1–5.3/Table4",
+   "7 conclusion",
+   "E.1 soft/hard summary",
+   "E.3 layer ablation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "decouple_representation_from_execution",
+  "key_step": "最后输入token所有层hidden states拼接训练L2 logistic probe，然后用预测的工具需要性给输出prefill。",
+  "why_non_obvious": "线性可解码信号可存在但生成格式仍失败；prefill是把探针信号转换为实际动作的干预。",
+  "trigger_condition": "When a hidden-state predictor outperforms verbalized tool decisions, steer the action prefix and test compliance separately.",
+  "contribution_type": "method",
+  "abstract_strategy": "decouple_representation_from_execution",
+  "abstract_trigger_condition": "When a hidden-state predictor outperforms verbalized tool decisions, steer the action prefix and test compliance separately.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "最后输入token所有层hidden states拼接训练L2 logistic probe，然后用预测的工具需要性给输出prefill。",
+  "abstract_why_non_obvious": "线性可解码信号可存在但生成格式仍失败；prefill是把探针信号转换为实际动作的干预。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.09252#s1",
+   "object": "工具触发与直接回答生成",
+   "information": "模型自身禁工具正确/错误标签和prompt末token全层hidden states",
+   "operation": "训练logistic probe，按阈值soft句子或hard输出格式prefill",
+   "claimed_effect": "τ.5六模型平均准确率−1.7点、调用−.48/task；Qwen3-4B probe AUROC .948",
+   "conditions": [
+    "900singlehop训练/2250test",
+    "可访问hidden states"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "P ROBE &P REFILL (Ours)                   −1.1 −0.66    −1.6 −3.4 −0.54       −6.2 −0.8 −0.24              −3.4 −1.7 −0.48       −3.6"
+   },
+   "failure_boundary": "禁工具单次失败≠工具能救；平均仍损准确率",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P24",
+   "how": "冻结探针→prefix触发可作为gate诊断基线。",
+   "strength": 2
+  },
+  {
+   "problem": "P05",
+   "how": "意图可解码不等于真实调用格式/动作服从。",
+   "strength": 3
+  },
+  {
+   "problem": "P34",
+   "how": "失败概率和工具增量收益仍须区分。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Prompt-only and Reason-then-Act",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "本文没有专门限制节；标签是禁工具一次表现，非成对工具收益，执行服从依模型变化。",
+   "quote": null,
+   "locator": "§4/5"
+  }
+ ],
+ "question": {
+  "observed_failure": "Llama3.1-8B ReasonThenAct准确79.5→31.2，叙述调用但不产有效调用；probeAUROC .927。",
+  "load_bearing_assumption": "禁用工具的失败标签是有用代理，且前缀控制确实能改变工具动作。",
+  "scope": "15singlehop+3multihop，数学/知识/执行可靠性。",
+  "success_criterion": "同时测probe泛化、prefill服从、实际正确率和调用。",
+  "why_open": "内部表示可预测性与可执行工具输出存在断层。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "p=\\sigma(w^Th+b),\\quad \\hat d=\\mathbf1[p\\ge\\tau]",
+    "locator": "§4–5 reader transcription of logistic classifier/threshold"
+   }
+  ],
+  "signal_routing": "probe仅优化线性分类器，LLM冻结；h由输入末token各层拼接，标准prefill前向复用。输出以“我能直答”或“需工具”前缀续写；hard版本强制答案/调用JSON起始格式，不是reward或token credit。",
+  "normalization": "other",
+  "invariance": "无PBRS。概率校准与温度/阈值相关，AUROC对单调变化不变不代表风险受控。§5.1 p<τ判无需工具意味着提高τ会更少调用；同段文字写lowerτ skips more与规则相反，采用显式规则并保留矛盾。",
+  "baseline_or_potential": "无PG baseline；L2 logistic regularization。",
+  "degenerate_cases": "单次无工具标签有采样噪声；总成功/总失败类不平衡；soft可被忽略，hard不能纠正probe误判；multi-hop全题失败不能定位哪一步需工具。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "全层/中层/末层probe；soft/hard prefill在Llama的服从差异；同调用预算与Prompt/ReasonThenAct比较。",
+  "negative_results": [
+   {
+    "text": "Llama70B soft基本忽略prefill，需hard才能控调用。",
+    "locator": "§5.2/E.1"
+   },
+   {
+    "text": "τ.5总体准确率降1.7点；非非劣性保证。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": "Table8 3 runs；未核训练独立seed",
+  "falsifier": "若匹配题型/难度后probe预测不优于简单难度特征，或crop预填不能保准确，则不能称已识别视觉工具必要性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3 1.7/4/14/32B; Llama3.1-8B/3.3-70B",
+   "framework": "L2 logistic probe; no LLM finetuning",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "900训练样本CPU数秒，额外probe<1ms；实际收集无工具标签另有成本。",
+  "pitfalls": [
+   {
+    "text": "all-layer feature巨大但只线性CPU训练；不能在闭源API无hidden access时照搬。",
+    "locator": "§4"
+   },
+   {
+    "text": "格式强制与认知纠正是不同因果动作，必须分开比较。",
+    "locator": "§5.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当探针显示可预测信号而工具行为仍错时，用轻量输出干预检查执行层，同时保留真实效益和标签噪声的对照。"
+ }
+}

@@ -1,0 +1,58 @@
+{
+ "paper_key": "2603.03205",
+ "title": "Learning When to Act or Refuse: Guarding Agentic Reasoning Models for Safe Multi-Step Tool Use",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2603.03205.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2.1–2.2 composite reward",
+   "Table5/§4.6",
+   "Appendix Algorithm1",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "把安全检查tag与终止拒绝放入策略动作空间，用完整轨迹两两偏好胜场训练。",
+  "why_non_obvious": "拒绝发生的时机及已执行动作影响安全，终答拒绝文本并不代表此前安全。",
+  "trigger_condition": "当工具反馈可引入风险时，显式提供可选check与terminal refusal并学习何时执行。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "structural_prior_encoding",
+  "abstract_trigger_condition": "当工具反馈可引入风险时，显式提供可选check与terminal refusal并学习何时执行。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.03205#s1",
+   "object": "多轮工具调用/拒绝",
+   "information": "同prompt四条trajectory，LLM judge安全偏好，格式与长度信息",
+   "operation": "R=Σpairwise win+format−length；n4胜场0–3，format0–2；生成安全tag隐式gate，tool输出mask",
+   "claimed_effect": "Qwen2.5 AgentHarm：MOSAIC H=.09/R=.87/NR=.61；only-think .12/.59/.42；pointwise .14/.79/.54。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5",
+    "quote": "Qwen2.5 (only think) 0.12 0.59 0.42                    0.49   0.34 0.94\n                                  Qwen2.5 (ptwise reward) 0.14 0.79 0.54                 0.51   0.48 0.89\n                                  Qwen2.5 (MOSAIC)        0.09 0.87 0.61                 0.42   0.58 0.84"
+   },
+   "failure_boundary": "偏好最终仍聚成单trajectory标量，不是无scalar或精确step credit；安全拒绝不等价于缺证据拒答，judge可能偏差。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "strength": 2,
+   "how": "将拒绝/终止显式作为动作，而非仅最终文本格式。"
+  },
+  {
+   "problem": "P35",
+   "strength": 1,
+   "how": "停止时机重要，但安全风险不同于视觉证据不足。"
+  }
+ ],
+ "scientific_replication": false
+}

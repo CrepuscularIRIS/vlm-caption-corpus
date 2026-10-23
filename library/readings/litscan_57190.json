@@ -49,7 +49,7 @@
     "locator": "Eq5–9; Tables2,5",
     "quote": "how often the model chooses region cropping (RC               + ∆Margin (Full)           0.706       0.473"
    },
-   "failure_boundary": "Eq9全组mean/std与文字conditional-on-d冲突；强制采样实现/IS未给，不能认为FBFA完整实现。",
+   "failure_boundary": "[redacted: project-internal]",
    "verified": "fulltext"
   }
  ],

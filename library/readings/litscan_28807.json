@@ -1,0 +1,63 @@
+{
+ "paper_key": "litscan:28807",
+ "title": "REFUEL",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_28807.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Algorithm1/Eq1–6",
+   "§3.2 assumptions/Theorem1",
+   "§4/Table1",
+   "§6 conclusion/limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "algebraic_equivalence_unification",
+  "key_step": "同一on-policy前缀分叉两响应并独立续到结尾，把未来reward差回归为policy logratio差。",
+  "why_non_obvious": "同状态差分消去partition function，避免显式critic并针对多轮rollin covariate shift。",
+  "trigger_condition": "当多轮训练上下文来自旧策略时，用当前策略rollin和同前缀分叉估计相对future Q。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "algebraic_equivalence_unification",
+  "abstract_trigger_condition": "当多轮训练上下文来自旧策略时，用当前策略rollin和同前缀分叉估计相对future Q。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:28807#s1",
+   "object": "多轮对话policy更新",
+   "information": "h均匀抽turn；当前policy prefix；两个独立πt continuation；trajectory reward model",
+   "operation": "最小化[(logπ(y)/πt(y)−logπ(y′)/πt(y′))/η−(R−R′)]²；只拟合分叉turn响应，future输出提供target",
+   "claimed_effect": "UltraInteract Table1 iter2在turn5为58.6，表中五turn平均56.64；70B为55.4/61.24，不能宣称总体超过70B。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "R EFUEL (iter 2)     55.2       53.4   58.8    57.2    58.6   56.64"
+   },
+   "failure_boundary": "覆盖与bounded regression error是理论前提，Theorem1还用uniform initialization；真实LLM训练非无条件最优或非劣保证；模拟用户不等于真人。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "用独立真实续采样提供动作相对未来回报，而不是单步proxy替换。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "可替代固定reader但必须当前actor分叉且算真实终奖。"
+  },
+  {
+   "problem": "P50",
+   "strength": 2,
+   "how": "on-policy rollin覆盖自生错误上下文。"
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,172 @@
+{
+ "paper_key": "litscan:79304",
+ "title": "IRIS: Implicit Reward-Guided Internal Sifting for Mitigating Multimodal Hallucination",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79304.txt",
+  "sections_read": [
+   "Abstract",
+   "4",
+   "5 Tables1–4",
+   "6–8",
+   "Appendix C filters and corruptions"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "SFT预热后从当前策略采K候选，以相邻两轮图/无图length-normalized logratio及RVG排序；构建偏好并用文本/视觉DPO及chosen anchor优化。",
+  "why_non_obvious": "score reference与optimization reference必须分开；自身高概率不等于可靠偏好，需要预热与图像反事实校正。",
+  "trigger_condition": "When external preferences are off-policy and coarse, sift current-policy candidates with visually rectified implicit ratios after grounding warm-up.",
+  "contribution_type": "preference construction plus objective",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "When native likelihood changes carry noisy preference signals, rectify against a counterfactual context before selection.",
+  "abstract_key_step": "只在无图relative reward高于有图时扣分，最高与最低形成对。",
+  "abstract_why_non_obvious": "不同条件的policy比值只作proxy，不提供真实视觉正确性保证。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79304#s1",
+   "object": "自生成caption/VQA偏好",
+   "information": "K5当前候选、相邻policy有图/无图概率、SFT5700参考",
+   "operation": "RVG排序及过滤/参考锚定；文本DPO+视觉DPO+anchor，两轮",
+   "claimed_effect": "LLaVA1.5-7B ObjectHal CS54.7→8.66，AMBER HalRate40.4→11.3、cover50.1→51.1；仅image筛选R2 CS14.1。",
+   "conditions": [
+    "β=.1 γ=.7 λ=1",
+    "每轮2epochs",
+    "SFT warm-up"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "8.66 (-46.04) 4.56 (-21.94)"
+   },
+   "failure_boundary": "图/无图ratio衡量相对历史策略变化，不是当前crop增益；偏好方向正确性假设仍需独立验证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "对caption的grounding偏好筛选可迁移但不能作为未经校准奖励。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "SFT预热与on-policy样本避免完全脱离当前支持。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "OPA-DPO",
+   "kind": "external-feedback alignment"
+  },
+  {
+   "name": "r_image/r_text sifting",
+   "kind": "ablation"
+  },
+  {
+   "name": "off-policy RLHF-V pairs",
+   "kind": "data ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "self-sift需偏好方向总体正确，SFT校准是作者假设而非概率比自动保证。",
+   "quote": "as long as the induced preference direction is correct more\noften than not.",
+   "locator": "4.1"
+  },
+  {
+   "text": "LenFilter/Conflict在Algorithm2是抽象判定，所读内容未给可复现阈值。",
+   "locator": "Appendix C"
+  },
+  {
+   "text": "MMHal改善较小；7B R2 score2.42仍低于RLAIF-V3.00。",
+   "locator": "Table1"
+  }
+ ],
+ "question": {
+  "observed_failure": "仅r_image筛选R2 ObjectHal CS14.1，RVG8.6；去SFT自生R2 CS18.3 vs预热+自生8.6。",
+  "load_bearing_assumption": "视觉grounding的相对历史改进可筛出更好的当前策略候选。",
+  "scope": "5700示例两轮DPO",
+  "success_criterion": "改善对象幻觉与coverage，同时保住general能力",
+  "why_open": "自生成候选可共享幻觉，概率自评不能代替真值。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2–4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_I=mean_t(log pi_(r-1)(y_t|I,x,y_<t)-log pi_(r-2)(y_t|I,x,y_<t)); r_T analogous no-image; S=r_I-gamma*max(0,r_T-r_I)",
+    "locator": "Eqs8–10; first-round scoring ref=base"
+   },
+   {
+    "latex": "u(I,y)=log pi_theta(y|I,x)/pi_ref(y|I,x); L_ctp=-log sigmoid(beta*(u(I,yw)-u(I,yl))); L_cvp=-log sigmoid(beta*(u(I,yw)-u(Itilde,yw))); L_anchor=-log sigmoid(beta*u(I,yw)-delta); L=L_ctp+lambda*L_cvp+L_anchor",
+    "locator": "Eqs12–15"
+   }
+  ],
+  "signal_routing": "RVG只用于K候选argmax/argmin选对，不直接进入policy reward。DPO reference冻结π_(r-1)，训练从同策略初始化；scoring referenceπ_(r-2)，第一轮base。chosen可被SFT参考替换。loss在sequence概率比较上，无crop局部advantage。",
+  "normalization": "other: sifting loglikelihood按response token数平均；无group std。训练目标是否同样length-normalized未明确，不能自动沿用。",
+  "invariance": "非PBRS，非纯policy-invariant reward；r_T>r_I是相对参考增益比较而非绝对文本概率大。相邻策略完全相同时所有score0，tie无信息。",
+  "baseline_or_potential": "两个不同reference不可混用；无图是sifting反事实条件；anchor为soft margin非严格likelihood下界。",
+  "degenerate_cases": "K1或全重复被screening移除；全候选共享幻觉可选错；p≈0候选无支持但SFT参考回填可能提供监督，非纯on-policy。图像扰动若保留所需信息，visual preference标签可错。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3预热×selfgen，Table4text/image/RVG；Table2去visual/anchor。",
+  "negative_results": [
+   {
+    "text": "加入anchor后AMBER HalRate10.4→11.3、Cog.8→1.1，虽ObjectHal10.2→8.66；并非全部更好。",
+    "locator": "Table2"
+   },
+   {
+    "text": "7B R1→R2 AMBER coverage51.9→51.1，MMHal HalRate仍.50。",
+    "locator": "Table1"
+   },
+   {
+    "text": "K10 ObjectHal CS6.0优于K5 8.6，但AMBER CHAIR2.7劣于2.4，非统一最优。",
+    "locator": "Table6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：人工blind检查RVG选对方向及同答案有图/无图比值；若排序主要由SFT风格驱动，则grounding解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5-7B/13B",
+   "framework": "iterative SFT + multimodal DPO",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8 H20；K5 temp.7；每轮2epoch；lr7B5e-7/13B1e-6。",
+  "pitfalls": [
+   {
+    "text": "diffusion负图为DDPM forward t500/T1000，不调用去噪模型；random/crop可能未删除证据。",
+    "locator": "Appendix C"
+   }
+  ],
+  "code": null,
+  "lesson": "当使用implicit reward自筛选时，分别存scoring和DPO reference版本并审计SFT回填比例，避免把数据锚定的贡献误归于纯自改善。"
+ }
+}

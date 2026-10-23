@@ -1,0 +1,171 @@
+{
+ "paper_key": "litscan:75750",
+ "title": "SDFT",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75750.txt",
+  "sections_read": [
+   "Abstract",
+   "§3–3.2",
+   "§4.1,4.4–4.5/Table1–2",
+   "§5 limitations",
+   "Appendix A.1,A.3,B.1/Algorithm1/Table5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "让带示范的同模型教师评价学生自己采样的前缀，EMA更新教师。",
+  "why_non_obvious": "相同教师的离线蒸馏仍较弱，收益不能只归于教师质量。",
+  "trigger_condition": "有专家示范但没有可验证奖励、且模型有足够ICL能力时，用条件化教师提供在线token监督。",
+  "contribution_type": "method",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "有专家示范但没有可验证奖励、且模型有足够ICL能力时，用条件化教师提供在线token监督。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "让带示范的同模型教师评价学生自己采样的前缀，EMA更新教师。",
+  "abstract_why_non_obvious": "相同教师的离线蒸馏仍较弱，收益不能只归于教师质量。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75750#s1",
+   "object": "持续学习中的学生轨迹分布",
+   "information": "训练时教师额外看到示范c；学生只看到x和自身前缀",
+   "operation": "每个prompt单次学生rollout，在相同前缀计算反向KL并更新EMA教师",
+   "claimed_effect": "科学QA新任务70.2 vs SFT66.2；旧任务均值64.5 vs SFT53.4、base65.5。",
+   "conditions": [
+    "Qwen2.5-7B-Instruct",
+    "同一目标任务验证集选checkpoint"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Appendix Table5",
+    "quote": "SDFT (Ours)                    70.2             60.9            68.9         66.8        70.7          46.5             73.1         64.5"
+   },
+   "failure_boundary": "旧任务均值并非完全保持；IFEval66.8仍低于base74.3。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P61",
+   "strength": 2,
+   "how": "通过当前策略轨迹蒸馏减少旧任务遗忘；需改造成真实多轮VLM轨迹。"
+  },
+  {
+   "problem": "P63",
+   "strength": 2,
+   "how": "新任务和原能力并测，直接约束只看目标验证集的误判。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "SFT",
+   "kind": "method"
+  },
+  {
+   "name": "DFT",
+   "kind": "method"
+  },
+  {
+   "name": "SFT + re-invoke",
+   "kind": "method"
+  },
+  {
+   "name": "offline distillation",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "解析per-token估计有sequence-level bias；不能宣称精确KL梯度。",
+   "locator": "A.1",
+   "quote": "This estimator has strictly lower variance than sample-based token estimators, but it remains biased at the sequence\nlevel, since it still does not account for how the choice of yt influences future states y>t . Despite this bias, it is often\ncomputationally attractive because it leverages quantities already produced during the forward pass."
+  }
+ ],
+ "question": {
+  "observed_failure": "科学QA的SFT使旧任务平均65.5降至53.4；SDFT为64.5。",
+  "load_bearing_assumption": "示范条件化的模型能给出较好的、接近学生支持域的教师分布。",
+  "scope": "有示范无明确reward的技能/知识持续学习。",
+  "success_criterion": "同测新任务与原任务；比较同教师离线/在线蒸馏。",
+  "why_open": "轨迹分布、教师质量和蒸馏估计偏差可能分别造成保留效果。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.5同教师online/offline对照"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L(\\theta)=\\mathbb E_{y\\sim\\pi_\\theta(\\cdot|x)}[\\log\\pi_\\theta(y|x)-\\log\\pi_\\phi(y|x,c)]",
+    "locator": "§3.1 sequence objective"
+   },
+   {
+    "latex": "\\phi\\leftarrow\\alpha\\theta+(1-\\alpha)\\phi",
+    "locator": "Algorithm1 line19"
+   }
+  ],
+  "signal_routing": "学生采样完整回答；教师只在训练时见示范并对学生前缀给分。主实验采用全词表解析逐token KL梯度近似；教师更新中停止梯度。该估计忽略早期token改变后续前缀分布的路径，作者明确承认sequence-level bias。不是终答二值奖广播，也不是冻结reader前后准确率差。",
+  "normalization": "other",
+  "invariance": "非PBRS。正文IRL解释依赖教师近似最优；不能把代理蒸馏等价为真实任务奖励或保留保证。",
+  "baseline_or_potential": "EMA同模型条件化teacher；不是独立无偏critic或固定potential。",
+  "degenerate_cases": "教师无ICL能力或学生支持不足时，在线蒸馏不能保证新技能；示范泄露措辞会被蒸馏。没有GRPO全对/全错组std。",
+  "estimator_caveat": "A.1印出的analytic梯度求和缺显式π权重，Algorithm1又只列sampled-token logprobs却调用analytic estimator；不自行补全实现。长度reduce、vocab权重与engine IS细节未从代码核验。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "§4.5同教师SFT/offlineKL都不及onlineSDFT；A.3冻结教师较弱、直接current-student教师不稳定、EMA稳定；A.1更复杂无偏估计无可测收益。",
+  "negative_results": [
+   {
+    "text": "Table5科学QA旧能力仍65.5→64.5；不能声称零遗忘。",
+    "locator": "Table5"
+   },
+   {
+    "text": "Rao–Blackwellized estimator未比有偏解析估计带来可测收益，多rollout收益很小。",
+    "locator": "A.1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "在同初始模型/数据/算力下，若同教师离线KL保留与新任务均不差，在线轨迹机制解释减弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B-Instruct；Olmo-3-7B-Think额外实验",
+   "framework": "Hugging Face TRL",
+   "group_size": 1,
+   "max_turns": null,
+   "kl": "teacher reverse KL本身为目标",
+   "teacher_ema_alpha_sweep": [
+    0.01,
+    0.02,
+    0.05
+   ],
+   "max_generation_tokens": 2048
+  },
+  "cost": "单H200全参训练；约2.5倍FLOPs/4倍SFT wallclock，非相同算力优势证明。",
+  "pitfalls": [
+   {
+    "text": "教师的Based on the text等措辞泄露到学生；作者用前若干token loss masking缓解，明确属启发式。",
+    "locator": "§5"
+   }
+  ],
+  "code": null,
+  "lesson": "当teacher由当前student条件化而来时，直接同步容易放大概率扰动；EMA可稳住教师，但需要另测原任务而非只选目标任务checkpoint。"
+ }
+}

@@ -1,0 +1,56 @@
+{
+ "paper_key": "2608.28128",
+ "title": "VICT: Verifier-Instrumented Credit Tracing for Long-Horizon LLM Agent Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.28128.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3.3–3.4",
+   "Tables1/4/5",
+   "Limitations",
+   "AppendixD normalization/PBRS scope"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "把terminal verifier拆成可执行/evidence-backed atoms及依赖，只有conformance通过、core内且有proofedge的动作才收credit。",
+  "why_non_obvious": "让eligibility由真实verifier接口约束；unsupported时abstain，非按语言相关性强行归因。",
+  "trigger_condition": "When terminal verifiers expose auditable internal checks, constrain credit routing to dependency-valid atom witnesses.",
+  "contribution_type": "method",
+  "abstract_strategy": "structural_prior_encoding",
+  "abstract_trigger_condition": "When terminal verifiers expose auditable internal checks, constrain credit routing to dependency-valid atom witnesses."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.28128#s1",
+   "object": "verifier-backed action credit",
+   "information": "verifier atoms/status/dependencies、history evidence、write/reveal/commit witness",
+   "operation": "校验reward重建→按baseadv符号寻找删除/修复core→robustgroup marginals→proofedge分配",
+   "claimed_effect": "7B ALFWorld77.6→93.7%，WebShop strict66.1→83.6%；randomproofplacebo79.4/67.3近outcome-only。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "VICT (ours)                         93.7±0.8       83.6±0.9"
+   },
+   "failure_boundary": "只适用于可instrument verifier与可见state；proofeligibility不证明动作因果必要或optimal。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "提供可审计eligibility而非无条件densecredit。",
+   "strength": 3
+  },
+  {
+   "problem": "P44",
+   "how": "caption/crop缺可验证视觉atoms时不满足前提，不能用prompt rubric替代。",
+   "strength": 2
+  }
+ ]
+}

@@ -1,0 +1,58 @@
+{
+ "paper_key": "2412.06769",
+ "title": "Training Large Language Models to Reason in a Continuous Latent Space",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2412.06769.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§3",
+   "§4.1/§4.3–4.4 selected analysis",
+   "§5/Table1",
+   "§6",
+   "Appendix B/Table4/C.1–C.2/Table5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把上一位置hidden直接作为下一位置embedding，以连续状态代替离散CoT token。",
+  "key_step": "多阶段移除前k语言步骤，替换kc个latent thoughts；只监督剩余语言target，梯度贯穿latent。",
+  "why_non_obvious": "latent无显式压缩/模仿被移除CoT的loss，训练目标仅使未来文本可预测，可能保留多候选而非早选路径。",
+  "trigger_condition": "当语言化中间步骤冗长或过早锁定搜索分支时，尝试课程训练的连续思考。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "architectural_operator_substitution：以连续hidden递归替代中间离散语言接口。",
+  "abstract_trigger_condition": "中间决策表达成本或早期commitment限制计算时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2412.06769#s1",
+   "object": "GPT-2数学/逻辑推理",
+   "information": "语言CoT课程、逐位置连续hidden",
+   "operation": "Coconut训练与固定长度latent推理",
+   "claimed_effect": "GSM8k34.1±1.5 vs CoT42.9±.2；ProsQA97.0±.3 vs CoT77.5±1.9。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5/Table1；列GSM8k Acc/#Tokens、ProntoQA Acc/#Tokens、ProsQA Acc/#Tokens",
+    "quote": "Coconut (Ours)         34.1 ±1.5        8.2       99.8 ±0.2         9.0       97.0 ±0.3       14.2"
+   },
+   "failure_boundary": "部分逻辑任务优于CoT，GSM8k仍落后；不宣称普遍准确率非劣。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "课程先用显式轨迹种行为再移入latent，强调不能只靠终答案监督期待推理自行出现。",
+   "strength": 1
+  },
+  {
+   "problem": "P11",
+   "how": "可改变中间表示，但不提供crop必要性credit或GRPO token advantage。",
+   "strength": 1
+  }
+ ]
+}

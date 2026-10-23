@@ -1,0 +1,57 @@
+{
+ "paper_key": "2508.10751",
+ "title": "Pass@k Training for Adaptively Balancing Exploration and Exploitation of Large Reasoning Models",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2508.10751.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 sampling and analytical Eq7–15",
+   "§3.3/Table1; §3.4 k/LR ablation",
+   "§4.1 advantage analysis",
+   "§6 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把k条回答的至少一次成功当group reward，解析枚举组合后的平均优势，避免额外bootstrap方差。",
+  "key_step": "N条中M条错，计算全部k子集成功率µ=1−C(M,k)/C(N,k)，由此给正负回答解析优势。",
+  "why_non_obvious": "并非找到单个失败轨迹的有用步骤，而是按题成功率重加权原有二值结果方向。",
+  "trigger_condition": "易题反复强化且难题探索不足时，以pass@k组合优势减少易题更新强度。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用集合成功目标改变不同难度题的优化权重，解析化替代显式组合采样。",
+  "abstract_trigger_condition": "易题反复强化且难题探索不足时，以pass@k组合优势减少易题更新强度。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2508.10751#s1",
+   "object": "response-level优势",
+   "information": "Nrollout、正确/错误数量、k；无需额外PRM",
+   "operation": "组合计数推出positive/negative条件group平均优势，广播回答tokens",
+   "claimed_effect": "Table1 Qwen2.5-7B在KORBench Pass@1/Pass@k为47.7/63.5，Pass@1训练37.7/45.6；Enigmata17.9/29.8 vs12.9/21.3。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Pass@k Training row",
+    "quote": "+ Pass@k Training       4.0/5.3     17.9/29.8    47.7/63.5     7.1/22.4"
+   },
+   "failure_boundary": "这些收益不能证明每个错误动作获正信用或开拓原无支持行为；表中评测k未在已读表附近明确。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P07",
+   "how": "难度重权仍不能给全错组发现正确行为信号。",
+   "strength": 2
+  },
+  {
+   "problem": "P29",
+   "how": "以降低容易题优化强度保留探索。",
+   "strength": 3
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

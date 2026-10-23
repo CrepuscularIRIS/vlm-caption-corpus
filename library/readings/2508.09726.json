@@ -1,0 +1,228 @@
+{
+ "paper_key": "2508.09726",
+ "title": "Sample More to Think Less: Group Filtered Policy Optimization for Concise Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2508.09726.txt",
+  "sections_read": [
+   "Abstract and contribution list",
+   "§3 Eq.2 and Algorithms1–2",
+   "§4 setup",
+   "§5 Tables1–2, §5.1–5.4",
+   "§6.1–6.3 including hard-problem boundary p14",
+   "§8 Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "扩大 rollout 候选组后，按长度或 reward/length 选 k 条，仅在保留子集计算 reward 均值/std；丢弃轨迹优势为零。",
+  "key_step": "把属性偏好移入 advantage 的样本选择与归一化集合；固定生成 G=16 的自适应变体按历史 reward 四分位调整保留 k=4/6/8/8。",
+  "why_non_obvious": "筛选不仅改变训练数据，也改变比较基线；即便原始 reward 不再加一项，梯度目标仍被属性选择改变。训练生成成本与推理长度收益分属不同预算。",
+  "trigger_condition": "When RL length inflation dominates and many candidate responses exist, filter the advantage-estimation group by a desired property while measuring accuracy and total generation cost.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "通过候选集合设计改变组内相对信用；将生成预算和用于梯度的样本预算分离。",
+  "abstract_trigger_condition": "When RL length inflation dominates and many candidate responses exist, filter the advantage-estimation group by a desired property while measuring accuracy and total generation cost.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "把属性偏好移入 advantage 的样本选择与归一化集合；固定生成 G=16 的自适应变体按历史 reward 四分位调整保留 k=4/6/8/8。",
+  "abstract_why_non_obvious": "筛选不仅改变训练数据，也改变比较基线；即便原始 reward 不再加一项，梯度目标仍被属性选择改变。训练生成成本与推理长度收益分属不同预算。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2508.09726#s1",
+   "object": "GRPO response group",
+   "information": "每条 response 的实际连续 reward 与长度；并非仅二值正确率",
+   "operation": "生成 G=16 后保留 reward/length 最大8条，子集 mean+std，其他优势清零",
+   "claimed_effect": "Table2 五任务平均准确率71.7 vs GRPO72.1；10.2k vs13k tokens，额外长度膨胀减少79.5%，不是总长度减少79.5%。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p8, Token Efficiency row; §5.4",
+    "quote": "87.4 10.1k 82.6 57.0 11k 79.7 71.7 10.2k 79.5"
+   },
+   "failure_boundary": "Wilcoxon未显著不等于非劣；AIME25均值69.5 vs72.4。训练采样数及正则梯度需分别计成本。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2508.09726#s2",
+   "object": "候选组与保留子集大小",
+   "information": "rollout长度、reward、G与k",
+   "operation": "以最短8条/16候选替代原始8条GRPO；与6/8、4/24等比较",
+   "claimed_effect": "Table2 shortest8/16平均73.4、12k，GRPO72.1、13k；ELR29.7%。6/8仅4.8% ELR，说明仅丢弃同规模候选不足。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p8, 8 of16 row; §5.1–5.2",
+    "quote": "8 of 16 89.3 11.8k 31.5 59.8 12.6k 36.5 73.4 12k 29.7"
+   },
+   "failure_boundary": "同 k 或相同比例不代表相同生成计算；筛掉必要长链会降准确率。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P08",
+   "strength": 3,
+   "how": "优势置零与全组token分母共同决定有效梯度权重，不能只看保留k。"
+  },
+  {
+   "problem": "P05",
+   "strength": 3,
+   "how": "效率必须区分额外长度膨胀、绝对token和训练采样成本。"
+  },
+  {
+   "problem": "P15",
+   "strength": 3,
+   "how": "筛选会抹掉被拒轨迹的outcome策略梯度，不是单纯附加安全效率项。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "保留更多候选无法创造rollout没有采到的正确直答支持。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO with DAPO token aggregation",
+   "kind": "method"
+  },
+  {
+   "name": "Phi-4-reasoning SFT",
+   "kind": "method"
+  },
+  {
+   "name": "Shortest 6/8, 8/16, 6/16, 4/16, 8/24, 6/24, 4/24",
+   "kind": "method"
+  },
+  {
+   "name": "Token Efficiency GFPO",
+   "kind": "method"
+  },
+  {
+   "name": "Adaptive Difficulty GFPO",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者明确 adaptive difficulty 在 hard 问题小幅降准确率；丢掉有益长链是失效路径。",
+   "quote": "However, Adaptive Difficulty experiences a modest accuracy drop on hard problems.",
+   "locator": "§6.3 p14"
+  },
+  {
+   "text": "reader limitation：显著性检验未拒绝相等不能建立非劣保证；一个强SFT骨干与短训练不足以确认弱模型/视觉工具迁移。",
+   "quote": "",
+   "locator": "Tables1–2; §4; reader inference"
+  }
+ ],
+ "question": {
+  "observed_failure": "GRPO平均长度从SFT9.5k增至13k；TokenEfficiency降至10.2k但准确率72.1→71.7。",
+  "load_bearing_assumption": "同一prompt的较短或高reward/token候选保留了足够解题能力；过滤不会系统删除必要长推理。",
+  "scope": "强SFT数学模型的组内候选筛选及五任务泛化。",
+  "success_criterion": "固定总rollout计算与准确率非劣界，减少绝对生成token；同时统计hard问题的正确长链丢弃率。",
+  "why_open": "现有报告主要固定训练步数且变G，未证明同生成预算非劣；视觉crop长度与证据必要性不等价。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Algorithms1–2; G/k ablations"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq.4 ELR and Table2"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§5.1–5.3"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "§3 candidate generation and rejection"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S=TopK(metric(o_i)); m_i=1[i in S]; mu_S=(1/k)sum_{i in S}R_i; sigma_S=sqrt((1/k)sum_{i in S}(R_i-mu_S)^2); A_it=m_i(R_i-mu_S)/sigma_S",
+    "locator": "Eq.2 p4"
+   },
+   {
+    "latex": "J=E[(sum_{i=1}^G sum_{t=1}^{L_i} min(r_it A_it,clip(r_it,1-eps,1+eps)A_it))/(sum_{i=1}^G L_i) - beta KL(pi_theta||pi_old)+gamma H(pi_theta)]",
+    "locator": "Eq.2 p4; footnote1 mentions modified clipping"
+   },
+   {
+    "latex": "R=w_acc LengthScale(R_acc)+w_rep R_rep, R_acc in {0,1}, R in [-1,1]; ELR=(L_GRPO-L_GFPO)/(L_GRPO-L_SFT)",
+    "locator": "§4 Eq.3; §5 Eq.4"
+   }
+  ],
+  "signal_routing": "保留response的所有生成token获得同一子集归一化优势；被拒response仅PG优势为0。Eq2总token分母仍包括全部G条，不是仅S。KL/entropy列在mask外，故不能断言被拒轨迹完全无梯度。KL printed pi_theta||pi_old；具体正则token实现未展示。AdaptiveDifficulty用全组平均连续R及历史t-digest四分位调整k，G仍16，不是给hard额外rollout。",
+  "normalization": "mean+std",
+  "invariance": "无采样选择校正，不是无偏保留原GRPO目标，也不是严格PBRS。固定S时正比例reward缩放被std消除；正缩放保持R/L排序，reward平移则会改变R/L排序。改变k/G还改变全组token分母对应的PG与正则相对权重。",
+  "baseline_or_potential": "baseline仅保留子集reward均值；token效率用于筛选，不直接作为归一化reward。原reward已含长度缩放、5-gram重复惩罚及格式最低分，权重/LengthScale函数引用外部论文而本次未解析。",
+  "degenerate_cases": "k=1或保留reward全相等使std=0，epsilon未在式中给出。二值全对/全错将退化，但实际连续长度/重复reward可能仍有差异，不能把两者混同。负R时R/L偏好较长负奖励链；无正确短链时筛选无法创造支持。ELR在GRPO和SFT等长时分母0。单轮退化为response选择仍有效，不能变成动作必要性估计。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "§5.1保持G=8只留6条 vs增G到16/24，区分单纯丢弃和更广候选搜索；Table2保持k或比例比较，§6.3按SFT正确率难度分层检查hard损失。读者建议固定生成token预算比较。",
+  "negative_results": [
+   {
+    "text": "TokenEfficiency五任务均值71.7低于GRPO72.1，AIME25为69.5低于72.4。",
+    "locator": "Tables1–2"
+   },
+   {
+    "text": "6/8变体Omni-MATH长度12.9k高于GRPO12.7k，ELR=-5.5%。",
+    "locator": "Table2"
+   },
+   {
+    "text": "AdaptiveDifficulty hard问题会丢掉有益长链，作者报告轻微准确率下降。",
+    "locator": "§6.3 p14"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "在固定生成token/计算预算下，筛选不再降低绝对输出成本，或必要长链被删造成超过预设非劣界的准确率下降，则否定目标流水线收益。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Phi-4-reasoning 14B strong SFT",
+   "framework": "verl; DAPO token aggregation; modified clipped loss details not fully specified",
+   "group_size": "G=8/16/24; retained k<=8; adaptive G16 k4/6/8/8",
+   "max_turns": null,
+   "kl": "beta=.001; entropy gamma=.001; printed KL(current||old)"
+  },
+  "cost": "32 H100；100 steps×batch64，72K池仅见6.4K题；Adam lr1e-7，cosine与10steps warmup，T1，32K响应上限/1K prompt。增G提高训练生成成本，未提供同总生成预算对照。评估T.8，AIME32、GPQA5、Omni1、LCB3次。",
+  "pitfalls": [
+   {
+    "text": "79.5%是ELR，不是总输出token下降；13k→10.2k按表中舍入值约下降21.5%。",
+    "locator": "Eq4/Table2"
+   },
+   {
+    "text": "正文§5.3把LCB59.2/57%写到Shortest8/24，Table2对应4/24；采用表行而非混用。",
+    "locator": "§5.3 and Table2"
+   },
+   {
+    "text": "固定生成G的adaptive仅改保留k；困难标签来自平均连续reward，不能等同纯accuracy或新增探索样本。",
+    "locator": "Algorithm2"
+   }
+  ],
+  "code": null,
+  "lesson": "当用过滤替代显式效率奖励时，应一起记录被拒轨迹、全组token分母、正则项和总生成成本，否则会把梯度缩小或预算扩大误当方法收益。"
+ }
+}

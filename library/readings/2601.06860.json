@@ -1,0 +1,61 @@
+{
+ "paper_key": "2601.06860",
+ "title": "ET-Agent: Incentivizing Effective Tool-Integrated Reasoning Agent via Behavior Calibration",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2601.06860.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§4.1–4.2/Eqs1–4",
+   "§5.1/Table1",
+   "Table2 ablation/Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "自生成轨迹先修冗余/错误，再用行为覆盖SFT与按组差异选题的效率RL。",
+  "key_step": "正确/错误轨迹分别refine与hint纠偏，RFT；以correctness/tool-count std做Pareto选题，组相对sigmoid成本乘正确性。",
+  "why_non_obvious": "先给模型展示更好行为再施加效率压力；但挑高方差题并不证明保住困难题或准确率。",
+  "trigger_condition": "当工具行为既冗余又不足时，先扩展可用行为数据，再在有差异的题组内校准效率。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "heterogeneous_decomposition：按正确/错误轨迹执行不同增强，再分阶段优化。",
+  "abstract_trigger_condition": "行为支持不足与低效行为同时存在，需要不同训练来源时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.06860#s1",
+   "object": "Qwen2.5-7B工具推理",
+   "information": "flywheel轨迹、group correctness/tool-count dispersion",
+   "operation": "RFT后Pareto选题与curriculum ARPO",
+   "claimed_effect": "Table2平均performance60.1/Effi46.0；无Pareto54.1/40.1，无sigma下降48.1/46.0。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5/Table2，列MR LJ/Effi、KI LJ/Effi、Avg LJ/Effi",
+    "quote": "ET-Agent           68.6   63.6   51.5   28.4      60.1   46.0"
+   },
+   "failure_boundary": "Effi是按工具调用归一化正确性，不是直接省时百分比；合成数据与训练多因素。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "flywheel先构造重试/补工具行为再RFT补支持。",
+   "strength": 2
+  },
+  {
+   "problem": "P35",
+   "how": "正确性乘组相对工具/长度惩罚，需测试是否损害困难题。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "仍是轨迹级reward/优势，不实现局部必要性credit。",
+   "strength": 1
+  }
+ ]
+}

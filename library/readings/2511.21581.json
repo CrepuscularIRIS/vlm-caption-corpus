@@ -1,0 +1,61 @@
+{
+ "paper_key": "2511.21581",
+ "title": "Learning When to Stop: Adaptive Latent Reasoning via Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2511.21581.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3.1–3.4",
+   "Table1",
+   "4 discussion",
+   "5 future work"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "latent recurrent模型增加binary停止头，SFT教可变思考长度，再按组正确率切换长度奖惩做RL。",
+  "why_non_obvious": "停止成为模型动作；对正确子集中心化仍无法理论保证准确率不降。",
+  "trigger_condition": "When fixed latent depth wastes computation, learn a stop decision and condition length incentives on sampled group difficulty.",
+  "contribution_type": "method",
+  "abstract_strategy": "generative_process_redesign",
+  "abstract_trigger_condition": "When fixed latent depth wastes computation, learn a stop decision and condition length incentives on sampled group difficulty."
+ },
+ "signatures": [
+  {
+   "sig_id": "2511.21581#s1",
+   "object": "latent reasoning stop policy",
+   "information": "latentstate、binaryhead、GT correctness、组内正确responses长度",
+   "operation": "SFT长度c*k+b裁剪；GRPO用easy组奖短、hard组奖长",
+   "claimed_effect": "Latent6 accuracy49.73→50.11%，tokens8→3.76(-52.94%)；variable variant51.40→48.14%，10.28→3.91。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "Latent-6 + RL            50.11%          3.76            2               8              1.90         −52.94%           7.58"
+   },
+   "failure_boundary": "仅Llama3.2-1B/GSM8K-Aug；另variant精度下降，不能推广无损；latent模型仍低于CoT57.09%。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "可训练stop head但latentsteps不等于工具调用。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "全正确组长度奖励共同系数在std下可消失。",
+   "strength": 3
+  },
+  {
+   "problem": "P32",
+   "how": "correct-only length shaping的无损主张有直接反例。",
+   "strength": 3
+  }
+ ]
+}

@@ -1,0 +1,181 @@
+{
+ "paper_key": "2607.16244",
+ "title": "CIGPO: Contextual Information-Gain Policy Optimization for Multi-Turn Evidence-Reading LLM Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.16244.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3–4 Eqs1–7 pp3–6",
+   "Tables3–7 pp7–10",
+   "§7.2–7.4 pp10–11"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "对中间Read证据用冻结ref GT logprob增量，IG与final F1分开组标准化，配IG权重curriculum避免reward全同。",
+  "why_non_obvious": "作者实测锁死是全格式错reward−2导致A0，不代表所有GRPO必塌；credit变化与稳定性因素未隔离。",
+  "trigger_condition": "When identical format penalties erase group advantages, supply separately normalized intermediate evidence signals.",
+  "contribution_type": "过程信号与双通道标准化稳定性诊断",
+  "abstract_strategy": "避免辅助信号被异尺度主信号淹没",
+  "abstract_trigger_condition": "小组采样终端reward齐次但仍存在可解析有用中间动作",
+  "abstract_key_step": "独立标准化IG与F1",
+  "abstract_why_non_obvious": "增加方差不是保证有用，且完全无retrieval时IG也无来源。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.16244#s1",
+   "object": "Qwen2.5-3B HotpotQA闭集Read",
+   "information": "冻结KL reference、GT答案、证据pool，训练可用GT推理无",
+   "operation": "每中间turn末token放IG差，final末token放F1；分别mean/std，IG权重.1→.3",
+   "claimed_effect": "1000测试F1 .518 vs GRPObest.430/final0；CIGPO EM .242(step100)→.150(step200)。",
+   "conditions": [
+    "单训练run",
+    "G2,max3turns",
+    "answers without retrieval也算格式违规"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7 final F1/penalizedreward/formatviol/step",
+    "quote": "CIGPO (final)               0.518             0.272          12.3       Step 200"
+   },
+   "failure_boundary": "无组件消融，1.5B两法都不稳，不能称普适防塌",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "不同reward单独标准化及λ顺序影响。"
+  },
+  {
+   "problem": "P07",
+   "strength": 3,
+   "how": "全同终端reward组零优势诊断。"
+  },
+  {
+   "problem": "P18",
+   "strength": 2,
+   "how": "失败轨迹仍可含有用证据。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO IGweight0",
+   "kind": "method"
+  },
+  {
+   "name": "aggressive clip±.5+jointnorm preliminary",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "IG/curriculum/separatenorm未分离消融；单dataset单run G2，统计证据不足。",
+   "locator": "§7.2/7.4"
+  },
+  {
+   "text": "终端reward放末token不代表原GRPO其他token没有return梯度，作者因果解释过强；本方法明确无turn-discounted return但最终token mask广播未给全公式。",
+   "locator": "§3.2/4.1 reader qualification"
+  },
+  {
+   "text": "反复全测试集1000例50step评估；模型选择/开发与独立终测边界未说明。",
+   "locator": "§5"
+  }
+ ],
+ "question": {
+  "observed_failure": "GRPO150–200steps全格式错、reward−2、pg_loss0、zeroadv ratio1；CIGPO保留valid87.7%。",
+  "load_bearing_assumption": "IG变化是有用evidence且同组不齐次，no-gradient锁死非其他实现因素主导。",
+  "scope": "3B HotpotQA1000训练1000测试/2×24GB",
+  "success_criterion": "F1/EM/格式率/zeroadv同时监控",
+  "why_open": "仅稀疏reward在小组同错时失去分辨能力。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "Table6实测训练日志锁死"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table7按正确/部分/错/格式分IG"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_t^{IG}=\\log p_{ref}(y^*|q,e_{\\le t})-\\log p_{ref}(y^*|q,e_{<t})",
+    "locator": "Eq4"
+   },
+   {
+    "latex": "A_t^{IG}=(r_t^{IG}-\\mu_{RIG})/\\sigma_{RIG},\\quad A_T^{F1}=(r_T^{F1}-\\mu_{RF1})/\\sigma_{RF1}",
+    "locator": "Eq6 all intermediate IG within promptgroup pooled; final F1 separate"
+   },
+   {
+    "latex": "\\lambda_{IG}(s)=.1+(s/200)(.3-.1)",
+    "locator": "Eq7"
+   }
+  ],
+  "signal_routing": "原始IG仅中间turn最后token，F1仅最后turn最后token，其余reward0；作者明确不用turn级discount return。Eq6仅给这些位置adv，未清楚给其余reasoning/call token是否广播及toolobs mask实现，不能假设常规GRPO广播。",
+  "normalization": "per-channel",
+  "invariance": "raw IG对完整证据序列可望远镜，但separate std/clip±50/turn稀疏loss非严格PBRS。Eq7先写λ乘reward、Eq6对IG独立std：若λ在std前且共享正数会抵消（eps例外）；若在std后才有效，文中顺序不明，curriculum效果未单独证明。",
+  "baseline_or_potential": "固定KL-ref GT likelihood，非当前policy成功概率；IG是GT点态logprob差非期望互信息。",
+  "degenerate_cases": "全部无可读中间turn/全IG相同仍零优势，不能保证方差永不消失。全部F1同错时IG可有梯度，但只是若信号有异质性。G2 finalnorm仅符号；单轮无IG。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "日志证据辨识zeroadv状态，非初始collapse因果；正确cumIG4.06 vs错2.10且作者明确可能由题难度解释。",
+  "negative_results": [
+   {
+    "text": "EM随F1上升反而.242→.150；格式违规4.4→12.3%。",
+    "locator": "Tables4–5"
+   },
+   {
+    "text": "1.5B不稳；±.5+jointnorm仅2%correct，两因素合并无法分归因。",
+    "locator": "§7.4"
+   }
+  ],
+  "seeds": 1,
+  "falsifier": "固定IG/timestep随机信号/只扩大G/保持norm同配方对照；若都稳定则不能归因IG信息价值。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B-Instruct",
+   "framework": "FSDP/vLLM",
+   "group_size": 2,
+   "max_turns": 3,
+   "kl": 0.1
+  },
+  "cost": "2×24GB,200steps约2.5h，LR1e-6,temp.6,entropy.01,max3072；batched ref称3×加速，非总训练3×。",
+  "pitfalls": [
+   {
+    "text": "格式惩罚−2含无需retrieval直答，不能迁移为允许必要才crop的目标。",
+    "locator": "§5"
+   },
+   {
+    "text": "entropy_loss≈4809是日志聚合值，未证明每token熵或其导致塌缩。",
+    "locator": "Table6 reader analysis"
+   }
+  ],
+  "code": null,
+  "lesson": "先区别零优势锁死与其诱因，记录辅助weight在标准化前后；不要把注入任意方差当有益信用证据。"
+ }
+}

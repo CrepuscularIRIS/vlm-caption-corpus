@@ -1,0 +1,181 @@
+{
+ "paper_key": "litscan:77482",
+ "title": "GR — Gradient Regularization Mitigates Reward Hacking in Reinforcement Learning from Human Feedback and Verifiable Rewards",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77482.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–3 theory",
+   "§4 reference resets",
+   "§5 Tables2–4 and limitations",
+   "AppC.1–C.4 Fig10 Tables5,8",
+   "AppD.6 Tables10–11"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用policy loss梯度范数正则代替持续referenceKL约束，经有限差分二次反传近似，偏向较平坦proxyreward区域。",
+  "key_step": "同批action在原参数/沿梯度扰动参数各算梯度，复原参数后用组合梯度更新；只扰动Transformerblocks。",
+  "why_non_obvious": "限制偏离reference可能阻碍正确优化，梯度正则尝试改更新geometry；但平坦不等于reward正确。",
+  "trigger_condition": "When proxy reward improves while independently scored quality degrades, test finite-difference gradient regularization with fixed reward and explicit compute accounting.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以优化几何抑制代理目标的尖锐错误解，而非只限制policy位移。",
+  "abstract_trigger_condition": "When proxy reward improves while independently scored quality degrades, test finite-difference gradient regularization with fixed reward and explicit compute accounting.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "同批action在原参数/沿梯度扰动参数各算梯度，复原参数后用组合梯度更新；只扰动Transformerblocks。",
+  "abstract_why_non_obvious": "限制偏离reference可能阻碍正确优化，梯度正则尝试改更新geometry；但平坦不等于reward正确。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77482#s1",
+   "object": "policy lossgradient",
+   "information": "固定proxyreward、同batch生成action及两次梯度",
+   "operation": "无KL的finite-differenceGR，epsilon1e-3,gamma1e-3推理实验",
+   "claimed_effect": "GSM8K rulebased0.5/1.5B56.2/75.7%；judge版41.0/67.8%；对应no-reg52.1/72.9和20.7/1.9。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7 GR row (rulebased then LLMjudge)",
+    "quote": "56.2 ± 1.0% 75.7% 41.0 ± 2.8% 67.8%"
+   },
+   "failure_boundary": "仅0.5B三训练seed；flat但错误proxy极值仍可能被偏好。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P44",
+   "strength": 2,
+   "how": "proxy/规则奖励可被格式与错误捷径占据，GR提供优化层对照，不修grounding标签。"
+  },
+  {
+   "problem": "P32",
+   "strength": 2,
+   "how": "late训练easy提升hard退化需独立指标监测。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "No regularization",
+   "kind": "method"
+  },
+  {
+   "name": "referenceKL",
+   "kind": "method"
+  },
+  {
+   "name": "periodicreference resets+KL",
+   "kind": "method"
+  },
+  {
+   "name": "GRwithoutKL",
+   "kind": "method"
+  },
+  {
+   "name": "resampling/IS perturbation controls",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "平坦但错误proxy最优可能使GR也rewardhack；理论连续action/真实rewardLipschitz假设不直接适用于离散语言。",
+   "quote": "",
+   "locator": "§3 Limitations; §5 Limitations p9; reader summary"
+  }
+ ],
+ "question": {
+  "observed_failure": "GSM8K1.5B judgeRL no-reg仅1.9%真实准确率，GR67.8%；judge分上升可伴真实性能崩坏。",
+  "load_bearing_assumption": "代理错误与尖锐区域相关，真实reward在有意义action距离上足够平滑。",
+  "scope": "单prompt单response RLHF/RLVR，0.5–3B主实验证据。",
+  "success_criterion": "匹配学习率/调参预算和walltime时，独立gold准确率提高且proxygap减少。",
+  "why_open": "模型gold/judge仍代理，flatness下界不提供真实reward误差上界；VLM工具路径未检验。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "proxyreward vs trueaccuracy Figs7–8"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "AppD.6"
+  },
+  {
+   "vocab": "rs",
+   "id": "characterize_limit_then_surpass",
+   "locator": "§3–5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "maximize J_proxy(phi)-gamma ||grad_phi J_proxy||_2^2",
+    "locator": "Eq7 conceptual objective"
+   },
+   {
+    "latex": "d=[grad L(phi+eps grad L(phi))-grad L(phi)]/eps; printed Eq5 phi<-phi-eta grad L-eta(gamma/2)d",
+    "locator": "Eq4–5"
+   },
+   {
+    "latex": "implementation: g1=clip10(grad L); g2=clip10(grad L(phi+eps*g1)); gcomb=g1+gamma(g2-g1)/eps; restore phi; optimizer step with final clip1",
+    "locator": "Fig10; AppC.1"
+   }
+  ],
+  "signal_routing": "操作的是整policy loss梯度，非特定动作/视觉tokencredit。只扰动Transformerblocks，embedding/head不扰动；action/reward复用且不IS修正，作者承认bias。Fig10 gamma系数与Eq5gamma/2未统一，保留print/implementation差；因d≈Hgrad数学上是半平方梯度的梯度，不把常数默默补齐。",
+  "normalization": "other",
+  "invariance": "无PBRS：优化正则改变目标/更新。共同loss缩放使一阶梯度∝c、Hgrad∝c²，gamma含义受reward/loss尺度影响。正文引用GRPO，AppC实际TRL Dr.GRPO；精确adv/std/token聚合开关未完整列，不凭名称代填。理论给excessBTloss关于sharp-pairs概率的下界，减少下界不保证真实误差变小；高斯连续policy假设不能直接升级语言模型定理。",
+  "baseline_or_potential": "沿用basegroupbaseline，不新增actionbaseline；reference resets每R=200steps更新KLreference，与降低β只在理想精确优化比较上等效。",
+  "degenerate_cases": "proxy平坦但错误仍可奖励hacking；loss梯度0正则局部不产生探索；zero-rewardgroup无新支持。finiteepsilon、doublegradientclipping及同action偏差破坏精确二阶解释。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "rule/LLMjudge相同任务独立accuracy；Table4按原能力分桶检查easy/hard；D.6同action/noIS vsresample/IS和allparamsperturb。",
+  "negative_results": [
+   {
+    "text": "最强RM下reference resets略优GR；小gamma时resample/IS也可优于reuse。",
+    "locator": "§5.1 and Table10"
+   }
+  ],
+  "seeds": "0.5B reasoning3trainingseeds;1.5BRLHF3fullpipelineinitializations;D.6single seed",
+  "falsifier": "匹配walltime与learningrate后GR不优于KL，或独立错误reward区域也平坦且梯度norm不报警，则拒绝泛化安全解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Pythia1B/2.8B;Qwen2.5 .5B/1.5B/3B",
+   "framework": "TRL Dr.GRPO;DeepSpeedZeRO2",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": "GR arm0;KL andresetsβsweeps"
+  },
+  "cost": "RLHFbatch256 T.7，GRlr5e-6 vsothers3e-6；reasoningbatch256GSM/1024MATH、maxoutput768/1024。8GH200 MATH generation7.4s,update60ms→150ms；额外forward/backward而非额外tool调用。",
+  "pitfalls": [
+   {
+    "text": "扰动前保存参数后必须复原；中间clip10最终clip1，不是全程clip1。",
+    "locator": "C.1/Fig10"
+   },
+   {
+    "text": "复用action不重采样/IS是有偏工程近似。",
+    "locator": "C.1/D.6"
+   }
+  ],
+  "code": "https://github.com/JohannesAck/gradientregularization_trl",
+  "lesson": "当优化proxy出现异常时，分别量独立质量、梯度norm与计算成本；不要只凭梯度变小认定reward更真实。"
+ }
+}

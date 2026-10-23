@@ -1,0 +1,184 @@
+{
+ "paper_key": "2507.18071",
+ "title": "Group Sequence Policy Optimization",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2507.18071.txt",
+  "sections_read": [
+   "pp1–7 abstract/contributions/§2–4 formulas/§5 empirical curves and ablations/discussion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将tokenratio替为整响应tokenratio的几何平均，按整响应统一clip和权重；GSPO-token通过stopgrad允许逐token优势。",
+  "key_step": "s=exp(mean_token log(πnew/πold))，整序列clip；A仍组mean/std。",
+  "why_non_obvious": "统一序列权重减少tokenratio离群，但长度开根后不再是真正trajectory importance ratio；稳定性经验不能升格精确IS无偏证明。",
+  "trigger_condition": "MoE expert routing在update后约10%变化，tokenratio波动导致GRPO不稳定。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将更新约束单位与整体reward单位对齐，使用长度归一抑制比率尺度波动。",
+  "abstract_trigger_condition": "MoE expert routing在update后约10%变化，tokenratio波动导致GRPO不稳定。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "s=exp(mean_token log(πnew/πold))，整序列clip；A仍组mean/std。",
+  "abstract_why_non_obvious": "统一序列权重减少tokenratio离群，但长度开根后不再是真正trajectory importance ratio；稳定性经验不能升格精确IS无偏证明。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2507.18071#s1",
+   "object": "序列统一ratio与clip",
+   "information": "当前/oldpolicy全生成tokenlogprob及group reward",
+   "operation": "长度归一几何ratio整响应clip，所有token同一序列权重",
+   "claimed_effect": "平均被clip token比例GSPO .15 vsGRPO .0013，Qwen3MoE训练曲线更稳定",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p5 Figure2 labels",
+    "quote": "GSPO 0.15 GRPO 0.0013"
+   },
+   "failure_boundary": "主性能仅曲线无可读精确终值/算力单位，不填绝对SOTA数字；KL实现省略。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2507.18071#s2",
+   "object": "token优势扩展",
+   "information": "同一sequence ratio数值与可自定义A_it",
+   "operation": "sg(s_i)·π_it/sg(π_it)使数值同ratio、梯度仅该token",
+   "claimed_effect": "当A_it全相同，Eq13目标/clip/梯度与GSPO相同；1/length归一保留",
+   "conditions": [],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "p4 §4.3 after Eq17",
+    "quote": "GSPO-token enjoys the higher flexibility of adjusting the advantages per token."
+   },
+   "failure_boundary": "这是给定A条件的代数关系，未报告多轮crop特定实验。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P08",
+   "strength": 3,
+   "how": "明确序列归一与token权重/clip单位。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "GSPO-token允许信用路由但本身不提供动作价值。"
+  },
+  {
+   "problem": "P23",
+   "strength": 2,
+   "how": "train/inference概率误差容忍是推断，需实际协议mask对齐。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO with Routing Replay",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO without Routing Replay",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "reader：几何平均ratio非密度比，不是严格offpolicy期望校正；N=1 sample不使普通IS期望恒等失效。",
+   "quote": null,
+   "locator": "§3/Eq7 pp2–3"
+  },
+  {
+   "text": "reader：MoE专项证据，未直接证明dense4B crop与traininfer logprob可免重算。",
+   "quote": null,
+   "locator": "§5.3–5.4 p6"
+  }
+ ],
+ "question": {
+  "observed_failure": "MoE约10%expert激活变化，GRPO无routingreplay训练崩溃。",
+  "load_bearing_assumption": "序列平均logratio可降低对个别token/routing噪声敏感性。",
+  "scope": "多minibatch复用rollout的MoE语言RL。",
+  "success_criterion": "同训练compute/query预算下稳定曲线和benchmark收益，不依赖replay。",
+  "why_open": "长度归一引入偏目标，长序列局部大ratio可能被平均掩盖。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§4序列与token单位"
+  },
+  {
+   "vocab": "rs",
+   "id": "architectural_operator_substitution",
+   "locator": "Eq7/sequenceclip"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "s_i=(πθ(y_i|x)/πold(y_i|x))^(1/L_i)=exp[(1/L_i)Σ_t logw_it]; A_i=(r_i−mean r)/std r",
+    "locator": "Eqs6–7 p3"
+   },
+   {
+    "latex": "J=E[(1/G)Σ_i min(s_i A_i,clip(s_i,1−εl,1+εh)A_i)]; ∇J_unclipped=E[(1/G)Σ_i s_i A_i(1/L_i)Σ_t∇logπ_it]",
+    "locator": "Eqs5/10 p3"
+   },
+   {
+    "latex": "s_it=sg(s_i)·π_it/sg(π_it); J_token=(1/G)Σ_i(1/L_i)Σ_t clipped(s_it,A_it)",
+    "locator": "Eqs13–17 p4"
+   }
+  ],
+  "signal_routing": "原GSPO所有response tokens共享A和s，长度归一；tokenvariant数值sequenceclip一致但允许A_it不同，stopgrad不可漏。工具obs mask未给。",
+  "normalization": "rewardgroupmean/std；ratio几何平均，lossresponseequal/每response1/L；不是globaltokenmean。",
+  "invariance": "L1退化tokenratio；θ=old时所有ratio1，GSPO与同normalization GRPO unclipped一阶梯度一致。非PBRS。开L次根破坏严格IS恒等，clip再引入偏差。",
+  "baseline_or_potential": "groupbaseline，非actionconditionbaseline。",
+  "degenerate_cases": [
+   "全对/全错std0无epsilon说明。",
+   "一token很大正logratio可被别的负logratio抵消，s近1却个别token变动大。",
+   "整序列clip按A符号一侧截梯度，不是无条件越界即删除。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：固定captioncrop rollouts比较token/sequenceclip，记录firstaction与observationmask、ratio cancellation、每路径clip率；先验证θ=old梯度一致性。",
+  "negative_results": [
+   {
+    "text": "GRPO需RoutingReplay才能正常收敛，baseline与GSPO架构路径不同；未给多seed数。",
+    "locator": "§5.1/5.3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同mask/长度归一/clip比例下收益消失或罕见direct整序列更常被裁，则不支持工具support迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "coldstart Qwen3-30B-A3B-Base",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "每rolloutbatch4minibatch；GSPO clip左3e-4右4e-4，GRPO.2/.27；AIME32samples LiveCode8samples。总算力/硬件未报告。",
+  "pitfalls": [
+   {
+    "text": "不可照搬GRPO .2 clip到GSPO；GSPO-token stopgrad ratio分母必须是当前prob的detach而非oldprob。",
+    "locator": "§4.1/4.3"
+   }
+  ],
+  "code": null,
+  "lesson": "先校准目标/比率/归一单位，再比较稳定性；不要把几何ratio称为无偏trajectory IS。"
+ }
+}

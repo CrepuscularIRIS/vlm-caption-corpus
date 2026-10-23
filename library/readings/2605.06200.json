@@ -1,0 +1,63 @@
+{
+ "paper_key": "2605.06200",
+ "title": "A$^2$TGPO: Agentic Turn-Group Policy Optimization with Adaptive Turn-level Clipping",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.06200.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3–4 pp3–6 Eq2–12",
+   "Table1–2/§5 pp7–8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "按(prompt,turn-index)标准化GT概率增益，将未来turn增益折扣累计到较早turn后除sqrt剩余turn数，再以局部增益调clip。",
+  "why_non_obvious": "同一IG来源的跨位置混合标准化与累计尺度会改变信用；改奖励来源不是唯一选择。",
+  "trigger_condition": "当早晚turn证据量差异大，按位置比较后再累加局部信用。",
+  "contribution_type": "turn级优势与clip重设计",
+  "abstract_strategy": "分组校准局部信号并匹配更新粒度。",
+  "abstract_trigger_condition": "异质子过程共享单一归一化造成相对排名失真。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.06200#s1",
+   "object": "search agent turn credit",
+   "information": "actor的GT answer长度归一化条件概率差、终局EM",
+   "operation": "turn-group zscore→discounted sum/sqrt(n)+outcome zscore；geometric mean turn ratio与IG自适应clip",
+   "claimed_effect": "Table2 sample-weighted multi-hop Avg IGPO44.88→TG-Norm46.27→rescale46.71→full48.06。",
+   "conditions": [
+    "Qwen3-4B",
+    "同索引不等同状态",
+    "按样本加权Avg非四列简单平均"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p7",
+    "quote": "+ TG-Norm + Dt -rescaling + Ada-Clipping (A2 TGPO)     49.42     51.29     25.21     53.60    48.06"
+   },
+   "failure_boundary": "位置配对不构成同前缀反事实；sqrt(n)仅在独立/折扣条件下近似稳定方差。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "过程与终局信号分通道且按turn路由。"
+  },
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "zscore移除通道绝对幅度，不能保留原始成本单位。"
+  },
+  {
+   "problem": "P23",
+   "strength": 2,
+   "how": "同q,t组允许不同历史，不等于同prefix对照。"
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,57 @@
+{
+ "paper_key": "1912.02503",
+ "title": "Hindsight Credit Assignment",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "1912.02503.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§3.1–3.3",
+   "§4/4.1",
+   "§5/Figures 3–5 descriptions",
+   "§7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将从动作预测未来，反转为已知未来状态或回报时预测过去动作。",
+  "key_step": "训练h(a|x,future)，用h/π或π/h重写Q/advantage，去除与动作无关的回报。",
+  "why_non_obvious": "动作依赖baseline通常有偏，但精确hindsight比率可使期望基线梯度为0。",
+  "trigger_condition": "当未来结果能区分过去动作贡献时，用反向条件概率替代纯时间距离信用。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "algebraic_equivalence_unification：通过Bayes比率将value与policy gradient重写为hindsight形式。",
+  "abstract_trigger_condition": "前向预测复杂、反向动作分类较容易时，学习逆向判别器。"
+ },
+ "signatures": [
+  {
+   "sig_id": "1912.02503#s1",
+   "object": "动作a对后续状态奖励的advantage",
+   "information": "当前策略π及未来状态条件分布h",
+   "operation": "用(h/π−1)重加权未来奖励",
+   "claimed_effect": "h/π=1时该未来奖励对advantage贡献为0。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "§3.1 Eq.3后解释",
+    "quote": "the reward\nRk does not participate in the advantage for the value of action a."
+   },
+   "failure_boundary": "精确当前策略条件分布、π(a|x)>0；学习误差不能套用无偏结论。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "为动作级差异信用提供明确估计器，但VLM巨词表和多轮状态需要另行建模。",
+   "strength": 2
+  },
+  {
+   "problem": "P09",
+   "how": "展示action-dependent baseline需要精确概率抵消条件，不能直接当普通状态baseline。",
+   "strength": 2
+  }
+ ]
+}

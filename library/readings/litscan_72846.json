@@ -1,0 +1,165 @@
+{
+ "paper_key": "litscan:72846",
+ "title": "Spinning Straw into Gold: Relabeling LLM Agent Trajectories in Hindsight for Successful Demonstrations",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_72846.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3",
+   "4 Table1/Fig3–7",
+   "Appendix limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "外部LLM从完整rollout找实际达成的所有目标，截到每目标首次达成步；相关actionmask及按有效动作数/效率采样加权后与GTdemo混合SFT/DPO。",
+  "why_non_obvious": "失败于原目标也可成功于其它目标；在线重标和相关mask避免模仿无关绕路。",
+  "trigger_condition": "When failed rollouts achieve unintended goals, relabel those achievements into supervised demonstrations.",
+  "contribution_type": "hindsight trajectory construction",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "When intended-goal supervision is sparse, derive achieved-goal labels from observed agent trajectories.",
+  "abstract_key_step": "生成轨迹→事后目标与actionrelevance伪标签。",
+  "abstract_why_non_obvious": "不需重标reward但仍需GTdemo稳定支持，且relabeler会错。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:72846#s1",
+   "object": "agent rollout→instruction/action supervision",
+   "information": "完整observations、finalobs、允许goalspace、70BLLM",
+   "operation": "所有中间已达goal重标+mask无关actions+weightedbuffer",
+   "claimed_effect": "ALFWorld unseen SFT78.36→97.76，DPO82.84→94.78；WebShop是taskscore63.81→66.97而非successrate。",
+   "conditions": [
+    "Llama3.2-1B",
+    "3environments"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "SFT+HSL (Ours)                                                                   93.57            97.76                      75.12             66.97"
+   },
+   "failure_boundary": "180/200重标正确；不支持的目标仍不会因relabel自动出现。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P37",
+   "how": "直接回收agent轨迹构造监督，mask与GT混合防支持漂移。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "可达子任务增监督但需真实探索和GTdemo保支撑。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SFT/DPO(ETO)",
+   "kind": "base methods"
+  },
+  {
+   "name": "SelfImit/BAGEL",
+   "kind": "reuse/offline relabel"
+  },
+  {
+   "name": "70B ReAct/BehaviorClone",
+   "kind": "teacher access controls"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "外部relabeler10%人工样本错误；binary relevance不区分相关但次优action。",
+   "locator": "4.4/Appendix limitations"
+  },
+  {
+   "text": "目标分布仍不匹配，难目标不足；仍依赖GTdemo稳定支持。",
+   "locator": "Appendix limitations"
+  },
+  {
+   "text": "训练额外70B推理成本，部署不变；短窄goalspace收益小。",
+   "locator": "Appendix limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "800GTdemo时DPO+HSL unseen92.5超过full>3200DPO82.8。",
+  "load_bearing_assumption": "事后识别已达目标比直接规划容易，且有效目标的coverage足够。",
+  "scope": "interactive agent data reuse",
+  "success_criterion": "同GTdemo预算提升success并核重标/相关mask准确性",
+  "why_open": "未偶然达成的难目标缺监督，重标也会幻觉。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "4.3 no-mask/uniform/relabel-failure ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "w_d=(n_d/T_d)^alpha*n_d; P(d)=w_d/sum_buffer w; L_relabel=E_d~P[-(1/T_d)sum_t z_t log pi(a_t|history,o_t,Iprime)]",
+    "locator": "Eq3/3.4"
+   },
+   {
+    "latex": "L_HSL=lambda*L_relabel+(1-lambda)*L_GT; lambda=.3, alpha=.8",
+    "locator": "Eq4/4.1"
+   }
+  ],
+  "signal_routing": "只对z_t=1动作logprob监督，z0动作仍是history条件；观察不是预测目标；goal改成事后达成目标；λ混GTdemo。与DPO组合细节未在已读公式中给出，不补。",
+  "normalization": "other: buffer weights归一化成采样分布；每trajectory分母T而非有效动作数n；token内部reduction未详。无GRPOstd/advantage。",
+  "invariance": "非PBRS；重标goal改变条件任务，非原失败目标变成功。w正比例整体缩放不改采样，但n/T与n偏向不同长度/效率。",
+  "baseline_or_potential": "hindsight expert是分析对象，非valuebaseline；κcoverage和δsuboptimality限制理论界。",
+  "degenerate_cases": "无有效目标discard；n0则w0；全buffer w0处理未读；稀有目标不出现无法重标；mask错误会训练不必要动作或删必要动作。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "只重标failedfinal目标、uniform采样、no-mask；同70B access teachercontrol；GTdemo量扫。",
+  "negative_results": [
+   {
+    "text": "人工200示例中20标签错，cooltomato未放fridge却标成putcooltomatoinfridge。",
+    "locator": "4.4 Fig7"
+   },
+   {
+    "text": "examine relabel比例<5%，成功54.85，弱覆盖仍留短板。",
+    "locator": "4.4"
+   },
+   {
+    "text": "SFT+HSL unseen97.76高于DPO+HSL94.78，组合DPO不保证再提升。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": "主文称多seed附录复验；本记录未读各seed结果",
+  "falsifier": "读者：可执行重放验证relabel目标与必要action，若teacher描述幻觉或goalspace改变解释收益则需收窄迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Llama3.2-1B actor/Llama3.3-70B relabeler",
+   "framework": "SFT or DPO plus HSL",
+   "group_size": null,
+   "max_turns": "ALFWorld40; PlanCraft30; WebShop10",
+   "kl": null
+  },
+  "cost": "每optimization后18rollouts，FIFO100；λ.3 α.8",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当回收失败轨迹时重标实际达成目标，并mask无关动作；仍保留原始历史和GT数据，避免把成功子目标误写成原任务成功。"
+ }
+}

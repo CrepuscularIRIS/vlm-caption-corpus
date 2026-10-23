@@ -1,0 +1,183 @@
+{
+ "paper_key": "litscan:79376",
+ "title": "Focusing Where Vision Matters: Selective Training for Large Vision Language Models via Visual Information Gain",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79376.txt",
+  "sections_read": [
+   "Abstract",
+   "3",
+   "4 Tables3–6",
+   "4.5",
+   "5 limitations",
+   "Appendix C blur",
+   "D.1–D.2 setup",
+   "F.1–F.2 ablations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "用视觉对齐后模型对同GT答案的blurred/original条件NLL差预计算VIG；先top70%样本再用同阈值mask低VIG token监督。",
+  "why_non_obvious": "不删除低分token上下文，仅删其直接CE；保持text-only数据，避免把语言流畅性训练全部丢掉。",
+  "trigger_condition": "When multimodal SFT wastes supervision on language-predictable tokens, select samples and loss positions by image-conditioned likelihood gain.",
+  "contribution_type": "data and loss selection",
+  "abstract_strategy": "targeted_self_supervised_objective",
+  "abstract_trigger_condition": "When only part of a supervised sequence requires the missing modality, target the loss at modality-sensitive positions.",
+  "abstract_key_step": "以同标签的双条件NLL差确定样本及token mask。",
+  "abstract_why_non_obvious": "观测信息依赖不是动作因果效用，保留上下文又不等于每个token都获直接监督。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79376#s1",
+   "object": "multimodal instruction SFT样本和token",
+   "information": "对齐后pretrained模型、GT答案、原图与Gaussian blurred图",
+   "operation": "按样本平均VIG top70%，同τ筛token；全answer仍输入，text-only不筛",
+   "claimed_effect": "LLaVA7B active tokens58.61M→38.45M，MMVet28.62→32.71、CHAIR CS52.93→47.00；13B active12.14M减79%。",
+   "conditions": [
+    "离线计算VIG",
+    "teacher-forcedGT",
+    "1epoch instruction tuning"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "51.17M        38.45M         61.22          32.71"
+   },
+   "failure_boundary": "高VIG可能反映标签/模型偏差；不能当crop action necessity；低VIG中仍可能含必须保留的工具或纠偏token。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "caption视觉监督位置选择可迁移。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "token mask给局部监督而非整轨迹平均，但属于SFT非RLadvantage。",
+   "strength": 2
+  },
+  {
+   "problem": "P39",
+   "how": "teacher所见图像信息与student可见分辨率须对齐。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "full-data vanilla",
+   "kind": "SFT"
+  },
+  {
+   "name": "Random70%",
+   "kind": "data"
+  },
+  {
+   "name": "SS only",
+   "kind": "ablation"
+  },
+  {
+   "name": "LACING",
+   "kind": "grounding"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "额外双条件forward计分成本；作者目标是监督效率而非总计算最少。",
+   "locator": "5 limitations"
+  },
+  {
+   "text": "blur只是视觉缺失proxy，并不确保语义全部消失；模型特定VIG不是互信息估计。",
+   "locator": "3.2; Appendix C; reader"
+  },
+  {
+   "text": "小p损害广覆盖benchmark，不能只看幻觉收益。",
+   "locator": "TableF.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "sample-only SS MMBench57.56低于base65.46；加token mask66.33。",
+  "load_bearing_assumption": "语言可预测token的监督会稀释视觉关联学习。",
+  "scope": "离线多模态SFT数据与token选择",
+  "success_criterion": "降低监督token同时保持general并降低幻觉",
+  "why_open": "减少样本本身不保证有效，需区分模态依赖与数据难度/偏差。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table6; F.1–F.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "VIG_i=(1/T_i)sum_t[log q_theta(a_t|a_<t,Q,I)-log q_theta(a_t|a_<t,Q,blur(I))]; VIG_it=corresponding token difference",
+    "locator": "Eqs3,6–7; Appendix C"
+   },
+   {
+    "latex": "S_p={i:VIG_i>=tau_p}; T_i+={t:VIG_it>=tau_p}; L_selected proportional to -sum_{i in S_p,t in T_i+}log q_train(a_it|a_i<t,Q_i,I_i)",
+    "locator": "Eqs8–9; loss reduction not specified"
+   }
+  ],
+  "signal_routing": "VIG由pretraining视觉对齐后checkpoint离线计算，随后adapter+LM instruction tuning；vision编码器冻结的原训练框架。未选token保留为teacher-forced context但无直接CE项，不意味着其hidden states无反传。text-only监督全部保留。",
+  "normalization": "other: 样本VIG按answer长度均值，tokenVIG不做均值；使用同τ门限，不是top p% tokens。masked loss具体按active count或原length归一未知。7B τ70=-.021，13B .046，ShareGPT4V-.042，Qwen2VL .012。",
+  "invariance": "非PBRS、不保证原policy。one-hotGT下entropy0，VIG为两个模型CE/KL的差，不是观测真实条件熵或精确互信息。负τ会保留轻微负gain token。",
+  "baseline_or_potential": "blurred图作为对照，非真正无图模型或value baseline。",
+  "degenerate_cases": "相同图/blur条件则VIG0，mask由τ/tie决定；不存在保证所有保留token正收益；p100被定义为vanilla不筛而非沿Eq9继续mask。低VIG工具格式或直答支持可能被丢。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Random70% vsSS vsSS+TS；p30/50/70；同图加错误文本的corruption检验。",
+  "negative_results": [
+   {
+    "text": "Table6 SS LLaVAW58.12/MMBench57.56低于base59.02/65.46；正文全优主张不符。F.1 SS LLaVAW58.71仍低。",
+    "locator": "Table6; F.1"
+   },
+   {
+    "text": "Table6 SS+TS CHAIR49.10/MMHal61.82 vsF.1/主Table3 47.00/62.78；设置差异未交代，不能合并。",
+    "locator": "Table6; TableF.1"
+   },
+   {
+    "text": "p30 MMBench56.87/POPEF182.80低于full65.46/85.90；p50 MMBench56.44。",
+    "locator": "TableF.3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：对比等active-token随机mask/梯度难度mask；若同样收益，则不能归因专属视觉信息选择。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5 7/13B; ShareGPT4V7B; OpenQwen2VL2B",
+   "framework": "offline scoring + instruction tuning",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "计分8 RTX4090约6h；训练8 A10080GB，1epoch batch128 lr2e-5；active token减少不意味着attention FLOPs同比减少。",
+  "pitfalls": [
+   {
+    "text": "同一p各模型τ不同，不能跨模型直接复制阈值。",
+    "locator": "TableD.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当通过token筛选节省监督时，应保持完整上下文并单列计分/训练总时间，同时保护工具格式、stop与纠偏的行为支持。"
+ }
+}

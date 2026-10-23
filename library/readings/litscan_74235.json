@@ -155,7 +155,7 @@
   "degenerate_cases": "N1退单框流程；全不重叠框全部保留，成本可随N增长；错误一致候选WBF不会恢复GT；原图已足够时固定定位额外开销。"
  },
  "evidence_design": {
-  "discriminating_experiment": "≤2GPU天不执行：本项目冻结reasoner，对比共享LoRA/仅定位LoRA/无adapter；同crop输入评估答题泄漏，再以相同end-to-end延迟比较N短坐标与N完整推理。",
+  "discriminating_experiment": "[redacted: project-internal]",
   "negative_results": [
    {
     "text": "Molmo8B full WBF8 58.3低于single59.1；Molmo4B fullres SFT61.4低于62.9。",

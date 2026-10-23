@@ -1,0 +1,178 @@
+{
+ "paper_key": "2602.01034",
+ "title": "Stepwise Intrinsic Rewards for Reasoning in Large Language Models",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2602.01034.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "Method Eqs1–11/Algorithm1",
+   "Table1–2 and ablations",
+   "Design Consequences/Scope/Limitations",
+   "Supplement setup/proof/compute TableS1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "当前policy对GT答案逐prefix打分，只累加超过历史高水位的增益，分离过程/结果通道。",
+  "key_step": "prefix分数→HWM轨迹总量→组内标准化→全think段同一A；另以真实/空白图差soft gate过程与准确性reward。",
+  "why_non_obvious": "逐步探针不等于逐步advantage；默认聚合后统一路由，Redist-Prox才是逐步路由。",
+  "trigger_condition": "When terminal rewards miss reasoning progress, add record-setting reference-likelihood gains with independent outcome grounding.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "过滤可重复刷取的恢复收益，保留独立最终验证。",
+  "abstract_trigger_condition": "When a proxy can oscillate, reward only new records and separately check outcomes.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "历史最大值差telescoping，独立channel normalization与mask。",
+  "abstract_why_non_obvious": "非负过程return经组中心化可给负A；algebraic potential并非policy invariance。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2602.01034#s1",
+   "object": "视觉推理训练信号",
+   "information": "训练GT reference/currentpolicy/完整generated z、real与blank图",
+   "operation": "HWM过程+correctness/format+gatedSFT，视觉差soft缩放reward",
+   "claimed_effect": "3B视觉transfer avg59.0 vs binary54.2；无visual gate56.1；full ChartQA80.9低于无gate81.8",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 3B Ours vision row: MathVista/MMStar/ChartQA/MathVerse/Avg",
+    "quote": "3B    Ours                         62.1                 53.5             80.9                 39.4                 59.0"
+   },
+   "failure_boundary": "single seed；不是每task提升，更不证明逐次crop必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P18",
+   "strength": 2,
+   "how": "对失败但取得信息轨迹给独立过程通道，需防proxy/错误免责"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "当前策略图干预gate训练信号，粒度非crop"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "binary reward",
+   "kind": "method"
+  },
+  {
+   "name": "CoT-likelihood",
+   "kind": "method"
+  },
+  {
+   "name": "MIG only",
+   "kind": "method"
+  },
+  {
+   "name": "Ours w/o SFT or visual gate",
+   "kind": "method"
+  },
+  {
+   "name": "Redist-Prox",
+   "kind": "method"
+  },
+  {
+   "name": "PRM-BoN@16",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "single runs/up to7B；invalid step可抬GT likelihood；blank敏感性不定位证据、不证明完整grounding。",
+   "locator": "Scope/Conclusion"
+  },
+  {
+   "text": "更长trace提供更多设新纪录机会；subrecord detour不变性要求后续分数不变。",
+   "locator": "Design Consequences"
+  }
+ ],
+ "question": {
+  "observed_failure": "3B CoTlikelihood视觉49.8<binary54.2，full59.0；Redist-Prox64.4 vs w/oSFT64.9仅0.5pt未显著。",
+  "load_bearing_assumption": "最终答对或GT likelihood提高代表每步推理正确。",
+  "scope": "结构化step文本/VLM3B7B可验证答案",
+  "success_criterion": "heldout transfer与HWM/route/gate分拆",
+  "why_open": "过程proxy会刷分，视觉语言先验与grounding混淆。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Method channel/mask拆分"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2 gate/SFT/Redist-Prox"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\ell_k=\\max_{y^*\\in Y^*}|y^*|^{-1}\\sum_t\\log\\pi_\\theta(y_t^*|x,s_{1:k},y^*_{<t});h_k=\\max(h_{k-1},\\ell_k);g_k=(\\ell_k-h_{k-1})_+;R_M=\\sum_k g_k=\\max_k\\ell_k-\\ell_0",
+    "locator": "Eqs1–2/Prop1"
+   },
+   {
+    "latex": "S=\\sigma(5[\\ell_{real}-\\ell_{blank}-0.1]);A^{step}=GN(SR_M);A^{out}=GN(r_{fmt})+GN(Sr_{acc});GN(q_i)=(q_i-\\mu_q)/(\\sigma_q+\\epsilon)",
+    "locator": "Eqs3–5/9–11/Alg1"
+   },
+   {
+    "latex": "L=L_{out}+0.01L_{MIG}+0.001L_{GSFT};L_{GSFT}=-G^{-1}\\sum_i r_{fmt,i}r_{acc,i}\\log\\pi(z_i,y_i|x)",
+    "locator": "Eqs6–8"
+   }
+  ],
+  "signal_routing": "detached current-policy scores，GT answer teacher-forced不取generated answer；Astep广播think tokens，Aout全completion；gk不独立路由。format/GSFT不受visualgate；GSFT门用未缩放fmt&correctness。gate以完整z固定后换图，z可已携带图信息，非前瞻部署信号。",
+  "normalization": "per-channel mean+std among same prompt G；无除step数K；答案loglik按答案token长度归一。",
+  "invariance": "HWM augmented state上γ1差分telescopes，terminal potential非固定、groupnorm与GSFT改变目标，非严格PBRS。仅插入低于已有watermark且原后续score不变的detour保持总量。",
+  "baseline_or_potential": "历史记录h是trajectory-local potential，GN组均值baseline，不是MonteCarlo成功值。",
+  "degenerate_cases": "RM全同则Astep0，allwrong可能有proxyA但无correctGSFT；allcorrect结果通道若S变化仍非零；统一positive缩放经std大体抵消，gate须trajectory差异才改排序；无direct支撑无法凭过程信号创建。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2分开HWM-only/SFT/gate；Redist-Prox与w/oSFT同HWM mass/weights只改route；qualitative image edits只选定案例。",
+  "negative_results": [
+   {
+    "text": "gate使ChartQA−0.9；SFT使MATH500低4pt；MIGonly仍低binary；7B text不及BoN16。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "model/data seed42；单run。TableS1计时两次、12updates，不是性能多种子。",
+  "falsifier": "随机/语义无关图替换同样gate收益，或prefixcopy答案抬分不改善heldout，则不是视觉必要性credit。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5 / Qwen2.5-VL Instruct3B/7B",
+   "framework": "PyTorch DeepSpeed ZeRO3",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "BGK前缀answer scoring；chunk16 text/8 vision；3B controlled text每update102.08→109.41s(+7.17%)，不可外推VLM成本；部署1completion，无BoN。",
+  "pitfalls": [
+   {
+    "text": "同一parser同时定format与mask；malformed过程/format为0；detached probes防隐性SFT梯度。",
+    "locator": "Method"
+   }
+  ],
+  "code": null,
+  "lesson": "当逐prefix奖励最终聚合时，要明确标量广播和step-specific路由的区别，并把代理提高与正确性分开验证。"
+ }
+}

@@ -183,7 +183,7 @@
   "observed_failure": "作者App.D.2：离散draw奖励下点标记仅0.23次/样本；Table 2联合Tool-Sup & Ans. Reward的DocVQA-RF为58.1，低于答案奖励62.6及完整课程77.3。作者Table 4多种前作≤1次工具/样本，Mini-o3 5.5是例外。",
   "load_bearing_assumption": "仅凭最终正确性、或把工具奖与正确性同时相加，就足以学会操作工具并用于多步视觉推理。",
   "scope": "Qwen2.5-VL-7B上的native zoom/rotate/flip/point/line及文档、空间、图表任务；有GT几何/增强数据，RL-only学习。",
-  "success_criterion": "任务分数提高且工具操作/组合行为出现；作者无准确率非劣或最少调用阈值。本课题少裁图目标并非该文成功条件。",
+  "success_criterion": "[redacted: project-internal]",
   "why_open": "SFT依赖昂贵完整轨迹，RL-only结果奖或有工具就奖缺少操作参数监督；easy text-only shortcut使工具习得不足。"
  },
  "question_quality": {
@@ -390,7 +390,7 @@
   },
   {
    "problem": "P29",
-   "how": "课程处理另一方向的工具不探索，未保证直答/裁图双侧支撑；我们的首轮全裁塌缩可能更严重。",
+   "how": "[redacted: project-internal]",
    "strength": 1
   },
   {

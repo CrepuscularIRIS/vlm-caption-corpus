@@ -1,0 +1,141 @@
+{
+ "paper_key": "litscan:arxiv:2505.15436",
+ "title": "Adaptive Chain-of-Focus",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_arxiv_2505.15436.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.2/4.2–4.3",
+   "§5 Eqs2–7",
+   "Tables1/5/7/10",
+   "§7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "平衡direct/zoom SFT后，以组内是否存在正确直答门控zoom奖励折扣。",
+  "key_step": "g=任意正确direct；正确zoom仅在g1时从1降至.8，错误格式合法给.1。",
+  "why_non_obvious": "将效率偏好只施加在已观察到直接可答的组，但组样本有限且支撑可消失。",
+  "trigger_condition": "When a rollout group contains a correct direct answer, discount correct zoom trajectories.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用可行替代路径的观测证据激活效率偏好。",
+  "abstract_trigger_condition": "When a simpler successful behavior is sampled, prefer it over a costlier success.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "组级可行性门控结果reward。",
+  "abstract_why_non_obvious": "观测不到直答并不证明不能直答；std会重缩放折扣。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:arxiv:2505.15436#s1",
+   "object": "direct/zoom两模式GRPO",
+   "information": "训练最终GT正确性/格式及当前组direct成功事件",
+   "operation": "2201zoom+2294direct SFT；AGAR正确zoom组条件-.2后GRPO",
+   "claimed_effect": "V*90.1，crop .5 vsDeepEyes2.0；SFT-only89.5，普通RL84.8",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5/Table7/10",
+    "quote": "Adaptive-CoF             7B         34         0.5      50       0.4       81        0.5      87           1.0"
+   },
+   "failure_boundary": "无强制balanced rollout，p(direct)≈0时门永不开；不是保证准确率非劣。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 2,
+   "how": "直接相关的组门控效率reward，但仍std和支撑缺陷。"
+  },
+  {
+   "problem": "P06",
+   "strength": 2,
+   "how": "g依赖正确direct采样。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "coldstart/text-only RL/correctness+format RL/DeepEyes/PixelReasoner",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "单图QA，未扩多图视觉对话；训练成本依赖专有轨迹生成。",
+   "locator": "§7/4.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "普通RL V*84.8低于coldstart89.5，DeepEyes调用2.0 vsours.5。",
+  "load_bearing_assumption": "固定正确性+格式reward即可学到自适应工具频率。",
+  "scope": "Qwen2.5VL7B单图zoom",
+  "success_criterion": "SFT、普通RL、AGAR精度/调用共同比较",
+  "why_open": "奖励缺乏成功简单解的相对偏好。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table10"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq7及p0/allcorrect推导"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "g=1[\\exists i:c_i d_i=1];r_i=c_i[d_i+z_i(1-.2g)]+(1-c_i)(.1f_i);A_{i,t}=(r_i-\\mu_r)/(\\sigma_r+\\epsilon)",
+    "locator": "Eqs4/6–7"
+   }
+  ],
+  "signal_routing": "一个组标准化轨迹advantage赋给全部有效文本reasoning/决策bbox token；返回视觉和padding mask0。每轨迹按有效文本token数归一，含KL项但系数未读。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS；更改成功zoom效用。全正确direct/zoom混组时.2缩放在std中约消，不代表柔和惩罚。",
+  "baseline_or_potential": "组均值，g亦组依赖；不是状态值或可靠必要性gold。",
+  "degenerate_cases": "无正确direct则g0，所有正确zoom/direct奖励1；全错合法均.1无差异；全正确只zoom均1无梯度；p(direct)=0无法自生direct支持。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table10 SFT/普通RL/文本RL；多分辨率趋势在正文陈述，未读全部曲线数。",
+  "negative_results": [
+   {
+    "text": "HR8K67.6低于DeepEyes69.3；AGAR相对coldstart V*仅+.6，主要提升先来自SFT；普通RL反而降。",
+    "locator": "Tables5/10"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "同SFT与训练budget下普通固定成功crop penalty同效，或强制direct支撑后门控不增加分化。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B，视觉冻结",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "SFT4495轨迹/LoRA32/3epochs/4A100约6h；RL约10k/2epochs/8A100约32h；G/β/最大轮数未读到。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用组内成功直答触发节省工具时，持续测direct支撑及全对组std效应，不能仅看平均调用下降。"
+ }
+}

@@ -1,0 +1,59 @@
+# 工程卡：多轮 rollout、mask 与 logprob
+
+由 `cards/pattern/*/` 各卡"工程经验"节与 `F5_stop_eval/engineering_lessons.md` 去重汇总（自动按关键词分组，一条只归一组）。括号内为原论文出处；行首为来源卡。
+
+- `PC-F1-06` 当自定义工具动作在自然 rollout 中几乎不出现时，结果 RL 建立不起动作对照。应先测协议支撑，并区分"数据需求均衡"与"每题动作采样均衡"（2507.13348 lesson）。
+- `PC-F1-13` 熵指标先与动作粒度和实际优化器对齐。保存被 mask 的 token 及其梯度贡献，避免全局熵的改善掩盖工具模式的塌缩（2505.22617 lesson）。
+- `PC-F1-14` 当论文以"region-conditioned"命名时，应核对真实优势是否分步骤，以及有效框奖励是否只是在鼓励调用；工具像素必须作为环境状态 mask 掉（litscan:52749 lesson）。
+- `PC-F1-15` 当用未来诊断给旧动作打分时，先展开梯度方向与 mask；门控不等于负信用（2609.35303 lesson）。
+- `PC-F2-02` 当按熵选分叉点时，应报告总 rollout 与被更新动作数两项（2512.04949 Table2）。
+- `PC-F2-04` 当 rollout 无论终止原因都把 next value 置 0 时，截断 episode 会被误当终止，须核 bootstrap 边界（2610.08402 pitfalls §3.2）。
+- `PC-F2-09` 当初答可见时，用条件门分离继续/停止；但要先核 GT 阈值、故意答错、内部纠偏与数据分布的混淆，再报告准确率与真实成本（2505.07903 lesson）。
+- `PC-F2-09` 作者用执行校验去除错误或虚构的工具回执；迁移时须把图像回执与动作真实绑定（2606.30251 pitfalls App D.4）。
+- `PC-F2-14` 当按完整轨迹中证据出现与成功的关联分配信用时，应先验证证据身份、组内出现/未出现的支撑与排名稳定性，再检查 turn-local mask（2602.10863 lesson）。
+- `PC-F2-15` 环境 mask 必须区分真实工具返回与策略文本；不能用 JSON 标签范围代替整个工具段（2609.29050 pitfalls A.1）。
+- `PC-F2-17` 当把兄弟 rollout 当反事实时，要承认它们通常是不同前缀，不是固定状态干预（2606.29476 why_non_obvious）。
+- `PC-F2-20` 需要在正确的边界注入、mask 环境 token；终止势为 0 与 teacher 刷新必须对每条轨迹一致（litscan:73124 pitfalls AppF / §3.2）。
+- `PC-F3-01` 当新工具比原生能力复杂时，纯 RL + 工具奖金会退化为占位调用，应先用执行核验的教师轨迹冷启动（litscan:71722 Table5 p7）。
+- `PC-F3-01` 当做冷启动消融时，加"等长占位"对照，排除长度本身的作用（2503.01307 §3.1）。
+- `PC-F3-03` 当用 SFT 比例做消融时，平均分会掩盖低需求子集的下降，应逐集合报告（2510.12801 Table1 A-OKVQA）。
+- `PC-F3-06` 当插入错误动作时，必须保持实际图像绑定，再裁的 bbox 与错误 cue 都要绑定真实返回（litscan:51030 PIT）。
+- `PC-F3-07` 当保留失败 trial 作上下文时，只 mask 其 solution，单独评估错→对与对→错（litscan:3816 notes）。
+- `PC-F3-10` 当成功轨迹含坏动作时，只 mask 目标、保留真实历史，但应单独审计必要探索的误杀（2512.10962 LESSON）。
+- `PC-F3-11` 当不读取教师 logprob 时，π_φ 设为 1，比率退化为 π_θ，这是近似 IS，需在文档中写明（ROUTE、PIT 字段）。
+- `PC-F3-11` 多轮视觉协议下，离策略轨迹的裁图观测必须按原 bbox 重新执行或复用原图像，并与 token 位置对齐（P54/P55 已知坑）。
+- `PC-F3-15` 当工具奖金被引入时，先测有效执行概率与占位 hack（litscan:71722 LESSON）。
+- `PC-F4-03` teacher-forced 熵用于目标面积时**：scoring pass 不得进入 rollout（2605.16416 App.E pitfalls）。
+- `PC-F4-05` teacher-forced 打分时**：只在独立的 reward pass 里做，不注入 rollout 的后续状态；优化时环境 token 的 mask 设为 0（2605.16416 pitfalls）。
+- `PC-F4-06` 算有图/去图熵差时**：分开审计打分 mask 与 actor loss mask。整链优势仍会改写终答（2608.21883 lesson）。
+- `PC-F4-10` 判断视觉 latent 或 caption 是否被使用前**：先枚举全部 KV 和图像旁路，再做绑定匹配的状态替换（2609.06746 lesson）。
+- `PC-F4-17` 当干预依赖有限精度而不是显式 mask 时**：先核对平移不变性、dtype 和同温度对照（litscan:78773 lesson）。
+- `PC-F4-19` 优化时要把工具返回、系统提示和环境注入信息的 response mask 设为 0（同上 Sec.3.3 pitfalls）。
+- `PC-F5-01` 当 rollout 中各请求预算不同时，慢引擎会卡住整个 batch，应按预算降序、分给累计预算最小的引擎并在结束后按原索引恢复顺序（2607.14547 Algorithm1 p.14；Fig5 报 rollout 生成平均 1.34×）。
+- `PC-F5-02` 当预算边界回滚并重新生成终答时，被丢弃的工具 token、强制 prefill、保留的历史图像、自然终答各自的 mask/logprob 必须对齐，否则 actor 打分与采样分布不一致（2607.14547 lesson）。
+- `PC-F5-02` 当一个前缀派生多个答案时，应使用 tree attention/cache 并 mask 插入的提示 token，避免重复计算长前缀（litscan:50558 lesson）。
+- `PC-F5-02` 当强制作答 prefill 以未闭合 `<think>` 的第一人称文字实现时，要核对它在训练中被当作 prompt 还是 action（2607.14547 signal_routing）。
+- `PC-F5-03` 当以过去成功率缩预算时，应按题记录滞后误差与重置频率，否则无法区分策略学会了还是被截断了（2510.10168 lesson）。
+- `PC-F5-04` 当坐标与图像尺寸耦合时，输入长边要固定为 patch 的整数倍（ChartVSR 用 1036 = 28 的倍数），迁移时不能忽略 resize（litscan:70701 pitfalls）。
+- `PC-F5-09` 当训练大多是全对组时，先 profiling 再决定削减 rollout 还是 backprop（2606.00135 relevance P58）。
+- `PC-F5-11` 当用视觉替换测试恢复时，必须用新图重新 prefill 并保持相同分辨率，禁止沿用旧图的 KV cache（litscan:73853 pitfalls）。
+- `PC-F5-14` 当把图像/截图张量放进跨 worker 共享存储时，会溢写磁盘拖慢训练；应传引用，并保证引用能按生命周期恢复对应观测（2606.05597 pitfalls、relevance P55）。
+- `PC-F5-14` 当环境异步产生旧轨迹时，保存行为概率与版本，分别检验吞吐、off-policy 修正和奖励可靠性（2410.14803 lesson）。
+- `PC-F5-14` 当视觉异步训练变慢时，先看图片搬运与尾部 worker 等待，再看算法（2606.05597 lesson）。
+- `F5-lessons` 当把新图像换进已有对话时，沿用旧图的 KV cache 会得到与"真正看新图"不同的结果，应当用新图完整 re-prefill 并保持相同分辨率。（litscan:73853 AppF pp15–16）
+- `F5-lessons` 当用手工插入的视觉表示参与生成时，图 token 数与特征数若不一致会让插入错位，应当像 DaP-ICoT 代码那样显式检查图 token/feature 数匹配并手工更新 generation ids 与 cache；不能照抄 Qwen2 网格到 Qwen3。（2603.21754 relevance P54）
+- `F5-lessons` 当注入 latent 改变了前缀时，旧 KV 会失效，应当重置 KV；并把 prompt-end token 放在 assistant 标记之前，否则会提前停止。（litscan:75626 lesson）
+- `F5-lessons` 当坐标与图像尺寸耦合时，resize 会让框坐标失配，应当把输入长边固定为 patch 大小的整数倍（ChartVSR 用 1036=28×37）并在迁移时重核。（litscan:70701 §4.1）
+- `F5-lessons` 当把截图/图像张量塞进跨 worker 共享存储时，会溢写磁盘拖慢训练，应当传引用并保证引用按生命周期可恢复到对应观测。（2606.05597 §3.1）
+- `F5-lessons` 当动态视觉稀疏允许"重访"已剪掉的 token 时，稀疏计算与物理删除 KV 是两回事，应当分别计入全层评分与 cache 保留成本。（litscan:78907 lesson）
+- `F5-lessons` 当 rollout 中各请求预算（最大轮次）不同时，慢引擎会卡住整批，应当按预算降序贪心分配给累计预算最小的引擎，并在全部完成后按原索引恢复顺序与 group 身份。（2607.14547 Algorithm1 p.14）
+- `F5-lessons` 当按"跳过近期全对 prompt"削减 rollout 时，过度过滤全对题可能伤害直答保持（P61），应当先 profiling 判断瓶颈在 rollout 还是 backprop，再决定削哪一端。（2606.00135 §4.3 / known_failure_check）
+- `F5-lessons` 当一个前缀派生多个答案分支时，重复编码长前缀很贵，应当用 tree attention/cache，并对插入的提示 token（省略号、end-think、final-answer 提示）置 loss mask。（litscan:50558 signal_routing）
+- `F5-lessons` 当用共享前缀树形 rollout 并按过程分数剪枝时，被剪掉的分支若被丢弃会失去组内对比，应当把剪枝/早停分支也放进同一 GRPO 组按终奖归一化。（2607.15610 §4 / Table4）
+- `F5-lessons` 当预算边界把不可执行的工具调用回滚并强制重新作答时，被丢弃的工具 token、强制 prefill、保留的历史图像、自然终答若 mask/logprob 不对齐，actor 打分会与采样分布不一致，应当逐类标注并在日志中分开计费。（2607.14547 lesson）
+- `F5-lessons` 当只训练预算边界的强制终答、或 mask 掉前序搜索时，效果都比保留全轨迹结果信用差，应当保留搜索 token 的结果优势。（2607.14547 AppC p.13 / Fig7）
+- `F5-lessons` 当工具返回（观测）作为上下文但 response mask=0 时，策略长度 |o_i| 是否包含被 mask 的观测会改变归一化，应当在实现中核清。（litscan:72197 Eq2 signal_routing）
+- `F5-lessons` 当异步采集产生旧策略轨迹时，吞吐提升会被误当算法收益，应当保存行为概率与版本，分别检验吞吐、off-policy 校正与奖励可靠性。（2410.14803 lesson）
+- `F5-lessons` 当行为概率接近 0 时，重要性比方差极大，应当监控 ρ 的分布并考虑截断。（2410.14803 degenerate_cases）
+- `F5-lessons` 当 latent/隐状态参与采样但 actor 打分路径输入不同时，rollout 与 actor 的策略不一致，应当确保两端条件输入相同。（2505.18454 relevance P56）
+- `F5-lessons` 当同一 checkpoint 选择用的是"20 题 rollout 健康度"而非最低 SFT loss 时，需在报告中写明，否则不可复现。（2609.37190 AppB.4，F4 digest）

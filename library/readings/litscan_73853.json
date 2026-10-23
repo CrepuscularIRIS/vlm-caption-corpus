@@ -171,7 +171,7 @@
    }
   ],
   "seeds": null,
-  "falsifier": "若no-change也频繁改答案或自然工具返回不呈旧文字惯性，不能将probe结果外推到本项目recover。"
+  "falsifier": "[redacted: project-internal]"
  },
  "engineering": {
   "setup": {

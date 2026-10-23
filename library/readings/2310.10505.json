@@ -1,0 +1,58 @@
+{
+ "paper_key": "2310.10505",
+ "title": "ReMax: A Simple, Effective, and Efficient Reinforcement Learning Method for Aligning Large Language Models",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2310.10505.txt",
+  "sections_read": [
+   "Abstract/§1.1",
+   "Algorithm 1",
+   "§4.2–4.3",
+   "§5/Tables 2–4",
+   "§6",
+   "Appendix B KL formulas"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "利用文本生成快速、确定性状态转移、轨迹末奖励，简化PPO为REINFORCE加贪心响应baseline。",
+  "key_step": "同prompt另生成greedy response，以其reward从采样响应reward中扣除，无需value model。",
+  "why_non_obvious": "baseline可依赖当前参数但须与该随机响应独立；方差降低不普遍成立。",
+  "trigger_condition": "当额外一次生成比训练critic便宜时，用greedy baseline降低训练内存并比较奖励。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "assumption_audit_and_pivot：重新检查通用PPO组件对确定性文本生成是否必要，转向REINFORCE。",
+  "abstract_trigger_condition": "通用RL组件成本高而任务具有快速模拟和完整轨迹反馈时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2310.10505#s1",
+   "object": "Mistral-7B-Instruct-v0.2",
+   "information": "UltraRM-13B奖励及greedy响应",
+   "operation": "用ReMax在20k ShareGPT prompts上RL",
+   "claimed_effect": "AlpacaEval 94.78%、MT-Bench 7.739；SFT为92.78%、7.516。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.3/Table 4，列AlpacaEval/MT-Bench",
+    "quote": "Mistral-7B-ReMax                  94.78%        7.739"
+   },
+   "failure_boundary": "依赖模型奖励与prompt分布；40k数据出现过优化，并非更多RL必然改善。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P09",
+   "how": "便宜独立baseline候选；必须直接比较真实score-weighted gradient variance。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "greedy对照仍是整响应标量，不解决caption/crop细粒度信用。",
+   "strength": 1
+  }
+ ]
+}

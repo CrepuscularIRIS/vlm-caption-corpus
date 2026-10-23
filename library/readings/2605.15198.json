@@ -287,7 +287,7 @@
   "degenerate_cases": "[redacted: project-internal]",
   "gradient_analysis": "对p.7辅助式在ratio=1且未clip、|M|>0、A固定条件下，读者推导∇L_aux=−α/|M| Σ_t A_i∇logπ(y_t|h_t)。改变相对梯度权重而非赋予新反事实信用；没有报告实际梯度范数或影响函数。不能从2.3%推出确切增强倍数，因为基础loss token归一化未披露。",
   "endpoint_mechanism": "功能token本身是下一token预测端点；未提供bbox parser、执行器调用、crop高分辨率图像重编码或工具返回拼接。模型仍以原输入为证据，功能语义来自SFT上下文，Fig2/Table1的imagined images无生成/监督。",
-  "protocol_alignment": "同一离散token同时用于SFT、采样和aux评分，是P23接口可迁移点；但没有自然解码与强制前缀分支概率校准、无caption后统一h测试。单token改协议需重新SFT及工具绑定验证，不能从ATLAS推断我们的WORD/多token分叉已解决。"
+  "protocol_alignment": "[redacted: project-internal]"
  },
  "evidence_design": {
   "discriminating_experiment": "已做：Table3同系列SFT/GRPO/LA-GRPO，Table5逐项删format/length/spam。可隔离辅助项/奖励组件但缺α、训练budget等完整匹配披露；无同数据纯文本、功能token置换/删除、假token占位对照，不能分离数据/SFT与功能语义因果贡献。",
@@ -314,7 +314,7 @@
    }
   ],
   "seeds": "unknown: 无训练seed数量、独立重复次数或置信区间；表为单点报告，不能推断确为单seed。",
-  "falsifier": "读者提出、未执行：同数据/训练token/步数/奖励下，匹配数量的无语义占位token或随机功能token获得同样收益，则否定功能操作语义解释；aux在匹配梯度预算的随机位置对照下无差别则否定稀疏操作位置解释。对本项目若只减少真实视觉证据而损害预设非劣界，否定可替代crop。"
+  "falsifier": "[redacted: project-internal]"
  },
  "engineering": {
   "setup": {

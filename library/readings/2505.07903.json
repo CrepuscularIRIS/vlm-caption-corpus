@@ -1,0 +1,173 @@
+{
+ "paper_key": "2505.07903",
+ "title": "SEM: Reinforcement Learning for Search-Efficient Large Language Models",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.07903.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§2 Eq1 pp3–4",
+   "§3 Tables1–3 pp5–7",
+   "Conclusion p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "强制先暂答，再可搜索再答；按GT判初答正确时只奖直接停，初答错时只奖格式有效搜索后答。",
+  "why_non_obvious": "显式把搜索资格绑定同轨迹初答正确性，而非统一每次调用惩罚。",
+  "trigger_condition": "When search is overused, expose a preliminary answer and reward search conditionally on its correctness.",
+  "contribution_type": "先答后查协议和条件reward",
+  "abstract_strategy": "先产生可判定承诺再允许信息动作",
+  "abstract_trigger_condition": "可在训练用GT区分已会与需信息题",
+  "abstract_key_step": "初答正确门控停止/初答错误门控检索",
+  "abstract_why_non_obvious": "训练GT正确性不是模型自信，模板改变状态也有影响。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.07903#s1",
+   "object": "Qwen2.5-7B/14B-Instruct search agent",
+   "information": "训练GT答案token F1判a1/a2；推理无GT，只输出暂答和search",
+   "operation": "MuSiQue+MMLU等份，先a1；a1 F1≥tau仅无search且单think/answer得分，否则合法search后a2 F1得分",
+   "claimed_effect": "14B MMLU EM75.16→75.62且SR31.43%→.11%；7B GSM8K EM82.63→71.79，非普遍非劣。",
+   "conditions": [
+    "wiki18-100w",
+    "200steps",
+    "SR为是否搜索比例，非调用次数或墙钟"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p6 14B MMLU EM/SR",
+    "quote": "SEM                           75.62                               0.11%"
+   },
+   "failure_boundary": "初答故意答错可能解锁搜索；未有独立数据/模板/reward消融",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P17",
+   "strength": 3,
+   "how": "明确先答协议改变搜索动作条件。"
+  },
+  {
+   "problem": "P03",
+   "strength": 3,
+   "how": "成功初答后搜索被硬置零，而非每次固定cost。"
+  },
+  {
+   "problem": "P05",
+   "strength": 2,
+   "how": "以初答correct替代necessity非当前policy配对收益。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Naive RAG",
+   "kind": "method"
+  },
+  {
+   "name": "ReSearch(不同训练dataset)",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "正文说全面优于baseline，但Table2 7B GSM8K SEM71.79低于ReSearch82.63；14B GSM8K79.37低于RAG83.93。",
+   "locator": "Table2/§3.2"
+  },
+  {
+   "text": "§3.2把.76%写成7B，表中是14B；正文“only trained MMLU”与前述混合MuSiQue+MMLU也不一致，按表记录且不消解。",
+   "locator": "p6"
+  },
+  {
+   "text": "无独立消融/明确局限节；tau、组大小、mask、adv标准化/clip/KL/学习率未列。",
+   "locator": "reader scope"
+  }
+ ],
+ "question": {
+  "observed_failure": "ReSearch14B MMLU SR31.43%；SEM.11%；7B ReSearch search近0无法完成检索题。",
+  "load_bearing_assumption": "单次初答正确反映无需search，MuSiQue/MMLU可代表unknown/known。",
+  "scope": "7B/14B两类问答与wiki检索",
+  "success_criterion": "EM与SR共同改善且原来会题不丢失",
+  "why_open": "终端正确奖励不区分已有知识和搜索收益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "数据已知/未知混合和不同域SR分别报告"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Tables1–2 EM/SR并报"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=f[\\mathbf1(F_1(a_1)\\ge\\tau,s=0,t=1)F_1(a_1)+\\mathbf1(F_1(a_1)<\\tau,u=1)F_1(a_2)]",
+    "locator": "Eq1;f格式合法,s搜索,t单次think/answer,u合法search-result"
+   }
+  ],
+  "signal_routing": "结构化完整trajectory总reward由GT F1和格式计算；GRPO只描述组内比较，未给优势/归一化/哪些token受训或result mask。不能因基于ReSearch/veRL推定实现。",
+  "normalization": null,
+  "invariance": "不是PBRS，是改变行为目标的硬门；初答正确再搜索得0即便最终也对。不按调用次数连续惩罚；if标准mean/std共同scale取消，但本文未明示。",
+  "baseline_or_potential": "初答correct门不是反事实baseline；无固定reader。",
+  "degenerate_cases": "全部格式错/零F1组reward0；a1错但无search也0，即便靠内部再思考可修正；a1近阈值行为不连续。a1错可能带来更多可得奖励而导致策略性错误，作者未测。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "主表对MMLU/GSM与MuSiQue/Hotpot分别测SR；无分离数据混合、模板与reward的消融，Fig2训练曲线不替代因果消融。",
+  "negative_results": [
+   {
+    "text": "7B GSM8K比ReSearch低10.84pp且SR0→14.63%；14B GSM8K比NaiveRAG低4.56pp。",
+    "locator": "Table2"
+   },
+   {
+    "text": "14B Hotpot LJ58.43低于NaiveRAG59.55，即便EM更高。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "统一模型数据模板，仅改reward；若省搜索来自数据/格式或因初答造错，必要性归因不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B/14B-Instruct",
+   "framework": "ReSearch/veRL/FlashRAG",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8A100,batch8,200steps；SR非总call/latency，未报完整墙钟。",
+  "pitfalls": [
+   {
+    "text": "DeepSeek671B AWQ仅评测judge LJ；训练reward是GT overlap F1。",
+    "locator": "§3.1"
+   },
+   {
+    "text": "数据集代表known/unknown是启发式，未逐题多采样校准内部知识。",
+    "locator": "§2.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当初答可见时，用条件门分离继续/停止，但先核GT阈值、初答造错、内部纠偏与数据分布混淆，再报告准确率和真正成本。"
+ }
+}

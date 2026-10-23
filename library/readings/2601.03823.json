@@ -1,0 +1,181 @@
+{
+ "paper_key": "2601.03823",
+ "title": "Step Potential Advantage Estimation: Harnessing Intermediate Confidence and Correctness for Efficient Mathematical Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2601.03823.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "2–3 Eqs4–17",
+   "4 Tables1–3",
+   "Limitations",
+   "AppendixD selected hyperparameters",
+   "Algorithm1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "中间prefix probe得到entropy confidence与teacher-forced GT概率，构造Φ；组mean-only outcome advantage乘saturation factor并加batch-relativeΔΦ shaping，最后全batch token标准化。",
+  "why_non_obvious": "把同一终局奖励拆为step共同信号，但probe依赖GT，且数值变换使其不是标准PBRS。",
+  "trigger_condition": "When outcome credit rewards redundant checking, derive intermediate training signals from answer compatibility and confidence.",
+  "contribution_type": "step-level advantage shaping",
+  "abstract_strategy": "targeted_self_supervised_objective",
+  "abstract_trigger_condition": "When terminal rewards cannot distinguish useful progress from repetition, condition local credit on an intermediate progress estimate.",
+  "abstract_key_step": "任务监督构造局部训练信号而非只加长度罚。",
+  "abstract_why_non_obvious": "局部标量经batch变换后的符号不等于绝对进展方向。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.03823#s1",
+   "object": "reasoning step及其全部tokens",
+   "information": "当前policy prefix、5个短probe、GT答案token概率和next-token entropy",
+   "operation": "step potential→饱和衰减+差分shaping→全batch token归一化",
+   "claimed_effect": "Qwen7B macro accuracy63.86 vsDAPO62.73，长度6825 vs8213；去saturation accuracy63.98但长度7517。",
+   "conditions": [
+    "structured answers",
+    "math train, GPQA OOD"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "SPAE      59.38    9,908     42.71   10,687     92.50 4,543 58.64 3,692 73.97                 6,509   55.94     5,611    63.86     6,825"
+   },
+   "failure_boundary": "不是无GT推理时可直接调用的价值函数；没有严格不损准确率/PBRS保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "终局credit改成step共享token信号，直接关乎局部归因。",
+   "strength": 3
+  },
+  {
+   "problem": "P33",
+   "how": "饱和后checking控制可作为训练停止信号近邻。",
+   "strength": 2
+  },
+  {
+   "problem": "P01",
+   "how": "局部信号经过minmax/center和最终std，原符号及尺度不可直接沿用。",
+   "strength": 3
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DAPO/RF-B",
+   "kind": "RL backbone"
+  },
+  {
+   "name": "Entropy/KTAE",
+   "kind": "token advantage"
+  },
+  {
+   "name": "DAST/LC-R1",
+   "kind": "official checkpoint efficiency comparison"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "probe增加训练开销，论文建议轻量/自适应probe。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "correctness probe要求structured GT答案，free-form及工具多轮未验证。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "读者：无probe梯度不等于不改变优化；GT通过Φ进入advantage，正文称不改变objective仅能理解为保留policy-surrogate形式。",
+   "locator": "3.1 vs Eqs11–17"
+  }
+ ],
+ "question": {
+  "observed_failure": "Qwen7B DAPO检查1787tokens/R2W9.50%，SPAE614/2.65%；R2W只在错误轨迹上统计。",
+  "load_bearing_assumption": "prefix对GT的兼容性与confidence可定位已解出后的冗余，而不误伤必要纠偏。",
+  "scope": "structured math reasoning",
+  "success_criterion": "同训练资源下准确率/长度联合改善，保留必要checking",
+  "why_open": "probe定义是监督proxy，batch转换与错误轨迹衰减可能改变直观作用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2 component ablation"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table1 lengths/Fig5 wall-clock comparison"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Conf=mean_n exp(-mean_l H(p_theta(.|h,Yn_<l))); Acc=(1/N)sum_n mean_m pi_theta(y*_m|h,y*_<m); Phi=1.5 Acc Conf+0.5 Acc-Conf",
+    "locator": "Eqs5–8"
+   },
+   {
+    "latex": "C_sat=sum_{t<k}1[Phi_t>epsilon_sat]; f=1-alpha*(1-exp(-C_sat)); DeltaPhi_k=Phi_k-Phi_{k-1}; g=exp(minmax_B(DeltaPhi))-mean_B(exp(minmax_B(DeltaPhi)))",
+    "locator": "Eqs12–15"
+   },
+   {
+    "latex": "A_group=R_i-mean_group R; A_SPAE_ij=A_group_i*f(Phi_i,M(j))+xi*g(DeltaPhi_i,M(j)); A_final=(A_SPAE-mean_all_batch_tokens A_SPAE)/(std_all_batch_tokens A_SPAE+epsilon)",
+    "locator": "Eqs11,16,17/Algorithm1"
+   }
+  ],
+  "signal_routing": "每步所有policy输出token共享f和g；首步g=0。probe generation/GT scoring无反传，但其数值改变训练advantage；不是仅诊断。Algorithm1称全部response tokens映射step，最终summary边界具体实现未查。",
+  "normalization": "mean-only per prompt outcome；ΔΦ在全batch步骤minmax后exp并按步骤居中；合成后全batch所有tokens mean+std；论文介绍DAPO的token-mean并称组合其探索策略，但SPAE实际policy loss分母未明确，保留未知。不得补成GRPO组内std。",
+  "invariance": "非严格PBRS：非线性/居中ΔΦ、乘性f、token标准化不满足固定potential telescoping保证。读者：g符号相对于batch均值，正ΔΦ也可负g；负A_group乘更小f会减弱惩罚；最后token中心化还可能改变局部符号。因此f单调不保证每条checking减少。",
+  "baseline_or_potential": "Phi为GT概率与probe entropy构造的监督进度proxy，非价值估计；训练时可得，测试无GT不可原样使用。",
+  "degenerate_cases": "全对/全错组A_group=0但g可留信号；全batchΔΦ相同minmax分母0保护未知；单步g0且f1退化outcome+batchnorm；全adv相同最终为0（有eps）。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2去confidence、difference、saturation并扫α/ξ；Table3分solve/check与错误轨迹R2W。",
+  "negative_results": [
+   {
+    "text": "去saturation accuracy63.98高于full63.86但长度7517高于6825，因此该部件主要效率权衡。",
+    "locator": "Table2"
+   },
+   {
+    "text": "α1 accuracy62.68低于α.5的63.86；ξ.1仅62.40，非无条件稳健。",
+    "locator": "Table2"
+   },
+   {
+    "text": "Llama8B AIME25 36.88低于DAPO37.08、Minerva49.82低于50.21；Qwen3GPQA50.86低于base51.17。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": "evaluation16runs；训练独立seed数量未见",
+  "falsifier": "读者：以可核GT的步骤单独检验必要纠偏被压制率；加入等算力probe/no-probe控制，若进度定位不优于长度则削弱机制归因。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "R1DistillQwen7B/Llama8B/Qwen3-4B",
+   "framework": "VeRL off-policy DAPO+RF-B",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "32H200，batch640 mini32，N5每probe≤10tokens，lr1e-6；α=ξ=.5",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当将progress proxy直接转advantage时，须检查所有归一化阶段后的符号与错误轨迹梯度，不用无梯度probe误称无训练影响。"
+ }
+}

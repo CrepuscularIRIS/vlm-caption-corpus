@@ -1,0 +1,57 @@
+{
+ "paper_key": "2603.18683",
+ "title": "HISR: Hindsight Information Modulated Segmental Process Rewards For Multi-turn Agentic Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2603.18683.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3 Eq2–9",
+   "Table1/§4.4 ablations",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "按子目标分段，用终奖约束segment分数之和，再以未来条件动作似然比调节各段。",
+  "why_non_obvious": "比turn更粗的段可贴近子目标，但只有总和监督无法唯一识别每段真实贡献。",
+  "trigger_condition": "当turn-level过程奖过细且不聚焦时，测试segment粒度与hindsight调制并单独核动作可执行性。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当turn-level过程奖过细且不聚焦时，测试segment粒度与hindsight调制并单独核动作可执行性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.18683#s1",
+   "object": "多轮agent的segment reward",
+   "information": "GPT4o切段；SPRM末token MLP；hindsight模型mask动作并看未来全文，policy只看过去",
+   "operation": "Lsprm=(R−Σr_i)^2；z(a)=exp(Σlog(πhind/πpolicy)/(β|a|))，同段turn z求和；rhim=(r⊙z)/||r⊙z||，再混可执行奖入PPO-GAE",
+   "claimed_effect": "ALFWorld83.6、VirtualHome59.1、WebShop69.1；去hindsight80.6/55.1/63.7；去segment82.1/57.9/69.1。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "HISR                               RL      83.3     87.1      65.2        85.7      100.0    82.4     83.6        59.1          69.1\n -w/o HIM                           RL      87.5     83.9      78.3        66.7       94.4    70.6     80.6        55.1          63.7\n -w/o SPR                           RL      87.5     83.9      78.3        76.2       94.4    70.6     82.1        57.9          69.1"
+   },
+   "failure_boundary": "总和拟合不是唯一信用分解；规范符号未指定norm类型，0向量处理未知；future-conditioned ratio不是单独步骤因果重要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "segment过程reward+GAE改变信用粒度。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "hindsight proxy和sum-conservation不提供真实贡献保证。"
+  }
+ ],
+ "scientific_replication": false
+}

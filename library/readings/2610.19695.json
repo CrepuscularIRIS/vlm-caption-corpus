@@ -1,0 +1,62 @@
+{
+ "paper_key": "2610.19695",
+ "title": "C3: Rethinking Process Supervision via Confidence-Guided Credit Correction in Multi-Turn Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2610.19695.txt",
+  "sections_read": [
+   "摘要/贡献",
+   "§4.2–4.3 Eq4–11",
+   "Table1/§6.2 Table3",
+   "结论/复现声明",
+   "App detector Table5/Eq12–13（定向）"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "在已有优势归一化之后，只翻转被规则检测为不良行为的正信用，幅度由行为策略置信和事件严重度决定。",
+  "key_step": "定位失败回合token，行动span概率估强度；保留负A与未检测token，不改critic目标。",
+  "why_non_obvious": "同一过程标签作为reward会传播到其他token且经归一化变形，直接改actor信用可限定干预位置。",
+  "trigger_condition": "成功轨迹中的明确无效/重复调用仍获正优势时，局部纠正其信用方向。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "targeted_self_supervised_objective",
+  "abstract_trigger_condition": "可靠局部违规标签与全局结果优势方向不一致。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.19695#s1",
+   "object": "检测不良事件的正优势token",
+   "information": "规则检测无效动作/重复query、冻结行为策略在action span的平均token概率",
+   "operation": "归一化后A>0改成−confidence*severity*A，其余保留",
+   "claimed_effect": "Table1 Qwen3-8B PPO+C3七任务平均EM50.20±.10，对照PPO47.79±.50；NQ39.5低于40.7。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 1",
+    "quote": "+ C3             39.5±0.3 63.5±0.1 45.0±0.3 55.6±0.1 67.9±0.3 29.7±0.1 50.4±0.0 50.20±0.10"
+   },
+   "failure_boundary": "表std来自四次独立temperature采样，不是四个训练seed；规则重复不等于无因果价值。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "直接改actor token mask与优势，可隔离成功轨迹的错误强化。",
+   "strength": 2
+  },
+  {
+   "problem": "P24",
+   "how": "展示相同过程信号在reward与归一化后信用路由的区别。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "过程检测错误会把有价值动作正优势翻负，需要可靠事件定义。",
+   "strength": 2
+  }
+ ]
+}

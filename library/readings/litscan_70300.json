@@ -1,0 +1,162 @@
+{
+ "paper_key": "litscan:70300",
+ "title": "When Silence Is Golden: Can LLMs Learn to Abstain in Temporal QA and Beyond?",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_70300.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3–4",
+   "5 Table2",
+   "6 Tables3–4",
+   "AppendixA/E"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "o1正确答案过滤CoT做coldstart，再以NoAnswer/ROUGE+EM及格式reward训练GRPO；对比原context/timecontext/KG。",
+  "why_non_obvious": "训练会提高QA却损弃答可靠性，信息增强与校准不是同一能力。",
+  "trigger_condition": "When questions can be unanswerable, teach an abstention response and audit its tradeoff against answer accuracy.",
+  "contribution_type": "abstention-aware SFT+RL",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When refusal is a task-valid response, supervise it and evaluate coverage and hallucination separately.",
+  "abstract_key_step": "奖励正确弃答同时惩罚误弃答/虚答。",
+  "abstract_why_non_obvious": "classdistribution及reward尺度可能使alwaysanswer或alwaysabstain成为捷径。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:70300#s1",
+   "object": "temporal QA回答/弃答",
+   "information": "GTanswerability+context，o1CoT",
+   "operation": "正确CoT SFT→format+abstention-aware GRPO",
+   "claimed_effect": "1.5B EM Easy43.41/Hard35.75；OOD EasyRL在SQuAD TP11/FN1520，不能称可靠泛化。",
+   "conditions": [
+    "single-turnEnglish",
+    "≤7B"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "RL (β = 0.01, Rans =ROUGE+EM)      0.580 0.722 43.41 0.504 0.681 35.75"
+   },
+   "failure_boundary": "Hard与OOD仍倾向虚答；奖励优化不等于uncertainty calibration。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "how": "可答性/拒答训练与模式坍缩，需分开测FP/FN。",
+   "strength": 3
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SFT/LoRA/classifier",
+   "kind": "training alternatives"
+  },
+  {
+   "name": "time subcontext/KG",
+   "kind": "input evidence"
+  },
+  {
+   "name": "ROUGE-only/semantic reward",
+   "kind": "reward ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "≤7B、English、singleturn；多轮一致拒答未验证。",
+   "locator": "AppendixA"
+  },
+  {
+   "text": "Hard RL提高FN，OOD几乎不弃答。",
+   "locator": "6.3/Table4"
+  }
+ ],
+ "question": {
+  "observed_failure": "原Easy仅12.4%unanswerable会忽视弃答；调到50%反而alwaysabstain。",
+  "load_bearing_assumption": "正确性与正确弃答可通过reward和数据比例共同学到，而非单一置信度分数。",
+  "scope": "temporal answerability",
+  "success_criterion": "同时报告EM及TP/FP/FN，不只macrocorrectness",
+  "why_open": "部分reward易被语义相似但错误答案hack。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "4.2–4.3 CoT coldstart thenRL"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 reward ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R=0.5*1[format]+Rans; Rans=1 if both NoAnswer; RougeL+EM if both not NoAnswer; 0 otherwise",
+    "locator": "Eq2/4.3"
+   },
+   {
+    "latex": "A_i=(R_i-mean_groupR)/std_groupR",
+    "locator": "AppendixE"
+   }
+  ],
+  "signal_routing": "SFT训练reasoning+answer；RL sequence reward驱动整输出，未给单独弃答tokencredit或tokenloss分母；KLref约束。",
+  "normalization": "mean+std per prompt G4，未明eps；正确正常答案最高2，正确弃答1，另加格式.5。",
+  "invariance": "非PBRS；正仿射整体reward忽略eps下组标准化不变，但改通道权重会改排名；不是校准目标。",
+  "baseline_or_potential": "组均值；无critic/potential。",
+  "degenerate_cases": "全同输出/全同reward无adv；全弃答组即使该题答错也可能无相对信号；50%unanswerable产生alwaysabstain。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "reward/β/数据比例与implicitvsCoT；OOD TP/FP/FN。",
+  "negative_results": [
+   {
+    "text": "TimeQAEasy RL→SQuAD TP11/FN1520；HardRL TP1/FN1530。",
+    "locator": "Table4"
+   },
+   {
+    "text": "Hard用ROUGE-only EM26.67低于ROUGE+EM35.75。",
+    "locator": "Table3"
+   },
+   {
+    "text": "50%unanswerable训练坍缩alwaysabstain。",
+    "locator": "6.4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：相同CoT初始化下比较SFT/RL并画coverage-risk，若EM提升只靠少弃答则不是可靠性提升。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5 .5/1.5/7B and Llama3.2-3B",
+   "framework": "HF TRL",
+   "group_size": 4,
+   "max_turns": null,
+   "kl": 0.01
+  },
+  "cost": "4H100；CoT2119easy/1045hard；SFT1epoch+RL3epochs lr1e-5",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当加入弃答分支时不要只平衡样本；必须监测各模式覆盖与错答，避免用高EM掩盖拒答坍缩。"
+ }
+}

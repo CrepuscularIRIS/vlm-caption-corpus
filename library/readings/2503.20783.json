@@ -1,0 +1,175 @@
+{
+ "paper_key": "2503.20783",
+ "title": "Understanding R1-Zero-Like Training: A Critical Perspective",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.20783.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 pp5–9; Listing1,Fig5",
+   "AppA pp13–14",
+   "AppB Table4 p14",
+   "AppC Figs8–9 p15",
+   "AppG Table6 p19"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "assumption_audit_and_pivot",
+  "key_step": "发现逐response长度分母和组reward std改变策略梯度权重；去两者，用固定MAX_TOKENS缩放，保inclusive组均值。",
+  "why_non_obvious": "错误长答案增长可能来自较弱每token惩罚而非新推理行为；数据模板还可压低基座起点。",
+  "trigger_condition": "When RL length growth is treated as reasoning improvement, audit loss reduction and group scaling before attributing the behavior.",
+  "contribution_type": "优化偏差诊断与DrGRPO",
+  "abstract_strategy": "从期望目标推回实现权重",
+  "abstract_trigger_condition": "实现归约隐含改变样本相对权重时",
+  "abstract_key_step": "移除随机长度/std分母并做单独消融",
+  "abstract_why_non_obvious": "相同名义PPO/GRPO算法因mask平均实现不同而优化不同目标。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.20783#s1",
+   "object": "DrGRPO/Oat-Zero数学RL",
+   "information": "每prompt8生成答案及Math-Verify0/1终端reward",
+   "operation": "response token损失求和后除训练固定MAX_TOKENS，优势R_i−meanR不除std；clip仍存在、无KL。",
+   "claimed_effect": "Oat-Zero7B在3k输出预算AIME43.3/五项均值51.4；同预算R1Distill7B10.0/28.5，8k则33.3/54.7，预算差必须保留。",
+   "conditions": [
+    "Oat-Zero完整配方非只归因optimizer",
+    "AppC三独立RL runs支持短错输出与accuracy改善"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p14",
+    "quote": "Oat-Zero-7B                           43.3   62.7     80.0      30.1         41.0     51.4"
+   },
+   "failure_boundary": "去std保尺度不提供动作信用，也不创造未采样支持；不能无条件声称所有clipped更新精确无偏。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P08",
+   "how": "直接解释response长度归一化偏差。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "mean-only保留成本系数相对尺度。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "token共享终端优势仍未分配动作信用。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO, no length norm only, no std only",
+   "kind": "ablation"
+  },
+  {
+   "name": "R1/Qwen-Math/no template",
+   "kind": "control"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "所谓无偏是去除所识别两种重加权；inclusive组均值含自身造成(G−1)/G尺度，AppA明确与RLOO比例等价。PPO clipping/多次off-policy更新不是原始无偏PG。",
+   "locator": "AppA reader qualification"
+  },
+  {
+   "text": "主要数学模型任务，noKL对通用能力/工具策略保留不受保证；未见单独limitations节。",
+   "locator": "§3–4"
+  }
+ ],
+ "question": {
+  "observed_failure": "GRPO错误响应长度随训练持续增，reward平台后仍增；Llama基础均值3.3→RL6.8，预训练后更高。",
+  "load_bearing_assumption": "目标是期望trajectory return而非reward/length；损失分母不应依当前轨迹。",
+  "scope": "verifiable outcome数学RL",
+  "success_criterion": "同设置降低错误输出长度且提高验证准确率",
+  "why_open": "预训练/模板和优化归约同时混淆RL能力增益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Listing1实际mask分母审计"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "AppC两偏差项独立消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§3.3模板起点对照"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=R_i-\\frac1G\\sum_jR_j,\\quad J=\\frac1{GC}\\sum_{i,t}\\min(\\rho_{it}A_i,clip(\\rho_{it},1-\\epsilon,1+\\epsilon)A_i),\\ C=MAX\\_TOKENS",
+    "locator": "§3.2 Listing1/AppA;实现固定缩放"
+   },
+   {
+    "latex": "A_i=\\frac{G-1}{G}\\left[R_i-\\frac1{G-1}\\sum_{j\\ne i}R_j\\right]",
+    "locator": "AppA p14"
+   }
+  ],
+  "signal_routing": "每个response所有token共享终端0/1 centered advantage；固定C不是实际batch token和；response_mask控制非response位置。无独立动作/工具mask，本研究纯文本。",
+  "normalization": "mean-only",
+  "invariance": "reward共同加常数抵消；正缩放保留到梯度幅度而非std抵消。固定C和固定G的RLOO尺度可调整学习率，但Adam、clip/梯度clip动态下不能保证训练轨迹完全相同。非PBRS。",
+  "baseline_or_potential": "inclusive group mean；与leave-one-out仅固定比例，不把self-inclusive当独立无偏baseline。",
+  "degenerate_cases": "全相同rewardA0；p0支持缺失不修复；去length分母不自动偏好少crop，长正确/错误轨迹各token等权。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "AppC Fig8去length比去std更明显抑制长度；三seedFig9报告mean/std而未给精确p值。模板×题集实验显示无模板基座本来就强。",
+  "negative_results": [
+   {
+    "text": "LlamaNuminaQA即时原始评测均值.14，RL后20.7；格式/预训练接口效应不等于加入训练知识必然立刻提分。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": "AppC三独立RL runs；具体seed数值未读到",
+  "falsifier": "将损失固定分母与实际token平均分别实现并比较梯度；若所谓DrGRPO仍按实际token归约，则不能归因该论文机制。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5( Math)1.5B/7B;Llama3.2-3B",
+   "framework": "Oat",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "8A100约一天；maxresponse3000 LR1e-6 AdamW beta(.9,.95)、gradclip1、inner epoch1、policyclip.2。",
+  "pitfalls": [
+   {
+    "text": "budget curriculum改变MAX_TOKENS会改变梯度尺度；不得换成batch实际token数后仍称同实现。",
+    "locator": "Listing1"
+   },
+   {
+    "text": "基座与模板匹配可大幅改变初始分数，RL增益要相同模板与预算。",
+    "locator": "§3.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当长度与reward一起上升时，先分正确/错误长度并检查loss分母，再判断是否出现更好推理。"
+ }
+}

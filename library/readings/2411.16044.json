@@ -358,7 +358,7 @@
   },
   {
    "problem": "P31",
-   "how": "明确低阈值错停与高阈值无用遍历的权衡；未做错框注入或本项目E2评测。",
+   "how": "[redacted: project-internal]",
    "strength": 1
   },
   {
@@ -378,7 +378,7 @@
   },
   {
    "problem": "P48",
-   "how": "使用HR-Bench 4K/8K、V*和MME-RW；可参照benchmark覆盖，本文未给本项目cyclic判分实现。",
+   "how": "[redacted: project-internal]",
    "strength": 2
   },
   {

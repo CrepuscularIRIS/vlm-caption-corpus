@@ -1,0 +1,192 @@
+{
+ "paper_key": "litscan:75826",
+ "title": "NoisyVR",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_75826.txt",
+  "sections_read": [
+   "Abstract/Introduction contributions",
+   "§3–5.3",
+   "§6/Table1",
+   "§7 limitations",
+   "Appendix G",
+   "Appendix H opening definitions only",
+   "Appendix M/Table4"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "将每prompt的生成模式映射为categorical bandit，以softmax概率ODE和replicator几何分析正确/错误质量的流动。",
+  "why_non_obvious": "噪声总率不足以判断方向：TPR-FPR的符号与正确模式内部多样性是不同对象。",
+  "trigger_condition": "当终答二值验证带对称类别条件噪声时，用mean-field bandit动力学分离方向、速度与模式竞争。",
+  "contribution_type": "theory_and_empirical_diagnosis",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "当终答二值验证带对称类别条件噪声时，用mean-field bandit动力学分离方向、速度与模式竞争。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "将每prompt的生成模式映射为categorical bandit，以softmax概率ODE和replicator几何分析正确/错误质量的流动。",
+  "abstract_why_non_obvious": "噪声总率不足以判断方向：TPR-FPR的符号与正确模式内部多样性是不同对象。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:75826#s1",
+   "object": "带噪终答验证的GRPO",
+   "information": "同正确类所有mode共享TPR、同错误类共享FPR",
+   "operation": "用population mean/std替换有限组统计，推导bad mass的ODE",
+   "claimed_effect": "J>0使内部bad mass朝0，J<0朝1；J=0一阶无方向，初始good质量0不能自举。",
+   "conditions": [
+    "逐prompt独立bandit logits",
+    "block-symmetric noise",
+    "无限小步/mean-field",
+    "初始0<p<1"
+   ],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "§4.3 Theorem4.2",
+    "quote": "Moreover, p = 0 and p = 1 are absorbing: if the base policy\n    ∇z log π(bad) = 1 − p,        ∇z log π(good) = −p.                 assigns zero mass to good modes for a prompt (p(0) = 1),\n                                                                       RLVR cannot bootstrap learning on that prompt."
+   },
+   "failure_boundary": "不覆盖参数共享、mode-specific偏差、任意有限步clipped PPO或真实视觉judge。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:75826#s2",
+   "object": "有限训练的合成噪声实验",
+   "information": "unit-test oracle正确性后独立Bernoulli翻转",
+   "operation": "固定Qwen2.5-3B/GRPO配置，扫描TPR/FPR并以无噪测试评估",
+   "claimed_effect": "两epoch J=−.1 pass@1 .16%；J=0为13.4%；J=1为20.8%。",
+   "conditions": [
+    "5 seeds",
+    "G8",
+    "KL0",
+    "OpenR1 filtered10239train594val"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "−0.1     (0.60, 0.50)    0.16%      −12.6%                   noise via (TPR, FPR); richer graders (multi-level rewards,\n          0.0      (0.50, 0.50)    13.4%      +0.6%                    preference judges) may introduce additional failure modes.\n          0.3      (0.00, 0.70)    16.0%      +3.2%                    As noted in Section 5.3, the first-order drift extends to\n          0.3      (0.70, 0.00)    14.6%      +1.8%\n          0.7      (0.20, 0.10)    18.6%      +5.8%\n                                                                       graded rewards by replacing J with the class-conditional"
+   },
+   "failure_boundary": "同J=.3，FPR0/FN.7为16.0而FPR.7/FN0为14.6；有限时域效果不由J单独确定。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P66",
+   "strength": 3,
+   "how": "直接分析二值验证的误奖/漏奖如何反转学习；幸运猜测未必是验证错误，需区分目标偏差。"
+  },
+  {
+   "problem": "P62",
+   "strength": 2,
+   "how": "KL主实验为0，附录说明受控锚定可改平衡但非实际tokenKL保证。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "正确模式内部竞争与无支持吸收解释探索边界。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "无噪GRPO与不同TPR/FPR合成噪声",
+   "kind": "controlled_condition"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "J=−.1的合成噪声使pass@1由约12.8%降到.16%，正J才提供正确方向。",
+  "load_bearing_assumption": "mode-independent block-symmetric噪声与逐prompt独立logit动力学可代表奖励噪声的粗方向。",
+  "scope": "二值终答奖励、无KL主实验、mean-field小步分析。",
+  "success_criterion": "扫TPR/FPR跨J0且用干净oracle评估；固定J分解噪声速率。",
+  "why_open": "总体judge精度或正相关不保证对每种模式正确，且有限组与共享参数改变现实训练。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§6.1–6.2噪声受控扫描"
+  },
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§3–5 mode bandit→replicator ODE"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J=\\mathrm{TPR}-\\mathrm{FPR}=1-\\delta_{FN}-\\delta_{FP};\\quad\\hat A_g=(r_g-\\bar r)/(\\sigma_r+\\epsilon)",
+    "locator": "§3"
+   },
+   {
+    "latex": "q(p)=1-\\delta_{FN}-Jp;\\quad\\sigma(p)=\\sqrt{q(p)(1-q(p))};\\quad\\dot p=-\\eta J[p(1-p)]^2/\\sigma(p)",
+    "locator": "Eq3–5 binary one-logit model"
+   },
+   {
+    "latex": "\\dot p=-\\eta J[p(1-p)]^2(\\|y\\|_2^2+\\|z\\|_2^2)/\\sigma(p)",
+    "locator": "Eq7c multi-mode model"
+   }
+  ],
+  "signal_routing": "序列级reward经同prompt G个rollout mean+std转成序列A，Eq1作用完整sequence logprob；各token继承同终答A，非动作条件信用。实际token长度reduce/mask细节未核代码。理论θ是模式logits，不是神经网络参数。PPO/GSM8K补充实验另有token级credit，但只支持定性相变。",
+  "normalization": "mean+std",
+  "invariance": "正仿射reward在epsilon可忽略时不改变标准化A；这不消除结构性FPR/FN。不是PBRS。AppG clip不变leading ODE只因η趋0时ratio近1使clip inactive，不能泛化多epoch有限更新。",
+  "baseline_or_potential": "同prompt组均值baseline；主实验KL=0。KL附录的natural-gradient penalty/两类与fullreverseKL设定不能视作任意默认token KL的保证。",
+  "degenerate_cases": "观测奖励全同则A0；即使全真对组仍可由FN随机产生梯度，但无可信组内优劣信息。p_good0是吸收态；J0一阶无方向；J>0可造成good-mode内部集中，保准确不等于保行为多样性。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "扫描J跨0检验方向；固定J=.3两种FPR/FN检验速度；GSM8K PPO仅辅助检验跨算法定性。",
+  "negative_results": [
+   {
+    "text": "J=.3两种噪声的两epoch pass@1不同，不能将rate-not-fate解释为同有限预算分数。",
+    "locator": "Table1"
+   },
+   {
+    "text": "主理论不包含跨prompt/模式共享参数、真实非平稳或mode-dependent verifier偏差。",
+    "locator": "§3,§7"
+   }
+  ],
+  "seeds": "5 random seeds主GRPO实验",
+  "falsifier": "若类别对称合成噪声下，受控小步跨J0仍不出现预测方向，则核心简化动力学不足；真实VLM应分动作/难度分别校准TPR/FPR。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B；PPO补充DeepSeek-LLM-7B-chat",
+   "framework": "VeRL",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0,
+   "train_steps": 1410,
+   "epochs": 2,
+   "max_response_tokens": 4000,
+   "clip": 0.2
+  },
+  "cost": "5seeds×噪声配置；GPU walltime未读到。",
+  "pitfalls": [
+   {
+    "text": "主实验oracle unit tests再注入独立噪声；不能将其当作真实视觉judge校准实验。",
+    "locator": "§6.1"
+   },
+   {
+    "text": "不能用高precision替代TPR−FPR；应保留可信正负标签和置信区间。",
+    "locator": "§7"
+   }
+  ],
+  "code": null,
+  "lesson": "当验证器有噪声时，应先在可信标注上按任务/动作条件估计TPR和FPR；正整体J不排除局部反向奖励或good-mode塌缩。"
+ }
+}

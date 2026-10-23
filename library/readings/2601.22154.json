@@ -1,0 +1,58 @@
+{
+ "paper_key": "2601.22154",
+ "title": "Exploring Reasoning Reward Model for Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2601.22154.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.3–3.5 Eq5–9",
+   "Table1",
+   "§4.5 λ analysis",
+   "§6 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "生成批评与总体过程分，将初答及批评后修订共同纳入GRPO。",
+  "why_non_obvious": "训练时额外反馈可改善测试时无批评的策略，但总体过程分并非step信用。",
+  "trigger_condition": "当终答稀疏且可训练轨迹评价器时，将文本修订数据与数值质量信号联合用于训练。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "当终答稀疏且可训练轨迹评价器时，将文本修订数据与数值质量信号联合用于训练。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.22154#s1",
+   "object": "初答/修订轨迹训练池",
+   "information": "Agent-RRM的think/critique/score，初始教师GPT-OSS-120B标注；rule终答正确性",
+   "operation": "Reagent-U采G初答和G批评条件修订，以Rrule+λRmodel统一pool mean/std、各自上下文ratio训练",
+   "claimed_effect": "GAIA text43.7、WebWalker46.2；Reagent-R36.9/45.3，w/oRRM34.0/43.5。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "Reagent w/o Agent-RRM            Qwen3-8B              41.0 36.5 0.0 34.0        44.4 45.0 41.3 43.5       6.8     32.0\n Reagent-C (Direct Inference)     Qwen3-8B              30.8 23.1 16.7 25.2       35.6 38.1 32.4 35.5       4.6     15.0\n Reagent-R                        Qwen3-8B              51.3 30.8 16.7 36.9       47.5 46.0 42.9 45.3       10.0    41.0\n Reagent-U                        Qwen3-8B              59.0 38.5 16.7 43.7       49.2 46.8 43.3 46.2       10.8    43.0"
+   },
+   "failure_boundary": "初答与修订上下文不同但共享baseline，不能声称同观测反事实；λ.5出现下降，原终答目标可能被代理分挤压。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "过程总体分仍广播全轨迹，非细粒度动作A。"
+  },
+  {
+   "problem": "P50",
+   "strength": 2,
+   "how": "利用外部批评训练恢复、推理时去掉批评。"
+  }
+ ],
+ "scientific_replication": false
+}

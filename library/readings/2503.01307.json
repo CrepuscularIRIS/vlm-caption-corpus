@@ -1,0 +1,156 @@
+{
+ "paper_key": "2503.01307",
+ "title": "Cognitive Behaviors that Enable Self-Improving Reasoners, or, Four Habits of Highly Effective STaRs",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.01307.txt",
+  "sections_read": [
+   "Abstract",
+   "§3.1–3.5 pp4–9; Figs2/5/6/8",
+   "Discussion p9",
+   "AppB/C Tables1–2 pp16–17"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "通过行为可控的1000条SFT与空CoT/等长占位/错误答案对照，测初始回溯、验证等行为是否使后续PPO可学习。",
+  "why_non_obvious": "行为先验和答案正确性不等同；空的长序列没有相同收益。",
+  "trigger_condition": "When RL plateaus because useful search behaviors are rare, prime those behaviors before outcome RL.",
+  "contribution_type": "行为支持诊断与SFT→RL数据实验",
+  "abstract_strategy": "控制数据行为因素而非只控制答案与长度",
+  "abstract_trigger_condition": "同任务同RL不同基座收益悬殊时",
+  "abstract_key_step": "隔离行为/长度/答案正确性后再测RL学习曲线",
+  "abstract_why_non_obvious": "错误解也可能包含后续RL可复用的搜索操作。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.01307#s1",
+   "object": "Llama3.2-3B Countdown self-improvement",
+   "information": "Claude3.5Sonnet按指定行为生成轨迹，PPO使用可验证算术答案；behavior classifier只评估不入reward。",
+   "operation": "1000例SFT priming后250步PPO，对照空CoT/等长点号/错误答案保行为；另8.3Mtoken行为增强继续预训练。",
+   "claimed_effect": "同PPO Qwen约60%而Llama约30%；空/等长空CoT仍约30–35%；错误答案行为priming与正确行为版本相当（图示，未读精确终点）。",
+   "conditions": [
+    "Countdown为主要RL任务",
+    "PPO，不是GRPO",
+    "行为必要性不推广成所有任务定理"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.1 p5",
+    "quote": "Qwen achieves approximately 60% accuracy, substantially outperforming"
+   },
+   "failure_boundary": "错误视觉证据会不会教坏caption未测试；结果不能许可保留任意错误轨迹。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "直接隔离RL前行为支持的作用。",
+   "strength": 3
+  },
+  {
+   "problem": "P38",
+   "how": "回溯/验证SFT可为缺纠偏轨迹提供方向。",
+   "strength": 3
+  },
+  {
+   "problem": "P36",
+   "how": "错误答案与正确行为可分，但视觉错误不可直接类比。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "unprimed Llama/Qwen; empty/length-matched CoT",
+   "kind": "control"
+  },
+  {
+   "name": "correct versus incorrect all-strategy priming",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "主要证据来自Countdown，两3B模型；其他任务的行为有效性未知，四行为不完备。",
+   "locator": "Discussion p9"
+  },
+  {
+   "text": "behavior counts来自GPT4o-mini，未读AppF人工一致性全文，不能当人工gold。",
+   "locator": "§3.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "同PPO Qwen约60% vs Llama30%。",
+  "load_bearing_assumption": "成功探索需要初始行为支持而非只更多token。",
+  "scope": "Countdown、两种3B基座",
+  "success_criterion": "控制长度/答案正确性后priming提高后续RL成功率",
+  "why_open": "终端奖励不保证发现稀有验证/回溯行为。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3.4先SFT行为再PPO"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Figs5–6等长与错误答案对照"
+  }
+ ],
+ "objective": {
+  "equations": [],
+  "signal_routing": "PPO终端reward正确1、错误0、格式bonus.1；行为出现次数只由classifier用于分析，不直接奖励。critic LR1e-5 actor1e-6；具体GAE/归一化/token mask未给，不按PPO名称推定。",
+  "normalization": null,
+  "invariance": "无新shaping或PBRS；对照改变初始化与数据支持，不是reward不变变换。",
+  "baseline_or_potential": "使用PPO critic但具体优势表达式未知；不是组相对均值基线。",
+  "degenerate_cases": "行为缺失时RL平台；空长CoT不补支持，Qwen甚至停止探索；没有全对/错组GRPO结论。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Fig5等长无内容CoT无益；Fig6错误解保行为可获得类似RL提升；Fig8等token8.3M行为增强/最少行为控制。",
+  "negative_results": [
+   {
+    "text": "全部行为priming后RL压低subgoal/backward chaining，任务中并非全部行为越多越好。",
+    "locator": "Fig3 §3.4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "在当前VLM上匹配图像、长度、答案，单独增加真实观察后纠偏；若学习收益只来自额外正确QA而非行为，迁移假设不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B/Llama3.2-3B",
+   "framework": "VERL/TinyZero PPO",
+   "group_size": 4,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "SFT1000/val200，5epoch batch64 lr1e-5；PPO250steps batch256 maxresponse1024。",
+  "pitfalls": [
+   {
+    "text": "不要把错误答案可用结论推广到错误grounding/caption；需保留真实视觉证据检查。",
+    "locator": "reader transfer boundary"
+   }
+  ],
+  "code": null,
+  "lesson": "当RL行为平台时，先做等长行为priming对照，再决定改reward；长度增长本身不说明搜索有用。"
+ }
+}

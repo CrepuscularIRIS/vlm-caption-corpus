@@ -1,0 +1,59 @@
+{
+ "paper_key": "2607.10738",
+ "title": "To Answer or to Abstain: Mitigating Search-Agent Hallucinations via Abstention-Aware Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.10738.txt",
+  "sections_read": [
+   "Abstract; §2–4 Tables1–3; Limitations",
+   "Appendix B stabilization and composite advantage; C RL configuration"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以每题旧checkpoint能力先验设拒答奖励，再按batch拒答超额动态反馈，联合引用质量训练。",
+  "key_step": "p*=max(p,.05)^γ，Rbase=1−p*；按当前拒答率相对目标的超额E对Rbase减分或补偿。",
+  "why_non_obvious": "固定小正拒答奖励也可能让从零RL迅速只拒答；查询难度先验与反馈控制需要分开。",
+  "trigger_condition": "可核答案的多跳检索任务，模型已有或可训练检索行为且需控制拒答覆盖率。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用先验能力设选择性回答的目标，再通过行为分布反馈修正奖励，并保留独立证据质量信号。",
+  "abstract_trigger_condition": "可核答案的多跳检索任务，模型已有或可训练检索行为且需控制拒答覆盖率。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.10738#s1",
+   "object": "检索agent终答/拒答及引用质量",
+   "information": "无拒答checkpoint逐题成功概率、当前batch拒答率、GPT-oss judge答案与引用",
+   "operation": "动态拒答奖；EMA和量化稳定反馈；结果/覆盖/冗余分别组内z-score后以2/3/−1合成优势",
+   "claimed_effect": "冷启动γ=.2时Acc .529、拒答.192、Prec .662、RA-F1 .585；γ0基线.552/.012/.559/.556，提升精确率但准确率下降2.3pp。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2.3; Table3 p3 cold-start γ=.2; AppendixB",
+    "quote": "0.20     0.529     0.192     0.662     0.585"
+   },
+   "failure_boundary": "不是准确率非劣保证或已校准actor置信度；旧policy先验、judge误差及γ选择影响覆盖率。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "how": "显式奖励和训练拒答动作，研究从无拒答/混合SFT到RL的支持与塌缩。",
+   "strength": 3
+  },
+  {
+   "problem": "P34",
+   "how": "以先验成功概率及batch行为反馈定义拒答目标，需区别经验可控和逐例校准。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "各奖励通道先独立标准化再加权，外部2/3/−1不会被同一次共同std直接消掉。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

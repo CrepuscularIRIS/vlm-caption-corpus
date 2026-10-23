@@ -1,0 +1,57 @@
+{
+ "paper_key": "litscan:2282",
+ "title": "Math-Shepherd",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2282.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.3–3.5 Eq3–7",
+   "§4 settings/Table3",
+   "Limitations opening"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "对每个前缀用completer继续采样，以最终答案正确性自动标注过程可解性，训练PRM。",
+  "why_non_obvious": "步骤标签实际上是给定completer的可恢复性，而非该步骤逻辑必然正确。",
+  "trigger_condition": "当人工过程标签昂贵且终答可判时，用续采样监督PRM并测试逐步reward。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "当人工过程标签昂贵且终答可判时，用续采样监督PRM并测试逐步reward。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2282#s1",
+   "object": "数学推理步骤",
+   "information": "固定LLemma7B completer每前缀N=8续样，答案GT；PRM本身不拿运行时GT",
+   "operation": "HE=任一续样正确，SE=正确比例；主PRM用HE交叉熵；PPO仅每step末token得PRM reward，其余0；rerank取各step最小值",
+   "claimed_effect": "Mistral7B ProcessRL greedy GSM8K84.1/MATH33.0，SFT77.9/28.6；不是256-sample verification分数。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 Mistral7B",
+    "quote": "+ Process RL                                                  84.1           33.0"
+   },
+   "failure_boundary": "HE随采样数/能力变化；可修复错误仍可标正，不能当证明级正确性；逐前缀8次completion成本高。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "过程末token稠密奖提供信用粒度对照。"
+  },
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "固定completer可解性标签不等于当前actor工具收益。"
+  }
+ ],
+ "scientific_replication": false
+}

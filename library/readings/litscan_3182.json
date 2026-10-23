@@ -1,0 +1,64 @@
+{
+ "paper_key": "litscan:3182",
+ "title": "ProcessBench",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3182.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 pp3–6",
+   "§4/Table3 pp6–8",
+   "Limitations targeted"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "3400专家标注解答只定位最早错误或全对，分别统计错误/全对样本准确率并取harmonic mean，避免BoN混入生成器因素。",
+  "why_non_obvious": "能选对最终答案不说明能识别局部错误，错误后的条件推导标签也模糊。",
+  "trigger_condition": "当PRM只用BoN验证而无法判断错误定位能力时，直接测首错定位并按难度分层。",
+  "contribution_type": "过程错误评测集",
+  "abstract_strategy": "用局部错误金标分离评估器能力与生成器成功。",
+  "abstract_trigger_condition": "终局指标掩盖过程错误与跨模型标签偏移。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3182#s1",
+   "object": "math PRM/critic error localization",
+   "information": "多生成器解答、专家首错索引",
+   "operation": "首错/无错分类，error/correct组accuracy harmonicmean",
+   "claimed_effect": "Table3 Qwen7B PRM800K平均56.5，Skywork7B42.1；Omni-MATH44.3 vs21.0。",
+   "conditions": [
+    "3400cases",
+    "open critic多数票8次，GPT4o greedy/o1单次，算力不完全匹配",
+    "Skywork threshold在GSM8K上选最高F1"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7",
+    "quote": "Qwen2.5-Math-7B-PRM800K (our trained)               68.2      62.6        50.7        44.3       56.5"
+   },
+   "failure_boundary": "按数学正确性首错评测，不是必要工具价值或纠错后的可恢复性；结论限受测模型。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 3,
+   "how": "过程reward必须独立测定位准确率，不能只看BoN。"
+  },
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "MC续写成功label依赖续写policy且不等步骤真实正确。"
+  },
+  {
+   "problem": "P52",
+   "strength": 2,
+   "how": "专家多标注及分歧处理可借鉴视觉审计。"
+  }
+ ],
+ "scientific_replication": false
+}

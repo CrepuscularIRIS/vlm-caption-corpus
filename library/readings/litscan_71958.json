@@ -1,0 +1,158 @@
+{
+ "paper_key": "litscan:71958",
+ "title": "No Prompt Left Behind: Exploiting Zero-Variance Prompts in LLM Reinforcement Learning via Entropy-Guided Advantage Shaping",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_71958.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3 Eqs5–6",
+   "4 Tables1–4",
+   "Limitations",
+   "AppendixA"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "非零方差保GRPO；全对组给+αtokenentropy，全错组给−α(sequence maxentropy−tokenentropy)。",
+  "why_non_obvious": "全同reward并非没有可训练行为，但符号与局部强度需区分；全错时保护高entropy分支点。",
+  "trigger_condition": "When group-relative rewards vanish, separate all-correct and all-wrong prompts and shape token updates differently.",
+  "contribution_type": "entropy-guided advantage shaping",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When a shared estimator degenerates on a subset, identify that subset and assign a tailored signal.",
+  "abstract_key_step": "仅ZVP替换advantage并detachentropy。",
+  "abstract_why_non_obvious": "不等于加可微entropy正则，也不是从错误轨迹知道哪个token真正错。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:71958#s1",
+   "object": "zero-variance prompt tokens",
+   "information": "binaryGTreward与policy每token分布entropy",
+   "operation": "按全对/全错熵加权adv，mixed组不变",
+   "claimed_effect": "smallscale三验证集平均Acc49.90/Pass69.77 vsGRPO46.79/66.41；去entropy46.88/66.05。",
+   "conditions": [
+    "Qwen3Base1.7/8B",
+    "binary verifiable math"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "RL-ZVP (Ours)             29.96   44.76      48.75   77.19      70.98 87.35         49.90    69.77"
+   },
+   "failure_boundary": "假设entropy对应有用探索；任意gradedreward/ambiguousfeedback未验证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P06",
+   "how": "全错组从零adv改成非零负信号。",
+   "strength": 3
+  },
+  {
+   "problem": "P07",
+   "how": "全对组继续训练而非过滤。",
+   "strength": 3
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "same rollout/update budget"
+  },
+  {
+   "name": "GRPO-DS/GRESO",
+   "kind": "filtering, rollout or update matched"
+  },
+  {
+   "name": "without positive/negative/entropy",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "≤8B；只验证binaryreward，gradedreward扩展未知。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "读者：全错中低entropy正确语法/证据tokens也会受罚，非错误定位。",
+   "locator": "Eq5"
+  }
+ ],
+ "question": {
+  "observed_failure": "大scale动态采样samebudget仅32updates vsGRPO/RLZVP1056；ZVP三集Acc49.90 vs46.79。",
+  "load_bearing_assumption": "同reward轨迹仍可用correctness方向和entropy强度提供有益学习。",
+  "scope": "binary math RL",
+  "success_criterion": "固定rollout预算与update预算分别比较，且检查allwrong/allcorrect贡献",
+  "why_open": "样本全错不代表真实成功概率0，熵也不保证语义必要性。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables1/3/4 matched costs and ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_zvp_it=alpha*H_it if allcorrect; -alpha*(max_k H_ik-H_it) if allwrong; H_it=-sum_v pi(v|prefix)logpi(v|prefix)",
+    "locator": "Eq5"
+   },
+   {
+    "latex": "mixed group: A_i=(R_i-mean_groupR)/std_groupR; ZVP: PPO clipped surrogate using A_zvp",
+    "locator": "Eqs1,6"
+   }
+  ],
+  "signal_routing": "tokenentropy每处detach，作为policy logprob权重，不通过H反传。allwrong最大entropy token为0而非负；allcorrect高entropy正值。无工具/observationtoken实验。",
+  "normalization": "mixed组mean+std；ZVP不组标准化/不中心化，只α=.1；negative用每条response maxentropy。Eq6示意1/G×1/length，AppendixA只称token-level loss，实际reduction未知。",
+  "invariance": "非PBRS；改变原零adv更新目标，无严格无偏correctnessgradient保证；entropy自然尺度依模型/vocab。",
+  "baseline_or_potential": "ZVP不用rewardbaseline，maxentropy是强度参照非valuebaseline。",
+  "degenerate_cases": "全错且所有tokenentropy相等则全部adv0；确定性H0全对也无信号；α过大不稳，.05/.3均降性能；没有正确rollout时不能凭空生成正确支撑。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "保持rollout/update双口径比较DS/GRESO；分别删positive/negative/entropy；α sweep。",
+  "negative_results": [
+   {
+    "text": "无entropy的Pass66.05低于GRPO66.41，单纯±1不足。",
+    "locator": "Table3"
+   },
+   {
+    "text": "α.05 Acc46.78低于GRPO46.79，不能假设任意小scale均有效。",
+    "locator": "Table4/Table3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：固定训练计算下打乱entropy位置若同样改善，则高entropy语义分支解释不成立；检查正确低entropytoken误罚。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3Base1.7/8B",
+   "framework": "verl",
+   "group_size": "8/16",
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "small4RTX3090/large8A100；batch512 mini32；G8/16；max4096/8192",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当组adv为零时可单独处理，但必须detach权重并监测全错token误罚，不能当成定位错误的过程监督。"
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "paper_key": "2410.13339",
+ "title": "Probing-RAG: Self-Probing to Guide Language Models in Selective Document Retrieval",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2410.13339.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§3.1–3.3/Algorithm1",
+   "§4.1–4.4/Tables1–4",
+   "Limitations",
+   "Appendix C.1 threshold"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用模型自己生成rationale/answer的中间hidden states训练便宜prober控制检索。",
+  "key_step": "各层生成token hidden均值并归一化，经二分类prober；汇总logit决定停止或再检索。",
+  "why_non_obvious": "问题复杂度不代表当前模型已有知识；但正确性预测仍不等于检索因果收益。",
+  "trigger_condition": "当多余检索会引入冲突且可访问hidden states时，用当前回答可答性探针控制检索。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "reframe_as_solvable_object：将检索触发改成当前回答hidden的正确性分类，但代理与工具收益有差距。",
+  "abstract_trigger_condition": "工具调用价值取决于当前模型知识与生成状态时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2410.13339#s1",
+   "object": "Gemma-2b五QA数据集",
+   "information": "当前rationale/answer hidden及正确性监督prober",
+   "operation": "Probing-RAG选择性检索",
+   "claimed_effect": "Table1五数据集均值EM22.8/ACC35.8，No Retrieval19.0/29.2。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2/Table1 Gemma-2b；列各数据集EM/ACC、最后Average EM/ACC",
+    "quote": "Probing-RAG(Ours)            21.8          39.4    21.6     35.0      41.8   52.2   4.8   8.8    24.2   43.6    22.8   35.8"
+   },
+   "failure_boundary": "正确性标签不确认检索能修复错误；hidden access受限API不可用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P24",
+   "how": "独立hidden-state分类头把路由学习与生成分开，可迁移为可分性诊断；仍需同调用率常数门控强对照。",
+   "strength": 2
+  },
+  {
+   "problem": "P35",
+   "how": "避免外部信息导致已正确直答被破坏，需联合测错误停止率。",
+   "strength": 2
+  },
+  {
+   "problem": "P09",
+   "how": "不是advantage baseline，不能将分类分数直接套作无偏control variate。",
+   "strength": 1
+  }
+ ]
+}

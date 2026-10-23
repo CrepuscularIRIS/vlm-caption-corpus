@@ -395,7 +395,7 @@
    }
   ],
   "code": "https://github.com/Liar406/Look_Again",
-  "lesson": "当文字反思不能恢复视觉证据利用时，应分别测量反思生成和实际视觉重读，并用匹配计算预算的控制区分证据增益与多算；这是本文结果启发的读者迁移建议，未在本项目验证。",
+  "lesson": "[redacted: project-internal]",
   "additional_reported_setup": {
    "BRPO": {
     "learning_rate": 1e-06,

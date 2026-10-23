@@ -79,8 +79,7 @@
  "limitations": [
   {
    "text": "受检索质量/pivot抽取精度限制，稀疏偏置证据仍失败。",
-   "locator": "Limitations p9",
-   "quote": "sparse, biased,"
+   "locator": "Limitations p9"
   }
  ],
  "question": {

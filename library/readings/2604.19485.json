@@ -1,0 +1,174 @@
+{
+ "paper_key": "2604.19485",
+ "title": "EVPO: Explained Variance Policy Optimization for Adaptive Critic Utilization in LLM Post-Training",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2604.19485.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–3 Eqs1–9/Alg1",
+   "§4 Table1/§4.3–4.4",
+   "Limitations",
+   "AppA.1–A.2 assumptions/GAE",
+   "AppC Table2/AppD interventions"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用critic explainedvariance在线判它是否降低return残差方差，切critic或batchmean。",
+  "key_step": "EV=1−Var(G−Vhat)/Var(G)，正则用Vhat，非正则groupmean；critic始终训练。",
+  "why_non_obvious": "critic存在不必有益；但A方差不等scoreweightedPG方差，更不保证性能永不差。",
+  "trigger_condition": "When a critic increases residual-return variance, temporarily replace it with a group-mean baseline while continuing to train it.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用可观测质量门控有噪估计器，而非固定信任或丢弃。",
+  "abstract_trigger_condition": "When an estimator matures unevenly, select its use based on residual variance.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "比较共享数据上的residual与returnvariance，zeroEV是候选切点。",
+  "abstract_why_non_obvious": "populationvariance身份与finitebatch选择误差必须分开；连续最优融合还需未知协方差条件。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.19485#s1",
+   "object": "critic baseline选择",
+   "information": "每prompt sampledterminalreturns与prefix critic predictions",
+   "operation": "batch EV sign gate critic/groupmean，仍更新actor与critic",
+   "claimed_effect": "bestvalidation Sokoban.604/FrozenLake.684/WebShop.303/MATH.416，高于PPO .314/.611/.252/.373",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 EVPO row, four task columns",
+    "quote": "EVPO(ours)                          0.604          0.684                         0.303                 0.416"
+   },
+   "failure_boundary": "每task32queries×16samples，bestvalidation非sealedtest；baseline配置/步数不全相同。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P09",
+   "strength": 3,
+   "how": "直接选择/诊断advantage baseline与critic噪声"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "PPO",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "StarPO-S",
+   "kind": "method"
+  },
+  {
+   "name": "DAPO",
+   "kind": "method"
+  },
+  {
+   "name": "fixed coldstart groupmean",
+   "kind": "method"
+  },
+  {
+   "name": "critic-only warmup",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "populationEV theorem与finitebatch EV gate之间无concentration保证。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "保留critic参数/显存及训练成本，即使该步未用于actor。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "A方差降低并不保证policygradient方差/性能优于两端；state-dependent scoreweights、samebatch gate和归一化不可忽略。",
+   "locator": "Eqs3–9/Introduction（读者边界）"
+  }
+ ],
+ "question": {
+  "observed_failure": "Sokoban GRPO.156 vsPPO.314，MATH GRPO.379 vsPPO.373，两任务相反；EVPO.604/.416。",
+  "load_bearing_assumption": "learnedcritic总能减方差，或criticfree总优。",
+  "scope": "γ=λ=1 terminalreward fourtask RL",
+  "success_criterion": "同预算criticgate/batchmean/noise干预加heldout表现",
+  "why_open": "critic误差随训练/状态变，固定baseline不适配。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§2.3 samplingnoise vscriticerror/statevariance"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "AppD criticnoise/coldstart/warmup"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\widehat{EV}_B=1-Var_B(G-\\hat V)/Var_B(G);b_{m,t}=\\hat V(s_{m,t})\\text{ if }\\widehat{EV}_B>0,\\text{ else }\\bar G_B;A_{m,t}=G_m-b_{m,t}",
+    "locator": "Eqs6/8/Alg1"
+   },
+   {
+    "latex": "G=V^\\pi+\\epsilon,\\hat V=V^\\pi+\\delta;EV=(P_B-P_A)/(P_B+R);Var(A_{EVPO})=R+\\min(P_A,P_B)",
+    "locator": "Eq4/Thm1/Eq9，population假设δ⊥ε"
+   }
+  ],
+  "signal_routing": "gate按promptrolloutgroup，选择critic时A随tokenstate变化；groupmean时一条response全token同A。生成tokenPG，environmentmask细节所读范围未列。Alg1 vm无t聚合而前一步vm,t，EV以哪个token位置/加权算未明，不补实现。critic两模式均训练。",
+  "normalization": "other：EV用方差比；EVPO Alg1 raw G−b无std；GRPO baseline Eq2明确groupstd。作者以正缩放不改方向简化到G−mean只对固定group成立，跨group权重与完整batch方向可能改变。",
+  "invariance": "非PBRS。EV对critic共同additivebias不敏感，不能作为value校准指标；rawA constantoffset影响有限sampleupdate。EV variance比较不是learningperformance保证。",
+  "baseline_or_potential": "critic与groupmeanbaseline；populationδ⊥epsilon得varianceidentity，有限sample mean噪声/相关和gate选择偏差未被Eq9控制。Kalman权重PA/(PA+PB)的MSE最优还需偏差/误差协方差条件，原简化不足以一般推出。",
+  "degenerate_cases": "allcorrect/allwrong Var(G)=0→EV未定义，epsilon/fallback实现未列；不能称自动解决zero-reward。p0动作仍未采；EV0两population残差等方差但实际samplegate可误判。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "critic Gaussiannoise降低EV；coldstart25/50step替groupmean；criticwarmup200steps；threshold−.2…+.2在Sokoban/FrozenLake零最佳。",
+  "negative_results": [
+   {
+    "text": "FrozenLake criticgate频率中途反转，质量非单调；大noise σ10collapse。",
+    "locator": "§4.3/AppD"
+   }
+  ],
+  "seeds": "LRtuning单seed；Table1 32queries×16rollouts不等512独立任务/多训练seed；独立训练seed数未读到。",
+  "falsifier": "同std/预算和crossfitEV下收益消失，或低Avariance不降scoreweightedgradientvariance，不能称通用critic价值边界。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B agent tasks;7B MATH",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "critic forward通常已存在，无EV额外forward；持续PPO显存。Table2 Sokoban EVPO/PPO500steps而GRPO/DAPO400；WebShop StarPOS超参不同。",
+  "pitfalls": [
+   {
+    "text": "实现应明确EV reduction的tokenmask/trajectory weighting/Var0与同batch critic更新顺序；本阅读未核代码。",
+    "locator": "Alg1"
+   }
+  ],
+  "code": null,
+  "lesson": "当把统计指标当optimizer门时，先分离population恒等式、样本估计与实际PG性能，并保留等归一化对照。"
+ }
+}

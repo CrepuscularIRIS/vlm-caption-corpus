@@ -1,0 +1,57 @@
+{
+ "paper_key": "2408.15240",
+ "title": "Generative Verifiers: Reward Modeling as Next-Token Prediction",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2408.15240.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§3.1–3.3/Equations 4–7",
+   "§4.1/Table 1/Figure 7",
+   "§4.2–4.3",
+   "Conclusion/future work"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把二分类奖励建模改写为next-token生成，使verifier可生成推理并增加测试计算。",
+  "key_step": "混合验证与正确解SFT；生成verification CoT后用Yes token概率评分，多条CoT概率均值重排候选。",
+  "why_non_obvious": "不需要独立分类头即可复用生成能力，但训练reference guidance必须与实际verifier输入分离。",
+  "trigger_condition": "当直接分类难以发现细微推理错误且可支付验证采样成本时，生成推理再估计正确概率。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "unify_into_shared_representation：把验证与解答生成统一成next-token训练。",
+  "abstract_trigger_condition": "判别需多步推理且已有强生成预训练能力时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2408.15240#s1",
+   "object": "GSM8K训练verifier迁移至MMLU abstract algebra",
+   "information": "固定候选solutions，verifier仅在grade-school math训练",
+   "operation": "GenRM-CoT Best-of-N重排并平均verification rationale分数",
+   "claimed_effect": "abstract algebra 53.50%，Disc-RM 50%，base Pass@1 37.9%。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.1/Table1，列Base Pass@1/Disc-RM/GenRM-CoT/Improvement",
+    "quote": "abstract_algebra                                       37.9%                             50%                      53.50%                   +3.5%"
+   },
+   "failure_boundary": "额外CoT验证计算；base Pass@1不是同compute对照，Disc-RM为同候选但不同验证预算。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "为视觉过程judge提供生成式验证架构，但本文仅文本完整solution correctness。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "可作为错误轨迹筛查候选，合成rationale与label仍需独立校准。",
+   "strength": 2
+  }
+ ]
+}

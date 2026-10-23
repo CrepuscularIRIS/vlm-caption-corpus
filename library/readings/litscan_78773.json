@@ -1,0 +1,194 @@
+{
+ "paper_key": "litscan:78773",
+ "title": "Dismantling Pathological Shortcuts: A Causal Framework for Faithful LVLM Decoding",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78773.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–5 pp3–9 Tables1–4",
+   "Appendix B p20 algorithm/C.2 p21"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以systemattention×局部视觉熵挑风险heads，大负偏置量化其logits，再把干预/原始输出按JSD门控合并。",
+  "key_step": "每层top⌈kH⌉heads在末prompt和前一生成token干预；双forward，低冲突λ2，高冲突λ=JSD，zfinal=zobs+λzdo。",
+  "why_non_obvious": "关注注意力分布与头级路由而非全局视觉权重；然而常数logit平移精确不变，效果依赖未明确的dtype/γ量化。",
+  "trigger_condition": "When object hallucination correlates with diffuse visual attention and system-token reliance, test head-selective inference interventions.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将全局信号分解为时刻×head风险，并混合原始与干预解码。",
+  "abstract_trigger_condition": "When object hallucination correlates with diffuse visual attention and system-token reliance, test head-selective inference interventions.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "每层top⌈kH⌉heads在末prompt和前一生成token干预；双forward，低冲突λ2，高冲突λ=JSD，zfinal=zobs+λzdo。",
+  "abstract_why_non_obvious": "关注注意力分布与头级路由而非全局视觉权重；然而常数logit平移精确不变，效果依赖未明确的dtype/γ量化。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78773#s1",
+   "object": "head选择/干预",
+   "information": "自身systemattention mass和visual-only归一熵",
+   "operation": "top风险heads logits减大γ并投影dtype，无训练",
+   "claimed_effect": "LLaVA CHAIRinstance17.18→12.90，InstructBLIP16.91→11.98；Qwen3VL12.98→11.84",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq2–5/Table2–3",
+    "quote": "Ours          46.40   12.90    42.40    11.98    52.00    13.66"
+   },
+   "failure_boundary": "不是证明系统token先验是唯一幻觉因果；uniformrowshift精确算术无效，实际γ/dtype未在设置中给出。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78773#s2",
+   "object": "双分布合并",
+   "information": "两branch截断词表JSD",
+   "operation": "低冲突固定2增益，高冲突用d；加logits而非概率mix",
+   "claimed_effect": "hybrid CS46.40/CI12.90/F176.57 vsfixed49.20/13.74/74.91、dynamic47.68/13.21/75.83",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Eq6–7/§5.4 p9",
+    "quote": "47.68/13.21/75.83, and 46.40/12.90/76.57, respectively."
+   },
+   "failure_boundary": "同branch时λ2给softmax(3z)，仍相当降温，不是无干预恒等；需温度匹配对照。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "strength": 2,
+   "how": "推理时降低caption对象幻觉的候选内部机制，但不是训练captioncredit。"
+  },
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "干预改变策略本身；输出差不能直接当视觉证据价值真值。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Sampling",
+   "kind": "method"
+  },
+  {
+   "name": "VCD",
+   "kind": "method"
+  },
+  {
+   "name": "ICD",
+   "kind": "method"
+  },
+  {
+   "name": "SID",
+   "kind": "method"
+  },
+  {
+   "name": "OPERA",
+   "kind": "method"
+  },
+  {
+   "name": "random-head intervention",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Reader：恒定attention-row平移不改变精确softmax，量化损失未保证只抑制system路径。",
+   "quote": "",
+   "locator": "Eq5"
+  },
+  {
+   "text": "Reader：自动层选用50样本AUC，依赖faithful/hallucinated标签来源；“完全无监督”边界。",
+   "quote": "",
+   "locator": "§5.4 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "CHAIR17.18→12.90；同branchfusion会变温度，因此改善来源有混杂。",
+  "load_bearing_assumption": "高局部熵×systemmass诊断特定错误路径，dtype偏移选择性消除它。",
+  "scope": "caption/对象存在性解码",
+  "success_criterion": "同温度/同头数随机干预、精度/γ扫描，收益需超出单纯降温。",
+  "why_open": "数值依赖、选择标签及两个branch温度未充分拆分。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "attentionmass vsentropy"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "randomheads/anchors/fusion消融"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "Fig8/Table4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Â_qj=A_qj/Σ_k∈vis A_qk; Hvis=mean_q H(Â_q); S=msys·Hvis",
+    "locator": "Eq2–4"
+   },
+   {
+    "latex": "L̃=Πdtype(L−γ); z_final=z_obs+λz_do; λ=2 if d<.2 else d",
+    "locator": "Eq5–7"
+   }
+  ],
+  "signal_routing": "不更新参数；对选定head/query pre-softmax logits加常数，再获取interventionalnexttoken logits。两branch同image/history；没有外部crop。只局部visualattention归一后算entropy；非可学习reward。",
+  "normalization": "other：visual-only分母、视觉entropy跨query平均；candidatePobs≥.1max的两分布条件化后JSD；最后softmax融合logits。",
+  "invariance": "softmax(L−γ)=softmax(L)精确成立；Πdtype可能损精度但未保证desiredpath断开。zdo=zobs且d0时softmax(3zobs)非恒等。非PBRS。",
+  "baseline_or_potential": "Pobs observationalanchor，无valuebaseline。",
+  "degenerate_cases": "visualmass0分母0；一visualtoken熵0即风险0；γ过大可全部同值/−inf导致uniform/NaN；阈值d=.2处λ从2跳到.2。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "randomhead同预算、双anchor、fixed/dynamic/hybrid对比；新版模型POPE小幅提升。",
+  "negative_results": [
+   {
+    "text": "POPE InstructBLIPAdv80.60<OPERA81.57；ShikraAdv78.77<SID79.13。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": "Appendix C.2称10 independent runs averaged and ttest; seed IDs null",
+  "falsifier": "若高精度常数平移无效或同温度sampling复现收益，不能宣称结构路径被特异阻断。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5/InstructBLIP/Shikra; Qwen3VL8B/InternVL3 generalization",
+   "framework": "PyTorch/HuggingFace",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8A10040GB；双forward每token，p.9 T1 max512；layers2–13,k.45/.4，γ数值未知。未读精确latency表，不估计。",
+  "pitfalls": [
+   {
+    "text": "数值softmax通常先减rowmax，不能把exp(x−γ)underflow解释直接当实现事实。",
+    "locator": "§4.2 reader check"
+   }
+  ],
+  "code": "https://github.com/Cc2021start/Fox (not inspected)",
+  "lesson": "当干预利用有限精度而非明确mask时，先核shift不变性、dtype和同温度对照，再赋予因果阻断解释。"
+ }
+}

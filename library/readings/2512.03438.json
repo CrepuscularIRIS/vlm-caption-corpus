@@ -1,0 +1,63 @@
+{
+ "paper_key": "2512.03438",
+ "title": "Multimodal Reinforcement Learning with Adaptive Verifier for AI Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2512.03438.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§3.1–3.2/Eqs1–6",
+   "§4 overview",
+   "§5.1/Table1",
+   "§5.5/Conclusion",
+   "Appendix E assumptions/theorem statement only"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "按样本内容选视觉grounding、逻辑一致性和答案核验工具，聚合成结果门控的终端reward。",
+  "key_step": "错误答案只取accuracy，正确答案才混合grounding与reasoning质量，然后组mean/std。",
+  "why_non_obvious": "多种噪声teacher互补但误差相关时未必可靠；丰富奖励并不等于token级过程reward。",
+  "trigger_condition": "当单一答案奖励无法约束视觉grounding时，按内容路由多个核验器并由正确性门控。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "heterogeneous_decomposition：按需要的证据类型选择不同核验工具。",
+  "abstract_trigger_condition": "不同模态/输出类型需要不同可验证反馈时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2512.03438#s1",
+   "object": "Qwen2.5VL7B grounded SFT+RL",
+   "information": "答案GT、视觉输入、显式points、teacher scores",
+   "operation": "Argos多工具核验并聚合GRPO奖励",
+   "claimed_effect": "BLINK56.0、MindCube-t39.6、CV-Bench78.2、CV-Bench3D82.0；base54.4/34.9/77.0/77.9。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.1/Table1，列BLINK/MindCube-t/CV-Bench/CV-Bench3D",
+    "quote": "Argos (Ours)           56.0       39.6         78.2             82.0"
+   },
+   "failure_boundary": "不同数据/训练流程的主表比较，不是单因素RL奖励消融。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "视觉point命中mask可作感知奖励，但不等同crop必要性。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "SFT筛除答对但grounding差的轨迹，仍依赖伪GT工具。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "聚合终端reward仍是响应级标量，未直接提供局部路由。",
+   "strength": 2
+  }
+ ]
+}

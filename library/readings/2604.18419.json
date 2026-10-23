@@ -1,0 +1,164 @@
+{
+ "paper_key": "2604.18419",
+ "title": "Knowing When to Quit: A Principled Framework for Dynamic Abstention in LLM Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2604.18419.txt",
+  "sections_read": [
+   "Abstract/intro contributions",
+   "§2–5 Eqs1–13/proposition statements",
+   "§6 main results/robustness",
+   "§7 limitations",
+   "AppC algorithms/AppE–H calibration/setup"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将动态拒答建模为固定fallbackutility动作，以当前prefix的继续生成价值阈值化。",
+  "key_step": "冻结base轨迹终局correctness监督所有非终止prefixhiddenstate的BCEprobe，在线Vhat<rstop即拒答。",
+  "why_non_obvious": "要预测最终成功而非当前局部答案正确；在不同token时刻可发现失败，但低值未来能恢复时早停不总优于延迟stop。",
+  "trigger_condition": "When estimated continuation value falls below fallback utility, abstain at the current token rather than completing the trace.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把停止决策与继续生成能力分离，用条件终局价值比较外部选项。",
+  "abstract_trigger_condition": "When a fallback is valuable, compare it to the current policy continuation value.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "wholetrajectorylabel→causalprefixprobe→onlinefirstcrossing。",
+  "abstract_why_non_obvious": "oracle保证、学习近似、固定拒答率ranking评价是不同层次。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.18419#s1",
+   "object": "token级动态abstention",
+   "information": "训练完整base轨迹终局二元reward；推理仅causalprefixhiddenstate",
+   "operation": "BCE学习V并在首次低于阈值时停",
+   "claimed_effect": "OlympiadPhi3基座16%，90%abstain selective64% vsbestbaseline34%；Qwen selective91% vs75%",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6.1 Results/Fig2: Phi3 OlympiadBench α=.9",
+    "quote": "dynamic abstention achieves 0.64 selective accuracy"
+   },
+   "failure_boundary": "只对10%留下的样本计accuracy；不等于总体正确率提升或服务coverage非劣。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P35",
+   "strength": 3,
+   "how": "直接给动态停止的价值阈值及可恢复反例边界"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "no abstention",
+   "kind": "method"
+  },
+  {
+   "name": "input-only probe",
+   "kind": "method"
+  },
+  {
+   "name": "fixed-position k20 probe",
+   "kind": "method"
+  },
+  {
+   "name": "self-assessment",
+   "kind": "method"
+  },
+  {
+   "name": "LoRA abstention",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "oracleV理论不直接适用于learnedprobe；全局最优还需β0与已全局最优basepolicy。",
+   "locator": "§4/§6.2"
+  },
+  {
+   "text": "固定fallbackutility；hiddenstate若不含可预测signal或probe优化失败则受限。",
+   "locator": "§7"
+  },
+  {
+   "text": "AppH列模型/阈值/训练时长与正文主设置不完全一致，不能混为一套已核配置。",
+   "locator": "§6/AppH"
+  }
+ ],
+ "question": {
+  "observed_failure": "OlympiadPhi3基座16%；dynamic α.9仅保留10%却selective64%，体现riskcoverage而非生成提升。",
+  "load_bearing_assumption": "只在prompt或固定token评估失败足够，或中间答对等于最终答对。",
+  "scope": "frozenbase数学/toxicity，terminalverifiable rewards",
+  "success_criterion": "matchedabstentionrate selectiveaccuracy+token savings+fallbackutility J",
+  "why_open": "可答性随trajectory改变，过早判断会放弃可恢复路径。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Eq6 coverage/utility分解"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Prop4.4 recovery surplus条件"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "V_0(h)=P_\\pi(r=1|h);L=E_{(x,y)\\sim\\pi}\\sum_{t=0}^{c-1}BCE(\\hat V(h_t),r(x,y));a(\\pi):\\perp\\ iff\\ V_\\beta(h)<r_\\perp",
+    "locator": "Eqs8/12–13"
+   },
+   {
+    "latex": "J_\\beta=\\alpha r_\\perp+(1-\\alpha)S;J_0(a(\\pi))-J_0(\\pi)\\le\\alpha_1r_\\perp+(\\alpha-\\alpha_1)L",
+    "locator": "Eq6/Prop4.9"
+   }
+  ],
+  "signal_routing": "仅训练probe，终局label广播每个非terminalprefixBCE；base冻结不做PG。推理每步仅ht，无未来token输入；未来终局标签仅训练监督。β>0理论terminalreward带完整sequence logratio，abstention不收该KL，非普通逐token成本RL。",
+  "normalization": "other：BCE与thresholdcalibration，无advantage/std；固定α时用per-sample minimum trajectory Vhat的αquantile，非alltoken分位数。",
+  "invariance": "非PBRS。固定α下严格单调递增重参数化Vhat与同步quantile不改ordering/选择；固定utilityrstop则需概率校准。原文泛称monotone应限保序。",
+  "baseline_or_potential": "continuation当前basepolicyvalue非optimalvalue；不是critic用于actor梯度。",
+  "degenerate_cases": "oracleV下比不拒答J不低；相比k>1定点需无recovery-surplus等条件，非无条件支配；α1全拒答可有高utility但coverage0；stop不能提高留下generation本身质量。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同α与input/fixed20probe；跨datasetprobe transfer；单调变换与Gaussian noise；rewardcurve用isotonic估effective rstop，非直接验证oracle theorem。",
+  "negative_results": [
+   {
+    "text": "dynamic通常比input-only少节省tokens；harddataset对rankingnoise更敏感。",
+    "locator": "§6.1/6.4"
+   }
+  ],
+  "seeds": "正文5seeds42–46独立probe retraining，shading±1SD；calibration20randomhalf splits/seed。base不重复RL。",
+  "falsifier": "独立校准集匹配α后不比常数/固定位置好，或在可恢复prefix上误停损失超过fallback，则实际保证失效。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "正文Qwen2.5-Math-7B-Instruct/Phi3-mini-4k frozen；two-layerMLP~10^4params",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "每token一个小probe，无base额外forward；但offlinefullrollout+hiddenstate训练成本。AppH称probe10–40h，其模型叙述与正文不同，不能当统一wallclock保证。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当宣称停止提高准确率时同时报coverage与fallback效用；将oraclevalue保证、learnedranking表现与计算节省分开。"
+ }
+}

@@ -1,0 +1,176 @@
+{
+ "paper_key": "2505.23585",
+ "title": "On-Policy RL with Optimal Reward Baseline",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.23585.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3 Eqs4–12 pp3–4",
+   "§4 main/ablation Tables1–4 pp5–8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "OPO每次更新使用新rollout，去除重复epoch造成的offpolicy；用response长度加权reward基线近似最小方差score-norm基线。",
+  "key_step": "b=Σl_ir_i/Σl_i，A=r−b，无std；sequence logprob×A平均样本，一次onpolicy更新。",
+  "why_non_obvious": "最优基线原式权重是score梯度范数平方，长度替代依赖token梯度近正交且等分布，不是无条件最优。",
+  "trigger_condition": "looseonpolicy大policyshift和低entropy；普通均值baseline未计长度梯度差异。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先控制数据新鲜度，再使baseline匹配梯度方差结构。",
+  "abstract_trigger_condition": "looseonpolicy大policyshift和低entropy；普通均值baseline未计长度梯度差异。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "b=Σl_ir_i/Σl_i，A=r−b，无std；sequence logprob×A平均样本，一次onpolicy更新。",
+  "abstract_why_non_obvious": "最优基线原式权重是score梯度范数平方，长度替代依赖token梯度近正交且等分布，不是无条件最优。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.23585#s1",
+   "object": "严格onpolicy与长度baseline",
+   "information": "当前policy完整response length、binary GT reward；无critic/reference",
+   "operation": "每更新重新采样，长度加权mean-onlybaseline",
+   "claimed_effect": "同onpolicy的AIME25 pass16 GRPO81.33→OPO85.33，但pass1 50.21→50.00",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p6 Table2 AIME2025 OPO row pass1/2/4/8/16",
+    "quote": "OPO        50.00     60.88     70.37     78.02     85.33"
+   },
+   "failure_boundary": "有限组包含当前样本导致baseline相关性偏差；不是已证实有限K无偏最优。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P08",
+   "strength": 3,
+   "how": "length、loss聚合与梯度权重密切相关。"
+  },
+  {
+   "problem": "P09",
+   "strength": 3,
+   "how": "baseline最小方差需要score二阶权重。"
+  },
+  {
+   "problem": "P10",
+   "strength": 2,
+   "how": "onpolicy新鲜度/去std需分离验证。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "loose onpolicy GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "exact onpolicy GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "SFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "reader：token梯度近正交/同分布未经直接验证；有限K自包含baseline不独立。",
+   "quote": null,
+   "locator": "§3.2–3.3 pp4–5"
+  },
+  {
+   "text": "reader：固定优化步并非匹配rollout算力；offpolicy组额外entropy/clip与minibatch不同。",
+   "quote": null,
+   "locator": "§4.1 p5"
+  }
+ ],
+ "question": {
+  "observed_failure": "offpolicy AIME25 pass1 36.21 vsfresh38.37，较低多样性。",
+  "load_bearing_assumption": "score norm平方近似随response长度线性增长，且freshsampling收益抵销新增rollout成本。",
+  "scope": "数学trajectoryreward，sequence PG。",
+  "success_criterion": "固定生成token预算提高准确率并降低实际梯度方差。",
+  "why_open": "长度proxy和有限组偏差、去std的独立贡献未隔离。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§3.2近正交假设"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq11 sequence loss尺度"
+  },
+  {
+   "vocab": "rs",
+   "id": "algebraic_equivalence_unification",
+   "locator": "score二阶最优baseline→length近似"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "b*(x)=E[||∇logπ(y|x)||²r]/E[||∇logπ(y|x)||²]≈E[l r]/E[l]",
+    "locator": "Eqs9–10 p4"
+   },
+   {
+    "latex": "b̂=Σ_i l_i r_i/Σ_i l_i; A_i=r_i−b̂; J=E[(1/K)Σ_i logπ(y_i|x)A_i]",
+    "locator": "Eqs11–12 p4"
+   }
+  ],
+  "signal_routing": "sequence logprob=sum生成tokenlogprob，全响应共享A，Eq11无1/l；advantages应stopgrad，但具体实现未查。观测token多轮mask不在本文。",
+  "normalization": "lengthweightedmean-only；没有std/显式KL/entropy。ΣlA=0不是ΣA=0。",
+  "invariance": "共同reward常数加法消去；正缩放保留梯度大小。非PBRS，只baseline理论上不改population目标，但有限组自包含不自动无偏。",
+  "baseline_or_potential": "population action-independent x-baseline minvariance；empirical b̂共享且含yi。等长时样本mean带(1−1/K)缩放，异长依赖更复杂。",
+  "degenerate_cases": [
+   "K1 A0；全对/全错A0；等长退化groupmean，无std。",
+   "若loss改成每sequence平均logprob，score norm尺度改变，不能照搬lengthweight；工具观测长度不能计入policy生成长度。",
+   "某极长response主导b̂并改变同题其他样本优势大小。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：同freshrollout与无std条件，比mean/lengthmean/LOO-lengthmean；离线估实际score norm与length相关，匹配totalrollouttokens。",
+  "negative_results": [
+   {
+    "text": "OPO AIME25 pass1/2/4低于GRPO；MATH SelfBLEU66.76略高于66.70。",
+    "locator": "Tables2/4 pp6/8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "score norm不与length相关或去std后baseline增益消失，则不支持长度最优性迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeek-R1-Distill-Qwen7B; extra longCoT SFT",
+   "framework": "verl",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": 0
+  },
+  "cost": "baseline对照24Kctx batch256 K8；freshvsloose8K K16 lr1e-6 T.6 500steps；48K OR1筛易/难，SFT去重后25KRL。",
+  "pitfalls": [
+   {
+    "text": "fresh每gradient step需新data，等优化步不等rollout预算；offline难度过滤并非持续support保护。",
+    "locator": "§4.1"
+   }
+  ],
+  "code": "https://verl.readthedocs.io/en/latest/algo/opo.html (not opened/executed)",
+  "lesson": "基线与loss聚合须一同推导；先隔离去std、freshsampling和lengthweight三个因素。"
+ }
+}

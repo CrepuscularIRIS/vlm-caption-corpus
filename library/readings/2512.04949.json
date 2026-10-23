@@ -1,0 +1,56 @@
+{
+ "paper_key": "2512.04949",
+ "title": "CARL: Criticality-Aware Agentic Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2512.04949.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§4–5/Eqs5–14",
+   "§6/Tables2,4",
+   "Appendix B/C.1 opening"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "按状态criticality分配树rollout与更新预算，只训练具有兄弟分支的动作。",
+  "key_step": "用长度归一化action负logprob作entropy proxy，按children/entropy选分叉点；树均值差构造局部A。",
+  "why_non_obvious": "最不确定处未必最重要，尤其自信错误时；算法省的是选中动作更新，不必省总rollout。",
+  "trigger_condition": "当长轨迹少量状态决定最终结果且不确定性有用时，集中分叉与更新这些状态。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "heterogeneous_decomposition：区分有分支与单子节点状态并差异更新。",
+  "abstract_trigger_condition": "决策价值贡献高度异质且可估计其排序时。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2512.04949#s1",
+   "object": "4B reasoning search agent，max32 actions",
+   "information": "树分支结局reward与action entropy proxy",
+   "operation": "CARL局部分叉、树A、仅更新有siblings动作",
+   "claimed_effect": "Table2 F1/LasJ59.2/61.9，GRPO57.4/59.7；更新动作32 vs115.2，但rollout141.3 vs115.2。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6/Table2 4B max32actions，末4列F1/LasJ/Droll/Dupd",
+    "quote": "CARL         74.0   77.3    62.6     66.9   61.6    64.0     33.9     33.5   55.8   56.3     70.8   81.8     55.7   53.5   59.2   61.9   141.3       32.0"
+   },
+   "failure_boundary": "更新数量非walltime；同预算是否保持所有资源需分项核对。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "树分支提供动作级A并屏蔽单分支动作，可迁移但非图像必要性标签。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "自信错低熵状态无法获得新分支支持，需冷启动。",
+   "strength": 2
+  }
+ ]
+}

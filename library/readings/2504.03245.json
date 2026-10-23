@@ -1,0 +1,64 @@
+{
+ "paper_key": "2504.03245",
+ "title": "Seeing is Believing: Belief-Space Planning with Foundation Models as Uncertainty Estimators",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2504.03245.txt",
+  "sections_read": [
+   "Abstract/summary pp1–2",
+   "§III–IV pp3–6/Algorithm1",
+   "§V TableI pp7–8",
+   "§VI limitations p8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "VLM将谓词判为已知真/假/未知，PDDL观察动作仅用于未知谓词；乐观determinization后执行真实动作，不符预期就replan。",
+  "why_non_obvious": "保留未知而非硬猜状态能让规划器主动选择观察；VLM无需直接输出完整策略。",
+  "trigger_condition": "当目标依赖不可见对象属性且已有动作模型，显式记录未知并规划获取信息。",
+  "contribution_type": "belief-space机器人系统",
+  "abstract_strategy": "用三值知识状态和观察算子把不确定性转成规划前置条件。",
+  "abstract_trigger_condition": "存在可消除属性未知的具体动作且环境近静态。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2504.03245#s1",
+   "object": "synthetic real-image manipulation plans",
+   "information": "VLM当前多相机图像谓词，人工动作前后置条件，目标逻辑表达",
+   "operation": "三值belief+FastDownward乐观观察分支+不符即重规划",
+   "claimed_effect": "10seeds Drawer success80%/SPL.32±.16，SortWeight70%/.46±.32；caption+LLM分别10%/0%。",
+   "conditions": [
+    "3种小规模synthetic任务",
+    "GPT4o同基础模型",
+    "真实Spot仅演示没有baseline统计"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "TableI p7",
+    "quote": "BKLVA (Ours)                 100%        1.00 ± 0.00        80%         0.32 ± 0.16        70%         0.46 ± 0.32"
+   },
+   "failure_boundary": "假设确定性动态和准确感知；错把未知判已知会停止再观察；不支持未知位置主动对象搜索。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "strength": 2,
+   "how": "观察由任务相关unknown predicate触发，可启发crop停止条件。"
+  },
+  {
+   "problem": "P34",
+   "strength": 2,
+   "how": "未知为逻辑分类非校准概率。"
+  },
+  {
+   "problem": "P31",
+   "strength": 2,
+   "how": "错误known可能导致早停，形式状态不自动修感知错。"
+  }
+ ],
+ "scientific_replication": false
+}

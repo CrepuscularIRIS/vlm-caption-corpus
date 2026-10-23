@@ -1,0 +1,158 @@
+{
+ "paper_key": "2603.10069",
+ "title": "Improving Search Agent with One Line of Code",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2603.10069.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–3 Eqs1–13",
+   "§4 Tables1–2",
+   "§4.3 ablation",
+   "conclusion",
+   "AppA.4 Table4 and A.6 code listing (read only)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "对正优势且current/old ratio过低token添加不被ratio压灭的log-ratio项。",
+  "key_step": "保留PPOclip，附加I(A>0,r<τ)γlogr最大化项，oldpolicy为动态参照。",
+  "why_non_obvious": "低ratio正样本PG不是被clip裁零，而是乘r趋零；附加logr梯度无该r因子。",
+  "trigger_condition": "When positive-advantage sampled tokens lose probability relative to the old policy, add a gated log-ratio recovery term.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "对消失更新的特定区域增加旁路梯度。",
+  "abstract_trigger_condition": "When importance weighting suppresses useful samples, condition an auxiliary term on drift and advantage sign.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "按ratio与sign门控，而非全token固定reference KL。",
+  "abstract_why_non_obvious": "sampled logratio并不等于KL divergence；符号和采样测度需明确。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.10069#s1",
+   "object": "多轮search训练optimizer",
+   "information": "current/old token logprob与trajectory outcome advantage",
+   "operation": "只对低ratio正A tokens加logratio项，保持retrieval mask",
+   "claimed_effect": "matched300step G5 ablation avg.388→.429(+.041)，main Table1 .336→.442另设置",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 KLra SAPO row; NQ/Trivia/Pop/Hotpot/2Wiki/Musique/Bamboogle/Avg",
+    "quote": "+ KLra (SAPO)   0.442       0.673      0.474          0.433      0.415      0.181      0.382      0.429"
+   },
+   "failure_boundary": "非真正逐步credit；main与ablation数值不可混作同实验。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P10",
+   "strength": 2,
+   "how": "可迁移多轮crop offpolicy ratio稳定性，但先检查真实ratio漂移。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Search-R1 GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "unconditional KL",
+   "kind": "method"
+  },
+  {
+   "name": "ratio-only KLr",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Eq10将sample logratio叫KL并不严格；Eq6累计ratio趋零也不充分推出每个token ratio趋零。",
+   "locator": "Eqs6–10（读者边界）"
+  },
+  {
+   "text": "印刷代码与公式边界不同：A>=0/r<=t；zeroA也可受附加项。",
+   "locator": "Eq11 vs AppA.6"
+  }
+ ],
+ "question": {
+  "observed_failure": "matched ablation EM .388→.429；Fig1报告IS ratio下降伴随reward崩溃。",
+  "load_bearing_assumption": "PPOclip足以约束低ratio正A的漂移。",
+  "scope": "搜索agent1.5–14B outcomeF1，多轮retrieval",
+  "success_criterion": "同预算恢复ratio/reward稳定且EM提高",
+  "why_open": "trajectoryA广播误奖/误罚token，clip不能修低ratio的弱梯度。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Eq11 ratio/sign两条件"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq10/AppA.6符号与边界"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=(R_i-\\bar R)/sd(R);r_{it}=\\pi_\\theta(o_{it}|h)/\\pi_{old}(o_{it}|h);J=E[\\min(rA,clip(r)A)+\\gamma I(r<\\tau,A>0)\\log r]",
+    "locator": "Eqs4/9–11"
+   },
+   {
+    "latex": "\\nabla J_{aux}=\\gamma I(r<\\tau,A>0)\\nabla\\log\\pi_\\theta\\quad\\text{away from threshold}",
+    "locator": "Eq12，忽略threshold分布导数的常规实现区域"
+   }
+  ],
+  "signal_routing": "outcomeF1→group A广播agent生成tokens；外部retrieval tokens mask0。aux按各token ratio和trajectoryA sign，不是correct intermediate step标签；oldpolicy非fixedref。AppA.6示例mask r>t置0、selectA>=0，negative-logratio加入最小化loss；threshold导数不由booleanmask autograd产生。",
+  "normalization": "mean+std group reward；objective按生成length/group平均；代码aux在selected非负trajectory maskedmean，分母可能与全batch不同。",
+  "invariance": "非PBRS/无policy invariance。门控samplelogratio不是标准KL；max+γlogr在r<1时鼓励恢复oldprob。",
+  "baseline_or_potential": "普通groupmean；auxgradient是额外偏置，不保证真实credit。",
+  "degenerate_cases": "公式A0时aux关闭，全同reward仍zero；代码A>=0边界可不同。未采动作仍无support；r极小PG小而logratio可恢复所采token；阈值硬跳变需留意。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "matched300step/G5 Table2逐加unconditional/ratio/sign；Hotpot ratioonly.457 > full.433，不是全任务提升。",
+  "negative_results": [
+   {
+    "text": "加sign gate Hotpot−.024；unconditional Trivia−.037。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "匹配batchmask/更新次数后收益消失，或aux只减漂移却不改善终局，则不能称解决credit错误。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B base/instruct; 1.5–14B与LLaMA推广",
+   "framework": "verl",
+   "group_size": 10,
+   "max_turns": 5,
+   "kl": 0.001
+  },
+  "cost": "主配置420steps/G10/maxresponse2048/retriever top3，γ.1 τ1；ablation300steps/G5，勿混。",
+  "pitfalls": [
+   {
+    "text": "“one line”print code非实际仓库核验；empty selected set/numerical logr与mask边界未核。",
+    "locator": "AppA.6"
+   }
+  ],
+  "code": null,
+  "lesson": "当修正IS衰减时同时记录ratio、advantage sign、mask和aux分母，区别reference KL与oldpolicy恢复项。"
+ }
+}

@@ -1,0 +1,231 @@
+{
+ "paper_key": "litscan:76968",
+ "title": "SOAR — Teaching Models to Teach Themselves: Reasoning at the Edge of Learnability",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_76968.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3 pp3–4 Eq1 and loops",
+   "§4–5 pp5–9 results/ablations/limitations",
+   "AppB.1–B.9 pp17–23 prompts, rejection proof, student reward, promotion, settings",
+   "AppC.2 Tables4–5 pp25–26",
+   "AppC.5 p27 incorrect-answer subset comparison"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "教师生成题目集，复制学生对每个集合短程RLOO，按真实难题上的greedy准确率增量奖励教师；移动均值达阈值才提升baseline学生。",
+  "why_non_obvious": "教师不看hard题仍可通过黑盒训练进步学到有效中间题；出题能力与直接解hard题可分离，intrinsic learnability易坍塌。",
+  "trigger_condition": "当固定难题集pass@128筛为0、直接RL几乎无成功信号时，生成能让学生恢复进步的中间课程。",
+  "contribution_type": "生成课程的双层meta-RL、外层真实进步reward",
+  "abstract_strategy": "以目标能力的实际学习增益评价训练数据，而非以数据自身难度/正确率替代。",
+  "abstract_trigger_condition": "目标任务过难，但模型潜在知识可生成更易学桥接任务。",
+  "abstract_key_step": "候选数据→短程学生更新→真实target增益→生成器更新与baseline晋级。",
+  "abstract_why_non_obvious": "出题正确率不等于教学价值；低成功统计不等于模型没有任何潜在支持。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76968#s1",
+   "object": "合成数学课程生成器及学生",
+   "information": "教师仅通用题目prompt；奖励来自Dtrain的64道hard题上学生greedy表现增量",
+   "operation": "g4题集×每集n64；每集r4学生副本短程RLOO，dataset reward统一分配给该集QA生成轨迹；晋级收集PQ",
+   "claimed_effect": "MATH Table4 PQ pass@1=1.7±1.0、pass@32=18.9±5.3，Hard-only .5±.1/9.6±2.6；group128 Hard-only pass32 12.4±7.4。",
+   "conditions": [
+    "Llama3.2-3B-Instruct",
+    "fail@128内部train/test50/50",
+    "PQ128–256题+真实hard训练；不是只训练合成题"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "AppC.2 Table4 p25",
+    "quote": "SOAR-PQ (Ours)                   1.7 ± 1.0      5.3 ± 2.6      8.5 ± 3.7      13.0 ± 4.8      18.9 ± 5.3"
+   },
+   "failure_boundary": "绝对pass@1仍低、计算昂贵；不能推断严格零支持任务能学。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:76968#s2",
+   "object": "拒绝采样后的teacher policy梯度",
+   "information": "固定接受集合S、π0(S)>0、组内RLOO优势和为0",
+   "operation": "仅接受可解析格式QA；以原proposal logprob计算RLOO，不显式微分接受率",
+   "claimed_effect": "Eq3证明同一accepted样本组ΣA∇logπ=ΣA∇logπ0，因ΣA=0消去logπ0(S)项；不是任意加权/clip损失不变保证。",
+   "conditions": [
+    "相同prompt/接受规则",
+    "完整未额外逐序列加权的score-function和",
+    "不对未接受原分布reward作等价宣称"
+   ],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "AppB.2 p18",
+    "quote": "it relies on the fact that RLOO advantages A(zi ) sum to 0 over i."
+   },
+   "failure_boundary": "接受集改变目标分布；若token长度重加权、PPOclip破坏精确和抵消，需重推，实际loss reduction未给。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P65",
+   "strength": 3,
+   "how": "用目标hard失败分层来构建课程，并区分实际0/128与严格零概率。"
+  },
+  {
+   "problem": "P07",
+   "strength": 2,
+   "how": "全错组无信号时转用中间任务产生梯度，不直接修终端优势。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "以课程/数据改变可学习支持，依赖预训练潜力。"
+  },
+  {
+   "problem": "P36",
+   "strength": 2,
+   "how": "错误合成答案也可能有RL信号的限定反例，不等于允许错误caption监督。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Hard-only g32/g128 and extended6500steps",
+   "kind": "method"
+  },
+  {
+   "name": "Intrinsic-T learnability/Base-T/SeRL",
+   "kind": "method"
+  },
+  {
+   "name": "128 real MATH/HARP or full MATH training",
+   "kind": "data"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "极高双层训练成本，主要3–8B数学proof-of-concept；标题/摘要binary描述与附录student120/20/10/0实际reward需区别。",
+   "locator": "Limitations/AppB.3"
+  },
+  {
+   "text": "格式filter不核题目正确性；Claude4.5Sonnet注释PQ仅32.8%全对/63%well-posed，非人工gold。",
+   "locator": "§5.3/AppC.4"
+  },
+  {
+   "text": "正文PQ Vendi31.75与Table1 28.33不一致；采用表值，不把多样性指标当独立能力证明。",
+   "locator": "§5.2/Table1 p8"
+  }
+ ],
+ "question": {
+  "observed_failure": "fail@128 MATH Hard-only pass@1 .5%、pass@32 9.6%；4倍采样仅pass32 12.4%。",
+  "load_bearing_assumption": "预训练模型有生成有效中间题的潜力，短程学习增益足以区分课程质量且能转移到held-out题。",
+  "scope": "3B数学模型在筛选的极难题内部划分上恢复RL进步。",
+  "success_criterion": "held-out hard pass@k、多个teacher/student seeds、固定课程重新训练与compute扩大对照。",
+  "why_open": "任务无法直接产生足够正确奖励，而纯intrinsic出题目标可能漂移或多样性坍塌。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M03",
+   "locator": "fail@128明确困难且仍统计非零支持的失败域"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "真实学生更新与目标题准确率增益作为teacher reward"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Grounded-T vs Intrinsic-T替换外层reward"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Hard-only g128与6500steps成本对照"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\max_\\phi\\mathbb E_{X\\sim\\pi^T_\\phi}[R(\\pi^S_{\\theta'(X)},D_{train})],\\quad\\theta'(X)=RLUPDATE(\\theta,X)",
+    "locator": "Eq1"
+   },
+   {
+    "latex": "R_k=\\frac1r\\sum_{j=1}^r[ACC_{greedy}(\\theta'_{k,j},Q_R)-ACC_{greedy}(\\theta,Q_R)]",
+    "locator": "§3.2/AppB.3，r4"
+   },
+   {
+    "latex": "A_k=R_k-\\frac{1}{g-1}\\sum_{l\\ne k}R_l",
+    "locator": "AppB.2 Eq4 RLOO；数据集为外层比较单位"
+   }
+  ],
+  "signal_routing": "外层每个Xk中所有QA teacher rollout获同一dataset-level reward（含题与答案生成），没有单题边际credit；内层RLOO对teacher给出的答案做Math-Verify比较。AppB.3实际student reward: boxed且验证正确120；boxed验证失败但答案包含20；boxed且不包含10；无boxed0。因此不是纯binary reward，合成teacher答案也不保证真值。未给确切token mask/长度分母/是否额外adv scaling，不能从RLOO名推全实现。",
+  "normalization": "leave-one-out",
+  "invariance": "非PBRS。共同减baseline学生ACC在同轮各Xk RLOO差中抵消（reader代数），但仍影响跨轮promotion阈值；不能据此认为该减法完全无效。RLOO不天然尺度不变，student120/20/10与KL.001相对尺度有关。拒绝采样等价仅是accepted distribution score-function梯度恒等式。",
+  "baseline_or_potential": "学生baseline除promotion外每轮重置；g个候选题集LOO对照。moving average3步meanreward>.01时选最高reward题集、该集r个学生中的median-reward副本晋级；不是取最大单seed以减少噪声。",
+  "degenerate_cases": "各候选训练增益全同→外层RLOO0；hard题完全无可恢复信号可能永不晋级。0/128是采样筛选，base新seed仍有pass32 7.5%，并非p严格0。inner用错误参考答案可奖励错误输出；依靠真实题外层奖励经验筛选，不能保证每个中间标签安全。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "PQ新student重训分离teacher策略与偶然学生路径；Grounded-T/Intrinsic-T/Base-T比较；hard-only采样扩4倍与长训练；correct-only82题 vs well-posed144题检查添加错误答案题的效果。",
+  "negative_results": [
+   {
+    "text": "Table4 PQ pass@1 1.7%低于完整MATH真实数据2.7%；低成本随机128真实MATH2.1%也强，人工可得中间题时metaRL优势不明显。",
+    "locator": "Table4"
+   },
+   {
+    "text": "1/3 Intrinsic-T教师seed导致学生坍塌；Grounded-T对OOD Olympiad与Base-T曲线重叠更多。",
+    "locator": "§5.2"
+   },
+   {
+    "text": "教师直接解hard问题并未明显提高；correct-only vs well-posed增加题量82→144，不能单独归因错误答案有益。",
+    "locator": "§5.1/AppC.5"
+   }
+  ],
+  "seeds": "4 SOAR teachers each MATH/HARP；3 intrinsic/no-promotion teachers；Hard-only≥6student；PQ≥6 nested；teacher sampling≥8；PS3 inference seeds（非3再训练）",
+  "falsifier": "在固定题数/概念/正确性且独立目标dev反馈下，若真实增益教师不优于简单按学生能力分层的课程或随机正确中间题，则昂贵metaRL不必要。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Llama-3.2-3B-Instruct；有限Llama3.1-8B扩展未详读",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": 0.001,
+   "teacher_group_size": 4,
+   "student_group_size": 32
+  },
+  "cost": "每SOAR run4节点×8 H200/H100，48–60小时（32 GPU并行）；fresh-student evaluation1节点约12h。outer200；每候选64QA×4候选×4student repeats；inner10steps，promotion后+5；模型生成预算teacher512/student1024。",
+  "pitfalls": [
+   {
+    "text": "教师不看hard题文本但通过Dtrain真实标签反馈优化；不是无任何目标数据或无监督。MATH从官方test5000筛再内部50/50，并非常规MATH测试口径。",
+    "locator": "AppB.1/B.5"
+   },
+   {
+    "text": "MATH采用先64步合成再hard curriculum；HARP/Olympiad全程混合更稳定，顺序迁移有早峰后崩。",
+    "locator": "AppB.6"
+   },
+   {
+    "text": "checkpoint按train reward平滑斜率<最大15%选择，再平均后200steps test；PS按Dtrain greedy最优；不同seed类型不能合并宣称独立训练复现。",
+    "locator": "AppB.6/B.8"
+   }
+  ],
+  "code": null,
+  "lesson": "当困难样本上RL没有信号时，可先测便宜正确中间题能否恢复学习，再考虑以真实dev进步训练出题器；必须把课程价值、题量和标注正确性分开对照。"
+ }
+}

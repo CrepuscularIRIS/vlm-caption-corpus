@@ -1,0 +1,149 @@
+{
+ "paper_key": "1805.11074",
+ "title": "Reward Constrained Policy Optimization",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "1805.11074.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–4 Eqs2–11 Theorems1–2 Algorithm1",
+   "§5/Table2",
+   "§6 discussion",
+   "AppB setup/AppE proof"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "非Bellman约束仍以原始MC更新慢λ，actor/critic用可TD的discounted guiding cost。",
+  "key_step": "critic最快、actor中速、λ最慢；约束测量与引导学习信号分开。",
+  "why_non_obvious": "代理cost方便TD但可行性需其全部局部极小包含于原约束可行集，不能仅相关。",
+  "trigger_condition": "When a trajectory constraint is not Bellman-recursive, use a discounted guiding cost for actor-critic and update the dual with the original constraint.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "学习代理与真实约束分工，三时间尺度耦合。",
+  "abstract_trigger_condition": "When optimization needs a tractable surrogate, retain the original constraint in the slow feedback loop.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "TD引导+MC原约束dual。",
+  "abstract_why_non_obvious": "代理局部极小的可行性是实质前提。"
+ },
+ "signatures": [
+  {
+   "sig_id": "1805.11074#s1",
+   "object": "受轨迹/均值约束的RL",
+   "information": "每步reward/cost，完整episode原C及阈值α",
+   "operation": "critic评r−λc，actor优化discounted目标，λ按原C−α慢更新",
+   "claimed_effect": "6个机器人域；Swimmer torque30.4%→24%，reward94.4→72.7；条件下可行固定点",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Swimmer/Walker/Hopper RCPO row; columns Torque/Reward",
+    "quote": "RCPO (ours)        24%    72.7         25.2%     591.6      26%    1138.55"
+   },
+   "failure_boundary": "条件性渐近可行，不是全局最优或每一步安全；实验有近可行越界。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 2,
+   "how": "crop效率/正确率约束可借dual与代理分离，但需新可行性论证。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "MonteCarlo primal-dual/fixed lambda reward penalties",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Theorem2依赖Θγ⊆Θ及随机逼近稳定/步长条件；不成立只能正则或回MC。",
+   "locator": "AppE"
+  },
+  {
+   "text": "Table2 Walker25.2%、Hopper26%、HalfCheetah26.7%超过25%阈值；有限训练近可行非严格保障。",
+   "locator": "Table2"
+  }
+ ],
+ "question": {
+  "observed_failure": "同固定λ跨域失效；λ100 Humanoid torque30.5%仍超25%，Swimmer仅reward11.7。",
+  "load_bearing_assumption": "同一固定惩罚系数可兼顾回报与通用轨迹约束。",
+  "scope": "CMDP discounted reward/general expected constraint",
+  "success_criterion": "原约束可行性与回报、收敛条件，非仅代理cost下降",
+  "why_open": "一般C不可递归，直接MC高方差且TD不能替代真实约束。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "原C/引导Cγ分离与AppE假设"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2/固定λ对照"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\max_\\theta J_R\\quad s.t.\\ J_C\\le\\alpha;\\hat r=r-\\lambda c;\\hat V=V_R-\\lambda V_{C_\\gamma};\\lambda_{k+1}=\\Gamma_\\lambda[\\lambda_k+\\eta_1(\\widehat J_C-\\alpha)]",
+    "locator": "Eqs3/9–11/Alg1"
+   },
+   {
+    "latex": "\\eta_1/\\eta_2\\to0,\\eta_2/\\eta_3\\to0;\\Theta_\\gamma\\subseteq\\Theta",
+    "locator": "AppE"
+   }
+  ],
+  "signal_routing": "每步惩罚进入critic TD及actor PG；原始轨迹C经MC只控制dual更新。无语言token mask或GRPO。",
+  "normalization": "other：无组std理论；projection保持参数/λ稳定。PPO具体adv标准化未说明。",
+  "invariance": "不是严格PBRS；r−λc实质改变回报偏好。代理与原约束有条件共享可行极小，不是所有策略回报不变。",
+  "baseline_or_potential": "TDcritic为discounted penalized value，不是原general-C价值；λ原C校准。",
+  "degenerate_cases": "代理局部极小不可行则不能保证；finiteλmax可达不可行固定点；不可行约束/缺支持不可靠λ救；有限步长不等渐近假设。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "MarsRover MC primal-dual与RCPO、6域固定λ对比；AppE假设失效反例说明。",
+  "negative_results": [
+   {
+    "text": "Walker2d RCPO reward591.6低于可行λ.1的823.5；有3域略超阈值。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "所读未给独立seed数量；图示方差不能推断置信保证。",
+  "falsifier": "构造discountedcost局部低而原平均constraint超界，检验Θγ⊆Θ失败即破坏保证。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "A2C MarsRover/PPO MuJoCo小MLP",
+   "framework": "PyTorch",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "机器人每测试1M samples；actor lr3e-4 critic1.5e-4是有限实现，不自动等三时标极限；GPU时长未读。",
+  "pitfalls": [
+   {
+    "text": "Algorithm1 bootstrap写st，AppE写s′；保留原文差异，未替作者补成实现。",
+    "locator": "Alg1/AppE"
+   }
+  ],
+  "code": null,
+  "lesson": "当用平滑代理训练约束策略时，dual仍用真实约束统计，并明确代理可行性和渐近时标假设。"
+ }
+}

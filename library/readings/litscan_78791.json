@@ -1,0 +1,206 @@
+{
+ "paper_key": "litscan:78791",
+ "title": "DiscPRM",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78791.txt",
+  "sections_read": [
+   "pp1–9 abstract/contributions/method/main tables/ablations",
+   "Appendix A p13 training settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "给包含真实中间图像的推理轨迹训练过程价值模型，用同一候选池的BoN选择检验，而非直接训练工具策略。",
+  "key_step": "每个prefix采16次后续并以最终GT正确率标注；正文把非零成功率二值化，全部步骤监督、平均步骤分数选轨迹。",
+  "why_non_obvious": "视觉操作的中间图像进入critic；失败后的可恢复步骤也保留。但可恢复性不是当前步骤的视觉事实正确性。",
+  "trigger_condition": "文本型PRM对错误视觉步骤仍给高分；VisualPRM正/负类F1为87.1/32.7。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "对中间状态建立可恢复性监督，聚合全程价值做有限候选选择。",
+  "abstract_trigger_condition": "文本型PRM对错误视觉步骤仍给高分；VisualPRM正/负类F1为87.1/32.7。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "每个prefix采16次后续并以最终GT正确率标注；正文把非零成功率二值化，全部步骤监督、平均步骤分数选轨迹。",
+  "abstract_why_non_obvious": "视觉操作的中间图像进入critic；失败后的可恢复步骤也保留。但可恢复性不是当前步骤的视觉事实正确性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78791#s1",
+   "object": "视觉文本prefix critic",
+   "information": "原图、问题、包含真实中间图像的步骤、离线GT最终答案；MC后续由生成policy完成",
+   "operation": "K16 continuation→MC率→正文二值标签；全步骤监督后均值BoN8",
+   "claimed_effect": "Thyme MathVista70→75.5、HRBench4K77→82.1、MMStar65.9→73.3",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p7 Table4, value-based w/o early stop +Average; cols MathVista/HRBench4K/MMStar/VABench",
+    "quote": "+Average                  75.5           82.1           73.3         65.9"
+   },
+   "failure_boundary": "§3.1预测+token与§4.1标量头MSE冲突；没有直接动作因果效用标签。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78791#s2",
+   "object": "全轨迹价值聚合",
+   "information": "相同policy候选；比较value/advantage、early-stop及mean/min/max",
+   "operation": "不过早截断训练，均值而非最大单步分数",
+   "claimed_effect": "value全步骤均值VABench65.9，early-stop63.4，advantage59.6",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p7 Table4 value-based early stop +Average",
+    "quote": "+Average                  73.5           80.5           71.5         63.4"
+   },
+   "failure_boundary": "平均仍可由冗长高分通用步骤稀释错误；无延迟/算力匹配结论。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 3,
+   "how": "显式监督视觉中间步骤，但其标签是后续成功率代理。"
+  },
+  {
+   "problem": "P67",
+   "strength": 3,
+   "how": "MC value与事实正确性混淆及continuation policy依赖。"
+  },
+  {
+   "problem": "P58",
+   "strength": 2,
+   "how": "每prefix16分支和BoN成本，未给低成本部署保证。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "VisualPRM",
+   "kind": "method"
+  },
+  {
+   "name": "ViLPRM",
+   "kind": "method"
+  },
+  {
+   "name": "majority voting",
+   "kind": "method"
+  },
+  {
+   "name": "value/advantage, early-stop, mean/min/max critic",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "reader limitation：分类token与MSE标量头相互冲突，target是否binary或MC fraction未知。",
+   "quote": null,
+   "locator": "§3.1 p4 vs §4.1 p5"
+  },
+  {
+   "text": "reader limitation：有限rollout的可恢复性不是局部事实正确性；训练评测去重、算力成本和种子不充分。",
+   "quote": null,
+   "locator": "§3.2–4.1 pp4–5"
+  }
+ ],
+ "question": {
+  "observed_failure": "VisualPRM负类F1仅32.7且视觉错误步骤仍高分。",
+  "load_bearing_assumption": "可恢复性critic在同一候选池比文本critic更可靠，且MC标签和人工步骤正确性足够一致。",
+  "scope": "冻结Thyme候选，对视觉操作步骤的critic排序。",
+  "success_criterion": "相同BoN8候选下答案准确率和负类F1同时提升。",
+  "why_open": "奖励目标叙述冲突，MC可能奖励可修复错误而非正确步骤。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4固定policy比较标签和聚合"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "§3.2 MC后续结果构造prefix信号"
+  },
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§3.1/4.1将过程质量改为critic BoN选择"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "v_i=(1/K)Σ_k 1[Ans(S_≤i⊕S̃_>i^(k))=GT], K=16; c_i=+ iff v_i>0",
+    "locator": "Eq4/§3.1–3.2 pp4–5"
+   },
+   {
+    "latex": "R(S)=(1/n)Σ_i [1·p(c_i=+|I,Q,s_≤i)+0·p(c_i=-|I,Q,s_≤i)]",
+    "locator": "Eq2 p4"
+   },
+   {
+    "latex": "reader derivation, iid continuation success p: P(c_i=+)=1-(1-p)^16",
+    "locator": "reader algebra from binary target/K16"
+   }
+  ],
+  "signal_routing": "GT后续答案→离线prefix标签→critic各步；冻结候选生成policy由critic均值选择。没有本文policy RL梯度；§4.1 MSE和§3.1生成标签的具体实现冲突。",
+  "normalization": "MC除K、响应分数除步数n；Eq2未说明+/-二标签重归一化。critic loss归一化未知。",
+  "invariance": "固定轨迹等量复制相同分数不改均值，但加高分泛化步骤可稀释低分；K改变二值标签分布。",
+  "baseline_or_potential": "advantage消融MC_i−MC_i−1；最终采用value。不是potential-based policy shaping。",
+  "degenerate_cases": [
+   "p很小仍可能在16次中至少一次成功，从而标positive；p=0的有限样本与真实零成功不可区分。",
+   "早期错误可被后续修复标positive；正确prefix因弱continuation全部失败标negative。",
+   "BoN全错时重排不创造成功。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：冻结同一8候选，按局部视觉正确/错误与后续可恢复/不可恢复2×2分层，比较binary MC、fraction MC和人工标注critic；先澄清实际head/loss。",
+  "negative_results": [
+   {
+    "text": "Gemini3Pro VABench66.5高于DiscPRM65.9；非所有模型最优。",
+    "locator": "Table3 p7"
+   },
+   {
+    "text": "max pooling低于mean，且generic初始步骤高分可掩盖后续错误。",
+    "locator": "Table4/§4.3 p7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若增益在固定候选、划分去重、步骤类型平衡后消失，或只识别可恢复性而不识别视觉错，则不支持动作级因果credit迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B critic; Thyme/DeepEyes policy",
+   "framework": null,
+   "group_size": 16,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "VTReward100K约100万步骤，每prefix16续写；测试默认BoN8，扩至128；硬件/总时延未读到。",
+  "pitfalls": [
+   {
+    "text": "正文与实验loss不一致，必须先核代码/作者澄清后实现。",
+    "locator": "pp4–5"
+   },
+   {
+    "text": "VABench先MC、商业模型校准后人工验证；不能把模型校准本身称独立gold。",
+    "locator": "§3.3 p5"
+   }
+  ],
+  "code": null,
+  "lesson": "先在冻结候选上区分可恢复性与事实正确性，再讨论critic是否能作为训练动作信用。AppendixA AdamW1e-5、β.9/.999、wd.05、warmup5%、cosine3epochs packing；GPU/vision冻结未知。"
+ }
+}

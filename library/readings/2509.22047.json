@@ -1,0 +1,55 @@
+{
+ "paper_key": "2509.22047",
+ "title": "MO-GRPO: Mitigating Reward Hacking of Group Relative Policy Optimization on Multi-Objective Problems",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2509.22047.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3 Eqs6–8",
+   "Table2",
+   "AppendixA limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "逐objective先组内标准化再求和，不先加reward再统一std。",
+  "why_non_obvious": "消除尺度主导但等权不等于正确价值权衡；相关reward仍影响最终相关系数。",
+  "trigger_condition": "When reward channels have unequal scales, standardize each channel before aggregation.",
+  "contribution_type": "method",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When reward channels have unequal scales, standardize each channel before aggregation."
+ },
+ "signatures": [
+  {
+   "sig_id": "2509.22047#s1",
+   "object": "multi-objective group advantage",
+   "information": "每response多路reward",
+   "operation": "A=sum_k(R_k−mean_group R_k)/std_group R_k",
+   "claimed_effect": "Llama En–Ja GPT-Eval35.6% GRPO→68.8% MO；BLEURT.60→.66，readability.90→.69。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Llama En–Ja",
+    "quote": "MO-GRPO (ours)              0.66             0.69             68.8%"
+   },
+   "failure_boundary": "等权可不符合真实偏好；无限组理论不保证有限样本或代理可信。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "独立标准化会消除各通道共同正scale，需显式后置权重。",
+   "strength": 3
+  },
+  {
+   "problem": "P42",
+   "how": "多reward尺度控制不能消除caption proxy本身偏差。",
+   "strength": 2
+  }
+ ]
+}

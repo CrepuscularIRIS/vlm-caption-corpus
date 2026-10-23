@@ -1,0 +1,53 @@
+{
+ "paper_key": "2610.27406",
+ "title": "More Memory, Worse Agents: Error Reproduction and Anti-Persistence in LLM Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_html",
+  "locator": "2610.27406.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3",
+   "4 setup/main/ablations",
+   "5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "只持久化轨迹/outcome和mode反馈，任务指导临时合成后丢弃；contextual selector选择direct/imitation/strategic/corrective。",
+  "why_non_obvious": "删抽象避免直接复用但仍会经行为轨迹间接再生错误，不能称彻底去污染。",
+  "trigger_condition": "When stored guidance reproduces errors, retain execution records and synthesize temporary task-specific guidance.",
+  "contribution_type": "agent memory design",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When derived beliefs become persistent errors, separate raw experience storage from temporary abstraction."
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.27406#s1",
+   "object": "agent外部memory",
+   "information": "training执行轨迹/outcome；近邻相关性和recency反馈",
+   "operation": "固定backbone，cost-aware UCB-inspired mode选择并临时指导",
+   "claimed_effect": "九个benchmark/backbone组合中7个heldout success最高；3seeds，平均LLMcall最低但具体数字抽取缺失。",
+   "conditions": [
+    "ALFWorld/WebShop/ScienceWorld",
+    "frozen evaluation memory"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "4.2",
+    "quote": "Anti-persistence achieved the highest success rate in seven of the nine benchmark–backbone settings"
+   },
+   "failure_boundary": "HTML丢失公式/表数字，未取得完整量化；保留轨迹仍允许间接errorreproduction。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P50",
+   "how": "历史错误指导反复再生，可迁移记忆审计，但本地材料不支持完整定量重建。",
+   "strength": 2
+  }
+ ]
+}

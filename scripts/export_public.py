@@ -27,7 +27,8 @@ DROP_KEY = re.compile(
 # Strings that leak project internals; any string matching is replaced.
 PROJECT_MARK = re.compile(
     r"(?<![A-Za-z0-9])(I(0\d|1\d)|KF[1-4])(?![0-9])|PRO_RESPONSE|docs/2\d|v5\d_|v6\b|卡 ?[AB]\b|导师|飞书|mentor"
-    r"|cards/idea|(?<![A-Za-z0-9])g[1-4]_|552 ?题|4,?040|(?<![A-Za-z0-9])E1(?![0-9])|库 ?[AB]\b")
+    r"|cards/idea|(?<![A-Za-z0-9])g[1-4]_|552 ?题|4,?040|(?<![A-Za-z0-9])E1(?![0-9])|库 ?[AB](?![A-Za-z])"
+    r"|本课题|本项目|我们的|FBFA|BGDP|(?<![A-Za-z])r1@|fcz|卡 ?C(?![A-Za-z])")
 LOCAL_PATH = re.compile(r"(/home/[^\s\"',;)]+|/data/[^\s\"',;)]+|/root/[^\s\"',;)]+)")
 # Card sets induced from literature; the other sets are this project's own idea cards.
 LITERATURE_CARD_SETS = ("forge-v1-K", "pattern-parent", "pattern-sub")
@@ -70,6 +71,46 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 
 def pick(row: dict, keys: tuple[str, ...]) -> dict:
     return scrub({k: row[k] for k in keys if k in row})
+
+
+# Card sections that apply the literature to this project; never published.
+PRIVATE_SECTIONS = ("迁移到本课题", "最小辨别实验")
+PROJECT_LINE = re.compile(r"本课题|本项目|我们的|库 ?A\b|r1@|docs/\d|pipeline/|v5\d|REVIEW|idea 卡|cards/idea|卡 ?C\b|BGDP|FBFA|VEG|blindfold|spliced|g[1-4] ")
+CARD_KEYS = ("id", "name", "family", "status", "problems", "members", "operation", "information",
+             "conditions")
+
+
+def public_card(text: str) -> str:
+    """Drop private sections, project-specific lines and advisor move labels from a card."""
+    out, skip = [], False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            skip = line[3:].strip().startswith(PRIVATE_SECTIONS)
+        if skip or PROJECT_LINE.search(line) or PROJECT_MARK.search(line):
+            continue
+        out.append(LOCAL_PATH.sub(lambda m: Path(m.group(1)).name, line))
+    return "\n".join(out).replace("mentor_moves:", "moves:") + "\n"
+
+
+def export_cards(counts: dict[str, int]) -> None:
+    rows = []
+    for f in sorted((ROOT / "cards/pattern").glob("F*/PC-*.md")):
+        dst = OUT / "cards" / f.parent.name / f.name
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(public_card(f.read_text()))
+    for f in sorted((ROOT / "cards/pattern").glob("F*/cards.jsonl")):
+        rows += [pick(c, CARD_KEYS) for c in load_jsonl(f)]
+    write_jsonl(OUT / "mechanism_cards.jsonl", rows)
+    counts["mechanism_cards"] = len(rows)
+    n = 0
+    for f in sorted((ROOT / "cards/engineering").glob("*.md")):
+        dst = OUT / "engineering" / f.name
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(public_card(f.read_text()))
+        n += 1
+    counts["engineering_cards"] = n
+    if (ROOT / "docs/UNDERSTANDING.public.md").exists():
+        shutil.copyfile(ROOT / "docs/UNDERSTANDING.public.md", OUT / "UNDERSTANDING.md")
 
 
 def export() -> dict[str, int]:
@@ -117,6 +158,7 @@ def export() -> dict[str, int]:
         dst.write_text(json.dumps(scrub(rec), ensure_ascii=False, indent=1))
         n += 1
     counts["readings"] = n
+    export_cards(counts)
     (OUT / "COUNTS.json").write_text(json.dumps(counts, indent=1))
     return counts
 

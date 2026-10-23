@@ -1,0 +1,51 @@
+{
+ "paper_key": "litscan:38324",
+ "title": "SegFB",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_38324.txt",
+  "sections_read": [
+   "Abstract",
+   "model definition",
+   "3.1 Theorem3.1",
+   "4 sum-feedback results",
+   "5 Figure2",
+   "6 Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "characterize_limit_then_surpass",
+  "key_step": "刻画segmentfeedback下binary logistic与sum两种观测通道，设计TS/UCB算法并给m依赖上下界。",
+  "why_non_obvious": "增加反馈频率的收益取决于观测非线性和噪声，不是过程标签越密必然越好。",
+  "trigger_condition": "When feedback is aggregated over trajectories, characterize the observation channel before choosing segment frequency.",
+  "contribution_type": "method",
+  "abstract_strategy": "characterize_limit_then_surpass",
+  "abstract_trigger_condition": "When feedback is aggregated over trajectories, characterize the observation channel before choosing segment frequency."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:38324#s1",
+   "object": "episodic tabular MDP segment feedback",
+   "information": "每段二值Bernoulli(sigmoid reward sum)或带subGaussian noise reward sum",
+   "operation": "binary用regularizedMLE+TS扰动及planning，sum用线性置信/UCB",
+   "claimed_effect": "horizonH切m段；binary主导因子exp(H*rmax/(2m))随m减弱，sum regret除log项外不依赖m；m=H退回perstep。",
+   "conditions": [],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "6 Conclusion",
+    "quote": "These results exhibit that under sum feedback, increasing\nm does not help accelerate learning much."
+   },
+   "failure_boundary": "理论前提tabular/特定sigmoid或sum反馈；不能外推为LLM PRM多turn效果或每条训练曲线严格指数改善。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "反驳密过程监督必然更好的泛化主张，机制迁移条件差。",
+   "strength": 1
+  }
+ ]
+}

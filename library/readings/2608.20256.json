@@ -1,0 +1,222 @@
+{
+ "paper_key": "2608.20256",
+ "title": "Learning When to Think: Adaptive Reasoning for Test-Time Compute Allocation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.20256.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "Preliminaries/Method pp3–5, Eq1–6/Algorithm1",
+   "Results/limitations pp6–7, Table2/Figs3–7",
+   "AppA–C pp9–11: negative result, estimator, schedule",
+   "AppD Tables5–6/Figs10–12 pp11–13"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "用同一模型首个路由词选择三档计算；训练硬上限制造真实能力差，均值中心优势后加有正确性门控的模式平衡，强制样本把路由词移到可训练响应首部。",
+  "why_non_obvious": "仅提高短模式奖励可能学到短标签长推理；std又会把全对组微小长度差放大。作者同时控制行为支持与信号尺度。",
+  "trigger_condition": "当不同题目确有不同必要推理长度、单一路由坍塌时，以硬预算区分模式并维持探索。",
+  "contribution_type": "三模式自路由训练与负案例诊断",
+  "abstract_strategy": "把计算分配变成离散行为选择，并让模式的实际能力和标签绑定。",
+  "abstract_trigger_condition": "任务异质且低成本行为有可学习支持。",
+  "abstract_key_step": "强制初始支持→实际预算差→去std的收益→优势后平衡→退火。",
+  "abstract_why_non_obvious": "标签多样不等于行为不同；保留模式也不等于准确率非劣。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.20256#s1",
+   "object": "首个三选一路由词及后续推理",
+   "information": "当前题目、答案正确性、模式和响应长度、自由rollout模式频率；不使用难度标注训练",
+   "operation": "G8强制warmup、1024/3000模式上限、mean-only优势及门控平衡；90步训练",
+   "claimed_effect": "Table5三seed MATH .782±.006、2810±59 tokens；base .796±.002、4743±38。GSM8K .781 vs .831，459 vs1930 tokens，不能称普遍准确率不降。",
+   "conditions": [
+    "同一1.5B蒸馏模型",
+    "验证不加模式上限",
+    "固定模式基线同数据但无路由词/平衡"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "AppD Table5 p12",
+    "quote": "Free routing (ours)       0.782±.006       0.781±.005"
+   },
+   "failure_boundary": "任务同质或便宜/贵模式没有能力差时坍塌；OOD模式比例没有实际日志，长度仅代理。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2608.20256#s2",
+   "object": "二模式Countdown路由",
+   "information": "两档难度、模式奖励溢价和长度",
+   "operation": "改变短模式溢价、平衡系数与上限测试路由稳定性",
+   "claimed_effect": "作者报告每种配置30–50步内坍塌；更长预算没有救回难题，硬分模式也未形成准确率差。",
+   "conditions": [
+    "同一个1.5B模型",
+    "先驱任务而非最终MATH严格单因素消融"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "AppA p9",
+    "quote": "Empirically the binary router collapsed within 30–50 steps"
+   },
+   "failure_boundary": "并不能独立确认最终三部件各自必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "直接去std，防止长度小差被放大。"
+  },
+  {
+   "problem": "P23",
+   "strength": 2,
+   "how": "强制路由移入response训练，必须审计prefix与behavior logprob。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "强制warmup造路由支持，但底座已有R1蒸馏推理能力。"
+  },
+  {
+   "problem": "P51",
+   "strength": 3,
+   "how": "效率收益伴随精度下降，不能据近似指标声称非劣。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "untrained DeepSeek-R1-Distill-Qwen-1.5B",
+   "kind": "model"
+  },
+  {
+   "name": "NoThink/Short/Long-only RL",
+   "kind": "method"
+  },
+  {
+   "name": "two-mode Countdown precursor",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "单一1.5B模型、数学分布、task-specific caps；uncapped验证使brief-mode指标相对训练目标乐观。",
+   "locator": "p7 Limitations/AppB p10"
+  },
+  {
+   "text": "Fig6/正文与Table5 base token4796 vs4743、accuracy.807/.796，router.783/.782并非同一口径；记录明确采用Table5最终结果。",
+   "locator": "Fig6/Table2/Table5"
+  },
+  {
+   "text": "作者OOD模式分配主要从实现长度推断，发布日志没有逐OOD benchmark routing split。",
+   "locator": "Fig10 caption"
+  }
+ ],
+ "question": {
+  "observed_failure": "Countdown二模式在30–50步坍塌；MATH训练中精度从.807降至.727后恢复.783。",
+  "load_bearing_assumption": "题目异质且硬预算能造成模式间真实可解性差。",
+  "scope": "1.5B数学模型单次首词路由三档推理。",
+  "success_criterion": "[redacted: project-internal]",
+  "why_open": "模式奖励既可驱动标签作弊又可让某档灭绝，长度正则不自动学到按题分配。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "AppA检查模式是否真有准确率差"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "p3 std放大小差、Eq3 token聚合"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Fig5按外部难度分组"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_i=\\mathbf1_{correct}b_{m_i}\\gamma_{m_i}^{L_i};\\ R_{invalid}=-0.5,\\ R_{wrong,valid}=0",
+    "locator": "Eq5/7；超过模式cap的答案算错"
+   },
+   {
+    "latex": "A_i=R_i-\\bar R;\\quad \\widetilde A_i=A_i+g_i\\beta_{bal}(1/3-f^{free}_{m_i})",
+    "locator": "Eq6/9；g为正确性及wrong-Long例外门控"
+   },
+   {
+    "latex": "L_{TM}=\\frac{\\sum_i\\sum_{t=1}^{N_i}\\ell_{it}}{\\sum_iN_i}",
+    "locator": "Eq3"
+   }
+  ],
+  "signal_routing": "同一序列优势经token-level PPOclip用于路由词和后续生成token，按所有响应token总数平均，非逐序列1/N。forced词原在prompt尾，移到response首部获梯度；未读到针对强制词采样分布校正。自由rollout才计算/接受平衡；正校正仅正确，负校正仅错误，错误Long豁免(AppB，主文简化)。",
+  "normalization": "mean-only",
+  "invariance": "不是PBRS，显式改变长度/模式效用。共同加常数被中心化消掉，但缩放reward会改变相对后加平衡的权重；去std保留小长度差尺度。token-mean仍使长序列总token贡献较大，不代表每条轨迹等权。",
+  "baseline_or_potential": "组均值包括invalid -.5；其向下拉动可给强制正确路由词正优势。没有critic。",
+  "degenerate_cases": "全同reward→A0，但平衡可能仍有信号；全错的Long没有负平衡，其他过多模式可受抑制，无法创造不存在的成功推理。所有自由样本单模式并非所有reward信号必然被消掉：长度/正确性不同仍有A；AppB笼统说any reward-level signal过强。G8 warmup AppB floor(G/4)=2/模式，与主文Algorithm1的1/模式不一致。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "三seed同数据固定模式与自路由前沿比较，外部难度分层；Countdown负例检查预算能力差。缺最终任务完整逐部件消融。",
+  "negative_results": [
+   {
+    "text": "GSM8K精度.831→.781，MATH .796→.782；高效率不等于非劣。",
+    "locator": "Table5"
+   },
+   {
+    "text": "Countdown更大平衡系数不能维持分流；模式无真实能力差。",
+    "locator": "AppA"
+   },
+   {
+    "text": "Long-only MATH .802高于自路由.782，计算更贵；AIME前沿仅匹配。",
+    "locator": "Table5/Fig7"
+   }
+  ],
+  "seeds": "3（router及各固定模式）",
+  "falsifier": "若在固定观察与精度非劣约束下，强制三档加平衡不能优于简单预算/正确子集成本项，则不支持迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeek-R1-Distill-Qwen-1.5B",
+   "framework": "vLLM rollout；训练框架未确认",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": 0
+  },
+  "cost": "4×H100，90steps；batch128/minibatch32/micro8；Adam1e-6；response16384。GPU-hours未报。",
+  "pitfalls": [
+   {
+    "text": "Phase1 0–60 reward bases1.3/1.2/1，gamma.99984/.99994/1；Phase2 60–90全部base1/gamma1，balance1从60–85退火至0；不能把训练全程写成同一长度奖励。",
+    "locator": "AppC/Table4"
+   },
+   {
+    "text": "Warmup45步，AppB每模式2条共6强制+2自由，与Alg1每模式1条冲突；强制词logprob correction未知。",
+    "locator": "Algorithm1/AppB/Table4"
+   },
+   {
+    "text": "Eq8精确按cap1024设交点与采用四舍五入gamma后约800交点不同；不要声称NT切点恰好1024。",
+    "locator": "AppB Eq8/Table3"
+   }
+  ],
+  "code": null,
+  "lesson": "当离散模式标签可与真实计算脱钩时，应先测模式的能力差和生成长度，再设计奖励；同时分别报告训练硬cap和部署无cap的行为。"
+ }
+}

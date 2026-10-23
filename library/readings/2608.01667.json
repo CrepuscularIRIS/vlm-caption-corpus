@@ -1,0 +1,59 @@
+{
+ "paper_key": "2608.01667",
+ "title": "TCPO: Turn-Level Credit Policy Optimization",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.01667.txt",
+  "sections_read": [
+   "Abstract; §3 all three credit references and objective",
+   "§4.1 Tables1–4 and settings; §5 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将逐turn verifier质量转为相对最佳历史、未来同类轨迹和固定历史替代动作的三种信用，再按turn路由。",
+  "key_step": "先奖励超越历史最佳/成功保持并惩罚成功后回退；成功前无进步turn用未来best的LOO信用，高surprisal者选择性以同历史一跳反事实替换。",
+  "why_non_obvious": "高分不等于当前动作有贡献，后来修正可能错误归功于早期动作；固定历史比较能排除不同历史的混淆，但二元全失败比较仍退化。",
+  "trigger_condition": "每turn有verifier、可固定完整历史和环境快照、需要区分修正/保持/回退与延迟有用探索。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用不同参考分别估计即时和延迟贡献，仅在局部反事实非退化时覆盖低成本hindsight估计。",
+  "abstract_trigger_condition": "每turn有verifier、可固定完整历史和环境快照、需要区分修正/保持/回退与延迟有用探索。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.01667#s1",
+   "object": "verifier-guided multi-turn assistant输出",
+   "information": "历史最高verifier、未来best、同prompt同turn的eligible轨迹，以及同transcript/feedback/environment snapshot采样的替代输出",
+   "operation": "retrospective+µ delayed信用，非退化CF覆盖hindsight；prompt-turn Norm后乘γ^(k−1)，广播对应turn所有assistant tokens",
+   "claimed_effect": "Qwen3-4B best-turn Pass@8为MATH86.8/AIME51.1/LCB45.1/HumanEval87.2；MT-GRPO82.4/48.9/43.5/86.6。8B消融Retro+Hin MATH63.4/LCB31.7，TCPO65.2/32.2。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3 pp3–5; Table1 p6; Tables3–4 pp6–7",
+    "quote": "TCPO              86.8%         1.19          51.1%          1.33     45.1%         1.27       87.2%         1.12"
+   },
+   "failure_boundary": "best-turn Pass@8和成功轨迹平均turn不是单次final accuracy/全样本成本；hindsight是不同历史比较，CF仅当前一跳非真实延迟贡献。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "将终态质量转为turn级多参考信用，明确路由到当前turn。",
+   "strength": 3
+  },
+  {
+   "problem": "P23",
+   "how": "反事实固定transcript、反馈及模拟器快照并每次恢复，适合检验视觉动作比较的协议要求。",
+   "strength": 3
+  },
+  {
+   "problem": "P18",
+   "how": "全失败局部二元比较退化时保留未来表现的hindsight信号，但仍可能误奖后续修正。",
+   "strength": 3
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

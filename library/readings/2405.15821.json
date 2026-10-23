@@ -1,0 +1,57 @@
+{
+ "paper_key": "2405.15821",
+ "title": "Reinforcing Language Agents via Policy Optimization with Action Decomposition",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2405.15821.txt",
+  "sections_read": [
+   "Abstract/Introduction",
+   "§4–5/Equations 9–16",
+   "§6/Table 1/Figure 5",
+   "§7 limitation",
+   "Appendix D Algorithm 1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把语言动作拆为token微动作，区分动作内部和环境动作之间的时间折扣。",
+  "key_step": "内部γw=1，动作边界才给reward并乘γa；用BAD训练token critic与PPO。",
+  "why_non_obvious": "直接flatten并给每token相同γ<1会额外按动作长度折扣，改变原环境目标。",
+  "trigger_condition": "当多token动作与真实环境步不同频时，按真实边界做折扣以避免长度引入的目标偏移。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "heterogeneous_decomposition：区分动作内token与环境边界并施加不同折扣。",
+  "abstract_trigger_condition": "一个外部动作包含多个内部决策而两者时间成本不同。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2405.15821#s1",
+   "object": "VirtualHome unseen tasks",
+   "information": "环境reward、action内token及token critic",
+   "operation": "BAD γw1/γa<1结合PPO",
+   "claimed_effect": "Table1 Laundry episodic return .7014，TWOSOME .6038、NTPO .5687；Washing Plate .7075低于NTPO .7491。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6.4/Table1，列Cheese/Hamburger/ApplePie/Pizza/WashingPlate/Laundry",
+    "quote": "POAD                               0.7553                  0.7602                             0.7650            0.7625                                   0.7075                   0.7014"
+   },
+   "failure_boundary": "100 episodes均值；表仅显示6任务而标题/正文称8，未把7/8另行当确认事实。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "提供token critic细化动作内信用，与全轨迹A广播不同；需要额外critic。",
+   "strength": 2
+  },
+  {
+   "problem": "P35",
+   "how": "任意按token折扣可能错误惩罚长caption/纠偏，应区分内部生成与外部crop成本。",
+   "strength": 2
+  }
+ ]
+}

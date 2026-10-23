@@ -1,0 +1,70 @@
+{
+ "paper_key": "litscan:77971",
+ "title": "Pretrained Vision-Language-Action Models are Surprisingly Resistant to Forgetting in Continual Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77971.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 BC/ER setting",
+   "§4/Table1–3 replay comparison",
+   "§5/Table4 pretraining ablation",
+   "§6/Table5 component swap and recovery",
+   "§7 Limitations",
+   "AppA.2 normalized NBT definition",
+   "AppB.1/B.3–4 replay ratio/model/hyperparameters"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "经验诊断：在固定任务顺序下用相同每任务回放预算比较预训练VLA与小BC，再对同架构Pi0消融预训练；用模块互换和重学速度区别性能下降与不可恢复遗忘。",
+  "key_step": "每学完任务固定存M个transition；训练新任务时当前任务与全部旧任务回放1:1抽样；评估各历史任务并用旧任务完整数据测恢复所需步数。",
+  "why_non_obvious": "低遗忘可能只是没有学会；同架构预训练消融和新任务成功率一起衡量，快速恢复为潜在保留提供行为证据，但不是直接表征保存证明。",
+  "trigger_condition": "连续适应新任务后旧任务成功率下降时，用固定回放及可恢复性探针判断是否需要更复杂遗忘修复。",
+  "contribution_type": "empirical_diagnostic",
+  "abstract_strategy": "联合测量历史表现、前向学习和恢复成本，避免把单一差值当遗忘强度。",
+  "abstract_trigger_condition": "连续适应新任务后旧任务成功率下降时，用固定回放及可恢复性探针判断是否需要更复杂遗忘修复。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77971#s1",
+   "object": "预训练VLA的持续模仿学习数据分布",
+   "information": "当前专家演示与每个旧任务固定随机transition子集；无RL reward/advantage",
+   "operation": "当前/历史集合各50%混合ER，依次训练10个LIBERO任务",
+   "claimed_effect": "Table1 M1000时GR00T平均SR .919/NBT .027，BC-Transformer .585/.245；这不是无回放抗遗忘，Table2顺序学习GR00T在Object的NBT达.752。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 GR00T row (SR/NBT by suite and Average); AppB.1 replay setup",
+    "quote": "GR00T      0.940 ± 0.013   0.007 ± 0.009   0.975 ± 0.004   0.019 ± 0.013       0.943 ± 0.004   0.023 ± 0.017       0.820 ± 0.017    0.059 ± 0.035   0.919 ± 0.011   0.027 ± 0.021"
+   },
+   "failure_boundary": "M是每任务transition数，非固定总容量；十任务后随任务数量增长。低至M10时各模型近乎完全相对遗忘。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:77971#s2",
+   "object": "旧技能的重学可恢复性",
+   "information": "Pi0旧任务完整训练集、相同结构与优化；后续checkpoint的VL backbone",
+   "operation": "交换相邻阶段backbone/action head，再测恢复最初峰值成功率所需训练步数/原训练步数",
+   "claimed_effect": "Table5 LIBERO-10 Pi0恢复比例.105，BC-Transformer1.87；其余Pi0为.066/.067/.062。正文“各基准<10%”与Table5的10.5%冲突，采用表中数值。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6/Fig6–8/Table5, LIBERO-10 row",
+    "quote": "LIBERO-10               0.105              1.87"
+   },
+   "failure_boundary": "主要机制诊断仅Pi0；模块互换同时改变表征接口兼容性，完整数据快速重学不能唯一证明原知识仍完整存储。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P63",
+   "how": "可借用ER与恢复速度诊断SFT技能遗忘；本文仅BC机器人持续学习，未研究RL或crop分支。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

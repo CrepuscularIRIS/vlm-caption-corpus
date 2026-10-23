@@ -1,0 +1,230 @@
+{
+ "paper_key": "2609.00967",
+ "title": "CoBRA: Learning Tool-Use Boundaries via Counterfactual Margins",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2609.00967.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3 pp3–5 Eq1–8",
+   "§4.1–4.4 pp5–8 Tables1–5",
+   "§4.5/Limitations pp8–9",
+   "AppA–C pp13–14 data/prompt/hyperparameters",
+   "AppE pp14–15 Eq9–12",
+   "Table10 p16 cost sensitivity"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "先用无工具/工具专家配对效用差筛清晰边界SFT；RL强制两分支4+4，分支内标准化学习轨迹质量，跨分支均值差再提供对称路由优势。",
+  "why_non_obvious": "单一组归一化把分支平均收益与分支内质量混合；仅强制支持仍近乎无工具坍塌。",
+  "trigger_condition": "当工具调用有成本、最终答案奖励不能稳定识别调用边际价值时，用分支对照分离路由与分支内优化。",
+  "contribution_type": "工具边界数据构造、SFT→RL和双层优势",
+  "abstract_strategy": "先构造两种信息策略的比较，再分解组内改进和组间决策。",
+  "abstract_trigger_condition": "离散信息获取分支可能灭绝且不同分支奖励分布不同。",
+  "abstract_key_step": "清晰偏好冷启动；模糊样本双支强制支持；局部归一化+全局margin。",
+  "abstract_why_non_obvious": "保证支持不等于正确路由；同题成对也不等于单动作因果干预。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.00967#s1",
+   "object": "检索与不检索的分支选择",
+   "information": "同题两个分支各4条轨迹的正确性减工具调用成本；分支内及batch margin标准差",
+   "operation": "强制reference-split；PBN组内z-score加±βΔB/(batchσB+η)，从边界SFT模型进行MARS-RL",
+   "claimed_effect": "Table4完整jEM .5418/util .4250，w/o BM .4817/.4179，RS-only .2937/.2809。BM提升jEM但也把调用.638推至1.168。",
+   "conditions": [
+    "Qwen3-4B",
+    "相同checkpoint三次evaluation，不是三trainingseeds",
+    "λ=.10，β=1，Gint=Gext=4"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p8",
+    "quote": "0.5418              0.4404                     0.5115                    1.168          0.4250"
+   },
+   "failure_boundary": "较高平均收益并不保证每类不退化；强制prefix和自然动作的policy-ratio校正细节未明确。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2609.00967#s2",
+   "object": "清晰边界SFT初始化",
+   "information": "两独立专家每题一个deterministic rollout的utility margin；仅偏好且被偏好分支成功样本",
+   "operation": "排除模糊/双错硬标签，平衡internal/external clear-margin数据进行SFT，再进行相同MARS-RL",
+   "claimed_effect": "Table5 warm-init jEM .5418 vs base-init .3771，差+.1647；但vanilla warm-init .2734反低于base-init .3873。",
+   "conditions": [
+    "离线两专家不同参数，不是同前缀单动作反事实",
+    "27k/3k SFT train/val"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p8",
+    "quote": "MARS                      0.5418       0.3771       +0.1647"
+   },
+   "failure_boundary": "离线margin衡量专家策略差，未证明等于当前actor的工具必要性；单样本规模不能消除逐题估计不确定。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P02",
+   "strength": 3,
+   "how": "显式分离分支选择margin和分支内答案奖励。"
+  },
+  {
+   "problem": "P12",
+   "strength": 3,
+   "how": "post-PBN加margin但margin自己按batch std缩放，须审计尺度。"
+  },
+  {
+   "problem": "P29",
+   "strength": 3,
+   "how": "强制4+4支持直接处理分支灭绝；RS-only仍几乎no-tool。"
+  },
+  {
+   "problem": "P67",
+   "strength": 3,
+   "how": "同题对照不保证actor/前缀/动作干预可识别。"
+  },
+  {
+   "problem": "P21",
+   "strength": 2,
+   "how": "通过优势信号而非BCE路由监督，但多token广播和共享参数边界未消失。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Base+router/Mint/Mext/Mwarm",
+   "kind": "model"
+  },
+  {
+   "name": "Vanilla GRPO/ReAct/Self-Ask/Search-R1-3B",
+   "kind": "method"
+  },
+  {
+   "name": "RS/PBN/BM factorial ablations and warm/base initialization",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "单模型检索为主，margin依赖采样、scorer、检索和λ/ϵ；成本为次数，未包括walltime/API价格。",
+   "locator": "Limitations p9"
+  },
+  {
+   "text": "同题不同专家或整段强制分支不是只替换一次动作的因果量；大query池降低整体统计误差不降低每题单样本margin噪声。",
+   "locator": "§3.2–3.5/AppA；reader inference"
+  },
+  {
+   "text": "Table1 Boundary-Eval写held-out ambiguous3891且排除双错，但Table3也列Dint/Dext，其两子集确切人数/与3891关系未清。jEM OR coverEM/LLMjudge可与EM差距很大。",
+   "locator": "Tables1/3/6；§4.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table4 vanilla #Tool0、jEM.2734；RS-only #Tool.128、jEM.2937；Table7离线模糊集合79.5%为双错。",
+  "load_bearing_assumption": "两个受控分支的实现utility差足够可靠地代理工具价值，分支内标准化与margin分工可稳定路由。",
+  "scope": "Qwen3-4B、Wikipedia检索、最多4工具回合。",
+  "success_criterion": "与相同SFT初始化的RS/PBN/BM消融比较jEM、调用数和效用，并检查internal-favored不退化。",
+  "why_open": "难度/置信度和工具收益不等价，普通outcome RL可能丢失一个分支；但强制支持本身不是完整解。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Eq3/Table7按clear internal/external/ambiguous分组，双错单列"
+  },
+  {
+   "vocab": "M",
+   "id": "M08",
+   "locator": "Tables4–5具名RS/PBN/BM与初始化对照"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Eq1/Table2同时报告质量与调用成本"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R(\\tau)=S(\\tau)-\\lambda C(\\tau);\\quad\\widehat\\Delta=R(\\tau_{ext})-R(\\tau_{int})",
+    "locator": "Eq1–2；离线每专家单deterministic轨迹"
+   },
+   {
+    "latex": "A_i^{within}=\\frac{R_i-\\bar R_{T_i}}{\\sigma_{R,T_i}+\\eta};\\quad\\Delta_B=\\bar R_{ext}-\\bar R_{int}",
+    "locator": "Eq4/11"
+   },
+   {
+    "latex": "A_i^{MARS}=A_i^{within}+\\beta\\,\\mathrm{sign}(T_i)\\frac{\\Delta_B(q)}{\\sigma_B+\\eta}",
+    "locator": "Eq5–6/12；sign ext+1/int−1；BM不减batch均值"
+   }
+  ],
+  "signal_routing": "MARS为trajectory-level优势并以PPO-style clipped policy ratio优化；AppE以per-token GRPO优势为背景，但未明确MARS是否仅路由token、全assistant token、如何mask工具返回/强制prefix及长度分母，不能补成decision-only损失。§3.5 RS相同system/tool schema/reference policy，internal首决策抑制工具、external tool-call prefix；AppC称on-policy，但当前actor vs固定reference实际采样和prefix correction关系未足够说明。KL reference初始化自Mwarm不等于确认采样policy固定。",
+  "normalization": "per-channel",
+  "invariance": "非PBRS；工具代价改变任务效用。PBN使每分支共同常数和正缩放（忽略η）不影响其内部优势，固定首调用费会被PBN消掉；BM重新引入分支均值差。BM只除batch std、不中心化，因此所有题同方向差仍有信号；σB≈0时可能由η主导放大。全reward同倍缩放时两std会相应消尺度（η例外），但只改λ通常不是整体缩放。β在两个归一化之后，不被二者自动取消。",
+  "baseline_or_potential": "组内均值按强制branch单独计算；在线BM是两分支样本均值差。离线专家margin仅用于数据分区；不是固定SFT均值baseline。Eq12并不精确等于RLOO，后者有G/(G−1)比例且无std。",
+  "degenerate_cases": "分支全同reward→PBN0，若两支均值不同BM仍非零；两支同均值且全同→所有优势0。全错时external成本可使BM推向internal，离线双错归ambiguous不会自动阻止在线此现象。RS确保采样两支但不能保证部署自然两支有概率；自然p≈0时强制prefix如何提供对应路由梯度未细述。缺一分支时Eq4未定义，AppE称recover单支GRPO需显式删除BM并采用单支规则。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4分离RS/PBN/BM、Table5统一配置对照初始化；Table3按外部专家定义的边界分层。最重要增量是full相对w/o BM而非仅比已坍塌GRPO。",
+  "negative_results": [
+   {
+    "text": "Table4 no BM utility.4179接近full.4250，full多.530调用；RS-only仍几乎不调用。",
+    "locator": "Table4"
+   },
+   {
+    "text": "Table3 internal-favored CoBRA jEM.5816低于Mwarm.6768及Mint.7597，尽管over-call16.4%小于24.9%。不能称直答能力全面保住。",
+    "locator": "Table3"
+   },
+   {
+    "text": "Table2 ID CoBRA调用1.355高于Mwarm.820；效用提升不等于调用总数下降。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "3 independent evaluation runs of same checkpoint；training seeds未报告",
+  "falsifier": "在同一caption前缀和同一actor的耦合crop/direct对照下，若BM不比强制支持+PBN改善精度非劣条件下成本，或internal-easy准确率下降，则不支持必要性迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-4B；S1/S3 full SFT，S4 attention/MLP LoRA r16 α32",
+   "framework": "vLLM rollout、FlashAttention-2、bf16；RL具体框架未明",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.01,
+   "max_tool_turns": 4
+  },
+  "cost": "8×H20 96GB+独立retriever GPU；S1每专家约4GPUh，S2约35GPUh，S3约4GPUh，S4约100GPUh。S2 388702题/777404 trajectories；E5-base/FAISS/2018Wiki约21M passages，top3。",
+  "pitfalls": [
+   {
+    "text": "S2 temperature0/top-p1单样本；S4 temperature1/top-p.95各支4条，不能把两阶段误写为同一估计器。",
+    "locator": "AppA/C"
+   },
+   {
+    "text": "统一评测S=coverEM或Gemma-4-31B-IT judge通过，1000人标agreement92.5% κ.85；训练utility具体judge调用输入模板未给，不假定judge看到tool必要性或完整trajectory。",
+    "locator": "§4.1/AppI"
+   },
+   {
+    "text": "S4 LR1e-6、clip.2、β1、λ.1；S3 clear-margin balance train27k/val3k，ϵ.1。Table10 λ.05→.10 internal比例7.9→25.1%，边界标签受cost/threshold显著影响。",
+    "locator": "AppA/C/Table10"
+   }
+  ],
+  "code": null,
+  "lesson": "当用分支差训练工具路由时，应分别记录离线专家标签和在线actor信号，保留两支采样支持，再检查归一化是否删除分支常数成本；平均utility变好也要检查直答子集被损伤。"
+ }
+}

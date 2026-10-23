@@ -1,0 +1,171 @@
+{
+ "paper_key": "2602.05165",
+ "title": "EBPO: Empirical Bayes Shrinkage for Stabilizing Group-Relative Policy Optimization",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2602.05165.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs2–6/theorem statements",
+   "§4/Table1–2",
+   "AppA setup",
+   "AppB Table3/Algorithm1",
+   "conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "对噪声组均值做经验Bayes收缩，结合batch标准化。",
+  "key_step": "Welford历史reward/组均值方差定S，baseline=(1−S)group+Sglobal，再batch中心化/std。",
+  "why_non_obvious": "raw baseline含global mean不等于最终A仍含该均值；固定G时它被中心化消去。",
+  "trigger_condition": "When small rollout groups give noisy local baselines, shrink using pooled statistics and normalize across the batch.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "跨任务共享统计稳定小样本估计。",
+  "abstract_trigger_condition": "When local estimates are noisy and tasks share a meaningful prior, shrink toward pooled evidence.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "local/global interpolation plus pooled scale。",
+  "abstract_why_non_obvious": "有用性取决任务聚类与先验匹配，非零raw量不保证恢复探索。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2602.05165#s1",
+   "object": "group reward baseline",
+   "information": "training binary answer reward、累计Welford统计、topic/difficulty分组",
+   "operation": "EB收缩+batch归一化替换GRPO组归一化",
+   "claimed_effect": "Qwen3-8B G8 avg65.54 vsGRPO54.26(+11.28pt)；G32 62.41<62.91",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 EBPO-topic G8 row; MATH/AIME24/AIME25/AMC23/Olympiad/Avg",
+    "quote": "EBPO-topic         8       74.26     64.37        48.96                       89.69           50.44         65.54"
+   },
+   "failure_boundary": "G敏感，非所有任务/设置获益；与聚类及checkpoint选择绑定。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P09",
+   "strength": 3,
+   "how": "直接改组均值/标准化的小组优势估计"
+  },
+  {
+   "problem": "P07",
+   "strength": 2,
+   "how": "全错组raw非零但恢复支撑边界重要"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "Dr.GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "DAPO",
+   "kind": "method"
+  },
+  {
+   "name": "EntropyMech",
+   "kind": "method"
+  },
+  {
+   "name": "EBPO-naive",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Gaussian latent success approximation/Bayes MSE依赖正确模型；Alg1 pooled reward variance不等于纯within variance，raw mean variance含采样噪声。",
+   "locator": "§3.2 Remark3.1/Alg1"
+  },
+  {
+   "text": "entropy结论依赖covariance与local scale独立近似；非无条件稳定性。",
+   "locator": "Prop3.6/Remark3.7"
+  }
+ ],
+ "question": {
+  "observed_failure": "G8 GRPO54.26 EBPO65.54；G32优势消失−0.50pt。",
+  "load_bearing_assumption": "每题小组reward均值足够准且组内std是合适尺度。",
+  "scope": "binary math reward LLaMA/Qwen8–14B小group",
+  "success_criterion": "同G/数据排序/预算评估加cluster ablation",
+  "why_open": "全错组无相对信号，小组估计方差大；但制造非零scalar不等于有用梯度。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§3 local/global拆分"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Alg1最终中心化代数检查"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S=\\frac{\\sigma^2/G}{\\sigma^2/G+\\tau^2};V_m=(1-S)\\bar r_m+S\\mu_{glob};a_{mi}=r_{mi}-V_m;A_{mi}=(a_{mi}-\\bar a_{batch})/(sd_{batch}(a)+\\epsilon)",
+    "locator": "Eqs2–4/Alg1"
+   },
+   {
+    "latex": "a_{mi}-\\bar a_{batch}=r_{mi}-(1-S)\\bar r_m-S\\bar r_{batch}",
+    "locator": "读者代数：Alg1固定G与共享σ²/τ²⇒S恒同"
+   }
+  ],
+  "signal_routing": "trajectory scalar进入clipped surrogate；§3.1 GRPO token-levelPG，同条response token共享A，未提供crop/process特殊mask。Alg1当期reward先并入history；不是离线独立baseline。",
+  "normalization": "other：历史global baseline shrinkage后当前batch mean+std，不是每prompt std。Alg1 σ²=Var(Wglob all rewards)，τ²=Var(Wmeans observed means)。",
+  "invariance": "非PBRS。固定G时global均值直接项严格抵消，历史只可经S等影响；不得把Figure2 raw −Sμglob写最终A。共享reward正仿射变换理想下中心化/std近似不变，epsilon/online history需一致。",
+  "baseline_or_potential": "action-dependent sample mean收缩，理论Bayes MSE不同于PG无偏/最优保证；实用τ²未去σ²/G采样噪声。",
+  "degenerate_cases": "全batch reward同一常数→最终A0；某全错组遇有正reward其它组可能负A，但不能据此断言总PG非零或方向有益；p0未采动作不由baseline生成；G→大S→0且退回groupcenter/batchstd。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 G8/16/32；Table3 topic vs shuffled EB；主表同数据ordering。应另设batchstd-only或S固定匹配臂隔离收缩。",
+  "negative_results": [
+   {
+    "text": "G32 EBPO62.41低GRPO62.91；Qwen14B Math50071.01低GRPO75.73；topic不总胜naive。",
+    "locator": "Tables1–3"
+   }
+  ],
+  "seeds": "每eval32随机种子采样均值，不等于32独立训练seed；训练seed数未读到。",
+  "falsifier": "batchstd-only复现增益则历史prior贡献弱；topic shuffled与budget等配若差异消失则非通用EB优越性。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-8B/14B,LLaMA3.1-8B",
+   "framework": "verl",
+   "group_size": 4,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "globalbatch512/minibatch128；topic最高1000steps选validation-best(16vote)，difficulty单epoch取final；topic标签GPT4.1，difficulty16rollouts/prompt额外成本。",
+  "pitfalls": [
+   {
+    "text": "累计history在非平稳policy下过时；Alg1没有明确按topic reset/statistics隔离实现。",
+    "locator": "§3/Alg1/AppA"
+   }
+  ],
+  "code": null,
+  "lesson": "当多级归一化组合时先化简最终A，再解释全错组与global信号，不能直接用中间baseline画因果故事。"
+ }
+}

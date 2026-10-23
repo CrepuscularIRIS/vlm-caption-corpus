@@ -1,0 +1,63 @@
+{
+ "paper_key": "2605.11853",
+ "title": "GEAR: Granularity-Adaptive Advantage Reweighting for LLM Agents via Self-Distillation",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.11853.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3–4 pp3–6 Eq1–5",
+   "§5/Table1–2 pp7–9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "GT-conditioned同模型teacher的sampled logratio峰值触发segment，entropy增长终止；按adv符号将偏离信号转成局部乘法权重。",
+  "why_non_obvious": "偏离起点后teacher/student都可能顺着同一错误前缀，token信号会恢复小值；把起点信号扩到连续段。",
+  "trigger_condition": "当局部偏离信号稀疏而后续错误延续低分歧时，用自适应segment传播调权。",
+  "contribution_type": "self-distillation辅助优势重加权",
+  "abstract_strategy": "以偏离起点识别信用区域，再保留终局符号调整局部幅度。",
+  "abstract_trigger_condition": "单token诊断不能覆盖语义连续错误区域。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.11853#s1",
+   "object": "agent/math token advantage",
+   "information": "同模型普通状态与GT-conditioned状态logp差、entropy、GRPO advantage",
+   "operation": "rKL trajectory归一化→峰值段起点共享→sign-aware W*A",
+   "claimed_effect": "Table2 Test .739/MATH .879，去segment .683/.844，tool-boundary .682/.840。",
+   "conditions": [
+    "Qwen3-4B",
+    "λKL.1 λH1.5 α.2 β.9",
+    "teacher有GT，actor没有"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p9",
+    "quote": "w/o segment-level reweighting 0.683 0.844"
+   },
+   "failure_boundary": "GT条件teacher不等于局部因果正确性；全组A0时乘法无法产生训练信号。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "终局adv保符号后按segment改变token幅度。"
+  },
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "用teacher偏离作局部信用proxy，需要验证视觉grounding相关性。"
+  },
+  {
+   "problem": "P20",
+   "strength": 3,
+   "how": "observation留context但mask掉训练及token信号。"
+  }
+ ],
+ "scientific_replication": false
+}

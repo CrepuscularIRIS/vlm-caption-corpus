@@ -1,0 +1,63 @@
+{
+ "paper_key": "2605.08013",
+ "title": "Learning CLI Agents with Structured Action Credit under Selective Observation",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.08013.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 pp3–6 Eq1–10",
+   "Table1–5/§4–5 pp7–9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "structural_prior_encoding",
+  "key_step": "用bash AST动作子链聚类与历史bucket构造episode/intent/tree三通道优势；σ-Reveal另在推理前选文件上下文。",
+  "why_non_obvious": "无需过程judge也可从结构化动作提取比较组，但同语法并不保证同作用或同状态。",
+  "trigger_condition": "当CLI具有可解析动作且终局反馈稀疏时，利用结构近邻构造多粒度信用。",
+  "contribution_type": "结构化动作credit与上下文harness",
+  "abstract_strategy": "把可执行动作的结构作为低成本分组先验。",
+  "abstract_trigger_condition": "动作有稳定语法而任务反馈只在末端可得。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.08013#s1",
+   "object": "shell action turn credit",
+   "information": "AST签名距离、同题终局return、抽象历史bucket",
+   "operation": "median/MAD episode + LOO intent residual + gated tree margin，各通道meanabs校准后tanh，turn ratio PPO",
+   "claimed_effect": "Table1 ShellOps hybrid EM vanilla21.9/σ-Reveal24.6 vsGSPO11.3；Table4去intent与tree10.9。",
+   "conditions": [
+    "Qwen3-14B,G4",
+    "σ-Reveal仅inference",
+    "CLI benchmark"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p7",
+    "quote": "A3 (σ-Reveal)    60.7     26.2        77.9          67.4       48.5          31.6       46.4        25.7          24.6"
+   },
+   "failure_boundary": "AST近邻可能路径/文件状态不同；σ-Reveal和credit是不同干预。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "多通道turn credit可借鉴，但crop缺shell AST结构。"
+  },
+  {
+   "problem": "P23",
+   "strength": 3,
+   "how": "抽象历史相似不构成相同环境状态/因果对照。"
+  },
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "每通道batch meanabs会改变绝对奖励与gate尺度。"
+  }
+ ],
+ "scientific_replication": false
+}

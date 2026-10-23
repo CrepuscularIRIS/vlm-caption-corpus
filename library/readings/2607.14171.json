@@ -1,0 +1,197 @@
+{
+ "paper_key": "2607.14171",
+ "title": "Branching Policy Optimization: Sandbox-Native Language Agent Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.14171.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–3",
+   "§3–4 Eqs1–6/Thm1–2 pp4–8",
+   "§5 Tables1–4 pp9–12",
+   "Conclusion p12"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "snapshot同一中间state，K条siblings各自采样并续写，用其他siblings return均值作LOO，再向共享前缀传播。",
+  "why_non_obvious": "真实复位环境使基线条件更精细，但局部无偏不等于熵筛选/全树更新无偏。",
+  "trigger_condition": "When environments support faithful restore, branch from shared prefixes to estimate local leave-one-out advantages.",
+  "contribution_type": "采样拓扑与状态条件基线",
+  "abstract_strategy": "共享前缀消去回报的前缀差异",
+  "abstract_trigger_condition": "中间状态可完整恢复且分支成本低",
+  "abstract_key_step": "同state独立兄弟续写与LOO",
+  "abstract_why_non_obvious": "相同return预算不同于token/墙钟预算，选择分支也改变训练分布。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.14171#s1",
+   "object": "SFT后7B/8B sandbox agents",
+   "information": "可snapshot/restore的环境state、policy首token entropy、终端verifier",
+   "operation": "backbone高熵topM点分K条，localA=Gk−mean(Gothers)，λ.95传播，PPOclip训练",
+   "claimed_effect": "Qwen7B WebShop67.8±1.3/ALFWorld66.4±1.9/SWE29.8±1.0，GRPO62.1/60.5/24.0。",
+   "conditions": [
+    "3seeds",
+    "budget匹配描述存在冲突",
+    "snapshot保真"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p10 BPO WebShop/ALFWorld/SWE/LlamaWebShop",
+    "quote": "BPO (ours) 67.8 ± 1.3 66.4 ± 1.9          29.8 ± 1.0   65.2 ± 1.5"
+   },
+   "failure_boundary": "局部adv方差定理不直接等于完整PPO梯度方差保证",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P09",
+   "strength": 3,
+   "how": "状态基线以实际同状态rollouts构造，区别于错误state baseline。"
+  },
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "局部动作信用取代全轨迹共享adv。"
+  },
+  {
+   "problem": "P58",
+   "strength": 3,
+   "how": "fork环境状态与额外continuation成本。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "PPO",
+   "kind": "method"
+  },
+  {
+   "name": "RLOO",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "VinePPO",
+   "kind": "method"
+  },
+  {
+   "name": "uniform/low/high entropy schedules",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "§5.1写N8，但M4 K4给13；文字(K−1)=1又算4−1，称M2K4=N7为exact match。Table2 K1按公式N1却另当N13 GRPO；匹配预算无法从文中唯一复原。",
+   "locator": "§5.1/5.4"
+  },
+  {
+   "text": "Thm1仅固定state iid siblings无偏；topM依整backbone的未来熵、backbone图称greedy-ish、λ传播与clip后的全树梯度未由局部证明覆盖。",
+   "locator": "Thm1/Eqs4–5 reader qualification"
+  },
+  {
+   "text": "Thm2比较无std LOO优势方差而非标准GRPO或score-weighted gradient方差；严格降低需prefix V非恒定，γ不同深度return需同口径。",
+   "locator": "Thm2/Remark1"
+  }
+ ],
+ "question": {
+  "observed_failure": "GRPO全序列对局部行动共用baseline；论文报gradient-norm方差比.42→.58。",
+  "load_bearing_assumption": "restore分布等价、兄弟条件iid且比较同return定义",
+  "scope": "WebShop/ALFWorld/SWE可复位sandbox",
+  "success_criterion": "任务分、实际token与墙钟、局部信用估计偏差共同验证",
+  "why_open": "初始prompt基线不消除已共享prefix造成的方差。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2–3宽度/branch schedule"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table4 snapshot和wallclock"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\hat A_{t,k}=G_{t,k}-\\frac1{K-1}\\sum_{j\\ne k}G_{t,j}",
+    "locator": "Eq3"
+   },
+   {
+    "latex": "\\hat A_{t'}=\\sum_{t\\in B(\\tau)}\\lambda^{t-t'}\\hat A_{local,t,k(\\tau)}",
+    "locator": "Eq4"
+   },
+   {
+    "latex": "Var(A_{BPO})=Var(A_{LOO,s0})-\\frac K{K-1}Var(V^\\pi(s_t)|s_0)",
+    "locator": "Thm2 fixed iid conditional siblings assumptions"
+   }
+  ],
+  "signal_routing": "agent action是token序列，Eq5用action πratio与树(s,a)项；论文未明示转成token loss的分母、obs mask或非branch末梢adv。共享prefix称一次tree tuple但又说按叶数加权，执行去重/权重细节未明确，不补实现。",
+  "normalization": "leave-one-out",
+  "invariance": "无组std，return共同shift在localLOO取消，正scale保留；λ传播不是严格PBRS。每state全K localA之和0，若共享prefix相同score被等权全部siblings广播会抵消，须明确Eq4树聚合语义。",
+  "baseline_or_potential": "同state其他K−1独立rollout，非当前样本inclusive平均或learnedcritic。",
+  "degenerate_cases": "K1 Eq3未定义，应单独退化baseline；全同return localA0。高熵不保证价值分歧；精确snapshot失败使反事实比较失真。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "K4/8胜K2，最低熵60.8 vs最高67.8、随机64.5；λ0下降1.8–2.4仅正文报告。",
+  "negative_results": [
+   {
+    "text": "K16降66.5，宽度增加会减少covered states；lowestentropy60.8低于GRPO。",
+    "locator": "Tables2–3"
+   }
+  ],
+  "seeds": 3,
+  "falsifier": "严格匹配环境/token/return预算，固定onpolicy iid branch点，只branch-local vs完整传播；若前缀权重导致偏差或增益消失，不能归于方差定理。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B-Instruct/Llama3.1-8B-Instruct再环境SFT",
+   "framework": "sandbox/SWE-agent",
+   "group_size": null,
+   "max_turns": null,
+   "kl": 0.05,
+   "max_environment_steps": {
+    "WebShop": 50,
+    "ALFWorld": 40
+   },
+   "max_tool_calls": {
+    "SWE-bench Verified": 25
+   },
+   "turn_limit_source": "§5.1: Tmax=50 steps for WebShop, Tmax=40 for ALFWorld, Tmax=25 tool calls for SWE-bench. Do not collapse these into total dialogue turns."
+  },
+  "cost": "8A10080G+32core；batch128,gradacc4,AdamW2e-6 clip.2；3000/5000steps；Table4WebShop8.2vs13.5h/ALF11.4vs17/SWE47.6vs74.1h达到GRPO目标，snapshot42/138/1920ms。",
+  "pitfalls": [
+   {
+    "text": "先跑完backbone再选点需要中间state保存/replay；Algorithm事后snap(st)要求状态仍可访问。",
+    "locator": "Alg1 reader engineering"
+   },
+   {
+    "text": "样本return预算不是计算预算；相同prefix复用与snapshot开销要实测。",
+    "locator": "§5.1"
+   }
+  ],
+  "code": null,
+  "lesson": "同state LOO有清楚局部统计意义，落地前必须写清branch选择、路径聚合、return折扣和真实算力对齐，不能从局部定理推完整算法保证。"
+ }
+}

@@ -1,0 +1,136 @@
+{
+ "paper_key": "litscan:76414",
+ "title": "IQASpider",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_76414.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.2 dataset",
+   "§4 Eqs1–4",
+   "§5 Tables1–6",
+   "§6 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用左右/上下位置词logit连续值桥接语言输出与冻结SAM。",
+  "key_step": "闭集softmax左右和上下分别归一化，把right/bottom概率乘图宽高作为SAM点。",
+  "why_non_obvious": "无需训练特殊mask token或新增跨模态prompt编码器，但粗方位分类置信度不天然是空间坐标。",
+  "trigger_condition": "When a quality-aware LMM can describe position but cannot output masks, convert positional token logits into SAM point prompts.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "复用现有输出分布作为结构化接口。",
+  "abstract_trigger_condition": "When a pretrained module accepts a different interface, map calibrated output statistics to its input.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "语言概率→连续点→冻结分割器。",
+  "abstract_why_non_obvious": "接口方便但需要空间校准假设。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76414#s1",
+   "object": "细粒度质量描述与分割",
+   "information": "人标/合成畸变、bbox中心半平面标签；推理image/query/logits",
+   "operation": "SFT文本任务后，无新增训练地将位置词logit映射SAM点",
+   "claimed_effect": "Q-Ground-Test mIoU .271(Q-Ground)→.338(Qwen3版)；本库grounding均值.408",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4/Table5",
+    "quote": "apply the next token prediction loss as our training objective,"
+   },
+   "failure_boundary": "训练free仅指grounding桥接阶段，backbone已进行质量/方位SFT；SAM依赖点位。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "位置输出和视觉区域绑定接口可迁移为低成本grounding对照。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Q-Instruct/Q-Ground/LISA/Sa2VA/EVF-SAM",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "未见独立局限节；主要人标/合成质量任务，方位词分类概率能否校准到精确位置缺少直接验证。",
+   "locator": "§3.2/4.2/6"
+  }
+ ],
+ "question": {
+  "observed_failure": "本库Q-Ground pixel mean .190、Q-Instruct .264，ours Qwen3 .408。",
+  "load_bearing_assumption": "统一质量理解必须另训mask接口，或粗方位即可得到有用SAM点。",
+  "scope": "质量畸变grounding/referring",
+  "success_criterion": "跨库mIoU及多任务冲突/桥接消融",
+  "why_open": "全局描述模型无法给出局部畸变对象。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4数据混合消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eqs1–4概率与坐标假设"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L=-\\sum_t\\log p(y_t|y_{<t},I,Q);p_i^l=softmax(\\chi_i^l/\\tau);x=W p_{right};y=H p_{bottom}",
+    "locator": "§4.2 Eqs2–4/4.3"
+   }
+  ],
+  "signal_routing": "CE训练LLM/视觉；SAM冻结；无reward或actor advantage，闭集两词logit映射在推理期。文本判全图则跳过SAM返回全图mask。",
+  "normalization": "other：左右/上下各自2类softmax，无组std。",
+  "invariance": "非PBRS；概率温度会移动点位，非只改置信度。",
+  "baseline_or_potential": "无critic/势函数。",
+  "degenerate_cases": "两词相等给中心点；饱和给边界点；多不连通目标单点可能漏检；词概率未校准到坐标时高分类准确率仍可能错位。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4不同数据混合；Fig5桥接对EVF-SAM，具体图数未读。",
+  "negative_results": [
+   {
+    "text": "只加入DQ数据local描述7.07→6.86；全部混合grounding2.41低于ours+Q-Instruct2.53。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": "Table1描述评估GPT4V 5轮；训练seed/CI未报告于所读。",
+  "falsifier": "与方位中心固定点/直接坐标回归同数据比较；若logit概率随机温度同效则连续坐标解释不充分。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Phi3.5Vision4B/Qwen2.5VL7B/Qwen3VL(论文标7B)+SAM",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "LLM LoRA、视觉encoder/projector全参；具体GPU/时长未读到。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当把分类logit当几何坐标时，单独核温度与空间误差，并区分backbone训练和桥接training-free。"
+ }
+}

@@ -1,0 +1,194 @@
+{
+ "paper_key": "litscan:79261",
+ "title": "From Absolute to Relative: Rethinking Reward Shaping in Group-Based Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79261.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3–4 Eqs1–6/Algorithm1",
+   "5 Tables1–4/Figures5–7",
+   "6 limitations",
+   "AppendixA settings",
+   "AppendixB theory",
+   "AppendixC Table10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "以组内排序代替不稳定绝对scalar分数：correctness→correct-only长度bin→rankingRM排序；HRR/PRR将rank映射有界reward，正确性相关优势裁剪。",
+  "why_non_obvious": "同correctness标签也产生rank差异，但不是新的采样support或局部过程credit。",
+  "trigger_condition": "When absolute scores are unstable or correctness groups are homogeneous, map within-group ranks to bounded relative rewards.",
+  "contribution_type": "rank-based reward shaping",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When reward magnitudes are unreliable, retain ordering while explicitly testing the information content of the ordering.",
+  "abstract_key_step": "有监督RankingRM与规则重排后映射奖励；不是自监督目标或现成solver重构。",
+  "abstract_why_non_obvious": "有界reward不能推出PG无偏、排序可靠或优化稳定。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79261#s1",
+   "object": "group-based RL完整response",
+   "information": "rule correctness、response长度、训练过的listwise RankingRM",
+   "operation": "hierarchical rerank→HRR/PRR→advantage clip→PPO类更新",
+   "claimed_effect": "1.5B HRR mathavg55.4/logicalavg24.8/6484tokens；GRPO53.4/12.5/6943。8BHRR65.9/64.8/5025。",
+   "conditions": [
+    "G8",
+    "rank subgroups n4",
+    "verifiable reasoning"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 DeepSeek-Qwen-1.5B",
+    "quote": "RLRR(H)     31.1     24.5      84.6      86.5     47.0        74.6     28.0     66.8   55.4    10.1    39.5    24.8 6484"
+   },
+   "failure_boundary": "rank可靠性与subgroup跨组可比性仍有假设；所有样本只得到sequence级信号。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P19",
+   "how": "排序细化同终局标签的组内信号，但不等于局部动作必要性。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "若组内同标签且std归一化，共同tau正比例可抵消。",
+   "strength": 3
+  },
+  {
+   "problem": "P32",
+   "how": "仅correct responses按长度bin优先，存在准确率/简洁性折衷。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO/Dr.GRPO/DAPO/GPG",
+   "kind": "group RL baselines"
+  },
+  {
+   "name": "w/o correctness / w/o length",
+   "kind": "reranking ablations"
+  },
+  {
+   "name": "random rank + correctness rerank",
+   "kind": "ranking information control"
+  },
+  {
+   "name": "scalar RM with/without PRR",
+   "kind": "reward magnitude control"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "RankingRM输入context随组大小/response长度增长。",
+   "locator": "6"
+  },
+  {
+   "text": "n4局部rank如何形成无歧义可比的全局rank及tie处理未充分说明；排序质量仍依赖训练标签与proxy。",
+   "locator": "4.3; reader limitation"
+  },
+  {
+   "text": "AppB只给reward方差上界，没有证明完整标准化/裁剪更新的无偏或稳定。",
+   "locator": "AppendixB; reader limitation"
+  }
+ ],
+ "question": {
+  "observed_failure": "同正确标签组无binary奖励差异；SRM数值尺度可能漂移。",
+  "load_bearing_assumption": "排序是否比绝对数值更可靠，及同标签细分是否有真实质量信息。",
+  "scope": "verifiable math/logic与open-ended writing",
+  "success_criterion": "对照同RM分数vsrank、randomrank+correctness、去length/correctness",
+  "why_open": "随机排序也明显改善，不能把全部收益归因为精确质量排名。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables3/10 and Figure6 ranking controls"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=(s_i-mean(s))/F_norm; F_norm may be std_group(s) or 1",
+    "locator": "Eq1; AppendixB Eq9 uses std"
+   },
+   {
+    "latex": "s_i^HRR=s_i^rule+tau*tanh(r_max/r_i-1); s_i^PRR=(r_max-r_i)/(r_max-1)",
+    "locator": "Eqs3–4"
+   },
+   {
+    "latex": "A_i^clip=max(A_i,xi_minus) if correct; min(A_i,xi_plus) otherwise; xi_minus=-0.001, xi_plus=0.001",
+    "locator": "Eq5; AppA.1"
+   },
+   {
+    "latex": "B_i=floor(length_i/lambda) if correct, infinity otherwise; rank by correctness first, then B_i, then RM rank",
+    "locator": "Eq6 and 4.3"
+   },
+   {
+    "latex": "J=(1/G)*sum_i (1/|o_i|)*sum_t min(r_it*A_i,clip(r_it,1-eps,1+eps)*A_i)",
+    "locator": "Eq2 generic GRPO objective"
+   },
+   {
+    "latex": "Var(R)<= (b-a)^2/4; PRR R in [0,1] gives Var(R)<=1/4",
+    "locator": "AppendixB Eq10"
+   }
+  ],
+  "signal_routing": "离线监督RankingRM以pretrainedLLM+classificationhead预测排列，CE训练；teacher ranking优先规则正确性，再SRM/少量strongerLLM回退。policy每prompt采样G8，分n4子组ranking后correctness/长度重排成最终rank；reward及裁剪adv广播整条response，非token/工具动作因果credit。writing无rule verifier时PRR只依赖RM。",
+  "normalization": "group_std_or_none: Eq1 Fnorm可std或1，具体各实验未知；Eq2展示每response tokenmean再groupmean，CISPO/RLOO等兼容实验不能据此认定相同loss分母；真实mask/epsilon未核。HRR不中心化rankbonus且其非负；随后组均值中心化。",
+  "invariance": "严格保序scalar变换不改rank，但ties/子组重排可影响。读者推导：同标签HRR只剩tau*h(rank)，Fnorm=std且忽略epsilon时tau>0抵消；Fnorm=1则不抵消。PRR reward有界不保证排序可信或PG无偏。",
+  "baseline_or_potential": "组内reward均值；无potential-based shaping保证。",
+  "degenerate_cases": "rmax=1使PRR分母0；全tie/zero-std数值处理未知。同标签distinct rank能给梯度但可能是噪声；不能生成未采样过的动作。correct clipping允许最低-.001，wrong clipping允许最高+.001，非严格按正确性剪到0。作者报告tau过大削弱规则信号并伤表现；但在正确严格优先重排且tau≥0下，HRR正确reward始终高于错误，不能解释为跨类reward排序反转（读者代数）；原始A符号和训练性能另论。排序n4跨组可比性不充分。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3去correctness/length；Table10 randomrank+correctness vs learnedranking；Figure6同SRM绝对值vsPRR。",
+  "negative_results": [
+   {
+    "text": "Table3 w/o length avg47.2略高完整47.1，tokens6317 vs6013；简洁性不保证每benchmark准确率更高。",
+    "locator": "Table3"
+   },
+   {
+    "text": "随机排序+正确性重排avg37.5，完整learnedRankingRM38.0，GRPO36.3；大量收益不需要精确learned rank。",
+    "locator": "Table10"
+   },
+   {
+    "text": "8B PRR mathavg64.1/logic61.9低于DAPO64.2/63.3；不是所有variant胜全部baseline。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：若匹配正确性和长度后随机rank与learnedrank统计相当，则收窄RankingRM质量信息解释；若冻结reader偏好可被policy利用，rank bounded仍不能保真实任务价值。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeek-R1-Distill-Qwen-1.5B / Distill-Llama-8B; writing Qwen3-1.7B; RankingRM Qwen2.5-7B-Instruct-1M",
+   "framework": "VeRL",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "G8,n4; output8192; T1; tau.1; lambda2048; xi±.001; reasoning training~16k",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "保存rawrank、globalrank、correctness和lengthbin，分解哪些样本信号来自内容、长度或任意排序；四响应列表RM存在额外长context成本。"
+ }
+}

@@ -1,0 +1,140 @@
+{
+ "paper_key": "litscan:76444",
+ "title": "FPDA",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_76444.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eqs1–17 Algorithm1",
+   "§4 Tables1/4–6",
+   "§5 conclusion",
+   "AppA1/A4 Table7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "固定法证prompt库+可靠性门控文本融合，PPO选择prompt分布和mask细化两个动作。",
+  "key_step": "pre-control共享网络状态detach，双categorical actor联合动作；同一奖励含GT类别概率和mask质量增量。",
+  "why_non_obvious": "可控prompt证据替代开放生成，语言侧与视觉侧策略协同但未单独因果credit。",
+  "trigger_condition": "When forensic evidence and refinement needs vary by sample, select prompt routing and mask refinement jointly.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "在有监督任务网络外设置小离散策略控制器。",
+  "abstract_trigger_condition": "When multiple modules require adaptive control, train a joint policy using task outcome deltas.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "隔离状态梯度、保持任务监督与策略更新分离。",
+  "abstract_why_non_obvious": "联合结果不能直接解释为两种动作各自贡献。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76444#s1",
+   "object": "法证检测/定位双控制",
+   "information": "训练GT类别和mask；actor只见动作前detached视觉/粗mask/参考检测特征",
+   "operation": "PPO两个动作head控制prompt bias/temperature和skip/strong/edge细化",
+   "claimed_effect": "NIST16双动作AUC .902 vs无动作.831；定位IoU .580 vs.552",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table5",
+    "quote": "A(s, a) = r(s, a) − Vϕ (s)."
+   },
+   "failure_boundary": "不是语言GRPO同名DAPO；GT仅reward训练，推理不需GT。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "离散控制与独立有监督主体的信号隔离可迁移。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "visual-only/FPM-only/text-only/image-only/reward ablations",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "离散动作有限；需mask监督评估增量，未见独立局限节。",
+   "locator": "§3/5"
+  }
+ ],
+ "question": {
+  "observed_failure": "无可靠性门控文本AUC .992低于router .993，门控达.996；无动作NIST AUC.831。",
+  "load_bearing_assumption": "固定prompt与统一细化适合全部图像。",
+  "scope": "图像伪造二分类/像素mask",
+  "success_criterion": "双动作、reward和文本门控各自消融",
+  "why_open": "弱视觉痕迹与噪声文本会改变最佳证据和细化力度。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables4–6"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq6/12动作前信息及增量基线"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_{det}=clip(2p_{cls}[y]-1,-1,1);r_{loc}=clip(2[Q(\\hat M,M_{gt})-Q(M_0,M_{gt})],-1,1);r=r_{det}+\\lambda_{loc}r_{loc};A=r-V(s)",
+    "locator": "Eqs7/10–13"
+   },
+   {
+    "latex": "L_{sup}=L_{det}+\\lambda_{mask}L_{mask};J_{PPO}=E[min(\\rho A,clip(\\rho,1-\\epsilon,1+\\epsilon)A)]",
+    "locator": "Eqs8/17"
+   }
+  ],
+  "signal_routing": "GT构成训练reward；双head联合动作一个advantage，未给每head分拆奖励。actor/critic用detach动作前状态；任务网络独立Lsup。检测使用stopgrad粗mask防止检测损失回流mask路径。",
+  "normalization": "other：actor-critic r−V；未披露advantage标准化，不推断mean+std。promptsoftmax及L2为表示归一化。",
+  "invariance": "非严格PBRS：单步质量差被clip、组合分类reward，M0为动作后task输出并受文本动作影响，非动作独立势函数。",
+  "baseline_or_potential": "critic V(s)；mask差的M0不是pre-control M0ref，不能当联合动作的无偏counterfactual baseline。",
+  "degenerate_cases": "所有动作同效时理想critic消除优势；无mask样本rloc处理未在所读明确；skip接近M0但不保证完全no-op；噪文本missing时η=0。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table5动作交叉对照、Table6奖励项、Table4门控。",
+  "negative_results": [
+   {
+    "text": "加入未门控text轻微降检测/定位；去loc reward定位IoU .652→.620。",
+    "locator": "Tables4/6"
+   }
+  ],
+  "seeds": "AppA1固定42，无多seedCI。",
+  "falsifier": "同预算监督动作分类或随机动作同效；把M0换动作前reference后结论改变则原增量非独立动作收益。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "视觉forensics网络+冻结CLIP文本+双head actor/critic",
+   "framework": "PyTorch",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2A30，512²输入，20ksteps batch8；Columbia 27.8→29.2ms、46.2→47.8M参数、8.1→8.4GB。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当双动作共用增量reward时，先区分动作前state和动作后baseline，不能把同一个scalar误写成逐动作归因。"
+ }
+}

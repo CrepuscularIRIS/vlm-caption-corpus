@@ -1,0 +1,191 @@
+{
+ "paper_key": "litscan:76009",
+ "title": "RetainDo",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_76009.txt",
+  "sections_read": [
+   "Abstract/Introduction contributions",
+   "§2/ Figure2 and Table1",
+   "§3.1–3.3/Figure4–5",
+   "§4.1–4.2/Figure6–7",
+   "§6 limitations",
+   "Appendix A.1 simulation settings",
+   "Appendix A.3 training settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "保持目标任务/模型家族对比，移除RL的KL或优势估计，再将SFT数据从固定初始模型改成逐轮当前模型。",
+  "why_non_obvious": "mode-seeking通常被认为丢模式，但可分离多模式策略中只移动新模式能保留旧模式；单峰设置方向相反。",
+  "trigger_condition": "当SFT与RL新任务收益相近但旧任务下降悬殊时，拆解数据分布、KL与优势估计，并比较逐轮刷新样本。",
+  "contribution_type": "empirical_mechanism_analysis",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "当SFT与RL新任务收益相近但旧任务下降悬殊时，拆解数据分布、KL与优势估计，并比较逐轮刷新样本。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "保持目标任务/模型家族对比，移除RL的KL或优势估计，再将SFT数据从固定初始模型改成逐轮当前模型。",
+  "abstract_why_non_obvious": "mode-seeking通常被认为丢模式，但可分离多模式策略中只移动新模式能保留旧模式；单峰设置方向相反。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76009#s1",
+   "object": "目标任务适应引起的原能力遗忘",
+   "information": "当前策略采样，终答可验证正确性；不访问原任务训练数据",
+   "operation": "比较GRPO、无优势baseline的REINFORCE及正确样本SFT，并用迭代采样SFT检查数据更新作用",
+   "claimed_effect": "Llama8B Countdown：SFT gain25.5/drop36.4；REINFORCE7.5/−.8；GRPO60.4/−.5。优势估计影响收益但不是低遗忘的必要条件。",
+   "conditions": [
+    "表中Gain和Drop均为百分比点",
+    "2epoch",
+    "跨非目标任务平均Drop"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "Gain (%) ↑   Drop ↓ (%)                          Gain (%) ↑    Drop (%) ↓             Gain (%) ↑                    Drop (%) ↓\n                                                       SFT                                          25.2           27.8                               11.1          38.5                                   25.5         36.4\n                                 Llama 3.1 8B Inst.    REINFORCE                                    17.8            7.7                                8.6          -0.1                                    7.5         -0.8\n                                                       GRPO                                         18.4            3.4                               14.6          -0.2                                   60.4         -0.5"
+   },
+   "failure_boundary": "REINFORCE新任务收益更低，不能称匹配收益/算力后完全相等；迭代SFT须额外轮次。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P61",
+   "strength": 2,
+   "how": "[redacted: project-internal]"
+  },
+  {
+   "problem": "P62",
+   "strength": 2,
+   "how": "KL0/.05对照表明低遗忘不总依赖KL，但有Llama IFEval例外。"
+  },
+  {
+   "problem": "P63",
+   "strength": 3,
+   "how": "明确target gain/non-target drop配对评测，支持补齐通用能力遗忘测量。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "SFT external70B correct traces",
+   "kind": "method"
+  },
+  {
+   "name": "Self-SFT initial-policy correct traces",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "REINFORCE",
+   "kind": "method"
+  },
+  {
+   "name": "Iterative-SFT",
+   "kind": "method"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "Llama8B在Countdown上SFT使非目标均值降36.4pp，而GRPO为−.5pp且目标收益更高。",
+  "load_bearing_assumption": "当前策略采样导致较局部更新，能在有可分离模式的策略中保留原能力。",
+  "scope": "1–8B instruct文本模型、IFEval/MMLU/Countdown及非目标安全/数学等评测；无多轮视觉工具实验。",
+  "success_criterion": "同步报告target gain和non-target mean drop；控制KL/advantage并更换采样刷新频率。",
+  "why_open": "一般神经网络没有可分离Gaussian modes保证；在线数据与筛选、收益、轮数/算力仍需共同控制。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§4.1 KL和advantage移除对照"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§2.1原模型target/non-target基准"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J_{RL}=\\mathbb E_{y\\sim\\pi_\\theta}[r(x,y)]-\\beta D_{KL}(\\pi_\\theta\\Vert\\pi_{\\theta_0})",
+    "locator": "§2.1/3.1"
+   },
+   {
+    "latex": "\\pi^*(y|x)=Z(x)^{-1}\\pi_{\\theta_0}(y|x)e^{r(x,y)/\\beta};\\quad J_{RL}=-\\beta D_{KL}(\\pi_\\theta\\Vert\\pi^*)+\\beta\\log Z(x)",
+    "locator": "§3.1 β>0 conceptual identity"
+   },
+   {
+    "latex": "\\pi_\\theta(y)=\\alpha q_{old}(y;\\theta_{old})+(1-\\alpha)q_{new}(y;\\theta_{new})",
+    "locator": "Eq3 toy two-Gaussian model"
+   }
+  ],
+  "signal_routing": "GRPO只用最终回答正确1/错误0；同一回答整体受终答信号，无动作条件信用。Self-SFT由初始模型生成5回答/题，筛掉错误，对所有保留的正确回答做CE。Iterative-SFT每epoch重新从当前策略生成；其精确每轮filter/样本数未读到独立设置，不自行补。REINFORCE使用原reward无advantage估计。",
+  "normalization": "other",
+  "normalization_detail": "本文未列GRPO实际std/epsilon和token reduction式；不能从GRPO名字推断。SFT CE长度reduce亦未说明。",
+  "invariance": "非PBRS；KL→reverseKL等价只在β>0及指定最优π*下成立，不等于实践GRPO精确优化此分布，或β0实验也满足同式。",
+  "baseline_or_potential": "RL默认KL对初始policy系数.05，消融0；无需旧任务训练回放。没有独立critic或固定reader动作差值。",
+  "degenerate_cases": "当前策略完全没有正确支持时，正确筛选Self/Iterative-SFT无可用数据；单峰Gaussian反例中同gain.9，reverseKL drop.70高于forward .64。全对/全错GRPO处理未明确；不能宣称本机制修复无对比组。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "§4.1移除KL及优势估计仍通常低遗忘；§4.2初始模型固定Self-SFT对比每epoch采样Iterative-SFT；Fig7迭代至匹配SFT目标准确率。",
+  "negative_results": [
+   {
+    "text": "KL移除在Llama系列IFEval有例外，不能断言KL永远无关。",
+    "locator": "Figure6/§4.1"
+   },
+   {
+    "text": "单峰Gaussian下reverseKL更遗忘；多峰只提供直觉，非一般LM定理。",
+    "locator": "§3.2–3.3"
+   },
+   {
+    "text": "REINFORCE通常低遗忘但目标收益不及GRPO；Iterative-SFT多轮与SFT2epoch非等算力。",
+    "locator": "Table1/Figure7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "控制目标准确率与采样/token总预算后，若固定Self-SFT与迭代SFT原任务下降无差别，则on-policy刷新解释减弱；先验证本VLM直答/裁图各自支持。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Llama3.2-1B/3.1-8B-Instruct；Qwen2.5-1.5B/7B-Instruct",
+   "framework": "PyTorch",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": 0.05,
+   "kl_ablation": 0,
+   "sft_max_sequence_length": 4096,
+   "epochs": 2
+  },
+  "cost": "最多8 H100；未报告此读取范围中的每设置walltime。Iterative-SFT逐epoch刷新省掉每step rollout，但实际总成本未证匹配。",
+  "pitfalls": [
+   {
+    "text": "[redacted: project-internal]",
+    "locator": "§2.1–2.3"
+   },
+   {
+    "text": "A.3称生成后立即更新且no advantage clipping；未给出完整GRPO实现，不等同所有长度/ratio处理已核。",
+    "locator": "A.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当只用初始策略固定正确样本做SFT仍遗忘时，可测试逐轮刷新采样；应同时追踪原能力、目标收益和采样总量，不能只按目标checkpoint宣称保留。"
+ }
+}

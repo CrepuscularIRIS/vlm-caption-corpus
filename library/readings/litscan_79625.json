@@ -1,0 +1,140 @@
+{
+ "paper_key": "litscan:79625",
+ "title": "Learning to Focus and Precise Cropping",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_79625.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Table1",
+   "§4 Eqs1–6",
+   "§5 Tables2–5",
+   "§6/Table6/§7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "离线降全图分辨率制造信息缺口，再用嵌套框grounding奖励压小crop。",
+  "key_step": "选首次与原图答案不同的降采样图，原图仍供crop；第二阶段256难例bbox监督。",
+  "why_non_obvious": "缺口促使用crop但也诱导无限扩大crop，需要第二阶段几何约束。",
+  "trigger_condition": "When a model ignores crop evidence, reduce global detail until its answer diverges and train high-resolution crop use.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "削弱捷径信息通道再约束新通道粒度。",
+  "abstract_trigger_condition": "When an easier channel bypasses a desired skill, create a controlled information deficit then regularize its workaround.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "信息缺口→局部使用→几何精炼。",
+  "abstract_why_non_obvious": "答案差异不保证首次失去充分信息或仍可定位。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79625#s1",
+   "object": "crop工具RL",
+   "information": "原/低分辨率当前模型答案，QA GT；后阶段人工嵌套bbox",
+   "operation": "GRPO information-gap数据后加覆盖门控IoU+L1几何reward",
+   "claimed_effect": "1024token HR8K baseline61.0→stageI69.9→stageII72.1；V*72.3→78.0→80.6",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 Stage-I row; HR8K/HR4K/V* FSP-or-attr/FCP-or-spatial/overall",
+    "quote": "Stage-I                       77.7 62.0          69.9     85.3 63.5        74.4     80.0     75.0        78.0"
+   },
+   "failure_boundary": "无trajectory SFT但依赖已具工具先验；降分辨率非准确率非劣保障。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "用图像信息差和替换检验crop使用。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DeepEyes/CoF-sft/PixelReasoner/Mini-o3/original-data/noL1",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "人工256嵌套框和专门难例；未见独立局限节。效率对比全图1024对16384 token并非同输入预算。",
+   "locator": "§5–7"
+  }
+ ],
+ "question": {
+  "observed_failure": "DeepEyes16384token HR8K原crop68.0、noise68.5、GT69.5；crop信息可能未使用。",
+  "load_bearing_assumption": "调用crop即利用其局部证据。",
+  "scope": "Qwen2.5VL7B高分辨率QA",
+  "success_criterion": "crop替换、两阶段、难例和L1消融",
+  "why_open": "原图捷径使工具奖励不必学新证据。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table1/3–5"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq4下标与coverage门"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r=r_{acc}+r_{format}+1[r_{acc}>0]r_{tool};A_i=(r_i-mean(r))/std(r)",
+    "locator": "Eqs2–3"
+   },
+   {
+    "latex": "r_{IoU}=1[|B_p\\cap B_1|/|B_1|>.9]\\max_i IoU(B_p,B_i);r_{L1}=1-\\min_i d_{L1}(B_p,B_i);r_{geo}=\\omega r_{IoU}+(1-\\omega)r_{L1}",
+    "locator": "Eqs4–6，IoUi解释行B1下标与max_i不一致"
+   }
+  ],
+  "signal_routing": "整轨迹结果/格式/成功调用reward→组标量advantage；几何reward按预测bbox，未给逐crop/token独立分配。第二阶段如何与原reward精确组合/ω未在所读明确。",
+  "normalization": "mean+std；L1声明归一化，具体分母未列。",
+  "invariance": "非PBRS，改变输入与奖励；IoU描述max多GT但定义行写B1，记录歧义不代补实现。",
+  "baseline_or_potential": "组均值；原图答案只供离线resolution selection非训练baseline。",
+  "degenerate_cases": "全同reward std0处理未列；答案差异可能由随机错误而非信息缺口；过度降采样无法定位；成功工具bonus有冗余诱因；coverage低时只剩L1。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "GT/noise替换；stageI/II；同源数据vs困难VisualProbe与L1。",
+  "negative_results": [
+   {
+    "text": "继续原数据HR8K69.9→68.1；VP+L1 HR8K72.7→72.1但HR4K72.9→75.3；并非每任务L1更好。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "在原图信息和计算预算匹配后普通固定降采样同效，则逐样本答案分歧选择价值未建立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7BInstruct",
+   "framework": null,
+   "group_size": 16,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "8A100，80steps/batch256，maxresponse2048；两阶段步数分配未读明确；第二阶段256样本。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当降低主输入信息迫使工具使用时，检查大crop绕过约束，并分别报告信息预算、定位质量和调用必要性。"
+ }
+}

@@ -1,0 +1,163 @@
+{
+ "paper_key": "2605.29796",
+ "title": "SAAS: Self-Aware Reinforcement Learning for Over-Search Mitigation in Agentic Search",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.29796.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "2 failure analysis",
+   "3 Eq1–9",
+   "Tables1–3",
+   "4.4–4.5",
+   "Limitation",
+   "B.1/B.3 Tables4–5",
+   "[redacted: project-internal]"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "condition_intervention_on_boundary",
+  "key_step": "当前policy每题4禁搜+4可搜区分NoSearch/NeedSearch/Undetermined；只对全正确轨迹按边界收调用成本，能力训练后再收费。",
+  "why_non_obvious": "统一减调用会惩罚必要探索；成功最少调用数是组内充分路径上界而非每一步因果必要性。",
+  "trigger_condition": "When search penalties suppress necessary exploration, learn capability first and price only boundary-conditioned excess search.",
+  "contribution_type": "method",
+  "abstract_strategy": "condition_intervention_on_boundary",
+  "abstract_trigger_condition": "When search penalties suppress necessary exploration, learn capability first and price only boundary-conditioned excess search.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "当前policy每题4禁搜+4可搜区分NoSearch/NeedSearch/Undetermined；只对全正确轨迹按边界收调用成本，能力训练后再收费。",
+  "abstract_why_non_obvious": "统一减调用会惩罚必要探索；成功最少调用数是组内充分路径上界而非每一步因果必要性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.29796#s1",
+   "object": "搜索次数的边界条件成本",
+   "information": "当前policy禁搜/可搜成功数、可搜正确轨迹最少调用数",
+   "operation": "NoSearch罚全部调用，NeedSearch仅罚超Nmin；F1全正确才激活；两组分别计算归一化优势",
+   "claimed_effect": "matchedGRPO 7B AVG ACC50.2→48.7、SC2.94→.97；3B46.5→45.8、SC2.26→1.13",
+   "conditions": [
+    "δ2、α.05、最多5search",
+    "两阶段"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "B.3 Table4",
+    "quote": "Ours        74.0   0.56   47.4   1.01   47.8    0.74     53.6   0.96     45.9   1.18   22.6   1.30      49.6   1.02   48.7   0.97"
+   },
+   "failure_boundary": "减少搜索有准确率代价，未证明非劣；不是逐调用信息增益",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P02",
+   "how": "直接区分不必搜与搜够后冗余。",
+   "strength": 3
+  },
+  {
+   "problem": "P03",
+   "how": "[redacted: project-internal]",
+   "strength": 3
+  },
+  {
+   "problem": "P35",
+   "how": "阶段化避免过早抑制搜索但仍不能保证不提前停。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "matched outcome-only GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "SearchR1, StepSearch, HiPRAG",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "当前仅单模态文本检索。",
+   "quote": null,
+   "locator": "Limitation"
+  }
+ ],
+ "question": {
+  "observed_failure": "去阶段化ACC45.8→40.9，SC1.13→.95；matchedGRPO三模型准确都略下降。",
+  "load_bearing_assumption": "4条禁搜的成功数足以估计动态边界，正确轨迹最少次数可作冗余参考。",
+  "scope": "单模态检索QA，当前policy组级proxy。",
+  "success_criterion": "正确率非劣需独立检验；同时测NoSearch误标和NeedSearch必要调用保留。",
+  "why_open": "静态价格会奖励少搜但错答，固定reader边界会随policy漂移。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S(q)=\\begin{cases}NoSearch&n_d\\ge2\\\\NeedSearch&n_d=0,n_e>0\\\\Undetermined&\\mathrm{otherwise}\\end{cases}",
+    "locator": "Eq3/B.1"
+   },
+   {
+    "latex": "R_i=F1_i+\\mathbf1[F1_i=1]c_i,\\quad c_i=\\begin{cases}-.05N_i&NoSearch\\\\-.05\\max(0,N_i-N_{min})&NeedSearch\\\\0&Undetermined\\end{cases}",
+    "locator": "Eq4–8/B.1"
+   }
+  ],
+  "signal_routing": "先仅F1，验证不再改善后激活边界cost。禁搜和可搜两组分别计算并归一化advantages，原文未写明确std/epsilon/token mask，不按GRPO名称推定。禁搜分支参与独立组训练而非仅打标；结果是轨迹reward，不是只给搜索token因果信用。",
+  "normalization": "per-channel",
+  "invariance": "非PBRS；成本改变目标。F1有部分分，正确轨迹扣费后可能低于接近1的部分正确，未给严格正确性优先保证。两组归一化避免混尺度不等于价格量级保留。",
+  "baseline_or_potential": "无明确baseline公式；Nmin来自可搜正确轨迹，不是状态值或势。",
+  "degenerate_cases": "n_d0/n_e0为Undetermined不收费；n_d1即使可搜成功仍不确定；全正确NoSearch可能仅剩cost差；缺自然直答支持不能靠价格创造。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3去stagewise/onpolicy；Fig6δ1/2/3/4；Table4matchedGRPO成本准确率。",
+  "negative_results": [
+   {
+    "text": "相对matchedGRPO，3B/7B/4B平均准确率分别−.7/−1.5/−.8pp。",
+    "locator": "Table4"
+   },
+   {
+    "text": "δ1进一步少搜SC1.05但ACC43.1低于默认45.8。",
+    "locator": "§4.5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若配对非劣CI不过关，或NoSearch被猜中误标导致难题漏搜，则不能满足caption+crop准确不降。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B/7B,Qwen3-4B Instruct",
+   "framework": "slime GRPO",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.001,
+   "max_search_calls": 5
+  },
+  "cost": "4+4rollouts、top3documents、maxprompt/response512；lr1e−6，1epoch，GPU时长未读到。",
+  "pitfalls": [
+   {
+    "text": "边界是完整question级，不是每个搜索后的stop-state价值。",
+    "locator": "§3.1–3.2"
+   },
+   {
+    "text": "Nmin仅少量成功轨迹最少次数，不证明再搜无效。",
+    "locator": "Eq7"
+   }
+  ],
+  "code": null,
+  "lesson": "当按必要性收费时，保持边界与当前policy同步，并分别评估搜索压缩与正确率损失；不要用较弱文献baseline隐藏matched训练对照。"
+ }
+}

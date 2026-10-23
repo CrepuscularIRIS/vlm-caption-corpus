@@ -1,0 +1,161 @@
+{
+ "paper_key": "2604.02869",
+ "title": "Multi-Turn Reinforcement Learning for Tool-Calling Agents with Iterative Reward Calibration",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2604.02869.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–4 Eqs1–2/Alg1/Tables1–4",
+   "§5 setup",
+   "§6 Tables5–7",
+   "§7/Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先测各reward tier与成功的判别力，再核标准化后实际advantage符号。",
+  "key_step": "IRC将read.3→0、state.1→−.1；GTPO discounted mixedreturn GN加.3outcomeA；反复rollout校准。",
+  "why_non_obvious": "正reward不保证正advantage；dense导致无判别力例行turn也吸收梯度；零梯度不总是坏事。",
+  "trigger_condition": "When intuitive dense rewards point updates in the wrong direction, calibrate tiers on rollout discrimination and audit final advantage signs.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "评价中间指标必须追踪到最终优化信号。",
+  "abstract_trigger_condition": "When normalization and reward mixing invert intended learning, inspect the end-to-end transformation.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "tier-outcome关联与最终A方向双检查。",
+  "abstract_why_non_obvious": "相关性不是必要性，增加非零信号可能稀释有效credit。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.02869#s1",
+   "object": "多轮tool reward与advantage",
+   "information": "训练golden actions/最终数据库GT、5952rollout统计",
+   "operation": "IRC按tier判别力校准reward并检查最终A；配GTPO hybrid",
+   "claimed_effect": "MoE sparseMT68%、dense54%、hybrid56.5%、IRC69.5%；不是严格单变量14pt因果效应",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table7 complete rows sparse/dense/hybrid/IRC",
+    "quote": "MT-GRPO V3 (sparse)         60    68.0%      +10.0     44.0%"
+   },
+   "failure_boundary": "LR/steps等变动；正文§7.1把70%gap归LR，归因百分比未见严格因果隔离。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P14",
+   "strength": 3,
+   "how": "直接审多通道标准化后的符号和奖励判别力"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "sparse GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "sparse MT-GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "dense MT-GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "GTPO hybrid",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "50airline tasks；训练/eval用户sim不同；γλ单域调参。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "ablation同时变LR/KL/steps/prompt/deep_equal，不能把全部改善归reward校准。",
+   "locator": "Tables6–7/§7.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "dense54% vs sparse68%；misaligned tiers2→0仅5952rollout模拟；4B dense57.3<base63.8。",
+  "load_bearing_assumption": "直觉正reward代表需要强化该动作，dense更多信号更好。",
+  "scope": "Tau1airline training/Tau2 50tasks tool+user conversation",
+  "success_criterion": "最终A符号/分配与独立Tau2success同时改善",
+  "why_open": "groupnorm/结果通道支配可逆转局部奖励方向，tier相关性又非因果价值。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§3 finalA分解"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4判别力/§7失败回溯"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A^{hybrid}_{i,k}=GN(\\sum_{l=k}^{K-1}\\gamma^{l-k}r_{i,l}+\\gamma^{K-k}o_i)+\\lambda GN(o_i),\\quad\\gamma=.9,\\lambda=.3",
+    "locator": "Eq2"
+   },
+   {
+    "latex": "\\rho_c=Corr(1[c\\in\\tau_i],o_i);r_c=\\alpha\\rho_c\\ \\text{if }|\\rho_c|>\\delta,\\text{ else }0",
+    "locator": "Alg1"
+   }
+  ],
+  "signal_routing": "perturn return/advantage路由对应agent turn生成tokens；user/tool response不是actor动作。多turn均按同prompt rollout比较；变长有效turn统计/mask细节未在已读范围明确，不补实现。reward calibration用最终GT/后续结果，仅训练可用。",
+  "normalization": "per-turn same-prompt group mean+std(GN)；outcome另GN，hybrid先混discountedreturn后GN。Alg1alignment检查是AI+λAO简式，不是完整Eq2return实现。",
+  "invariance": "非PBRS，discount及tier改变目标。读者代数：同组等K且仅terminal时γ^(K−k)>0经GN可抵消(epsilon除外)，不能单凭该系数声称标准化后早turn弱化。",
+  "baseline_or_potential": "groupmean；tier相关性可混任务难度/策略选择，非反事实作用。",
+  "degenerate_cases": "同turn全部return同值→GN0；稀疏dead turns可聚焦有效更新；全部错但tier差仍有proxyA，不能保证正确探索；routine read判别力0不代表读取不必要。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "5952轨迹offline方向/gradientallocation；Table4read pass50.1 fail50.0→置0；Table6/7reward历次版本。",
+  "negative_results": [
+   {
+    "text": "GTPO hybridMoE56.5仍低base58/sparse68；4B高LRIRC62.0低base；dense伤表现。",
+    "locator": "Tables6–7"
+   }
+  ],
+  "seeds": "Tau2 50tasks×4trials=200sim，greedyactor/GPT4.1 user；不是独立训练4seeds。",
+  "falsifier": "锁LR/KL/steps/prompt/matcher后IRC优势消失；或tier置换仍等效则关联校准解释受限。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3.5-4B;Qwen3-30B-A3B SFT",
+   "framework": "verl Megatron-Core",
+   "group_size": 4,
+   "max_turns": 40,
+   "kl": null
+  },
+  "cost": "8H20 96GB；batch8/maxprompt10K response45K；DeepSeekV3 simulator训练/GPT4.1eval成本未总计。",
+  "pitfalls": [
+   {
+    "text": "deep_equal排序dictlist、numeric string coercion、空值处理影响gold匹配；正文称减少23.5% falsepositive，须按任务语义核归一化。",
+    "locator": "§4.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当dense奖励看似合理但表现下降，先审最终A与matching语义，再锁训练配置，避免把优化器超参差归于credit方案。"
+ }
+}

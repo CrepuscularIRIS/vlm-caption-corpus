@@ -1,0 +1,184 @@
+{
+ "paper_key": "2409.12917",
+ "title": "Training Language Models to Self-Correct via Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2409.12917.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3/Eq1–2",
+   "4/Table1",
+   "5.1–5.3/Eq3–4",
+   "6/Table2–4",
+   "7 Limitations",
+   "A.2 discount factor",
+   "B/Table5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先固定第一尝试分布学习纠错，再逐轮强化并奖励进步",
+  "key_step": "StageI第一轮强KL、第二轮正确奖励；StageII第二轮加α(r2−r1)，用在线样本抵抗离线分布偏移",
+  "why_non_obvious": "两次都答对与真正改错同样能赢总reward，容易学成不改；纠错数据本身不足以避免行为塌缩",
+  "trigger_condition": "当离线SFT或普通多轮RL学成不改时，分阶段解耦尝试分布并扩大正确性转移信号",
+  "contribution_type": "method",
+  "abstract_strategy": "先固定第一尝试分布学习纠错，再逐轮强化并奖励进步",
+  "abstract_trigger_condition": "当离线SFT或普通多轮RL学成不改时，分阶段解耦尝试分布并扩大正确性转移信号",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "StageI第一轮强KL、第二轮正确奖励；StageII第二轮加α(r2−r1)，用在线样本抵抗离线分布偏移",
+  "abstract_why_non_obvious": "两次都答对与真正改错同样能赢总reward，容易学成不改；纠错数据本身不足以避免行为塌缩"
+ },
+ "signatures": [
+  {
+   "sig_id": "2409.12917#s1",
+   "object": "两次尝试的同一LLM",
+   "information": "训练GT/答案checker或测试用例；测试仅自己的前答案+固定纠错指令，无oracle反馈",
+   "operation": "在线REINFORCE双阶段KL与第二轮progress bonus，所有实验γ0",
+   "claimed_effect": "MATH t1/t2 60.0/64.4、净+4.4；base52.6/41.4净−11.2；正确改错15.8%→1.4%",
+   "conditions": [
+    "Gemini1.5Flash MATH",
+    "Gemini1.0Pro MBPP→HumanEval",
+    "固定两轮训练"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "SCoRe (Ours)                                       60.0%        64.4%         4.4%               5.8%               1.4%"
+   },
+   "failure_boundary": "净纠错提升并非第一轮保真保证；HumanEval t1 53.7→52.4",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2409.12917#s2",
+   "object": "跨轮训练信用",
+   "information": "即时每轮reward",
+   "operation": "γ=0",
+   "claimed_effect": "明确不使用第二轮reward-to-go训练第一轮；γ.8/α1实验仍非纠错塌缩",
+   "conditions": [
+    "所有主实验"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "A.2",
+    "quote": "In all of our experiments, we used only the instantaneous reward in our policy gradient objective, which\nis equivalent to returns with discount factor 𝛾 = 0. We additionally investigated whether leveraging"
+   },
+   "failure_boundary": "共享参数仍可能影响第一轮表现",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P27",
+   "how": "避免改错行为稀少和不改塌缩",
+   "strength": 3
+  },
+  {
+   "problem": "P50",
+   "how": "净纠错必须分解错→对与对→错，并保第一轮指标",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Pair-SFT / STaR / Self-Refine",
+   "kind": "method"
+  },
+  {
+   "name": "single turn / no StageI / no shaping",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "Pair-SFT净纠错1.8%，加correct→correct后两次55.0/55.0、转换0；可学不改",
+  "load_bearing_assumption": "保持第一轮近base可给第二轮稳定错误覆盖，避免两轮同解塌缩",
+  "scope": "两轮内生自纠错，无新视觉/工具反馈",
+  "success_criterion": "同时报告t1,t2及错→对/对→错，胜同计算平行采样",
+  "why_open": "长轮数、视觉新增信息与stop尚未验证"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§5 stages"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J_I=\\mathbb E[r_2-\\beta_2 KL_1]\\quad\\text{plus default small KL penalties}",
+    "locator": "Eq3/§5.1"
+   },
+   {
+    "latex": "\\widetilde r_1=r_1,\\quad \\widetilde r_2=r_2+\\alpha(r_2-r_1),\\quad\\alpha=10,\\quad\\gamma=0",
+    "locator": "§5.2 / A.2 / Table5"
+   },
+   {
+    "latex": "J_{II}=\\mathbb E\\left[\\sum_{i=1}^2\\widetilde r_i-\\beta_1 KL_i\\right]",
+    "locator": "Eq4 with §5.2 shaping"
+   }
+  ],
+  "signal_routing": "REINFORCE按各尝试即时奖励，A.2明确γ=0；第二轮shaped reward不作为return回传第一轮动作。StageI第一轮强KL不是token冻结，还保留默认小KL；StageII两轮各自奖励+小KL。共享参数会间接影响两轮，但非第二轮奖励直接信用路由。",
+  "normalization": "other",
+  "invariance": "未见组mean/std或RLOO baseline公式，不能从引用算法名补；非严格PBRS，进步bonus与γ0改变两轮目标，不保证原最优或第一轮正确率。",
+  "baseline_or_potential": "固定reference KL；具体REINFORCE variance baseline未说明。部分实验加入base第一轮offline prompt扩大状态覆盖，不等于对旧完整轨迹无校正PG。",
+  "degenerate_cases": "全错两轮均0无结果进步信号；全对r2bonus0但结果仍1；错→对第二轮11，对→错−10。高权重若回传首轮会诱发先错，但本实现γ0避免该直接通道；共享参数仍无严格保护。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4无StageI t2 61.4，无shaping62.6，完整64.4；单轮训练t1 61.8但t2 59.4。A.2 γ.8/α1仍塌缩。",
+  "negative_results": [
+   {
+    "text": "HumanEval t1 52.4低于base53.7，虽然t2 64.6高于56.7。",
+    "locator": "Table3"
+   },
+   {
+    "text": "仅训练两次尝试，更多次仍可能分布漂移/平台。",
+    "locator": "§7/A.1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同两轮预算改善仅来自更高first-pass，或对→错增加抵消错→对，则未学有效纠错。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Gemini1.5Flash MATH / Gemini1.0Pro MBPP",
+   "framework": "REINFORCE, Adam",
+   "group_size": null,
+   "max_turns": 2,
+   "kl": 0.01
+  },
+  "cost": "MATH3000steps batch512，MBPP1500steps batch128；StageI β2 .1/.25，卡时未见",
+  "pitfalls": [
+   {
+    "text": "总目标写sum不代表实现跨轮reward-to-go；必须以A.2 instantaneous γ0限定。",
+    "locator": "A.2"
+   },
+   {
+    "text": "引用REINFORCE不确定其baseline/normalization实现；不补GRPO公式。",
+    "locator": "§3"
+   }
+  ],
+  "code": null,
+  "lesson": "当多轮奖励有“先错再改”激励时，核清未来奖励是否真的回传前轮；先保护初始分布再训练纠错不等于永久保直答。"
+ }
+}

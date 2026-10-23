@@ -1,0 +1,154 @@
+{
+ "paper_key": "2510.12838",
+ "title": "A2FM: An Adaptive Agent Foundation Model for Tool-Aware Hybrid Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.12838.txt",
+  "sections_read": [
+   "Abstract",
+   "3",
+   "4 setup/Table1/efficiency",
+   "5 analyses/Fig6",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "三模式route-then-align SFT，APO每模式强制采3条再自然路由3条；按instant成功与成本倾向奖励自然路由。",
+  "why_non_obvious": "强制探索保障mode支持，但强制prefix本身不训练router，需自然rollout补路由梯度。",
+  "trigger_condition": "When reasoning/tool modes overtake direct answers, preserve mode coverage and learn routing with mixed forced and adaptive rollouts.",
+  "contribution_type": "routing plus training",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When capability modes require different costs, separate routing from mode execution and cover every mode during learning.",
+  "abstract_key_step": "强制mode prefix与自然分类并采。",
+  "abstract_why_non_obvious": "执行能力和自然路由可分离失败。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.12838#s1",
+   "object": "instant/reasoning/agentic trajectories",
+   "information": "模式成功率、LLMjudge、format、自然分类",
+   "operation": "每prompt3×3强制+3自然；easy正确非instant乘1−p²",
+   "claimed_effect": "SuperGPQA cost/pass .00889 reasoning/.00732 agentic→.00487 adaptive；聚合accuracy53.8 vsbest-mode55.4，noninstant77.1%。",
+   "conditions": [
+    "Qwen2.5-32B",
+    "12rollout",
+    "KL0"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "5 Analysis",
+    "quote": "average accuracy of 53.8% with a non-instant ratio of 77.1%"
+   },
+   "failure_boundary": "不是严格不降；GAIA57.3<agentic60.7；p原文定义为all forced成功率，不是仅instant率。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P29",
+   "how": "明确强制分支支撑与自然路由联合训练。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "三mode SFT为后续RL提供support。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "forced single modes",
+   "kind": "routing ablation"
+  },
+  {
+   "name": "Best Mode oracle",
+   "kind": "diagnostic"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "正确率/成本tradeoff并非非劣保证；强制注入与自然mode存在分布差。",
+   "locator": "Fig6; reader"
+  },
+  {
+   "text": "成本按token单价估计，未证明包含工具API/latency费用。",
+   "locator": "4.3"
+  }
+ ],
+ "question": {
+  "observed_failure": "GAIA adaptive57.3 vsagentic60.7，聚合53.8 vsoracle55.4。",
+  "load_bearing_assumption": "能通过任务状态选择最小足够mode且保留各mode能力。",
+  "scope": "三模式共享32B backbone",
+  "success_criterion": "减少noninstant比例同时逐任务监测accuracy",
+  "why_open": "routing标签和实际mode边际收益不是同一对象。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "3.2–3.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "G=3*rho+gamma; r_total=r_acc*r_adaptive*r_format; r_adaptive=1-p^alpha if easy and noninstant else 1",
+    "locator": "3.3"
+   },
+   {
+    "latex": "J=E[mean_rollout mean_token min(ratio*Ahat,clip(ratio)*Ahat)]",
+    "locator": "APO objective; Ahat unspecified"
+   }
+  ],
+  "signal_routing": "强制classification prefix与tool response都mask出loss；自然classification tokens可获trajectory reward。强制mode和自然mode合组计算Ahat；具体mean/std未给。",
+  "normalization": null,
+  "invariance": "非PBRS。错/format错reward0，easy非instant缩reward；若组只含同mode且缩放相同并std将取消，跨mode组可产生差异，后者是读者条件分析。",
+  "baseline_or_potential": "无显式value；Ahat baseline未给；p=all forced成功率，easy判据另用instant率>τ。",
+  "degenerate_cases": "全错/format错总0；instant无成功则hard不罚非instant；p1时easy非instantreward0。自然router塌缩时强制mode仍有执行训练但router只由自然样本更新。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "forced-vsadaptive mode Fig6，routing标签准确率与训练accuracy/noninstant曲线；未见独立去forced sampling实验。",
+  "negative_results": [
+   {
+    "text": "GAIA57.3低于agentic60.7；HLE16.7低于agentic20.6。",
+    "locator": "Fig6;4.3"
+   },
+   {
+    "text": "作者称AIME24 adaptive超过single又随后明确matchesreasoning，图为76.7均相同。",
+    "locator": "5; Fig6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：同sampling数量去forced分支后检查直答支持；若无差异不能归因forcedcoverage。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-32B-Instruct",
+   "framework": "route-then-align SFT/APO",
+   "group_size": 12,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "SFT3epochs batch256 max32768；APO2epochs batch128 lr1e-6，rollout65536；inference131072。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当强制prefix保障分支覆盖时，单独统计自然首决策和prefix后的能力，避免把强制分支成功当router恢复。"
+ }
+}

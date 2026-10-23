@@ -1,0 +1,64 @@
+{
+ "paper_key": "2505.11821",
+ "title": "Reinforcing Multi-Turn Reasoning in LLM Agents via Fine-Grained Reward Structure and Credit Assignment",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.11821.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3–5 pp3–6 Eq1–5",
+   "§6/Table3 pp6–8; §7 partial",
+   "AppA.1–A.2 pp12–13 targeted judge information/reward"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "区分仅terminal、合并后delayed、逐turn注入奖励；GRPO需同状态分支标准化，PPO在turn末token注入reward经GAE传播。",
+  "why_non_obvious": "同一回报的不同时间分布与把turn切成独立样本不是同一操作，后者能高过程分低最终成功。",
+  "trigger_condition": "已有可靠过程信号但trajectory统一优势不能定位交互贡献。",
+  "contribution_type": "奖励时间结构与信用分配对照",
+  "abstract_strategy": "固定奖励信息，比较时间路由及轨迹保留方式。",
+  "abstract_trigger_condition": "长轨迹的局部信号与最终目标可能脱节。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.11821#s1",
+   "object": "多轮搜索PPO",
+   "information": "GPT-OSS-120B judge看到问题、GT与多轮response",
+   "operation": "turn末token加过程reward，最终token给结果reward，整条轨迹GAE；retrieved tokens policy-mask",
+   "claimed_effect": "Table3 MT-PPO平均EM .447，PPO-OR .432；turn-decomposed MT-PPO仅.293。",
+   "conditions": [
+    "Qwen2.5-7B",
+    "七数据集（表标题误称six）",
+    "部分基线抄原论文，不是全部同一次重跑"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p8",
+    "quote": "MT-PPO (ours)                                                 0.490                        0.647                  0.459            0.453        0.424       0.209         0.445       0.447"
+   },
+   "failure_boundary": "judge奖励不是同状态有/无工具因果价值；benchmark高分不能证明效率或必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "显式比较trajectory统一优势与turn/token GAE路由。"
+  },
+  {
+   "problem": "P20",
+   "strength": 3,
+   "how": "环境retrieval token不参与policy loss，reward插在turn末。"
+  },
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "GT-aware过程judge可提供局部信号，也可能奖励表面格式/答案包含。"
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,58 @@
+{
+ "paper_key": "2603.08754",
+ "title": "Hindsight Credit Assignment for Long-Horizon LLM Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2603.08754.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§4.1–4.3 Eq5–8",
+   "§6.2/Table1",
+   "§7 limitations",
+   "Appendix Algorithm1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "用同LLM在给定成功结局下的动作token似然构造hindsight proxy，再加到原trajectory GRPO优势。",
+  "why_non_obvious": "实际把trajectory内其他动作平均似然作prior替代，不是真实h(a|s,R)/π(a|s)的Bayes精确比。",
+  "trigger_condition": "当稀疏终奖难区分关键动作时，保留macro终奖，并测试hindsight相对评分作micro辅助。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "当稀疏终奖难区分关键动作时，保留macro终奖，并测试hindsight相对评分作micro辅助。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.08754#s1",
+   "object": "长程agent动作优势",
+   "information": "训练后验prompt包含成功状态；同模型length-normalized token likelihood，不执行反事实后续",
+   "operation": "πhind=exp(mean token logp/Ttemp)，ρ=clip(πhind/本轨迹动作均值)；QH=ρ γ^(T−t)R；A=group-zscore(R)+ω group-at-t-zscore(QH)",
+   "claimed_effect": "7B ALFWorld91.4 vsGRPO77.6，WebShop成功73.8 vs66.1；三seed。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§6.2 main results",
+    "quote": "HCAPO reaches an overall success rate of 91.4%, surpass-\n6.1. Experiment Setup\n                                                                     ing GRPO’s 77.6% by 13.8 points and slightly exceeding\nBenchmarks. To ensure a rigorous comparison, our ex-                 GiGPO (90.8%). Similar gains are observed at 1.5B (87.0%\nperimental setup and benchmarks follow all the configura-            vs. 72.8% for GRPO). On WebShop, HCAPO improves\ntions in GiGPO (Feng et al., 2025). We first evaluate on             both evaluation metrics: at 7B, the average Score rises from\nALFWorld (Shridhar et al., 2020), an embodied environ-               79.3 to 85.1 and the Success Rate from 66.1 to 73.8; at 1.5B,\nment assessing multi-step reasoning across six categories of         Score increases from 75.8 to 83.8 and Success Rate from"
+   },
+   "failure_boundary": "跨时间/状态动作均值不是同状态prior；成功结局prompt为OOD，分数依赖base推理，不能宣称因果过滤器已校准。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "micro辅助加到macro而非替代终答，动作组基线仍跨状态。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "自模型hindsight代理仍不等于当前actor反事实收益。"
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,158 @@
+{
+ "paper_key": "2605.30451",
+ "title": "VeriGate: Verifier-Gated Step-Level Supervision for GRPO",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.30451.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "2 degeneracy",
+   "3.1–3.4 Eq1–3/Proposition3.1",
+   "4 Tables2–3/gate-cumulation ablations",
+   "6/A limitations",
+   "B Tables5–6",
+   "E invariance proof"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "conditional_fallback_supervision",
+  "key_step": "mixed verifier组保GRPO，仅全错组启用PRM；把每步分数做未来累加后跨组所有步骤标准化，再映射到对应token。",
+  "why_non_obvious": "可靠终局信号不应被PRM覆盖；但全错时可借外部过程信号恢复梯度，并须区分恢复梯度与恢复真实能力。",
+  "trigger_condition": "When all verifier outcomes are zero, use normalized process continuation signals as a fallback while retaining verifier-only updates on mixed groups.",
+  "contribution_type": "method",
+  "abstract_strategy": "conditional_fallback_supervision",
+  "abstract_trigger_condition": "When all verifier outcomes are zero, use normalized process continuation signals as a fallback while retaining verifier-only updates on mixed groups.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "mixed verifier组保GRPO，仅全错组启用PRM；把每步分数做未来累加后跨组所有步骤标准化，再映射到对应token。",
+  "abstract_why_non_obvious": "可靠终局信号不应被PRM覆盖；但全错时可借外部过程信号恢复梯度，并须区分恢复梯度与恢复真实能力。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.30451#s1",
+   "object": "全错组GRPO过程信用",
+   "information": "math-verify终局reward、外部PRM每步评分",
+   "operation": "全错gate→future step reward sum→group-step mean/std→step token A；全对不启用",
+   "claimed_effect": "1.5B AMC15.10→27.71、Math50039.8→41.6；去gate AMC7.23/Math34，去future累加AMC21.69/Math38.4",
+   "conditions": [
+    "Qwen2.5Instruct",
+    "QwenMathPRM7B",
+    "数学格式双换行分步"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "VeriGate (Ours)                 0.00 (+0.00%) 27.71 (+83.51%) 72.10 (+1.39%) 41.60 (+4.52%) 9.93 (+35.10%) 15.50 (+1.37%)"
+   },
+   "failure_boundary": "1.5B不胜全部基线；PRM偏差与长度偏好未被一般消除",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P07",
+   "how": "区分全错缺梯度与已有正确监督；给辅助信号设置严格gate。",
+   "strength": 3
+  },
+  {
+   "problem": "P44",
+   "how": "有外部过程监督但不能当GT视觉grounding，reward hacking保护有窄条件。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "同一步token同A，跨步按未来过程分数区别。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO, DrGRPO, DAPO, PRM-as-ORM, no gate/futurecumulation",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "系统性PRM偏差仍影响退化组。",
+   "quote": "reduces reliance on imperfect PRMs, systematic PRM biases can still affect updates on degenerate prompts.\nThe method also inherits the model’s step segmentation, so poor segmentation can weaken credit assignment.",
+   "locator": "§6"
+  }
+ ],
+ "question": {
+  "observed_failure": "1.5B PRM-as-ORM Math14.2远低GRPO39.8；VeriGate41.6。",
+  "load_bearing_assumption": "PRM在全错组仍含有用相对过程信号，且分步边界正确。",
+  "scope": "数学推理，未验证工具调用或视觉crop。",
+  "success_criterion": "跨PRM与终局正确率共同改善，不能只看非零梯度或PRM分数。",
+  "why_open": "全错GRPO无reward梯度；直接PRM总分可被投机。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "c_{i,j}=\\sum_{k=j}^{S_i}r^{PRM}_{i,k},\\quad\\bar c=\\frac{\\sum_i\\sum_jc_{i,j}}{\\sum_i S_i},\\quad A_{i,j}=\\frac{c_{i,j}-\\bar c}{\\sigma(c)}",
+    "locator": "Eq1–3"
+   },
+   {
+    "latex": "\\tilde A_{i,j}=\\begin{cases}A_i^{GRPO}&\\text{mixed outcomes}\\\\A_{i,j}^{PRM}&r_1=\\cdots=r_G=0\\\\0&r_1=\\cdots=r_G=1\\end{cases}",
+    "locator": "§3.1/3.4; all-correct text rule"
+   }
+  ],
+  "signal_routing": "PRM只在全错组替代退化优势；每步对应所有生成token共享累积c标准化A。baseline和std按组内步骤均匀统计，非按token长度加权；不是对每条response分别标准化。外部PRM不提供新的观测像素或真动作收益。正文仅替换advantage，完整loss分母/mask未展开。",
+  "normalization": "mean+std",
+  "invariance": "不是PBRS。证明只对累积c作prompt-wise a*c+b且a>0、σ非零成立；原始step r整体加b会令c增加(剩余步数)*b，并非统一平移，因此不受该定理保护。归一化不等于免疫排序依赖hack；常量正PRM可仅因剩余步数给早步正优势。",
+  "baseline_or_potential": "prompt组全部step累积c平均，无learned critic。",
+  "degenerate_cases": "全错可得PRM梯度但σ(c)0仍未给fallback；全对不PRM且rewardPG0；p0不保证PRM创造正确路径；单步退化为组PRM标量比较。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2去gate与去futurecumulation；Table3换较弱MathShepherd；E检查仿射变换的实际作用对象。",
+  "negative_results": [
+   {
+    "text": "1.5B AIME0低于DrGRPO3.3，Math41.6低于DrGRPO44.4；不能说所有基线全胜。",
+    "locator": "Table2"
+   },
+   {
+    "text": "系统PRM偏差仍影响全错组，分步格式错误削弱信用。",
+    "locator": "§6/A"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若常数/打乱PRM也保留相近提升，或跨独立终局验证无增益，则不是正确过程信用；视觉迁移需独立验证过程标签。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5Instruct1.5B/7B；QwenMathPRM7B/MathShepherd",
+   "framework": "math-verify；训练框架未在已读设置明确",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": 0
+  },
+  "cost": "1.5B900steps、7B800steps，7BLoRA64alpha128；maxPRM16steps、\n\n分割，PRMseparator<extra_0>；GPU时长未知。",
+  "pitfalls": [
+   {
+    "text": "group统计是步骤权重，而tokenloss会进一步按步token数分配；勿混为每token统计。",
+    "locator": "Eq2–3"
+   },
+   {
+    "text": "恢复非零梯度不是保证信息正确；必须独立监控终局。",
+    "locator": "§4/6"
+   }
+  ],
+  "code": null,
+  "lesson": "当引入外部过程分数补全错组时，明确gate和归一化作用域，并用常数/打乱过程信号排除长度与格式伪奖励。"
+ }
+}

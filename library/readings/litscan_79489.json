@@ -1,0 +1,130 @@
+{
+ "paper_key": "litscan:79489",
+ "title": "CVSearch",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_79489.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§4 Eqs2–5",
+   "Tables1/5/6",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先自评信息充分性，再SAM3专家，失败时语义分块自底向上搜索。",
+  "key_step": "复用SAM特征聚类，按复杂度/目标存在概率/子节点优先级搜索并衰减停止阈值。",
+  "why_non_obvious": "专家效率与扫描覆盖互补，但停止依赖未校准自评。",
+  "trigger_condition": "When global evidence is insufficient and expert proposals fail, scan semantic patches bottom-up.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "廉价策略失败后升级到覆盖更广的搜索。",
+  "abstract_trigger_condition": "When a fast specialist misses targets, reuse its features for a fallback search.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "failure-aware switching",
+  "abstract_why_non_obvious": "搜索覆盖与停止准确性必须分别检验。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79489#s1",
+   "object": "高分辨率推理搜索",
+   "information": "推理图像/query、SAM3特征与本模型Yes概率，无GT",
+   "operation": "充分性门→专家→语义树bottom-up，低复杂度剪枝",
+   "claimed_effect": "Qwen2.5VL7B V*71.2→90.1；HR8K65.3→75.6",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen2.5-VL-7B w/CVSearch row; columns V* attr/spatial/overall, HR4K FSP/FCP/overall, HR8K FSP/FCP/overall",
+    "quote": "-w/ CVSearch                              93.0       85.5         90.1     91.5   61.8     76.6     90.0   61.3     75.6"
+   },
+   "failure_boundary": "是外挂推理搜索，无训练advantage；自评置信度非因果必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P21",
+   "strength": 2,
+   "how": "自评停止/搜索升级规则可作caption后是否crop的推理基线。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SAM3/ZoomEye/RAP/rigid grid/top-down",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仍慢于单次VLM和专家；只核SAM3专家泛化未知。",
+   "locator": "Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "SAM3 V*84.3，CV90.1；吞吐3.60→1.02 sample/min。",
+  "load_bearing_assumption": "专家候选足够覆盖目标，或规则网格不损语义。",
+  "scope": "HR图像问答推理期",
+  "success_criterion": "精度/吞吐与分块搜索组件消融",
+  "why_open": "小对象专家漏检与网格切碎目标。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table6"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "c_q=P(Yes|p_q,I);k^*=argmin_k[L_o(B_k)-L_s(H_a,l_k)];c_v=max(0,1-|R|^{-1}\\sum_i cos(h_i,\\bar h));c_x=\\alpha c_v+\\beta c_o+\\gamma\\max_{child}c_x",
+    "locator": "Eqs2–5"
+   }
+  ],
+  "signal_routing": "推理控制规则，无token训练信号。专家覆盖以检测目标数量严格匹配为条件；该规则非GT存在验证。",
+  "normalization": "other：平均cosine和模型token概率，非advantage/std。",
+  "invariance": "非PBRS，无训练目标不变性论证。",
+  "baseline_or_potential": "无critic。",
+  "degenerate_cases": "过度自信提前停；平滑小目标低复杂度被剪；语义聚类框仍可能重叠；深层失败回第一层最优候选继续，原子区域终止。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table6分块与top/down对照；Table5精度吞吐。",
+  "negative_results": [
+   {
+    "text": "full HR4K76.6低于bottom-up简版76.8；HR8K75.6低于RAP76.0；SGAP+topdown HR4K72.3低于rigid73.5。",
+    "locator": "Tables5–6"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "匹配搜索次数/总token后普通网格同效，则语义分块收益解释削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/LLaVAOV7B/InternVL2.5 8B +SAM3",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "Table5单GPU；V*吞吐baseline8.30→1.02/min，不能称比直答省算力。GPU型号/阈值具体值未读。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当外挂搜索宣称高效时，以单次基线和同搜索预算分别比较，并测自评停止校准。"
+ }
+}

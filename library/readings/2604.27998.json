@@ -1,0 +1,62 @@
+{
+ "paper_key": "2604.27998",
+ "title": "Latent-GRPO: Group Relative Policy Optimization for Latent Reasoning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2604.27998.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.4 Eq9–22",
+   "Table1",
+   "§4.4 pass@k discussion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "从Latent-SFT起步，构造固定Gumbel目标的latent surrogate，并用valid mask和first-token trajectory selection稳定RL。",
+  "why_non_obvious": "latent表示没有现成离散token概率；本文用辅助随机分数并修改反向梯度，不能当精确latent密度。",
+  "trigger_condition": "当连续latent rollout的概率与探索不稳定时，区分概率surrogate、有效样本支持和首步分叉控制。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "generative_process_redesign",
+  "abstract_trigger_condition": "当连续latent rollout的概率与探索不稳定时，区分概率surrogate、有效样本支持和首步分叉控制。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.27998#s1",
+   "object": "latent+text混合trajectory策略更新",
+   "information": "旧policy固定perturbed logprob target、终答正确性、EOS预算有效性；无额外真实视觉观测",
+   "operation": "有效L<Lmax样本内reward mean/std，invalid A=0；固定g*=logpold+ξ+，Δ=g*−logpθ；Δ<0反向导数翻转；只保留最高平均surrogate得分成功轨迹的first-latent-token正梯度，其他token继续训练",
+   "claimed_effect": "Table1低难度任务平均58.32，较Latent-SFT+7.86pp；平均长度21.20，较Explicit-GRPO短4.44倍。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Latent-GRPO row",
+    "quote": "Latent-GRPO    66.29     23.80    15.83     28.00      56.50    15.80     94.65    17.20    58.32     21.20      +7.86     4.44×"
+   },
+   "failure_boundary": "surrogate与FlipGrad不是无偏PG/真实latent density；噪声提高pass@k但损害pass@1，确定性latent重复输出不能解释为多样采样。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "latent噪声和首步成功路径选择改变探索与坍缩。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "混合latent/text surrogate及首token mask提供信用路由对照。"
+  },
+  {
+   "problem": "P38",
+   "strength": 2,
+   "how": "EOS有效性过滤与长度归一化改变训练支持。"
+  }
+ ],
+ "scientific_replication": false
+}

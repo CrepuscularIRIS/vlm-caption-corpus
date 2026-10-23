@@ -170,7 +170,7 @@
   "observed_failure": "作者Table 1中Qwen2.5-VL-3B在MMMUval为48.33%，OpenManus为50.67%；§5.4单轮基线34.21%。这些是作者用于动机的任务结果，不是已经隔离出的caption瓶颈率；Table 5子集标注存在冲突。",
   "load_bearing_assumption": "一次静态描述或统一视觉-语言处理足以给文本推理者提供所需信息；作者用可反馈的翻译接口替换固定信息瓶颈。",
   "scope": "知识密集VQA中小VLM/文本LLM两代理推理接口，四类benchmark；不研究GRPO训练或逐token信用。",
-  "success_criterion": "以作者报告的VQA分数及每题token价格成本比较小型模块系统与端到端/代理基线；本课题迁移还需独立检查caption事实正确、错误选项映射和crop成本。",
+  "success_criterion": "[redacted: project-internal]",
   "why_open": "作者指出静态caption缺乏交互，既有动态工具通常传自由文本历史或仍耦合在单体VLM，不能直接接入更强文本推理者。"
  },
  "question_quality": {
@@ -286,7 +286,7 @@
   "cost": "Table 3 MMMUval每题，按论文当时Qwen价格估算：32B best-of-3输入$0.003198+输出$0.009072=总$0.01227、60.67%；SeeingEye平均输入$0.0090+输出$0.0026=总$0.0116、60.78%；中位总$0.0101。不把历史价格当当前成本；未给GPU·h、延迟、工具单独成本、raw token总量及方差。三层cap不等于严格与best-of-3等算力，选择best-of-3规则未充分说明。",
   "pitfalls": [],
   "code": "https://github.com/ulab-uiuc/SeeingEye",
-  "lesson": "当文本推理者缺少特定视觉事实时，可将缺口明确返回给视觉观察者并增量更新记录；要先用等预算反馈负对照与事实核查验证收益，不能把更高信心直接当必要裁图标签。后半为本课题推断。"
+  "lesson": "[redacted: project-internal]"
  },
  "relevance": [
   {
@@ -306,7 +306,7 @@
   },
   {
    "problem": "P34",
-   "how": "使用confidence>=0.9或>90%提示和low/mid/high自报标签；未给AUROC/校准曲线，不解决本课题校准门槛。",
+   "how": "[redacted: project-internal]",
    "strength": 1
   },
   {

@@ -1,0 +1,62 @@
+{
+ "paper_key": "2610.12601",
+ "title": "Reflective Prompt Optimization of a Deep-Research Agent: A Topic-Disjoint, Multi-Seed Protocol for Measuring Transferable Gains and Prompt-Level Overfitting",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_html",
+  "locator": "2610.12601.txt",
+  "sections_read": [
+   "localHTML Abstract",
+   "§1",
+   "§3.1–3.6",
+   "available§4.1–4.6",
+   "available§5 (truncated)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "GEPA优化研究agent两systemprompts，用topic-disjoint、多seed和verifier单变量对照分离迁移与验证选择噪声。",
+  "key_step": "冻结候选后在新topic与同topic原题复测，并把优化结果统一用canonical verifier重评分。",
+  "why_non_obvious": "提示含答案并不证明答案记忆带来验证收益；验证−测试差也不是记忆量的可靠估计。",
+  "trigger_condition": "When prompt optimization can copy training facts, test topic-disjoint transfer and ablate verifier feedback before attributing gains to memorization.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "分离可见泄题内容、实际利用和选择噪声，用独立评测与受控反馈对照。",
+  "abstract_trigger_condition": "When prompt optimization can copy training facts, test topic-disjoint transfer and ablate verifier feedback before attributing gains to memorization."
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.12601#s1",
+   "object": "two-systemprompt GEPA optimization",
+   "information": "24train/24validation，topic分别12，heldout500tasks254topics；240metriccalls",
+   "operation": "topic-disjoint与3独立optimizerseed评估；pairedtaskbootstrap",
+   "claimed_effect": "heldout .702→.781，Δ.079，CI[.051,.107]；3seed平均+.107。287win147loss66tie，非逐题无回归。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Abstract; §4.2",
+    "quote": "Held-out citation reward rises by 0.079, from 0.702 to 0.781,"
+   },
+   "failure_boundary": "HTML公式/表缺失、4.6和5截断；不能独立核手写recipe与out-of-familyjudge完整结果。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P45",
+   "strength": 3,
+   "how": "多optimizerseed与独立topic评测，taskbootstrap非training方差替代。"
+  },
+  {
+   "problem": "P47",
+   "strength": 3,
+   "how": "24题验证选择噪声不能以gap直接宣称记忆。"
+  },
+  {
+   "problem": "P50",
+   "strength": 2,
+   "how": "可见答案记忆与实际reward利用需干预区别。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

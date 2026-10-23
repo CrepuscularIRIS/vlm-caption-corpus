@@ -1,0 +1,59 @@
+{
+ "paper_key": "litscan:3599",
+ "title": "ϕ-Decoding: Adaptive Foresight Sampling for Balanced Inference-Time Exploration and Exploitation",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3599.txt",
+  "sections_read": [
+   "Abstract; §2.2–2.3 Eq2–11",
+   "Table1; §4.1 Table2; §6 conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用未来模拟路径的概率变化和聚类一致性联合选下一推理step，并在候选宽度与向前规划深度上剪枝。",
+  "key_step": "对beam候选续写foresight；A=F_t−F_t−1，C=所属cluster占比；各自softmax再相加形成采样评分；低置信候选过滤，最大cluster≥.7后转普通自回归。",
+  "why_non_obvious": "生成高概率不保证正确，额外候选一致性与未来模拟可互补；但一致性也不是真值。",
+  "trigger_condition": "无训练的推理时算力预算允许局部lookahead，希望在每step规划与直接续写之间自适应切换。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "联合绝对置信变化与群体一致性，按共识提前终止昂贵搜索。",
+  "abstract_trigger_condition": "无训练的推理时算力预算允许局部lookahead，希望在每step规划与直接续写之间自适应切换。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3599#s1",
+   "object": "候选reasoning step及其模拟未来",
+   "information": "模型自生成foresight平均logprob、同层语义cluster、候选本身置信度",
+   "operation": "双softmax归一评分加和，按Eq3重加权采样；宽度µ−σ阈值和深度cluster .7阈值剪枝",
+   "claimed_effect": "Llama3.1-8B Table1六任务平均59.53、FLOPS6.43×10^17；CoT44.91/1.34×10^16，去cluster57.56，去pruning57.85/8.00×10^17。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2 Eq3–11; Table1 p13219; Table2 p13220",
+    "quote": "ϕ-Decoding              86.58       38.20        34.60      64.00       48.39   85.41   59.53    6.43 × 1017"
+   },
+   "failure_boundary": "节省相对其他搜索，不是比普通CoT便宜；一致错误可触发提前转直接生成，未证明global optimum。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "按候选一致性停止额外规划，可作继续思考/停止的启发式比较。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "直接暴露置信度与正确性不同，需要验证cluster共识是否校准。",
+   "strength": 2
+  },
+  {
+   "problem": "P58",
+   "how": "foresight成本高，必须比较总生成与搜索算力。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

@@ -1,0 +1,168 @@
+{
+ "paper_key": "litscan:79182",
+ "title": "Correcting Visual Blur Induced by Attention Distraction to Reduce Hallucinations: Algorithm and Theory (AFIP)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79182.txt",
+  "sections_read": [
+   "Abstract",
+   "4",
+   "5 theorem statements",
+   "6 Tables 1–3",
+   "7",
+   "Appendix D.2–D.3"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "以跨head均值减方差和最相关历史token的视觉attention修正后层pre-softmax视觉logits，用text-minus-visual max gap门控。",
+  "why_non_obvious": "不均匀强推图像：当文本过度主导时关闭纠正，以免破坏结构token和EOS。",
+  "trigger_condition": "When head disagreement and temporal visual decay accompany hallucination, selectively correct visual attention logits.",
+  "contribution_type": "inference operator",
+  "abstract_strategy": "architectural_operator_substitution",
+  "abstract_trigger_condition": "When a global evidence boost damages generation, gate an internal operator by context.",
+  "abstract_key_step": "将空间一致性和历史证据注入同一attention更新。",
+  "abstract_why_non_obvious": "增强视觉与保留文本生成的需求互相冲突。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79182#s1",
+   "object": "解码视觉attention",
+   "information": "当前QK logits；top-k响应head；最近8步视觉attention",
+   "operation": "在中后层按Eq12加head一致性与历史项；gap低于τ才启用",
+   "claimed_effect": "五模型CHAIR平均CS 46.9→17.5、CI13.3→5.9；LLaVA7B CS55.4→16.8。",
+   "conditions": [
+    "greedy",
+    "max new tokens512",
+    "CHAIR"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 1",
+    "quote": "17.5       5.9"
+   },
+   "failure_boundary": "未新增图像证据；attention相关性不是crop边际价值，理论界也不是实际幻觉率保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "how": "caption阶段内部视觉grounding干预可迁移，未涉及RL信用。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "max attention gap为弱诊断，ROC仅0.62/0.65。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Greedy",
+   "kind": "decoding"
+  },
+  {
+   "name": "HGAI",
+   "kind": "attention"
+  },
+  {
+   "name": "MemVR",
+   "kind": "hidden-state"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "gate识别幻觉AUROC仅0.62/0.65，不能当必要看图分类器。",
+   "locator": "Fig.5"
+  },
+  {
+   "text": "作者称无额外推理延迟，所读部分未提供计时表；不视为实测零成本。",
+   "locator": "7"
+  }
+ ],
+ "question": {
+  "observed_failure": "CHAIR五模型greedy CS46.9/CI13.3；去head纠正使LLaVA7B CS从16.8恶化49.6。",
+  "load_bearing_assumption": "持续grounding需要跨head一致性与历史视觉保持。",
+  "scope": "已有视觉tokens的caption解码",
+  "success_criterion": "降低CHAIR且不损害POPE/流畅性",
+  "why_open": "单纯提高全部视觉注意力可能重复输出。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table 4"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Avg_i=(1/H)sum_{h in H_k}B_h(i); Var_i=(1/H)sum_{h in H_k}(B_h(i)-Avg_i)^2",
+    "locator": "Eq.6; denominator as printed"
+   },
+   {
+    "latex": "Btilde_h(i)=B_h(i)+1[Tmax_h-Vmax_h<tau]*(Avg_i-alpha*Var_i+gamma*C_{t-1-r_h}(i))",
+    "locator": "Eqs.9–12"
+   }
+  ],
+  "signal_routing": "仅l∈[le,L]的视觉token pre-softmax scores；head选取按max absolute visual response；历史索引由最近8文本token中当前attention最大者选定。无训练奖励。",
+  "normalization": "other: QK/sqrt(d); Eq6 1/H over selected top-k heads; then attention softmax. 未读到固定α/γ/k/τ值。",
+  "invariance": "非PBRS、不保持原生成分布；在同一head所有key同时平移softmax不变，但本文只修视觉keys。",
+  "baseline_or_potential": "跨head统计不是RL baseline；历史attention不是potential。",
+  "degenerate_cases": "gate关闭还原原attention；γ=0去历史；无head项消融明显退化；高文本dominance时反而关闭干预。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4分别移除gate、history、head correction；Table5比较干预层。",
+  "negative_results": [
+   {
+    "text": "LLaVA7B移除head项CS49.6/CI13.2，完整16.8/4.4。",
+    "locator": "Table4"
+   },
+   {
+    "text": "仅0–5层CS53.2/CI13.7，5–32层16.8/4.4。",
+    "locator": "Table5"
+   },
+   {
+    "text": "MiniGPT4 POPE avgF1从greedy74.92到75.90，但低于VCD77.36；并非每指标最优。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：匹配输出长度与对象覆盖后CHAIR收益若消失，则可能只是保守描述。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "LLaVA1.5 7/13B; Shikra7B; MiniGPT4; QwenVL",
+   "framework": "inference attention intervention",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "作者称无额外latency，未读计时证据。",
+  "pitfalls": [
+   {
+    "text": "Eq6选k但除H，应对照实现再迁移。",
+    "locator": "Eq6"
+   }
+  ],
+  "code": null,
+  "lesson": "当仅基于已有图像token修正caption时，应同时检查对象覆盖、停止/EOS和真实计时，不把attention升高当新证据。"
+ }
+}

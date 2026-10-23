@@ -1,0 +1,55 @@
+{
+ "paper_key": "litscan:3816",
+ "title": "S2R",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3816.txt",
+  "sections_read": [
+   "Abstract",
+   "2.2–2.3",
+   "Table2",
+   "verification analysis",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "将solve→confirmativeverify→纠错迭代构造成SFT行为，再比较终局RLOO与按rewardhistory分组的processRL。",
+  "why_non_obvious": "错误trial来自本模型而非只模仿强teacher长CoT，SFT mask不直接学失败solution。",
+  "trigger_condition": "When weaker models lack self-correction behavior, initialize explicit verify-and-revise trajectories before outcome or process RL.",
+  "contribution_type": "method",
+  "abstract_strategy": "generative_process_redesign",
+  "abstract_trigger_condition": "When weaker models lack self-correction behavior, initialize explicit verify-and-revise trajectories before outcome or process RL."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3816#s1",
+   "object": "self-verification/correction trajectories",
+   "information": "自身失败解、GT校验、confirmation verdict、correct finaltrial",
+   "operation": "SFT只训verify/最终solve/end，随后ORL或PRL优化",
+   "claimed_effect": "Qwen2.5Math7B MATH50051.0→BI81.6→ORL84.4；reportedavg35.6→59.3→62.4，PRL62.0。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "Qwen2.5-Math-7B-S2 R-ORL (ours)                 84.4   23.3    77.5   43.8    44.9    92.9     70.1     62.4"
+   },
+   "failure_boundary": "仅7/8B；确认正确性与数学完整证明不同；错误rewardhistory相同不保证真实state等价。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "直接展示先初始化纠偏行为再RL。",
+   "strength": 3
+  },
+  {
+   "problem": "P37",
+   "how": "SFT失败trial留上下文但mask其solution，适合纠偏轨迹构造。",
+   "strength": 3
+  }
+ ]
+}

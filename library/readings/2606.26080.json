@@ -1,0 +1,57 @@
+{
+ "paper_key": "2606.26080",
+ "title": "Neglected Free Lunch from Post-training: Progress Advantage for LLM Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.26080.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 Eq1–3",
+   "§3 Prop1–2/aggregation",
+   "§4/Table2 and scoring protocol",
+   "AppF limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "复用RL policy与reference在同一动作上的log概率差，做推理时trajectory/step评分，不训练新PRM。",
+  "key_step": "score_t=βlog(πRL(a|s)/πref(a|s))；按任务选择sum/mean/极值等聚合后BoN挑选。",
+  "why_non_obvious": "理想KL最优policy含soft-value信息，但实际checkpoint未必最优，policy偏移不自动等于因果进步。",
+  "trigger_condition": "已有posttrained/reference可比对且缺过程标签时，将相对概率作为需验证的评分代理。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把现成policy变化转成无额外标注的行为评审信号，并显式保留理想假设。",
+  "abstract_trigger_condition": "已有posttrained/reference可比对且缺过程标签时，将相对概率作为需验证的评分代理。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.26080#s1",
+   "object": "BoN候选评分",
+   "information": "相同历史动作在posttrained/reference的概率",
+   "operation": "log-ratio分段聚合，选8候选最高分",
+   "claimed_effect": "Table2 Qwen3.5-9B跨四任务均值62.1%，Mean-of-N54.7%、oracle67.5%；AgentDojo91.8低于greedy94.8。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Progress Advantage row",
+    "quote": "Progress Advantage       ✗         19.0         42.5        45.0             42.0         43.3           91.8        48.0              72.0      38.8             62.1"
+   },
+   "failure_boundary": "无需新PRM训练不等于无成本：需reference打分及8轨迹；不是统一所有任务优于greedy。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "可候选过程评分，但目前只inference评估，未验证训练信用。",
+   "strength": 2
+  },
+  {
+   "problem": "P62",
+   "how": "policy/reference距离影响信号，过近过远都退化。",
+   "strength": 3
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

@@ -1,0 +1,63 @@
+{
+ "paper_key": "2505.10832",
+ "title": "Learning When to Think: Shaping Adaptive Reasoning in R1-Style Models via Multi-Stage RL",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.10832.txt",
+  "sections_read": [
+   "Abstract/§2 pp1–3",
+   "§3 Eq1–7 pp4–5",
+   "Table1/§4.1–4.3 pp6–7 (PDF printed pages; extraction has spurious formfeeds)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "ellipsis触发think/no-think混合支持；先batch频率平衡四格reward，再无平衡加强正确率，最后按正确/错误分别标准化长度塑形。",
+  "why_non_obvious": "prompt只诱发随机模式非难度校准；先压长度会阻碍能力加强，且最终压缩对已RL模型可损精度。",
+  "trigger_condition": "当R1底座有潜在直接回答但模式坍塌时，用分阶段reward稳定两种行为后再压缩。",
+  "contribution_type": "三阶段自适应推理RL",
+  "abstract_strategy": "把行为支持、任务能力和效率按阶段优化。",
+  "abstract_trigger_condition": "多目标同时优化易在初始探索时压掉某行为。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.10832#s1",
+   "object": "Distill-R1-1.5B推理开关",
+   "information": "think标志、正确性、batch think比例、组内长度",
+   "operation": "ellipsis+Stage1频率reward平衡→Stage2四格reward→Stage3长短塑形",
+   "claimed_effect": "Table1 Avg accuracy48.6→51.7，tokens10633→5108（约52%下降）；DeepScaleR stage2 57.3→stage3 55.7，低于原56.7。",
+   "conditions": [
+    "五数学集均值",
+    "16eval rollouts/题，非16训练seeds",
+    "stage context8k/16k/24k共同改变"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 printed p6",
+    "quote": "AutoThink-Stage3     84.0   28.1    44.8     34.6   67.0 51.7"
+   },
+   "failure_boundary": "平均提升非逐题必要性或非劣保证；DeepScaleR最终阶段可退化。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "频率reward平衡防模式塌缩但不强制每组支持。"
+  },
+  {
+   "problem": "P01",
+   "strength": 2,
+   "how": "组内长度标准化与优势归一化不能混为一谈。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "先利用ellipsis唤出底座已有另一模式再RL。"
+  }
+ ],
+ "scientific_replication": false
+}

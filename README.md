@@ -4,15 +4,21 @@ A literature library for **multi-turn visual tool use in VLMs**. The setting: a 
 
 The papers are organised by research problem rather than by date. Each relevant paper gets a structured reading record. Cross-domain work (trajectory-level RL, GRPO variants, credit assignment, advantage estimation, process reward models, latent reasoning, stopping and budgets) is mapped onto the same problem taxonomy.
 
+**Start here:** [`library/UNDERSTANDING.md`](library/UNDERSTANDING.md) is our current understanding of the field, synthesized from the mechanism cards.
+
 ## Contents (`library/`)
 
 | File | Rows | What it is |
 |---|---:|---|
 | `papers.jsonl` | 3,453 | Paper index: arXiv id or venue, title, source, themes, `read_priority` (1 = in-domain … 5 = loosely related), mapped problem ids, venue decision when known |
-| `readings/*.json` | 226 (growing) | Per-paper reading records for priority 1–2 papers (370 in scope) |
+| `UNDERSTANDING.md` | — | Synthesis: what works for learning when to look, under which conditions, and where it breaks |
+| `cards/F1…F5/*.md` | 92 | Mechanism cards merged by operation + information + conditions, each with member papers, evidence locations, success conditions, failure modes, reviewer expectations and engineering lessons |
+| `mechanism_cards.jsonl` | 92 | The same cards as one row each |
+| `engineering/*.md` | 5 | About 300 one-line engineering lessons with sources (rollout and masking, advantage, reward, evaluation, data) |
+| `readings/*.json` | 499 | Per-paper reading records: all 370 priority 1–2 papers (full or lite), plus 129 lite records from priority 3 |
 | `problems.jsonl` | 69 | Problem taxonomy: id `P01`–`P69` and category (objective, advantage, credit, decision, coverage, exploration, stopping, trajectory, captioning, perception, evaluation, engineering, forgetting, data, measurement) |
 | `crossdomain_map.jsonl` | 327 | Paper → problem mappings with the transferable mechanism and the evidence read; status `proposed` 175 / `checked` 125 / `refuted` 27 |
-| `pattern_cards.jsonl` | 91 | Mechanism pattern cards induced from the literature (58 operation-level cards, 14 parent and 19 sub patterns) |
+| `pattern_cards.jsonl` | 91 | An earlier pattern set induced from a venue-paper scan (58 operation-level cards, 14 parent and 19 sub patterns) |
 | `repos.jsonl` | 168 | Code repositories: awesome lists (T1), method code (T2a–c), frameworks (T3) |
 | `repo_extracts.jsonl` | 136 | Mechanisms located in repository code (`code_locator` = file:lines), with conditions and failure modes |
 
@@ -31,6 +37,8 @@ Each record (`readings/<paper_key>.json`) has three blocks. The method follows [
   - `moves`: research moves, as RS ideation patterns and M-coded moves;
   - `objective`: equations, which tokens/turns receive which signal, normalisation, invariance, baseline or potential, degenerate cases at p≈0/1 and in all-correct/all-wrong groups;
   - `evidence_design`, `engineering` (setup, cost, pitfalls, lesson), and `relevance` (problem id + strength 0–3).
+
+Card families: F1 objective/advantage/decision, F2 credit assignment, F3 behaviour support/trajectories/data, F4 perception/caption/visual evidence, F5 stopping/evaluation/engineering. Card status: `candidate_pattern` (≥2 independent papers), `case` (one paper), `needs_revision` (conflicting evidence).
 
 Records are tiered `full` or `lite`. Lite records keep the idea fields, 1–2 signatures and relevance. Every quote is checked against the paper text with `deepread/verify_quotes.py`.
 

@@ -1,0 +1,56 @@
+{
+ "paper_key": "2510.05069",
+ "title": "SwiReasoning: Switch-Thinking in Latent and Explicit for Pareto-Superior Reasoning LLMs",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.05069.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3.3–3.4",
+   "Table1",
+   "Tables2–3",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "根据token entropy相对block起点的变化切换显式/latent reasoning；对L→E切换计数并注入结束信号。",
+  "why_non_obvious": "把模式与停止时机变成推理过程自由度，但entropy是置信代理而非正确性证明。",
+  "trigger_condition": "When latent exploration diffuses and explicit thinking overcommits, switch modes using local uncertainty trends and cap completed blocks.",
+  "contribution_type": "method",
+  "abstract_strategy": "generative_process_redesign",
+  "abstract_trigger_condition": "When latent exploration diffuses and explicit thinking overcommits, switch modes using local uncertainty trends and cap completed blocks."
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.05069#s1",
+   "object": "training-free inference",
+   "information": "next-token分布entropy、embedding、switch历史",
+   "operation": "latent用分布加权embedding，H下降转explicit，H上升且dwell满足转latent；switch cap触发answer",
+   "claimed_effect": "Qwen3-8B math/STEMavg78.91→80.94，Qwen3-1.7B60.20→62.88；过强exitbias使AIME24降至8.33%。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen3-1.7B",
+    "quote": "SwiR (Ours) 90.83     +0.39 93.00   +1.00   41.41   +2.02 50.83        +5.00 38.33      +5.00 62.88    +2.68"
+   },
+   "failure_boundary": "不是RL或真实视觉信息获取，entropy趋势可能与正确性错位；较强结束干预可严重掉点。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "按block状态停止的控制结构可迁移，但需验证crop真实收益。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "entropy阈值不代表校准后的正确率。",
+   "strength": 2
+  }
+ ]
+}

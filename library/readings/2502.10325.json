@@ -1,0 +1,58 @@
+{
+ "paper_key": "2502.10325",
+ "title": "Process Reward Models for LLM Agents: Practical Framework and Directions",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2502.10325.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 AgentPRM Algorithm1/Eq1–5",
+   "Table1/§2.3 reward hacking",
+   "§3.2 InversePRM outline",
+   "§4 exploration opening"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "按hash state-action聚合真实后续rollout回报作Q软标签，迭代训练PRM与前一策略锚定的OnlineDPO。",
+  "why_non_obvious": "过程监督来自行为策略可达结果而非语言上看起来正确；策略更新会使旧Q失效。",
+  "trigger_condition": "当环境有终局奖且需要分步指导时，用行为策略MC值监督PRM并限制相邻迭代分布漂移。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "当环境有终局奖且需要分步指导时，用行为策略MC值监督PRM并限制相邻迭代分布漂移。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2502.10325#s1",
+   "object": "交互代理的state-action PRM",
+   "information": "环境后续折扣回报平均并归一化[0,1]，非独立步骤人工标签",
+   "operation": "每轮10K轨迹更新PRM软BCE，再用OnlineDPO最大化Q且KL锚定前一policy；测试逐动作BoN16",
+   "claimed_effect": "ALFWorld第三轮policy成功88.1%，逐动作BoN91.0%；PRM被过优化时真成功率82%降到70%。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§2.3 reward hacking",
+    "quote": "After 400 steps, the success rate begins to fall peaks and then degrades.\nfrom 82% to 70%. In contrast, the reward on the\nvalidation set keeps increasing. This shows clear signs of reward hacking. An open question remains"
+   },
+   "failure_boundary": "前两项主表结果已读但引文锚定退化实验；Q并非不变真奖励，ensemble各自分数同时上涨仍未发现reward hacking。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "明确展示PRM上涨而真实任务成功下降。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "state-action Q替代终答回报作动作选择/策略优化需校准。"
+  }
+ ],
+ "scientific_replication": false
+}

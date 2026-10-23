@@ -1,0 +1,57 @@
+{
+ "paper_key": "2505.20732",
+ "title": "SPA-RL: Reinforcing LLM Agents via Stepwise Progress Attribution",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.20732.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq5–9",
+   "§4/Table2/Fig2 ablations",
+   "AppA reward equivalence conditions",
+   "AppE limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "以终局标签拟合各步贡献之和，再把贡献与环境可执行性混合作为PPO即时reward。",
+  "key_step": "LLM+MLP输出c(s,a)，MSE拟合Σc≈终奖；r_t=αc_t+βg_t，g为环境动作可执行标记。",
+  "why_non_obvious": "只约束总回报即可学习潜在的过程分解，但分解不可识别，不必等于因果进步。",
+  "trigger_condition": "长轨迹只有终奖且动作可执行性可获取时，拟合全轨迹总和以提供较密即时监督。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用全局可核验结果约束局部评分，再显式加入执行反馈。",
+  "abstract_trigger_condition": "长轨迹只有终奖且动作可执行性可获取时，拟合全轨迹总和以提供较密即时监督。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.20732#s1",
+   "object": "状态动作过程reward",
+   "information": "每任务10个rollout、终奖和执行成功g",
+   "operation": "sum-of-step MSE训练progress estimator；α1 β.5混入GAE/PPO",
+   "claimed_effect": "ALFWorld成功率79.1/grounding93.7；去grounding为77.6/91.1，去progress为77.6/94.2。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 SPA and ablation rows",
+    "quote": "SPA (Ours)               79.1      93.7      95.8           83.9        87.0        61.9       77.8       58.8"
+   },
+   "failure_boundary": "执行成功不等于必要或有用；正grounding逐步累计可能偏好冗长可执行轨迹。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "轨迹终奖分解成动作级credit的直接方案。",
+   "strength": 3
+  },
+  {
+   "problem": "P19",
+   "how": "归还总奖与potential invariance所需条件可明确比较。",
+   "strength": 3
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

@@ -1,0 +1,58 @@
+{
+ "paper_key": "2502.01456",
+ "title": "Process Reinforcement through Implicit Rewards",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2502.01456.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq3–6/Algorithm1",
+   "Table1/2",
+   "§5.1 online PRM rationale",
+   "Appendix B.2 single/double forward paragraph"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "用终答标签在线训练logprob-ratio implicit PRM，分别中心化过程/终答回报再相加。",
+  "why_non_obvious": "无需昂贵step标签也能产生token信号，但logratio分解不等于真实因果过程正确性。",
+  "trigger_condition": "当静态PRM随actor漂移且步骤标注昂贵时，用当前rollout终答标签更新implicit PRM并保留原终答通道。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "当静态PRM随actor漂移且步骤标注昂贵时，用当前rollout终答标签更新implicit PRM并保留原终答通道。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2502.01456#s1",
+   "object": "token级过程与终答信用",
+   "information": "rφ,t=β logπφ(token|prefix)/πref(token|prefix)；真实终答verifier标签",
+   "operation": "PRM用整段logratio sigmoid作CE；过程token减其他response平均过程分baseline后未来折扣求和，再加outcome RLOO",
+   "claimed_effect": "同240步PRIME平均41.0，outcome-only RLOO36.9；不是592步43.9对240步的公平比较。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "RLOO w/ OV Only         240      20.0      47.0     73.2         36.4                                         35.4              28.3            26.7         36.9\n                         80       20.0      41.0     68.2         38.2                                         37.0              26.7            26.6         36.8\n                         160      13.3      42.2     72.0         37.1                                         38.7              26.7            25.6         36.5\n Eurus-2-7B-PRIME        240      20.0      50.6     78.2         39.3                                         40.3              31.1            27.5         41.0"
+   },
+   "failure_boundary": "在线PRM仍是代理；默认single-forward使用更新前PRM分而非新PRM重算。每步成本680.3s vs530.7s，不是无计算开销。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "明确分离终答RLOO与token过程return，终答信用不丢。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "在线更新缓解固定reader漂移但不是当前actor反事实价值。"
+  }
+ ],
+ "scientific_replication": false
+}

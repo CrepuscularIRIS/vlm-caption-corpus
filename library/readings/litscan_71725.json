@@ -1,0 +1,171 @@
+{
+ "paper_key": "litscan:71725",
+ "title": "Overthinking Reduction with Decoupled Rewards and Curriculum Data Scheduling",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_71725.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3 selected assumptions",
+   "4",
+   "5 Tables1–3",
+   "AppendixC/E/G.6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "GT-conditioned detector识别首次正确答案chunk之前NRP；NRP/结论给高reward，后续reasoningtokens长度罚；按NRP比例调整全对prompt占比。",
+  "why_non_obvious": "序列长度惩罚同时打击必要token；token位置组比较可保NRP但冗余负adv仍有条件。",
+  "trigger_condition": "When trajectory length penalties suppress necessary reasoning, separate necessary-prefix and redundant-token rewards.",
+  "contribution_type": "token-level reward and curriculum",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When a global cost penalizes useful and useless components together, partition them and assign different learning signals.",
+  "abstract_key_step": "正确NRP与后续token分配不同reward。",
+  "abstract_why_non_obvious": "需要GT与可靠首次正确prefix检测，不是无监督冗余判定。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:71725#s1",
+   "object": "correct reasoning tokens",
+   "information": "GT+Qwen1.5B detector，rolloutlength，group逐位置rewards",
+   "operation": "保护NRP/answerreward，后NRP降reward，curriculum调easy比例",
+   "claimed_effect": "1.5B avg47.78/4000tokens vsbase45.21/9340；GRPO49.15/6814，准确率仍低于GRPO。",
+   "conditions": [
+    "DeepScaleR",
+    "G16"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "D E CS   31.25   5550    23.78   4965    75.37   2988    84.40   1817    56.10   3396    35.92   3255    27.66   6026    47.78   4000"
+   },
+   "failure_boundary": "NRP是首次包含GT答案proxy，不证明必要性；所有冗余必负adv非无条件数学保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P65",
+   "how": "局部必要前缀与冗余区段分开奖励，可迁移但需视觉证据定义。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "逐位置adv明确不同于sequencecredit。",
+   "strength": 3
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "performance reference"
+  },
+  {
+   "name": "ThinkPrune/AdaptThink/TLMRE/LC-R1",
+   "kind": "efficiency methods"
+  },
+  {
+   "name": "w/oCS/w/oDR",
+   "kind": "component ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "1.5B辅助detector增加5.1%训练开销，≤7B规模；更大模型未验证。",
+   "locator": "AppendixE"
+  },
+  {
+   "text": "读者：GT答案出现不能保证后续checking无用，检测错误会错误罚必要推理。",
+   "locator": "Eq7–8"
+  },
+  {
+   "text": "读者：Eq11 R下降时κ也可下降，不能仅由clip式推出正文所称monotonic。",
+   "locator": "4.3 Eq11"
+  }
+ ],
+ "question": {
+  "observed_failure": "1.5B去CS avg46.31 vsfull47.78；去DR tokens5111 vs4000。",
+  "load_bearing_assumption": "GT首次正确prefix之后多为可压缩冗余，curriculum限制探索被罚程度。",
+  "scope": "math reasoning efficiency",
+  "success_criterion": "同时记录accuracy与tokens及detector误删必要checking",
+  "why_open": "逐位置跨不同语义token比较及proxy误差可能改变作用。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3 component ablation"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table1 accuracy/tokens"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "NRP=concat(s1..s_c*), c*=first judge(q,s_c,y*)=yes",
+    "locator": "Eqs7–8"
+   },
+   {
+    "latex": "r_ij=1[correct]*(rplus if NRP/nonthinking/padding else r0-(rplus-r0)*Li/Lmax); A_ij=(r_ij-mean_i r_ij)/std_i r_ij",
+    "locator": "Eqs9–10"
+   },
+   {
+    "latex": "kappa_m=clip(kappa_prev+beta*(R_m-R_prev),0,kappa0_m)",
+    "locator": "Eq11"
+   }
+  ],
+  "signal_routing": "correctNRP/nonthinking结论/padding统计给rplus1.1，correct后NRPthinking给1−.1Li/Lmax，错误全0。adv在同absolute token位置跨G算；padding参与reward基准，policy loss Eq3仅到真实|oi|，无padding梯度。",
+  "normalization": "per-position across G mean+std，不是sequencegroupstd；Eq3 loss显示总有效token数分母。eps/零std实现未知。",
+  "invariance": "非PBRS；GT+detector重写token目标。读者反例：一个correct冗余reward约.9其余wrong0，则该冗余adv为正；正文“总负”不适用于所有mixed groups。NRP最高reward可非负，但等值时为0约定。",
+  "baseline_or_potential": "同token位置组均值；不是causalvalue；curriculum κ0是采到的全对prompt比例上界。",
+  "degenerate_cases": "allwronggroup过滤并oversample；allcorrectsameNRP/length会部分零std；未检测到yes的correcttrace处理未读；allcorrect中冗余奖励相同也不必负。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "CS/DR单独去除、detector人工100chunk检查、GPQA/LCB迁移。",
+  "negative_results": [
+   {
+    "text": "DS7B avg62.48低于GRPO63.86，DS1.5B47.78低于49.15。",
+    "locator": "Table1"
+   },
+   {
+    "text": "DS7B AIME25 36.43低于base36.67，MATH92.96低于93.25，非逐任务不降。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：单独核detector标为冗余却需纠错的轨迹，并统计mixedgroups中冗余adv符号；若负adv保证失败须收窄解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DSR1Distill1.5/7B; Qwen3-4B",
+   "framework": "VeRL+1.5B detector",
+   "group_size": 16,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "detector5000problems2epochs，训练额外5.1%；G16 β.2 batch128",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用首次GT答案出现作截止点时，应把充分证据与碰巧猜中区分，并监测逐位置优势实际符号。"
+ }
+}

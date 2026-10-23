@@ -1,0 +1,169 @@
+{
+ "paper_key": "2503.14476",
+ "title": "DAPO: An Open-Source LLM Reinforcement Learning System at Scale",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.14476.txt",
+  "sections_read": [
+   "Abstract",
+   "§2.2–3.5 pp3–8 Eqs4–13",
+   "§4 Table1 pp8–9",
+   "§4.3 training limits p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "解耦PPO上下clip、过滤全对/全错组补满batch、按所有生成token平均loss，并缓冲区软惩罚过长输出。",
+  "why_non_obvious": "探索塌缩、零梯度组、序列平均及截断噪声是不同问题，需分别测量。",
+  "trigger_condition": "When long-CoT RL loses exploration or effective batch size, separate clipping, sampling, loss reduction, and truncation handling.",
+  "contribution_type": "RL算法及工程配方",
+  "abstract_strategy": "分解训练退化来源后逐项控制",
+  "abstract_trigger_condition": "多组件系统中同样的reward曲线掩盖不同失败时",
+  "abstract_key_step": "同时审计采样支持、更新权重与边界数据",
+  "abstract_why_non_obvious": "更长响应可带来探索也可只是重复，平均方式影响每token梯度。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.14476#s1",
+   "object": "Qwen2.5-32B long-CoT RL",
+   "information": "整数数学答案与每prompt16rollout组reward",
+   "operation": "clip .2/.28、均值/std优势、实际总token loss、重采样混合正确组、无KL及过长mask/软惩罚。",
+   "claimed_effect": "AIME24 avg@32：naiveGRPO30→overlongfilter36→clip38→soft41→token42→dynamic50；DeepSeekR1Zero32B47。",
+   "conditions": [
+    "逐项添加非factorial",
+    "32次测试采样非训练seed",
+    "步数并非墙钟等价"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p9",
+    "quote": "+ Dynamic Sampling (DAPO)               50"
+   },
+   "failure_boundary": "不能用上clip提高消失动作的采样概率；动态过滤可能排除必要的容易/困难分布。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P10",
+   "how": "需ratio偏离1并触及clip上界才起直接作用。",
+   "strength": 3
+  },
+  {
+   "problem": "P08",
+   "how": "明确替换逐sequence长度分母为实际总token平均。",
+   "strength": 3
+  },
+  {
+   "problem": "P07",
+   "how": "过滤零梯度组补有效batch，而非给全错组生成成功信号。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Naive GRPO",
+   "kind": "algorithm"
+  },
+  {
+   "name": "progressive five-component ablation",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "主要实验证据为Qwen32B数学/AIME24；无独立训练种子区间；逐项增益不能唯一归因组件。",
+   "locator": "§4/Table1"
+  },
+  {
+   "text": "动态采样成本依同步长尾服务条件，不保证所有工具RL墙钟改善。",
+   "locator": "§3.2/4.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "naiveGRPO AIME30 vs完整50，entropy collapse和全对组比例上升。",
+  "load_bearing_assumption": "采样有混合正确组且低概率正确行为可被较宽clip增强。",
+  "scope": "长CoT数学RL同步采样系统",
+  "success_criterion": "有效梯度batch、熵/长度稳定、验证准确率提高",
+  "why_open": "重奖励拟合不能保证验证表现，训练平均与边界处理可阻止学习。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M08",
+   "locator": "Table1五项命名消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "Figs2–5 entropy/clip概率/零梯度比例诊断"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_i=(R_i-\\bar R)/std(R),\\quad J=\\mathbb E\\frac{1}{\\sum_i|o_i|}\\sum_{i,t}\\min(\\rho_{it}A_i,clip(\\rho_{it},.8,1.28)A_i)",
+    "locator": "Eqs8–12"
+   },
+   {
+    "latex": "R_{len}=0\\ (L\\le16384),\\quad (16384-L)/4096\\ (16384<L\\le20480),\\quad-1\\ (L>20480)",
+    "locator": "Eq13/§4.1"
+   }
+  ],
+  "signal_routing": "同组reward标准化A分配给response每token，token等权聚合；最终正确+1错误−1加软长度项。Overlong Filtering显式mask截断样本loss，是否仍进入组均值未说明。排全对/全错prompt后补满batch；无KL。",
+  "normalization": "mean+std",
+  "invariance": "共同正scale/shift在组标准化抵消（epsilon边界）；len项非PBRS改变目标。按总实际token平均不同于DrGRPO固定max长度，batch长度会影响整体缩放。",
+  "baseline_or_potential": "inclusive group mean/std，无critic。",
+  "degenerate_cases": "全等rewardA0动态采样绕过，但p0或p1题没有新梯度；ratio=1且只一次同步更新时clip边界未激活，不能解释早期策略改变；提高上clip不保证熵。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "逐项消融+entropy与长度轨迹；token loss控制无效长序列增长，动态采样保持混合组。",
+  "negative_results": [
+   {
+    "text": "训练reward与验证准确率相关很弱，奖励持续提升仍可过拟合。",
+    "locator": "§4.3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "实际记录upclip比例、ratio和token梯度；若ratio始终1，不能将收益归因clip-higher；按总rollout成本对照动态采样。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-32B base",
+   "framework": "verl AdamW",
+   "group_size": 16,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "batch512 prompts×16，mini512即16梯度更新/rollout；LR1e-6 warmup20 rolloutsteps；max20480，软cache4096。",
+  "pitfalls": [
+   {
+    "text": "梯度更新步、rollout步、补采样次数和墙钟是不同成本。",
+    "locator": "§4.1"
+   },
+   {
+    "text": "移除KL是本数学配方，不能泛化为保直答能力安全。",
+    "locator": "§2.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当clip或采样配方看似无效时，先看实际ratio、触界比例及有效组数，不按算法名推断机制已生效。"
+ }
+}

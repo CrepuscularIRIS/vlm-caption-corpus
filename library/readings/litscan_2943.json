@@ -1,0 +1,56 @@
+{
+ "paper_key": "litscan:2943",
+ "title": "Genius",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2943.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2.2–2.3 Eq1–12",
+   "Tables1/4"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "用未来completion平均logprob选正负路径，再按相对前步的foresight增量放松不一致负例的DPO项。",
+  "why_non_obvious": "高未来置信度与相对前缀进展可排序相反，因此负例权重不必相同；但两者都是模型自评分。",
+  "trigger_condition": "当无GT的自训练偏好含噪声时，分别保存绝对foresight与相对增量，再对冲突负例降权。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "targeted_self_supervised_objective",
+  "abstract_trigger_condition": "当无GT的自训练偏好含噪声时，分别保存绝对foresight与相对增量，再对冲突负例降权。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2943#s1",
+   "object": "无标签query上的self-training",
+   "information": "模型未来生成平均logprob，非答案GT/外部reward；M2 beams,N4候选,K4步骤",
+   "operation": "F=softmax(f/τ)重采样beam，最高f作正例；A=f−Qprev；w=min(exp(−(Al−Aw)/α),1)；ACO=−logσ(βlogratio_w−βw logratio_l)",
+   "claimed_effect": "Table4相同foresight sampling下ACO Magpie57.08/OpenHermes56.90，对比DPO55.51/55.73。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4",
+    "quote": "+ ACO                            57.08       56.90\n                                                                                           56                         56"
+   },
+   "failure_boundary": "自模型高置信度非正确性；w改变负例logratio系数，不是有独立真值校准的advantage；文本“actual advantages”不等于环境效用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "自评分/前后差仍不能替代当前actor真实终奖。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "foresight软采样比greedy保留路径多样性。"
+  }
+ ],
+ "scientific_replication": false
+}

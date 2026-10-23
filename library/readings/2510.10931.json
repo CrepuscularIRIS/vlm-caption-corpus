@@ -1,0 +1,168 @@
+{
+ "paper_key": "2510.10931",
+ "title": "Proof-of-Use: Mitigating Tool-Call Hacking in Deep Research Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.10931.txt",
+  "sections_read": [
+   "Abstract",
+   "3.2–3.4",
+   "4 Tables1–3",
+   "4.5 reward/tool ablations",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "统一helpful/ref协议，奖励合法引用、扰动证据后的helpful敏感性、答案支持度与正确性；随batch正确率EMA转向正确性。",
+  "why_non_obvious": "工具调用格式不证明证据被使用，需对被引用内容施加干预。",
+  "trigger_condition": "When agents call tools decoratively, audit citations and reward evidence-sensitive judgments alongside answer support.",
+  "contribution_type": "process reward framework",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "When observable action format is gameable, create interventions that test whether returned evidence influences the model.",
+  "abstract_key_step": "扰动证据并比较同一helpful token概率。",
+  "abstract_why_non_obvious": "响应敏感性仍不是最终答案的因果正确性。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.10931#s1",
+   "object": "retrieval reasoning rollout",
+   "information": "返回证据ID、helpful Yes概率、扰动文本、judge答案与证据",
+   "operation": "cite/probe/answer三分量均分，GRPO；SFT先学协议",
+   "claimed_effect": "HotpotQA F1/LM54.9/67.2，2Wiki68.3/78.0；相同toolset DeepResearcher+50.3/61.7与61.2/67.4。",
+   "conditions": [
+    "Qwen2.5-7B",
+    "Bmax1",
+    "top5 evidence"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "54.9    67.2    68.3    78.0"
+   },
+   "failure_boundary": "helpful敏感性不是answer依赖证明；NO注入相关但未必真实lure，会奖励易受诱导的反应。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P31",
+   "how": "工具装饰性调用需要真实使用证据检查。",
+   "strength": 3
+  },
+  {
+   "problem": "P44",
+   "how": "结构奖励可hack，证据扰动加校验也有代理目标。",
+   "strength": 2
+  },
+  {
+   "problem": "P40",
+   "how": "最终答案与引用一致单独监督。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "DeepResearcher+",
+   "kind": "matched tools"
+  },
+  {
+   "name": "PoU-SFT",
+   "kind": "training ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "B=0时Eq4除B未定义；T1时cite/ans置0，R_pt回退未写明。",
+   "locator": "Eqs4–5; reader"
+  },
+  {
+   "text": "NO语义诱饵不必事实正确；奖励只约束helpful响应。",
+   "locator": "3.3.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "同toolset DeepResearcher+ Hotpot LM61.7 vsPoU67.2；SFT-only45.5。",
+  "load_bearing_assumption": "显式引用及证据敏感性会减少装饰性tool使用。",
+  "scope": "多源QA协议",
+  "success_criterion": "提高答案与证据一致性并抗错误tool响应",
+  "why_open": "工具次数/熵不是因果使用的充分证据。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "4.5 reward ablations"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "3.4; PoU-SFT"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "R_cite^t=+1 if parse&&consistency&&ids_valid else -1; R_cite=mean_{t=2..T}R_cite^t (T1:0)",
+    "locator": "Eq2"
+   },
+   {
+    "latex": "R_pt^t=s_t*(qprime-q); s=-1 for YES corruption,+1 for NO lure; R_pt=mean_{sampled B steps}R_pt^t",
+    "locator": "Eqs3–4"
+   },
+   {
+    "latex": "cbar_s=beta*cbar_(s-1)+(1-beta)*mean_i R_anc; alpha_s=sigmoid(kappa*(tau-cbar_s)); R_a=alpha_s R_ans+(1-alpha_s)R_anc; R_final=(R_cite+R_pt+R_a)/3 if valid else -1",
+    "locator": "Eqs6–10"
+   }
+  ],
+  "signal_routing": "probe每rollout最多随机抽1个合法步骤；其均值与全轨迹cite/answer构成rollout scalar交GRPO。不是把probe gradient直接反传或只给helpful token局部advantage；具体token mask未知。",
+  "normalization": "other: cite按T−1均值，probe按B均值，三路/3；GRPO group标准化实现未知；EMA β/τ/κ数值未给。",
+  "invariance": "非PBRS；偏好citation及敏感性改变目标。/3整体正缩放若后续std将抵消，未确认实现。",
+  "baseline_or_potential": "qprime-q是同策略证据扰动helpful概率差，不是GT answer improvement。外judge Ragas faithfulness支持一致性而非事实真值。",
+  "degenerate_cases": "无工具T1 cite/ans0可能偏向工具；全组同reward无差异，std未知；B0回退未明；伪证据亦可使helpful增大。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "B1/B2、去R_pt/R_ans及static mixing；增加无用/新工具；content替换案例。",
+  "negative_results": [
+   {
+    "text": "去R_ans训练后期不稳/塌缩，静态mix较慢且上限低（曲线定性）。",
+    "locator": "Fig3"
+   },
+   {
+    "text": "HotpotF1 54.9低于Search-R1-base55.9；不是全指标最优。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": "evaluation fixed global seed; training repetitions unknown",
+  "falsifier": "读者：保留helpful变化但打乱最终答案证据依赖，若仍获高分则不能称完整causal-use监督。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B-Instruct; Qwen3-8B proxies; GPT4o-mini judge",
+   "framework": "VERL/vLLM",
+   "group_size": 8,
+   "max_turns": 10,
+   "kl": null
+  },
+  "cost": "32 A100；SFT3epochs batch256；8parallel rollout；最多10steps。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当设计证据扰动reward时，分别测helpful token、后续推理和最终答案依赖，并定义无工具/B0分支。"
+ }
+}

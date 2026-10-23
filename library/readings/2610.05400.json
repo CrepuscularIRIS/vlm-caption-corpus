@@ -1,0 +1,218 @@
+{
+ "paper_key": "2610.05400",
+ "title": "CASE: Cost-Aware Stopping for Efficient Long-Video Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2610.05400.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq1–9",
+   "§4 Tables1–4 and onlineexecution",
+   "§5",
+   "AppA.3–A.5",
+   "AppC.4 Table10",
+   "AppH.3–H.5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "固定host搜索策略，用完整native轨迹构造当前答题vs以后最佳已实现停止点的error+全成本差，Ridge学习STOP/CONTINUE。",
+  "key_step": "18维causal特征、每trajectory总权重1、分解quality与cost校正的GapRidge，部署单affine score。",
+  "why_non_obvious": "当前置信度不等于续看价值；最佳已实现后缀仅是带前视优势的surrogate，不是无偏最优停止value。",
+  "trigger_condition": "When a fixed visual search policy has costly redundant continuations, fit a causal stopping controller to hindsight error-plus-cost gaps and evaluate with a common finalizer.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把host搜索与终止决策解耦，用完整成本账本训练可部署的局部停止比较。",
+  "abstract_trigger_condition": "When a fixed visual search policy has costly redundant continuations, fit a causal stopping controller to hindsight error-plus-cost gaps and evaluate with a common finalizer.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "18维causal特征、每trajectory总权重1、分解quality与cost校正的GapRidge，部署单affine score。",
+  "abstract_why_non_obvious": "当前置信度不等于续看价值；最佳已实现后缀仅是带前视优势的surrogate，不是无偏最优停止value。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.05400#s1",
+   "object": "video-agent stopping controller",
+   "information": "18维causal state与完整native轨迹的GT/finalizer/cost训练标签",
+   "operation": "weightedRidge预测decisiongap，阈值STOP并用constrainedfinalizer",
+   "claimed_effect": "三benchmark平均54.56%modeltokens saving、+2.88pp；但commonfinalizer对照−1.92pp/55.24%saving。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table10 AppC.4, CASE row",
+    "quote": "CASE 54.28 −1.92 55.24 16/18 (88.9) 1.11"
+   },
+   "failure_boundary": "end-to-end准确率增益包含finalizer变化；固定host，非在线更新VLM。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P03",
+   "strength": 3,
+   "how": "比较停止错误与全续写成本而非固定每次工具收费。"
+  },
+  {
+   "problem": "P05",
+   "strength": 3,
+   "how": "账本计probe/finalizer/visual tokens并核runtime。"
+  },
+  {
+   "problem": "P17",
+   "strength": 3,
+   "how": "强制选项finalizer改变answer协议需匹配对照。"
+  },
+  {
+   "problem": "P31",
+   "strength": 3,
+   "how": "停止目标直接涉及未来纠错机会。"
+  },
+  {
+   "problem": "P33",
+   "strength": 2,
+   "how": "成本随工具/上下文变化。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Native",
+   "kind": "method"
+  },
+  {
+   "name": "Native+samefinalizer",
+   "kind": "method"
+  },
+  {
+   "name": "Tunedcheckpoint",
+   "kind": "method"
+  },
+  {
+   "name": "Tunedbudget",
+   "kind": "method"
+  },
+  {
+   "name": "Confidence",
+   "kind": "method"
+  },
+  {
+   "name": "Entropy",
+   "kind": "method"
+  },
+  {
+   "name": "TASR-Video",
+   "kind": "method"
+  },
+  {
+   "name": "Forward-Q",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "hindsight后缀min的期望低于任意因果停止规则的损失，不能把它当精确条件continuationvalue。",
+   "quote": "Because its minimizing checkpoint is chosen after the suffix is observed, its conditional continuation loss can be lower than that of a causal stopping rule,",
+   "locator": "AppA.3 p15"
+  }
+ ],
+ "question": {
+  "observed_failure": "完整native长轨迹冗余；commonfinalizer CASE −1.92pp却省55.24%tokens，说明停止有实际accuracy代价。",
+  "load_bearing_assumption": "native轨迹训练分布与部署一致，causal特征可预测hindsight gap。",
+  "scope": "固定VideoSeek/AVP，多选longvideo，Medium/Long启用。",
+  "success_criterion": "固定finalizer、成本账本、host策略下达到预设非劣界及预算目标。",
+  "why_open": "同轨迹oracle min乐观和finalizer差异混在主结果；hostRL更新后controller会过时。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq2–7 sunkcost"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table10 commonfinalizer"
+  },
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Table3 frontier"
+  },
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "§3 sequentialstopping"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "Lstop=1[a_t!=Y]+lambda C_f(t)/S; Lfuture=1[a_u!=Y]+lambda(C(t->u)+C_f(u))/S; Lnative=1[a_native!=Y]+lambda C(t->T)/S",
+    "locator": "Eq2–4"
+   },
+   {
+    "latex": "g_lambda=Lstop-min_{later checkpoints or native terminal}L; q=g_0; c_lambda=(g_lambda-g_0)/lambda",
+    "locator": "Eq5–6"
+   },
+   {
+    "latex": "min_{w,b}sum_i (1/m_i)sum_t(y_it-w^T xstandard_it-b)^2+10||w||^2; stop iff qhat+lambda chat_lambda<=boundary",
+    "locator": "Eq7–9"
+   }
+  ],
+  "signal_routing": "仅训练Ridge；VLM/host/tool冻结，无policytoken梯度。特征为8answer支持+5进度成本+5tooltype；probe外部不写native context。checkpoint在提议action后执行前。GT及未来仅构造标签；当前probecost两支sunk取消，未来probe/finalizer计入。",
+  "normalization": "other",
+  "invariance": "成本以训练native均值S归一，feature按加权训练统计标准化，trajectory每个checkpoint权重1/m_i。Ridge对target线性，同特征/权重/正则下分解拟合与直接gap拟合严格等价，不是额外模型能力。option relabeling一致重排下sortedprob和alignedchanges不变。非PBRS；min后缀是乐观surrogate。",
+  "baseline_or_potential": "fixed-host继续到native终点或更早laterfinalizer均为候选；非独立direct/crop反事实重采样。",
+  "degenerate_cases": "无latercheckpoint仍比较native终点；lambda0只quality，cost分解除lambda仅正值定义。低支持概率不保证future无证据；短video保持native。strict calibration空集合退40%saving，不再保证−1ppLCB。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4拆belief/execstate与cost；无cost +3.00pp/46.00% vsFull+2.88/54.56%，主要改变aggressiveness。Table10 commonfinalizer揭示纯stopping代价。",
+  "negative_results": [
+   {
+    "text": "commonfinalizer−1.92pp；execstateonly55.30%saving比Full54.56更多但accuracy+2.21较低。",
+    "locator": "Tables4,10"
+   },
+   {
+    "text": "onlineVideoMME平均−.06pp，AVPGLM−1.22pp。",
+    "locator": "Fig4"
+   }
+  ],
+  "seeds": "canonicaltrajectoryseed42; appendixnotes43/3407 frozencontroller and9development-role resplits; 10000video-clusterbootstrap measures evaluation uncertainty",
+  "falsifier": "同finalizer、同预算随机/固定budget停止不劣于learnedstate，或currentactor更新后非劣失败，则不支持迁移。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3.5-35B-A3B-FP8,GLM4.6V-Flash,InternVL3.5-30B-A3B",
+   "framework": "VideoSeek/AVP; Ridge alpha10",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "VideoMME按video50/100/750train/cal/test=150/300/2250题；5lambda×81boundary，strict55%saving且LCB≥−1pp，失败fallback40%。全probe/finalizer收费；online12cells平均54.1%runtime下降。",
+  "pitfalls": [
+   {
+    "text": "不能把bootstrap固定policy不确定性当训练seed方差。",
+    "locator": "H.5"
+   },
+   {
+    "text": "训练hindsight最佳未来答案label含未来，部署特征不得泄漏。",
+    "locator": "A.3/§3.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当评估外接停止器时，强制finalizer必须两臂一致，并把控制器probe开销和校准fallback纳入报告。"
+ }
+}

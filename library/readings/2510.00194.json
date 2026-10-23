@@ -1,0 +1,55 @@
+{
+ "paper_key": "2510.00194",
+ "title": "GRPO-$λ$: Credit Assignment improves LLM Reasoning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.00194.txt",
+  "sections_read": [
+   "Abstract",
+   "3 Eq1",
+   "4.1–4.2",
+   "Table1",
+   "5 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "algebraic_equivalence_unification",
+  "key_step": "先将GAE梯度重排成TD residual乘历史logprob trace；再以group normalized return近似TD残差。",
+  "why_non_obvious": "精确重排不意味着无critic的残差替代也是精确GAE；trace把信号传给过去token。",
+  "trigger_condition": "When no critic is available, reuse a trace representation of policy gradients and approximate residuals from grouped outcomes.",
+  "contribution_type": "method",
+  "abstract_strategy": "algebraic_equivalence_unification",
+  "abstract_trigger_condition": "When no critic is available, reuse a trace representation of policy gradients and approximate residuals from grouped outcomes."
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.00194#s1",
+   "object": "token policy update",
+   "information": "终局验证reward、旧/新token logprob、group mean/std",
+   "operation": "exp(sum_l(gamma*lambda)^l*(logpi−logpiold))替换ratio，乘NAE",
+   "claimed_effect": "Table1 R1-Qwen7B avg42.9→45.1%，Llama3B14.2→20.0%；Llama3B AIME24却4.2→3.4%。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 R1-Distill-Qwen-7B",
+    "quote": "GRPO- 𝜆     0.451     0.217     0.518    0.800     0.334      0.384"
+   },
+   "failure_boundary": "negative clamp/trace改变优化，数学任务外未验证；Table1与Figure1最优配置结果不同。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "sequence reward通过trace给历史token耦合权重，非动作因果necessity。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "仍使用group mean/std，额外trace不消除scale不变性。",
+   "strength": 2
+  }
+ ]
+}

@@ -1,0 +1,63 @@
+{
+ "paper_key": "2605.15726",
+ "title": "Nudging Beyond the Comfort Zone: Efficient Strategy-Guided Exploration for RLVR",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.15726.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 Eq1–3/Table1 p3",
+   "§4–5/limitations p4"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "每rollout注入一个策略提示并随机dropout，分别计算context内质量与context间均值优势；额外base-prompt advantage-weighted loglikelihood转移行为。",
+  "why_non_obvious": "更多rollouts不保证探索新策略；带提示探索又不直接等同无提示推理，需单独转移项。",
+  "trigger_condition": "当naive采样重复既有推理模式时，用轻量策略提示改变探索分布并训练无提示策略。",
+  "contribution_type": "策略引导探索与context去依赖",
+  "abstract_strategy": "外部上下文扩展探索，分别训练条件策略与部署策略。",
+  "abstract_trigger_condition": "高价值行为罕见且训练提示在部署时不可用。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.15726#s1",
+   "object": "数学RL探索",
+   "information": "GPT4o-mini生成两策略上下文/题、各context样本正确性",
+   "operation": "strategy+dropout采样，inter/intra advantage及base-policy correction",
+   "claimed_effect": "Table1 Nudge8 Avg.489/tokens9.0M/.492EFLOPs vsGRPO32 .487/44.7M/1.421；同预算GRPO8 .454/.342EFLOPs。",
+   "conditions": [
+    "Qwen3-4B-Instruct-2507",
+    "pass1由128samples估计",
+    "cost包含offline context"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p3",
+    "quote": "N UDGE RL         8           0.482    0.393   0.857        0.660   0.053    0.489       9.0           0.492          9.68"
+   },
+   "failure_boundary": "相同rollout数仍多policy-correction compute约44%；非任意预算更便宜。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "先改变采样支持再RL，不能只改adv恢复不存在行为。"
+  },
+  {
+   "problem": "P17",
+   "strength": 2,
+   "how": "提示改变rollout语义，需要无提示transfer验证。"
+  },
+  {
+   "problem": "P35",
+   "strength": 3,
+   "how": "显式策略探索比无限加rollout更有方向。"
+  }
+ ],
+ "scientific_replication": false
+}

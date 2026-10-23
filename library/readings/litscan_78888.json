@@ -1,0 +1,221 @@
+{
+ "paper_key": "litscan:78888",
+ "title": "Artemis",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78888.txt",
+  "sections_read": [
+   "pp1–9 abstract/contributions/method/main tables/ablations/limitations",
+   "Appendix B.2–B.4 PDFp14 cold-start/cost",
+   "Appendix C PDFpp15–16 reward formulas"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将grounding中间推理改成label–bbox集合，用GT对象匹配给结构化证据reward，并与检测/grounding任务联合RL。",
+  "key_step": "GT目标权重η=.8，其余对象共享.2；Hungarian匹配后IoU≥.8且ROUGE≥.9才得分，加入格式/最终答案reward再做GRPO。",
+  "why_non_obvious": "提供可验证对象状态，非自由文本caption；但只是输出坐标token，推理期间不crop、不重新编码或取得新像素。",
+  "trigger_condition": "语言推理在定位/计数可能有害，纯检测RL又损伤grounding；需要对象级监督与多任务平衡。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "替换中间表示为可检验结构，用局部对象匹配构造额外监督并联合互补任务。",
+  "abstract_trigger_condition": "语言推理在定位/计数可能有害，纯检测RL又损伤grounding；需要对象级监督与多任务平衡。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "GT目标权重η=.8，其余对象共享.2；Hungarian匹配后IoU≥.8且ROUGE≥.9才得分，加入格式/最终答案reward再做GRPO。",
+  "abstract_why_non_obvious": "提供可验证对象状态，非自由文本caption；但只是输出坐标token，推理期间不crop、不重新编码或取得新像素。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78888#s1",
+   "object": "对象中心中间推理",
+   "information": "原图/问题→think内label,bbox；训练需GT对象类/框及key目标，部署无需GT",
+   "operation": "阈值化Hungarian匹配加权奖励，联合grounding与检测GRPO",
+   "claimed_effect": "Table6结构化计数Pixmo-val81.4，none65.2，linguistic13.4；MATHGLANCE49.3/44.3/47.3",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p8 Table6, S.V.Rsn.; cols RefCOCOg-val/COCOmAP/MATHGLANCE/Pixmo-val/LISA-test",
+    "quote": "S.V. Rsn.      87.3          31.0          49.3          81.4       69.8"
+   },
+   "failure_boundary": "表示改变伴随额外中间监督，不能完全隔离纯格式效应；LISA none71.7高于69.8。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78888#s2",
+   "object": "联合感知任务",
+   "information": "80K不重叠COCO coldstart，77K近半grounding/检测RL",
+   "operation": "同时而非顺序训练，防止单一检测目标破坏grounding",
+   "claimed_effect": "joint RefCOCOg87.3/COCOmAP31/MATHGLANCE49.3，检测单独grounding51.6",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p8 Table7 Uni.; cols RefCOCOg-val/COCOmAP/MATHGLANCE/Pixmo-val/LISA-test",
+    "quote": "Uni.           87.3         31.0         49.3         81.4         69.8"
+   },
+   "failure_boundary": "本身检测任务明确省略think，非所有任务都执行结构推理；无多轮真实工具闭环。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 3,
+   "how": "GT框/类直接监督中间视觉证据质量。"
+  },
+  {
+   "problem": "P44",
+   "strength": 3,
+   "how": "强依赖GT对象集合，开放任务不能直接取得同奖励。"
+  },
+  {
+   "problem": "P63",
+   "strength": 2,
+   "how": "检测单任务损伤grounding，多任务联合提供保留能力证据。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5VL3B",
+   "kind": "method"
+  },
+  {
+   "name": "VLM-R1",
+   "kind": "method"
+  },
+  {
+   "name": "Perception-R1",
+   "kind": "method"
+  },
+  {
+   "name": "Vision-R1",
+   "kind": "method"
+  },
+  {
+   "name": "None/Linguistic/Structured reasoning",
+   "kind": "method"
+  },
+  {
+   "name": "sequential vs joint task training",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者：当前label–bbox表示和静态2D范围，视频/3D未验证。",
+   "quote": "on structured visual reasoning in static 2D images.",
+   "locator": "p9 Limitations"
+  },
+  {
+   "text": "reader：需要密集GT对象，阈值reward稀疏；结构形式和新增reward混在消融中。",
+   "quote": null,
+   "locator": "§3.3, Table6 pp4–5,8"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table6 linguistic counting13.4 vs none65.2；检测单任务RefCOCOg51.6 vsbase85.1。",
+  "load_bearing_assumption": "对象级中间监督与互补任务联合使感知可迁移，而不只是额外标签/训练量收益。",
+  "scope": "3B静态2D grounding/detection向计数/几何迁移。",
+  "success_criterion": "匹配数据与训练预算后，OOD计数/几何提高且grounding不退化。",
+  "why_open": "格式与reward未完全正交隔离，bbox correctness不能验证证据必要性。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "Table5测检测单任务引发grounding退化"
+  },
+  {
+   "vocab": "M",
+   "id": "M08",
+   "locator": "Table6/7形式与顺序比较"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "§3.3 label–bbox中间状态"
+  },
+  {
+   "vocab": "rs",
+   "id": "unify_into_shared_representation",
+   "locator": "grounding/detection共享对象坐标"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "w(Bkey)=η; w(Bother)=(1−η)/(N−1); rrsn=Σ_(matched) w(B)1[IoU≥.8]1[ROUGE≥.9], η=.8",
+    "locator": "Eqs3–4 pp4–5"
+   },
+   {
+    "latex": "rtotal=rformat+rans+rrsn; A_i=(r_i−mean(r))/std(r); clipped PPO surrogate −βKL",
+    "locator": "Eqs1–2 p3, Eq5 p5"
+   },
+   {
+    "latex": "ransVG=GIoU; rbaseDET=(GIoU+1[label match]+F1)/3; ransDET=clip(rbaseDET·min(np,ng)/max(np,ng)·(1−nmiss/ng),0,1)",
+    "locator": "AppC Eqs10–14 PDFp16/printed4"
+   }
+  ],
+  "signal_routing": "中间对象质量先汇总为整响应reward，再与outcome合成一个GRPO A；没有证据token专属梯度路由。检测任务不需要think，合法无think format1、有think.5；VG要求think+answer。具体token loss length归一/无效输出处理除format外未知。",
+  "normalization": "对象权重和1条件N>1/key存在；同一GT一对一避免重复刷分，但非匹配extra对象在rrsn项无显式罚；检测数量及漏框罚另在answer。Eq9/15跨任务相加需inactive项0的dispatch但未明示；VG原始GIoU可能负，与正文各分量[0,1]说法不完全一致，未注明VG clip。",
+  "invariance": "共同比例reward在std后抵消；eta仅改目标与上下文相对份额。相同bbox重排匹配理论不变，但语言位置仍影响policy。",
+  "baseline_or_potential": "组均值/std；额外中间reward不是已证明potential-shaping，改变最终目标偏好。",
+  "degenerate_cases": [
+   "N=1时非目标权重分母N−1=0；无目标/空GT与空预测的数量归一未说明。",
+   "所有组分数相同std0，Eq1无epsilon说明。",
+   "只正确目标可拿.8，无须证明上下文对象对答案有帮助；完整对象列表也不证明多轮观察。",
+   "硬阈值之下定位改善可能无rrsn差异；标注遗漏将正确未标对象视作无匹配。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：相同coldstart/RFT预算做形式(text vslabelbbox)×中间reward(on/off)2×2；GT对象shuffle/仅目标/上下文分别检验，报告OOD与in-domain、长度成本。",
+  "negative_results": [
+   {
+    "text": "Table6 none LISA71.7高于structured69.8，RefCOCOg87.5也高于87.3；正文声称none各OOD差并非全部成立。",
+    "locator": "Table6 p8"
+   },
+   {
+    "text": "检测mAP31低于Perception-R1的31.9；AI2D78.2<base78.3、BLINK48.5<48.8。",
+    "locator": "Tables2/4 pp6/8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若新增中间标签监督而非结构表示解释全部收益，需缩窄形式主张；若GT上下文shuffle无影响，则丰富上下文证据机制被削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-3B-Instruct",
+   "framework": "VLM-R1 settings",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.04
+  },
+  "cost": "4A10080GB；80Kcoldstart1epoch+77KRFT1epoch，globalbatch128 lr1e-6 T1 maxresponse2048。单A100 RefCOCOg batch1平均4.03s vsVLM-R1 3.54/Perception-R1 .96。",
+  "pitfalls": [
+   {
+    "text": "检测统一confidence1并丢弃不可解析输出，mAP协议不同于有校准confidence检测器。",
+    "locator": "§4.2 p7"
+   },
+   {
+    "text": "结构坐标不是crop执行；HR4K walltime3.8h vsbase.9h，不能说无额外成本。",
+    "locator": "AppB.4 PDFp14"
+   }
+  ],
+  "code": "https://github.com/WayneTomas/Artemis (not executed/read)",
+  "lesson": "先检查GT对象覆盖和matching/empty集边界；分别测结构表示、监督密度和coldstart。时延使用skip50 warmup、20样本5runs，属于有限硬件测量非普遍成本保证。"
+ }
+}

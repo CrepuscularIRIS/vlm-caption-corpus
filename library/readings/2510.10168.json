@@ -1,0 +1,163 @@
+{
+ "paper_key": "2510.10168",
+ "title": "Concise Reasoning in the Lens of Lagrangian Optimization (PALU)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.10168.txt",
+  "sections_read": [
+   "Abstract",
+   "2",
+   "4",
+   "Table2",
+   "5.4",
+   "6 limitations",
+   "AppendixA training recipe"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把最短长度且正确率≥C写为约束问题，实用时以旧rollout正确率切换缩预算/重置Lmax；缩幅为正确长度最大值减分位数。",
+  "why_non_obvious": "直接控制可生成空间而不加长度惩罚；连续dual推导仅启发实用bang-bang规则。",
+  "trigger_condition": "When overthinking lengths vary, shrink per-query budgets only after observed performance reaches a threshold.",
+  "contribution_type": "budget controller",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "When cost reduction must preserve quality, formulate a constraint and implement a feedback budget controller.",
+  "abstract_key_step": "用性能门控长度预算。",
+  "abstract_why_non_obvious": "经验控制不等于约束满足或dual收敛保证。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.10168#s1",
+   "object": "每训练问题生成budget",
+   "information": "上一轮8候选passrate与correct长度",
+   "operation": "C=.8达标时L减max−median，未达标重置16k；继续GRPO",
+   "claimed_effect": "1.5B五benchmark macro pass@1 48.6→56.2，tokens10280→3537，减少65.6%。",
+   "conditions": [
+    "12k DeepScaleR题",
+    "20epoch"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "56.2 +15.6%     3537 −65.6%"
+   },
+   "failure_boundary": "平均提升不保每任务；Minerva26.0→24.2。旧passrate非保证保守估计。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P32",
+   "how": "把惩罚改成性能反馈预算可迁移到思考/工具预算。",
+   "strength": 2
+  },
+  {
+   "problem": "P33",
+   "how": "budget更新不是按实际证据必要性stop。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO concise methods",
+   "kind": "method"
+  },
+  {
+   "name": "ThinkPrune",
+   "kind": "budget"
+  },
+  {
+   "name": "ShorterBetter",
+   "kind": "reward"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "正确长度高度集中时quantile gap趋0；相同长度下砍一个token也可accuracy1→0。",
+   "locator": "6"
+  },
+  {
+   "text": "作者不宣称OOD简洁性保证。",
+   "locator": "6"
+  }
+ ],
+ "question": {
+  "observed_failure": "base10280tokens/48.6pass@1；PALU3537/56.2，但Minerva下降。",
+  "load_bearing_assumption": "正确回答长度具有可压缩的分散长尾。",
+  "scope": "每问题训练长度控制",
+  "success_criterion": "平均缩短且分任务核验准确率",
+  "why_open": "固定惩罚难适应各题长度，反馈估计又存在滞后。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "5.4 step-size ablation"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "min_{theta,L} max_{lambda>=0} L+lambda*(C-R(theta,L,q))",
+    "locator": "Eq7 conceptual"
+   },
+   {
+    "latex": "a_tau=Q_1(correct_lengths)-Q_(1-tau)(correct_lengths); L_next=L-a_tau if old_passrate>=C else Lmax",
+    "locator": "Eqs12–14 practical"
+   },
+   {
+    "latex": "A_i=(r_i-mean(r))/std(r)",
+    "locator": "Eq1"
+   }
+  ],
+  "signal_routing": "budget影响rollout截断；policy仍使用correctness GRPO advantage广播response tokens，不直接用dual λ加reward。无KL；truncation如何标reward及mask未明。",
+  "normalization": "mean+std correctness；Eq4 G均值及每response长度均值，Table3另记token-loss，未解实现冲突。",
+  "invariance": "[redacted: project-internal]",
+  "baseline_or_potential": "group mean；λ仅概念极值近似，实算法无连续dual更新。",
+  "degenerate_cases": "全错不计算correct quantile，走reset Lmax；全对GRPO0但budget仍缩。correct长度相同时gap0；p≈0重置预算不创造支持。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "α.1/.2/.5比较accuracy-length；Table2多个约束/奖励方案。",
+  "negative_results": [
+   {
+    "text": "Minerva pass26.0→24.2。",
+    "locator": "Table2"
+   },
+   {
+    "text": "更大分位数步幅缩得快但稍损accuracy。",
+    "locator": "5.4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：测旧估计与更新后真实passrate差；若频繁掉C以下，旧估计保守和质量约束解释不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeekR1DistillQwen1.5/7/14B",
+   "framework": "GRPO",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "H200；group8，prompt rollout512，update32，16k上限；C.8；主α.5。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当以过去成功率缩预算时，应记录每题滞后误差与reset频率，并区分截断学习和推理时自然stop。"
+ }
+}

@@ -1,0 +1,173 @@
+{
+ "paper_key": "litscan:79235",
+ "title": "Training Data Efficiency in Multimodal Process Reward Models (BIS)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79235.txt",
+  "sections_read": [
+   "Abstract",
+   "2",
+   "3 teacher-student model and stated findings",
+   "4",
+   "Tables2–5",
+   "6",
+   "Appendix C training/evaluation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "用已有MC continuation分数构造rollout的正负混合度与正例可靠性乘积，按每来源top比例筛选PRM训练数据。",
+  "why_non_obvious": "只找混合/低MC难例会保留噪声正例，只找高可靠例又缺负例；两者相乘而非追求纯难度。",
+  "trigger_condition": "When MC-labeled PRM corpora are redundant, select mixed but reliably positive rollouts from existing annotations.",
+  "contribution_type": "data selection",
+  "abstract_strategy": "self_supervised_signal_engineering",
+  "abstract_trigger_condition": "When existing pseudo labels contain both redundancy and noise, jointly score contrast and reliability.",
+  "abstract_key_step": "用rollout内部标签混合及正例MC均值联合排序。",
+  "abstract_why_non_obvious": "成功续写不等于当前步骤无错。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79235#s1",
+   "object": "MC标注PRM训练rollouts",
+   "information": "每步16条续写成功率；38来源分层",
+   "operation": "BIS=(p(1-p)+α)R；各来源保留topρ；仅prm位置二分类训练",
+   "claimed_effect": "InternVL BIS10% microF1 65.46 vs全量65.12、random10%62.86；Qwen对应64.63 vs全量65.57。",
+   "conditions": [
+    "VisualPRM400K-v1.1",
+    "α=.05",
+    "VisualProcessBench"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "BIS-10%        65.46    66.90       65.07       63.35         65.56       65.10"
+   },
+   "failure_boundary": "10%匹配全量不是两骨干都成立；MC标签是可续写性proxy，不能当crop必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P18",
+   "how": "筛选混合但可靠轨迹，需避免将困难可恢复过程当错误。",
+   "strength": 2
+  },
+  {
+   "problem": "P43",
+   "how": "训练过程评分器的数据选择可迁移，不能直接替代crop过程奖励。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Random subsets",
+   "kind": "data"
+  },
+  {
+   "name": "Mixed/Low-MC/Reliable",
+   "kind": "ablation"
+  },
+  {
+   "name": "Full Data",
+   "kind": "data"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "选择不产生额外MC调用，但原数据已付每步16续写成本；不能把总标注成本省95.5%。",
+   "locator": "2.1; reader"
+  },
+  {
+   "text": "Qwen10%64.63低于full65.57；全量匹配有模型/预算条件。",
+   "locator": "Table2"
+  }
+ ],
+ "question": {
+  "observed_failure": "InternVL random10%62.86，全量65.12；BIS10%65.46，Reliable25%仅62.75。",
+  "load_bearing_assumption": "训练瓶颈由冗余与label noise而非单纯样本量主导。",
+  "scope": "已有16-continuation MC标注PRM语料",
+  "success_criterion": "同保留比例与训练协议下F1/BoN更好",
+  "why_open": "低MC既可表示真难例也可表示噪声，单阈值不足。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables4–5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "y_j=1[s_j>0]; p=(sum_j y_j)/n; R=mean_{j:y_j=1}s_j if n_pos>0 else 1; BIS=(p(1-p)+alpha)*R",
+    "locator": "4"
+   },
+   {
+    "latex": "L=-sum_{t at <prm>}(y_t log p_t+(1-y_t)log(1-p_t))",
+    "locator": "2.1; Appendix C"
+   },
+   {
+    "latex": "E||g_noise||^2=[(1-4eta)q*(1-q*)+eta]||phi||^2",
+    "locator": "Eq6 symmetric flip approximation"
+   }
+  ],
+  "signal_routing": "训练仅prm占位符Yes/No logits二分类，其他生成token不直接监督；vision冻结，LM与projector训练。无policy advantage。BoN16取每步Yes概率平均最高轨迹。",
+  "normalization": "other: p按步数均值，R按正例数均值；每来源topρ维持来源比例。CE正文为sum，实际batch/step reduction未明。",
+  "invariance": "不是PBRS；按BIS排序改变训练分布。正比例缩放BIS排序不变；α改变mix-reliability权衡。",
+  "baseline_or_potential": "理论teacher logistic不等于真实oracle；无policy baseline。",
+  "degenerate_cases": "全错p0,R1得α并非0；全对p1得αR；单步混合项为0；若MC全同仅可靠性/平分；η>.25时Eq6信号系数负，不能将该分项当非负Fisher信息。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "相同比例比较Random/Mixed/Reliable/BIS；hard阈值与soft标签；等update random25%对照。",
+  "negative_results": [
+   {
+    "text": "提高MC正标签阈值损害F1：Intern full τ0 65.12→τ2/N63.02；soft61.54。",
+    "locator": "Table2"
+   },
+   {
+    "text": "Mixed25%64.70、Reliable25%62.75均低于BIS65.46。",
+    "locator": "Table4"
+   },
+   {
+    "text": "Random25%匹配全量updates后晚期略过拟合。",
+    "locator": "2.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：用独立人工步骤标签复核高BIS与低MC的噪声率；若高BIS仅偏简单来源则可靠性解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "InternVL2.5-8B; Qwen2.5VL7B",
+   "framework": "PyTorch/HF Trainer/DeepSpeed ZeRO3",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "4 H10080GB；full1100steps，10%110steps；另Fig1早期50steps达全量性能的95.5%省update，不等于表2训练设定。",
+  "pitfalls": [
+   {
+    "text": "评估全局阈值在heldout优化microF1；不能在测试标签上调。",
+    "locator": "Appendix C"
+   }
+  ],
+  "code": null,
+  "lesson": "当已有MC过程语料冗余时先做分来源筛选、分清标注成本与训练成本，再用heldout阈值评PRM。"
+ }
+}

@@ -1,0 +1,64 @@
+{
+ "paper_key": "2503.15478",
+ "title": "SWEET-RL: Training Multi-Turn LLM Agents on Collaborative Reasoning Tasks",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.15478.txt",
+  "sections_read": [
+   "Abstract/contribution p1/3",
+   "§3–4 pp4–7 Eq1–4",
+   "Table2/3/4 pp8–10",
+   "§5.4 ablations pp9–10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "用trajectory偏好训练可见参考答案的turn critic，再对同history候选动作排序并训练无参考答案actor。",
+  "why_non_obvious": "直接用LM平均log-ratio作advantage比回归value更可泛化，但视觉前端实际用了回归头。",
+  "trigger_condition": "当离线多轮终局偏好无法细分动作信用且训练有隐藏参考时，先训练asymmetric critic再逐轮DPO。",
+  "contribution_type": "离线多轮信用分配",
+  "abstract_strategy": "训练特权信息评价器，将全轨迹监督分配到局部动作。",
+  "abstract_trigger_condition": "训练信息比部署信息丰富且交互数据昂贵。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.15478#s1",
+   "object": "ColBench backend Llama3.1-8B actor",
+   "information": "critic看历史+reference code；actor只看历史；同history16候选",
+   "operation": "BT拟合轨迹优势和，critic平均token logπθ/πref；top/bottom50%随机配对逐turn DPO",
+   "claimed_effect": "Table2 backend success40.4 vs multi-turnDPO34.4；Table3不除长度仅3.6，w/o train info31.2。",
+   "conditions": [
+    "offline15k backend trajectories",
+    "≤10交互rounds",
+    "frontend critic换Qwen2VL7B regression"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p10",
+    "quote": "SWEET-RL w/o Normalization                   4.2            3.6"
+   },
+   "failure_boundary": "参考方案评价≠当前actor动作因果贡献；少数据critic尚不可靠；未含工具必要性成本。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "把终局偏好分为turn-level排名，但不解决turn内token归属。"
+  },
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "特权信息critic代理与actor可见信息不同。"
+  },
+  {
+   "problem": "P08",
+   "strength": 3,
+   "how": "critic明确1/L不可删，去掉严重短回答坍塌。"
+  }
+ ],
+ "scientific_replication": false
+}

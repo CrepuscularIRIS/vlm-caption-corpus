@@ -1,0 +1,58 @@
+{
+ "paper_key": "2512.11816",
+ "title": "Reinforcement Learning for Latent-Space Thinking in LLMs",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2512.11816.txt",
+  "sections_read": [
+   "Abstract/contribution",
+   "§3.2–3.4/Eqs6–7",
+   "§4 setup",
+   "Table3/§5 selected ablations",
+   "Conclusion/Limitations",
+   "Appendix A/B objective and routing"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "比较latent CoT的SFT、仅文本GRPO和直接最大化latent value预测三种训练信号。",
+  "key_step": "先冻结backbone用最终正确性训latent位置value head；再冻结head更新共享backbone，随后用真实reward刷新head。",
+  "why_non_obvious": "可微latent可直接对value预测上升，但预测器目标容易被共享表示变化利用，直接监督不等于可靠改进。",
+  "trigger_condition": "当latent无离散概率且文本loss只间接监督时，测试value预测是否可直接优化latent。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "assumption_audit_and_pivot：检验latent课程/间接RL监督不足，再尝试直接value目标。",
+  "abstract_trigger_condition": "隐式中间状态缺乏可用训练信号时，先分离验证信号质量与优化路径。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2512.11816#s1",
+   "object": "LaST latent数学模型",
+   "information": "最终正确性、latent embeddings、value head",
+   "operation": "直接Latent RL优化共享backbone",
+   "claimed_effect": "Table3 GSM8K pass@1 22.7 vs LaST SFT22.6；MATH5008.4 vs8.5，未有实质改善。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3，列shot/GSM8K pass1 pass4 tokens/MATH500 pass1 pass4 tokens",
+    "quote": "LaST SFT & Latent RL Zero            22.7       30.1           19            8.4        13.2             19"
+   },
+   "failure_boundary": "单一base模型、数学领域负结果，不是所有latent RL不可能。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "对把learned value预测当过程奖励的稳定性提出直接负证据。",
+   "strength": 1
+  },
+  {
+   "problem": "P25",
+   "how": "终端监督/GRPO不保证latent中形成缺失推理能力。",
+   "strength": 1
+  }
+ ]
+}

@@ -1,0 +1,57 @@
+{
+ "paper_key": "2604.18401",
+ "title": "CAPO: Critic-Guided Action-Aligned Policy Optimization for Advancing LLM Agent Capabilities",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2604.18401.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.3–3.5 Eq2/4–6",
+   "Tables1–2",
+   "AppendixF limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "将critic和GAE放到完整action边界，另以centered square-root surrogate调整action概率ratio。",
+  "why_non_obvious": "action信用粒度与长文本ratio方差是两个问题；动作概率乘积是exact ratio但不必是稳定更新对象。",
+  "trigger_condition": "当一个工具动作包含许多token时，分别诊断信用边界与ratio的长度尺度。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当一个工具动作包含许多token时，分别诊断信用边界与ratio的长度尺度。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2604.18401#s1",
+   "object": "多轮agent完整action更新",
+   "information": "pre-action prefix末token V(s)，环境动作奖与下一个状态V；优化batch token logratio均值",
+   "operation": "δ=r+γVnext−V；actionGAE；μ=stopgrad(batch token mean z)，w=exp(μ+Σ(z−μ)/sqrt(L))；one-action PPOclip，A共享给该动作token",
+   "claimed_effect": "Qwen3-4B：HotpotQA64.12±1.22、WebShop成功58.20±0.56；Table1报告三训练seed。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen3-4B CAPO row",
+    "quote": "+ CAPO          64.12±1.22   66.48±1.12   27.16±0.84   0.318±0.002   0.590±0.002   92.86±1.44   86.57±1.00   78.12±1.17   58.20±0.56"
+   },
+   "failure_boundary": "w不是exact action likelihood ratio或无偏IS；长度方差直觉依赖中心化token近似，相关token无普适保证；critic仍可错。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "直接把信用从token间人工时间推进移到环境action边界。"
+  },
+  {
+   "problem": "P38",
+   "strength": 2,
+   "how": "centered sqrt ratio改变长短action更新尺度。"
+  }
+ ],
+ "scientific_replication": false
+}

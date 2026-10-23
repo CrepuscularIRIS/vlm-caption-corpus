@@ -1,0 +1,183 @@
+{
+ "paper_key": "2504.14945",
+ "title": "Learning to Reason under Off-Policy Guidance",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2504.14945.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 Eqs4–8 pp4–5",
+   "§4/Table1–2 pp6–7",
+   "§5.4 p9",
+   "AppA p15",
+   "AppC.1 p18",
+   "AppE Tables3–4 p21"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "1教师轨迹+7当前rollout同组估计优势；教师token权重用f(p)=p/(p+.1)替代p，并取消其clip。",
+  "why_non_obvious": "直接混入教师会偏向已高概率token导致熵塌缩；重权重改变具体学习token。",
+  "trigger_condition": "When on-policy reward cannot reveal missing reasoning, mix verified teacher traces and reshape their token gradients.",
+  "contribution_type": "离策略混组与梯度权重",
+  "abstract_strategy": "外部行为支持加可学习性重权重",
+  "abstract_trigger_condition": "已有正确教师路径但学生低概率且纯模仿过强",
+  "abstract_key_step": "成功教师参与baseline，低概率动作权重提高",
+  "abstract_why_non_obvious": "需区分论文GRPO公式与实际DrGRPO无std配置。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2504.14945#s1",
+   "object": "Qwen2.5-Math7B",
+   "information": "训练GT MathVerify与DeepSeekR1正确轨迹；推理无教师",
+   "operation": "7on+1off mixed advantage、off f(p)=p/(p+.1)、off不clip、实际mean-only",
+   "claimed_effect": "同设置on-policy平均45.5→50.1；mixed44.4→shaping47.8→再NoClip50.1，OOD57.3→57.8。",
+   "conditions": [
+    "45k正确且≤8192教师轨迹",
+    "G8/500steps",
+    "比已发表best+6.4不同于匹配baseline+4.6"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p21 AIME24/25,AMC,MATH,Minerva,Olympiad,Avg",
+    "quote": "+ Shaping + NoClip       29.4           23.1           65.6                87.6               37.5               57.2           50.1"
+   },
+   "failure_boundary": "on-policy也用shaping反而45.5→42.0；Llama13.2仍低于Instruct17.1",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "教师轨迹提供on-policy未出现行为支持，区别于单靠RL重排。"
+  },
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "Eq4有std而实验显式去掉std，必须按真实配置判梯度尺度。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "On-Policy DrGRPO",
+   "kind": "method"
+  },
+  {
+   "name": "SFT",
+   "kind": "method"
+  },
+  {
+   "name": "SFT+RL",
+   "kind": "method"
+  },
+  {
+   "name": "RL w/SFT Loss",
+   "kind": "method"
+  },
+  {
+   "name": "Mixed-policy/shaping/NoClip",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "仅可验证数学和小模型，1教师路径；多教师/多轨迹未做。",
+   "locator": "AppA"
+  },
+  {
+   "text": "πphi=1不是一般归一化教师policy；作者声称仍保理论，但bounded true-IS定理不能直接证明此实现无偏，policy shaping本身也改梯度。",
+   "locator": "§3.1 reader qualification"
+  }
+ ],
+ "question": {
+  "observed_failure": "mixed-only44.4低于匹配on-policy45.5；加shaping/noClip后50.1。",
+  "load_bearing_assumption": "可验证正确教师路径含学生缺失且有益行为。",
+  "scope": "Qwen1.5/7B,Llama8B数学+OOD",
+  "success_criterion": "matched RL与SFT+RL任务精度/熵/资源",
+  "why_open": "学生低概率教师动作在直接IS权重下仍难学。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4 shaping/NoClip分开消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "SFT+RL和同步教师对照"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\hat A_i=R_i-\\operatorname{mean}(G_{on}\\cup G_{off})",
+    "locator": "§4实际训练；Eq4展示版另除std"
+   },
+   {
+    "latex": "J=Z^{-1}[\\sum_{off,t}f(\\hat r_{jt})\\hat A_j+\\sum_{on,t}CLIP(r_{it},\\hat A_i,\\epsilon)],\\quad f(x)=x/(x+\\gamma),\\ \\gamma=.1",
+    "locator": "Eqs5–6；展示Z=sum实际token，§4声明去length normalization，最终常数分母未明示"
+   }
+  ],
+  "signal_routing": "终端MathVerify答案正确性、无format/length reward；整条on/off生成token继承轨迹优势。off πphi设1所以rhat=πtheta，其clip取消；学生on使用old-policy ratio。entropy coefficient .01，KL0。",
+  "normalization": "mean-only",
+  "invariance": "实际无组std保留reward尺度；展示Eq4的mean+std不代表实验。f不是PBRS，是修改token梯度；f'(p)p=.1p/(p+.1)^2，不是SFT恒定logprob权重，p→0仍趋0但相对vanilla增强。",
+  "baseline_or_potential": "共享mix均值由教师与学生组成；所有reward相同A0。",
+  "degenerate_cases": "7学生全错1教师对时仍有正教师负学生信号；所有8条对时outcome A0（entropy仍可作用）。教师错误/无support不会自动解决；真实零概率token无法被有限相对权重创造。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4混组、shaping、off NoClip递进；对on单独shaping/noClip反而下降，支持不是通用优化改良。",
+  "negative_results": [
+   {
+    "text": "on-policy+shaping42.0 vs45.5；+NoClip44.9。",
+    "locator": "Table4"
+   },
+   {
+    "text": "Llama LUFFY13.2优于on9.6但低于Instruct17.1；不能说所有模型超指令版。",
+    "locator": "Table3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "匹配教师token数且使用行为不含纠偏的教师；若同样改善，则缺失行为补充解释弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-Math7B主；1.5B/7B-Instruct/Llama3.1-8B",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0
+  },
+  "cost": "8A100；LR1e-6,500steps,rollout batch128/update64,temp1；77×8GPUh vs SFT+RL130×8；教师生成费用未并入。",
+  "pitfalls": [
+   {
+    "text": "Eq4/5的std和token分母与§4去normalization声明需区分；最终固定分母未列。",
+    "locator": "§3–4"
+   },
+   {
+    "text": "不读取教师logprob避免tokenizer不一致，但变成近似而非真实IS。",
+    "locator": "§3.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当正确教师路径非常陌生时，直接概率权重仍偏已会动作；比较teacher token梯度和mixed-only熵，并明确近似IS与理论条件。"
+ }
+}

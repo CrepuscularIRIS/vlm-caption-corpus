@@ -1,0 +1,64 @@
+{
+ "paper_key": "2606.05859",
+ "title": "TARPO: Token-Wise Latent-Explicit Reasoning via Action-Routing Policy Optimization",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.05859.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 pp3–4 Eq1–8",
+   "Table1–5/§4 pp5–8",
+   "Limitations first part p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "每token由linear actionhead随机选hard采样或top-k weightedembedding软步；router和hard token loss共享终局GRPO advantage。",
+  "why_non_obvious": "soft路径本身确定，探索由mode sampling及hard token sampling保留，不需给连续向量加随机噪声。",
+  "trigger_condition": "当纯latent确定性降低探索时，将hard/soft模式选择建成可学习离散动作。",
+  "contribution_type": "token级latent-explicit router RL",
+  "abstract_strategy": "把确定性内部算子的选择随机化并用任务反馈学习路由。",
+  "abstract_trigger_condition": "连续状态表示高效但原生探索不足。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.05859#s1",
+   "object": "数学token reasoning mode",
+   "information": "final hidden state与group outcome advantage",
+   "operation": "linear stochasticrouter+top-k softembedding，hard-token logloss与all-step routing logloss联合",
+   "claimed_effect": "Table5 Qwen3B AvgP1 53.61/P32 82.80 vspurelatent53.22/54.07；Table4 OOD平均tokens337.9 vsGRPO412.2。",
+   "conditions": [
+    "Qwen2.5系列及Llama",
+    "tokens包含hard和soft",
+    "无SFT router初始化"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table5 p6 Qwen2.5-3B",
+    "quote": "TARPO                    83.23    96.97    59.75   85.20   60.57   84.80     40.23    90.00    24.27   57.04   53.61     82.80"
+   },
+   "failure_boundary": "优势很小且无读到多seed不确定度；Llama AMC23P32 62.5低GRPO70/CoT77.5，非处处提高探索。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P20",
+   "strength": 3,
+   "how": "hard语言动作与每步routing动作的loss ownership明确分开。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "增加离散route随机性与初始化bias，而非给完全确定latent做不存在的logprob。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "初始hard偏置与routerKL影响模式比例。"
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,62 @@
+{
+ "paper_key": "2601.12294",
+ "title": "ToolPRMBench: Evaluating and Advancing Process Reward Models for Tool-using Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2601.12294.txt",
+  "sections_read": [
+   "摘要与引言",
+   "§3.1–3.3 数据构造和训练",
+   "Table 2 主结果",
+   "Limitations",
+   "App B.3 RL 配置（定向）"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用离线替换及在线失败轨迹构造同前缀动作偏好，训练和评价工具使用 PRM。",
+  "key_step": "把过程评价转成给定历史及工具元数据的二选一动作判别，在线标注由完整失败轨迹定位首错并提供修正。",
+  "why_non_obvious": "离线与在线构造覆盖不同失误，工具状态语义和可替代正确动作使数学 PRM 不能直接承担评价。",
+  "trigger_condition": "只有终局工具任务得分，缺少可检验的逐步动作判别。",
+  "contribution_type": "benchmark_and_method",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "已有奖励模型的能力范围与新领域决策单位不匹配。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.12294#s1",
+   "object": "给定历史的动作候选对",
+   "information": "工具元数据及前缀；训练标签来自金标准或完整失败轨迹标注",
+   "operation": "SFT 标签或推理链，再用二元标签正确性做 GRPO",
+   "claimed_effect": "Table 2 的 GTA/ToolTalk/BFCL/ToolSandbox 准确率为84.7/73.3/86.4/70.0，平均78.6；最后一域低于 CoT 的83.0。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 2",
+    "quote": "ToolPRM-GRPO                                                        84.7    73.3                                              86.4                70.0                78.6"
+   },
+   "failure_boundary": "这是候选排序准确率；不证明作为在线奖励后策略改进，也不是视觉必要性因果标签。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "为工具过程奖励提供前缀动作偏好评测，但没有证明像素证据必要性。",
+   "strength": 2
+  },
+  {
+   "problem": "P36",
+   "how": "模型生成修正和模型复核仍需独立标注误差审计。",
+   "strength": 2
+  },
+  {
+   "problem": "P11",
+   "how": "可作为动作级监督来源，本文没有检验如何路由到 agent 的 token 梯度。",
+   "strength": 1
+  }
+ ]
+}

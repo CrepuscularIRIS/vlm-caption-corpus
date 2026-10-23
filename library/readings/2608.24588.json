@@ -1,0 +1,55 @@
+{
+ "paper_key": "2608.24588",
+ "title": "IAPO: Influence-Aware Policy Optimization for Credit Assignment in Multi-Turn Service Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.24588.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "Method Eqs2–7",
+   "Table1",
+   "Table3 ablation discussion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "冻结annotator把完成轨迹抽成support-use/failed-use图，用长度加权正权重重新分配原trajectoryadv。",
+  "why_non_obvious": "区分被下游消费的信息与传播错误，保token系数总和/符号但不保policygradient目标。",
+  "trigger_condition": "When evolving user and tool information determines later action validity, route existing trajectory credit through typed observed dependencies.",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When evolving user and tool information determines later action validity, route existing trajectory credit through typed observed dependencies."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.24588#s1",
+   "object": "service-agent action credit",
+   "information": "completedrollout中user/tool证据、binding/observableerror、terminalreward",
+   "operation": "support/error图特征→lengthweighted exp-zscore归一→按A符号选routing",
+   "claimed_effect": "8B tau2 29.61±3.56→42.18±2.55，overall28.63→34.11；4B31.31 vsGRPO27.81。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen3-8B",
+    "quote": "IAPO (Ours)      w/o    42.18 ± 2.55       24.44 ± 0.15                30.44 ± 2.20  39.36 ± 0.95     34.11"
+   },
+   "failure_boundary": "依赖annotator解释非真实删除/重跑干预；4B BFCL31.89低于GiGPO32.42；强routing伤迁移。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "同轨迹依赖证据分配adv可迁移，但caption/crop信息binding需可靠。",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "冻结annotator无value估计，仍可能误判依赖。",
+   "strength": 2
+  }
+ ]
+}

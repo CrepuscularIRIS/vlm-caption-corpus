@@ -1,0 +1,66 @@
+{
+ "paper_key": "2605.14038",
+ "title": "Model-Adaptive Tool Necessity Reveals the Knowing-Doing Gap in LLM Tool Use",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.14038.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3 model-adaptive definition",
+   "4.1–4.2/Table1",
+   "5.1 probe loss",
+   "5.3–5.4 direction/decomposition",
+   "B/Table3 verbalized ablation",
+   "C limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "用模型10次禁工具采样是否全对定义必要性；分别probe必要性与实际调用，追踪两段不一致。",
+  "why_non_obvious": "工具必要性因模型而变；可读出的分类信号与动作方向近正交，但线性probe不是模型主观认知的直接测量。",
+  "trigger_condition": "When observed tool use mismatches capability, measure model-specific no-tool reliability and separate representation prediction from executed action.",
+  "contribution_type": "diagnostic study",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When observed tool use mismatches capability, measure model-specific no-tool reliability and separate representation prediction from executed action."
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.14038#s1",
+   "object": "模型依赖工具必要性及调用错配",
+   "information": "N10、temperature.7禁工具答题；可用工具时greedy实际调用；最后20token各层表示",
+   "operation": "10次任一错即necessary；70/30split训练必要性/动作二元BCE probe，比较MCC及方向夹角",
+   "claimed_effect": "Arithmetic错配26.5–54.0%，TruthfulQA30.8–41.8%；Qwen3-8B arithmetic过用38.2%多于漏用3.5%",
+   "conditions": [
+    "4模型",
+    "4000算术+817TruthfulQA"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "Qwen3-8B                438 (11.0%)    140 (3.5%)     1526 (38.2%)   1896 (47.4%)   41.7%    69 (8.4%)    146 (17.9%)     108 (13.2%)   494 (60.5%)   31.1%"
+   },
+   "failure_boundary": "标签没有测工具是否能救；两个probe近正交不证明因果信息断路",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P05",
+   "how": "拆能力标签/内部可预测信号/真实动作，可诊断caption知道却不调用或乱调用。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "必要性必须按目标模型测，冻结强reader标签不能代表动态弱policy。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "10次全对阈值定义可靠性，不是动作增量收益或校准概率。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,63 @@
+{
+ "paper_key": "2503.21383",
+ "title": "Controlling Large Language Model with Latent Actions",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.21383.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 pp3–5",
+   "§4.1–4.5 pp5–9 Fig3/Table1/Countdown negative"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "architectural_operator_substitution",
+  "key_step": "inverse dynamics用下一token学习离散latent action；world model接受action，policy模仿其label后在latent空间RL，RL阶段world冻结。",
+  "why_non_obvious": "把token分布变化交给小policy但先需大规模联合预训练，不能直接给现成LLM加任意latent控制。",
+  "trigger_condition": "当token动作空间过大且需要语义探索时，学习压缩控制空间与可控生成器。",
+  "contribution_type": "架构/动作空间重构",
+  "abstract_strategy": "将动作生成与语言转移分开优化。",
+  "abstract_trigger_condition": "高维输出控制难以高效探索，存在可学习潜在动作。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.21383#s1",
+   "object": "Llama3.1-8B衍生latent policy",
+   "information": "training inverse见history+next token，inference policy仅history；world根据latent贪心生成token",
+   "operation": "200B token学inverse/world、100B tokenpolicy BC，再FTA-P及latent RL",
+   "claimed_effect": "MATH500 RL42.4 vsbaseline38.2；Table1 Scienceworld unseen CoLA20.4→21.8，baseline17.5→15.6。",
+   "conditions": [
+    "world8B/policy2B/inverse1B",
+    "不同预训练和总参数预算",
+    "MCTS-Q68.2另属测试搜索"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.3.1 p7",
+    "quote": "After RL, our CoLA model can achieve 42.4 on math500 and outperforms"
+   },
+   "failure_boundary": "Countdown两者最终仅10–15%正确；快学格式不等于推理提升；未核预训练成本匹配。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P35",
+   "strength": 2,
+   "how": "改变采样动作空间增强探索，但不是直接修crop支持。"
+  },
+  {
+   "problem": "P24",
+   "strength": 2,
+   "how": "RL固定world只训policy可限制底座漂移，前置FTA仍改world。"
+  },
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "控制能力来自先构造latent与BC，不是RL零样本创造。"
+  }
+ ],
+ "scientific_replication": false
+}

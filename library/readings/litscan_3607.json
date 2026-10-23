@@ -1,0 +1,59 @@
+{
+ "paper_key": "litscan:3607",
+ "title": "CodeTool: Enhancing Programmatic Tool Invocation of LLMs via Process Supervision",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3607.txt",
+  "sections_read": [
+   "Abstract; §3.2–3.4 Eq1–6",
+   "§4.2–4.4; Tables2–3; §5.3 ablation/Table5; Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用可执行代码批量调用工具，在每step从多个候选中结合执行可行性和学习到的后续完成潜力选优。",
+  "key_step": "spot为Python执行成功0/1；latent由后续rollout成功比例和长度惩罚构造，再SFT训练PRM预测；推理最大化spot+latent选下一代码step。",
+  "why_non_obvious": "能执行只保证局部可行，不保证对任务有用；循环和缓存又可减少重复文本/JSON交互。",
+  "trigger_condition": "有工具协议及可执行代码环境，任务涉及多工具或大量同类调用。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把硬执行反馈与柔性长期潜力组合用于候选选择，蒸馏昂贵搜索评分。",
+  "abstract_trigger_condition": "有工具协议及可执行代码环境，任务涉及多工具或大量同类调用。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3607#s1",
+   "object": "每步可执行代码候选",
+   "information": "工具URL/参数协议、真实执行状态、训练搜索的Solved叶节点比例和后续平均步数",
+   "operation": "Rspot∈{0,1}; Rlatent=α^(1−LR)β^(τ/L); 推理选spot+PRM latent最大者",
+   "claimed_effect": "Table2 Qwen2.5-Instruct7B CodeTool SoPR64.19 vs JSON DFSDT60.52；Coder7B69.75。去spot或latent的平均SoPR65.99/65.41低于Coder完整69.75。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3 Eq3–6; Table2 p18293; §5.3",
+    "quote": "CodeTool        Code         63.74         68.44    65.68      55.98        72.50      58.82     64.19"
+   },
+   "failure_boundary": "StableToolBench过滤为580例并用GPT4重建截断JSON及judge评分；代码执行成功不等于语义正确，PRM在部分简单子集有害。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "区分局部可执行性与任务完成潜力，可作工具结果判定的两通道参照。",
+   "strength": 2
+  },
+  {
+   "problem": "P44",
+   "how": "执行通过不是任务价值，额外latent可引入judge/PRM偏差。",
+   "strength": 2
+  },
+  {
+   "problem": "P56",
+   "how": "基准工具响应由GPT4重建与缓存过滤，需保持执行/评估协议一致。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

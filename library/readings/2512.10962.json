@@ -1,0 +1,162 @@
+{
+ "paper_key": "2512.10962",
+ "title": "WebSTAR: Towards Scalable Computer-Use Agents through Step-level Filtering and Thought Augmentation",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_html",
+  "locator": "2512.10962.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3",
+   "4 Tables2–7",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "成功轨迹中以o4-mini逐步评分>5作SFT loss mask，保留低分步骤作为history；另补thought并蒸馏StepRM。",
+  "why_non_obvious": "轨迹成功不等于每个动作值得模仿，丢loss而保留context允许学习失误后的恢复。",
+  "trigger_condition": "When successful trajectories contain bad intermediate actions, mask low-quality step targets while retaining their context.",
+  "contribution_type": "data construction and masked SFT",
+  "abstract_strategy": "targeted_self_supervised_objective",
+  "abstract_trigger_condition": "When coarse success labels hide local errors, grade local units before imitation.",
+  "abstract_key_step": "局部评估决定监督单位，不只筛整条轨迹。",
+  "abstract_why_non_obvious": "局部teacher质量和轨迹终局结果可以不一致。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2512.10962#s1",
+   "object": "成功CUA轨迹中的动作/思想",
+   "information": "task、过去动作、最近截图及action-target crop；o4-mini分数",
+   "operation": "s>5的step训练thought/action；其余只作context",
+   "claimed_effect": "Table2 97K全部steps平均29.9，46K正确steps39.6；Table3 thought提高pass4但多数pass1下降。",
+   "conditions": [
+    "Qwen2.5VL7/32B",
+    "teacher成功轨迹"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "Correct Correct 46K 60.0 34.1 41.9 20.9 47.6 61.9 29.5 31.7 20.9 47.8 39.6"
+   },
+   "failure_boundary": "teacher与人仅73%一致，探索动作易被误删；不证明长期credit。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P37",
+   "how": "轨迹成功标签不足，须按步骤过滤监督。",
+   "strength": 3
+  },
+  {
+   "problem": "P18",
+   "how": "明确出现exploratory-but-not-wrong被grader过罚。",
+   "strength": 3
+  },
+  {
+   "problem": "P38",
+   "how": "thought并非单次准确率稳定提升。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "successful trajectory all-step SFT",
+   "kind": "mask ablation"
+  },
+  {
+   "name": "without thoughts",
+   "kind": "augmentation ablation"
+  },
+  {
+   "name": "o4-mini vs StepRM",
+   "kind": "grader comparison"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "质量与多样性受teacher CUA限制。",
+   "locator": "Limitations"
+  },
+  {
+   "text": "SFT不能解决长horizon信用分配和未知环境探索；StepRM用于RL只是未来工作。",
+   "locator": "Limitations/4.4"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table2全步97K平均29.9，而高分46K为39.6。",
+  "load_bearing_assumption": "终局成功不能保证所有局部监督正确。",
+  "scope": "离线CUA SFT",
+  "success_criterion": "同模型下有效步骤更少但任务成功率提高",
+  "why_open": "grader也会删掉必要探索，且thought单次成功未一致提高。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables2,3,6,7 controlled ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "m_n=1[s_n>5]; L_SFT=-sum_n m_n log pi_theta(t_n,a_n|I,past thoughts/actions,recent screenshots)",
+    "locator": "3.2"
+   }
+  ],
+  "signal_routing": "对被选step的thought和action目标做SFT；低分历史仍进条件，图像为输入。非RL，StepRM评分不直接作为policy advantage；原文step求和不说明实现token reduction。",
+  "normalization": "other: binary step mask；无group advantage/std；StepRM数据50%>5和50%≤5。",
+  "invariance": "非PBRS或无偏policy gradient；mask改变训练目标和支持分布。",
+  "baseline_or_potential": "o4-mini步骤质量判断含三个假想替代动作，不是实际counterfactual rollout Q。",
+  "degenerate_cases": "全低分轨迹无目标loss；若必要探索均≤5，其行为无法被正向监督；只成功轨迹也漏全失败的恢复模式。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2同成功轨迹全步vs高分步；Table6同100K数据量不同阈值；Table3有无thought。",
+  "negative_results": [
+   {
+    "text": "7B thought使WebVoyager pass1 44.8→43.3、Mind2WebLive23.0→17.0，pass4分别57.2→64.2、28.4→38.6；多次成功能力不等于单次稳定性。",
+    "locator": "Table3"
+   },
+   {
+    "text": "100步人工核73%一致；grader对探索但未错的动作过严。",
+    "locator": "4.3 Table5"
+   },
+   {
+    "text": "7B StepRM三个任务pass1均低于o4-mini（35.4/13.2/13.0 vs38.4/18.5/17.3）；并非全部模型无损替换。",
+    "locator": "Table7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：在含必要探索的配对轨迹上测保留率与任务成功；保持训练token量和部署采样数相同，若优势消失则不能归因局部质量。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B/32B",
+   "framework": "LlamaFactory multimodal SFT",
+   "group_size": null,
+   "max_turns": 100,
+   "kl": null
+  },
+  "cost": "13,338成功轨迹；2epochs约256/1024 A100 GPUhours；seq8192/batch128/lr1e-5",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当成功轨迹含坏动作时只mask目标，保留真实历史，但应单独审计必要探索的误杀。"
+ }
+}

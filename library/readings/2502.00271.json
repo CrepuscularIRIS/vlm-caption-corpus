@@ -1,0 +1,59 @@
+{
+ "paper_key": "2502.00271",
+ "title": "Scaling Flaws of Verifier-Guided Search in Mathematical Reasoning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2502.00271.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 beam search/verifiers",
+   "§4 setup",
+   "§5.1–5.2/Table2",
+   "§6 mitigations",
+   "§7 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "在搜索失败中分开生成无有效候选与验证器剪掉所有有效候选，用后续rollout近似标记有效性。",
+  "why_non_obvious": "扩大候选数同时扩大被误排序的风险；有正确候选不等于搜索能保住。",
+  "trigger_condition": "当verifier-guided search扩大预算却落后重复采样时，审计每次剪枝是否丢失全部可成功前缀。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "当verifier-guided search扩大预算却落后重复采样时，审计每次剪枝是否丢失全部可成功前缀。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2502.00271#s1",
+   "object": "验证器引导的step beam search",
+   "information": "OVM/PRM排名与每候选4(GSM8K)/16(MATH/OOD)后续rollout的至少一次正确标签",
+   "operation": "分解generation/selection失败，并试随机温度选择或λMC终答+(1−λ)verifier混分",
+   "claimed_effect": "Table2 MATH DeepSeekMath失败中selection80.0%、generation20.0%；GSM8K selection88.6%。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "tion due to imperfect verifiers as the root cause of these              G 11.4% 16.5% 20.0% 22.9%                 15.7%       18.8%\nflaws. In Section 5.2, we term this phenomenon as “verifier             S 88.6% 83.5% 80.0% 77.1%                 84.3%       81.2%"
+   },
+   "failure_boundary": "有效前缀是有限rollout代理，不是完美oracle；主要指标coverage而非最终单答案precision；未研究更大verifier/数据。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "固定reader/verifier可能错杀当前actor仍可恢复的前缀。"
+  },
+  {
+   "problem": "P50",
+   "strength": 2,
+   "how": "恢复轨迹被剪掉会把评分错误变为不可逆搜索失败。"
+  }
+ ],
+ "scientific_replication": false
+}

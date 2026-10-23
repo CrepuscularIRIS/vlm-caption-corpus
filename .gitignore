@@ -13,3 +13,4 @@
 /deepread/*
 !/deepread/verify_quotes.py
 __pycache__/
+/.git-private/

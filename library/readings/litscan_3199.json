@@ -1,0 +1,63 @@
+{
+ "paper_key": "litscan:3199",
+ "title": "EPO",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3199.txt",
+  "sections_read": [
+   "Abstract p1",
+   "§3 pp3–5 Eq1–5",
+   "Tables1–4/§4 pp6–8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "decompose_and_delegate",
+  "key_step": "单独训练strategy LLM，每turn给冻结执行LLM自然语言策略；全轨迹judge标关键策略，discounted return加权策略logloss，迭代selfplay。",
+  "why_non_obvious": "策略输出可被执行器拒绝；只优化策略模块能跨执行器复用但信用受执行器与judge影响。",
+  "trigger_condition": "当端到端行为微调损通用性时，独立优化可插拔策略生成器。",
+  "contribution_type": "可迁移策略模块RL",
+  "abstract_strategy": "把规划和行为生成拆开，训练前者通过冻结执行器获得反馈。",
+  "abstract_trigger_condition": "任务策略需适应但行为模块需保持通用能力。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3199#s1",
+   "object": "strategic planner",
+   "information": "goal、full interaction、所有strategies、final score供GPT4o PRM",
+   "operation": "关键turn二值reward→future discountedreturn回传较早策略→strategy tokenmean REINFORCE",
+   "claimed_effect": "Table4 SOTOPIA HardGoal terminalRL6.95→PRM7.20→selfplay7.78；All8.50→8.58→8.84。",
+   "conditions": [
+    "Llama3-8B planner",
+    "GPT4o executor/judge",
+    "不声称其他agent均同收益"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table4 p8",
+    "quote": "w/ RL + PRM + Self-play       7.78         8.84"
+   },
+   "failure_boundary": "judge事后关键性不是action intervention；竞争中合作策略可能被对手利用。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "future过程reward累计早期策略，执行行为tokens不直接训练。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "策略效用依赖冻结executor而非独立通用value。"
+  },
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "PRM利用完整轨迹/最终score而非prefix-only。"
+  }
+ ],
+ "scientific_replication": false
+}

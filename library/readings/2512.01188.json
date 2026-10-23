@@ -1,0 +1,165 @@
+{
+ "paper_key": "2512.01188",
+ "title": "Real-World Reinforcement Learning of Active Perception Behaviors (AAWR)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2512.01188.txt",
+  "sections_read": [
+   "Abstract",
+   "3",
+   "4 Tables1–3",
+   "5 limitations",
+   "AppendixA IQL implementation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "部署policy只收partial观测/历史；训练Q,V收额外sensor，exp((Q−V)/β)加权行为回归；offline后可在线迭代。",
+  "why_non_obvious": "privileged expert直接蒸馏可能跳过必要观察，而privileged critic评价partial-policy探索能学看图动作。",
+  "trigger_condition": "When partial sensors hide information needed for value estimation, use privileged training critics while keeping the actor observation-limited.",
+  "contribution_type": "asymmetric actor-critic learning",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When training has richer state than deployment, separate evaluation information from policy inputs.",
+  "abstract_key_step": "privileged优势作为动作模仿权重而不喂给actor。",
+  "abstract_why_non_obvious": "强teacher行为不一定适合缺信息student。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2512.01188#s1",
+   "object": "主动感知动作",
+   "information": "训练extra sensors/位置/bbox，部署wrist或proprioception；demo+online buffer",
+   "operation": "IQL privilegedQ/V→exponential weighted actor regression",
+   "claimed_effect": "真实BlindPick onlineAAWR grasp94/pick89 vsonlineAWR71/55；模拟AP AAWR100% vsdistillation80%。",
+   "conditions": [
+    "8任务3robot",
+    "partial actor"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "On. AAWR (ours)          94         89"
+   },
+   "failure_boundary": "训练依赖privileged传感器；现实handoff仍需detector切换，不是端到端generalist微调。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P21",
+   "how": "主动采信息policy与privileged训练评价可迁移概念，动作空间需重构。",
+   "strength": 2
+  },
+  {
+   "problem": "P39",
+   "how": "直接揭示privileged teacher动作不适合partial student，需分离信息边界。",
+   "strength": 3
+  }
+ ],
+ "baselines": [
+  {
+   "name": "symmetric AWR",
+   "kind": "critic ablation"
+  },
+  {
+   "name": "BC",
+   "kind": "imitation"
+  },
+  {
+   "name": "privileged expert distillation",
+   "kind": "information ablation"
+  },
+  {
+   "name": "VIB",
+   "kind": "information bottleneck"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "目前是active helper后切π0，直接微调generalist属于未来工作。",
+   "locator": "5"
+  },
+  {
+   "text": "预设privileged信息及长horizon扩展未解决。",
+   "locator": "5"
+  }
+ ],
+ "question": {
+  "observed_failure": "AP distillation停80%而AAWR100%；真实online pick89 vsAWR55。",
+  "load_bearing_assumption": "partial-policy的动作价值需要训练时额外状态评估，expert动作未必可观察执行。",
+  "scope": "active-perception POMDP",
+  "success_criterion": "实际采信息行为和success提升，不把actor输入privilege泄漏",
+  "why_open": "有限历史、critic误差和offline支持仍限制改进。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "4 symmetric/privileged and distillation comparisons"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "L_actor=E_{(s,z),a~mu}[exp((Q(s,z,a)-V(s,z))/beta)*log pi(a|z)]",
+    "locator": "Eq2"
+   },
+   {
+    "latex": "L_Q=E[(r+gamma V(sprime,zprime)-Q(s,z,a))^2]; L_V=E[abs(tau-1[Q-V<0])*(Q-V)^2]",
+    "locator": "AppendixA Eqs5–6"
+   }
+  ],
+  "signal_routing": "privilegedobs仅critic/value，actorlogprob只partialobs/history；advantage作transition权重。机器人action非LMtoken，无观察mask概念。实实现IQL expectile乐观value，不简单等同behavior policy真value。",
+  "normalization": "other: exp(A/β)温度缩放；未给通用groupstd/weightclipping，不能补。offline-online batch各50%。",
+  "invariance": "非PBRS。Q,V同常数平移差不变，reward scale会经exp改变权重；privileged信息不进部署actor但会改变训练监督。",
+  "baseline_or_potential": "privileged V(s,z)；理论state(z,s)vs有限history实践有条件差。",
+  "degenerate_cases": "A全0回BC；β大权重趋1；β小放大critic误差；离线无有用观察动作则只能靠online探索/新数据补支持。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "AAWR vsAWR同offline示例；online refinement；distill/VIB额外信息基线。",
+  "negative_results": [
+   {
+    "text": "BookshelfD exhaustive search96高于AAWR81.3；ShelfCabinet exhaustive completion45高于AAWR40，原文全指标最优并不成立。",
+    "locator": "Table3"
+   },
+   {
+    "text": "BookshelfP AAWR completion44.4远低于search92.4，找到不等于成功handoff。",
+    "locator": "Table3"
+   },
+   {
+    "text": "VIB部署无privilege时collapse；distillation只去中间而漏角落。",
+    "locator": "4.3"
+   }
+  ],
+  "seeds": "simulation10 seeds; real-world repetition counts not read",
+  "falsifier": "读者：禁止critic/actor信息泄漏且保持demo支持相同；若收益来自额外reward标签而非value估计须重新归因。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "robot policies; π0 handoff",
+   "framework": "IQL + advantage weighted regression",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8任务预算不同；BlindPick20k offline/1.2k online steps；Franka helper纯offline100k updates。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当teacher能直接看到目标而student不能时，优先用teacher状态评价student的采信息动作，不直接蒸馏跳过观察的expert动作。"
+ }
+}

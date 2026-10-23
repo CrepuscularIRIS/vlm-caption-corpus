@@ -1,0 +1,61 @@
+{
+ "paper_key": "2510.15110",
+ "title": "DLER: Doing Length pEnalty Right - Incentivizing More Intelligence per Token via Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.15110.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3 normalization/clipping/dynamic sampling",
+   "Table1",
+   "4.6",
+   "6 Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "简单超长归零reward配group-mean后batch-std、较高upperclip、过滤全零/全正组重采样。",
+  "why_non_obvious": "效率改善可来自优化与采样而非复杂penalty；组合不是无条件准确率保证。",
+  "trigger_condition": "When truncation creates homogeneous groups and unstable updates, repair normalization and exploration before redesigning the penalty.",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When truncation creates homogeneous groups and unstable updates, repair normalization and exploration before redesigning the penalty."
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.15110#s1",
+   "object": "length-constrained reasoning RL",
+   "information": "correctness、outputlength、group与batch reward统计",
+   "operation": "超长reward0；每组中心化、全batch标准化；dynamic sampling和upperclip",
+   "claimed_effect": "R1-7B totalavg length7747→2405(-69%)，AIME24 55.40→55.62；DA版2167token但AIME24降53.90。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 DLER-R1-7B",
+    "quote": "DLER-R1-7B                  94.21     1634        55.62      3230      84.41    2512       53.88       2058        60.48       2592      2405 (-69%)"
+   },
+   "failure_boundary": "高能力模型配不足数据仍掉点；DA更短也可能掉准确率；同质组过滤不创造缺失采样support。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "how": "准确拆group中心化/batch尺度与共同系数抵消。",
+   "strength": 3
+  },
+  {
+   "problem": "P32",
+   "how": "可作length控制训练recipe对照。",
+   "strength": 3
+  },
+  {
+   "problem": "P29",
+   "how": "全零过滤可能排除需要探索的困难样本。",
+   "strength": 2
+  }
+ ]
+}

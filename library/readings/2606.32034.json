@@ -1,0 +1,63 @@
+{
+ "paper_key": "2606.32034",
+ "title": "QVal: Cheaply Evaluating Dense Supervision Signals for Long-Horizon LLM Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2606.32034.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–3",
+   "§2 Eq1–2/§3 pp3–6",
+   "Figs2–5/Discussion pp7–9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "恢复同state强制候选action，用参考策略continuation估值，比较dense score与reference的排序，先评信号再训练。",
+  "why_non_obvious": "把信号质量与训练工程混淆分开，但参考策略和max-return标签自身也会改变含义。",
+  "trigger_condition": "When dense signals are costly to train-test, compare their action rankings with fixed-reference continuation labels first.",
+  "contribution_type": "训练前诊断testbed，非新RL优化器",
+  "abstract_strategy": "以可核参考隔离中间信号质量",
+  "abstract_trigger_condition": "可以保存/恢复环境状态并评估多候选动作"
+ },
+ "signatures": [
+  {
+   "sig_id": "2606.32034#s1",
+   "object": "21种dense signal/4环境/6backbone",
+   "information": "参考expert或frontier continuation；每state4候选；部分方法有nextstate/privileged信息",
+   "operation": "强制首动作后rollout，TerminalBench取16次最大discounted return；scalar scores global Spearman，ranking/Δbelief/SDPO用state-local Spearman",
+   "claimed_effect": "完成>1.2K评估，direct/ranking平均最强；简单增复杂度常无收益，未建立下游RL增益定量关系。",
+   "conditions": [
+    "MVMC max不是固定policy期望Q的无偏估计",
+    "global与state-local相关不可直接混成同一指标",
+    "无训练"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "§3.1 p5 TerminalBench label construction",
+    "quote": "estimate TerminalBench values via MVMC rollouts (k = 16)"
+   },
+   "failure_boundary": "对强reference对齐不等于当前弱policy可利用；低Qalignment探索奖励仍可能有效",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P13",
+   "how": "可先查候选信号是否真分辨动作排序，避免仅形式四象限。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "明确reference并非最终训练policy；迁移价值不得混同。",
+   "strength": 3
+  },
+  {
+   "problem": "P41",
+   "how": "restore/force动作仍有干预边界。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false
+}

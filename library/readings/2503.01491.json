@@ -1,0 +1,59 @@
+{
+ "paper_key": "2503.01491",
+ "title": "What's Behind PPO's Collapse in Long-CoT? Value Optimization Holds the Secret",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.01491.txt",
+  "sections_read": [
+   "Abstract/introduction",
+   "§3.2 value pretraining",
+   "§3.3 Eq5–8/Algorithm1",
+   "§4.1 setup",
+   "Table1–4",
+   "discussion/conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "分离critic回归target的λ与actor优势的λ；先固定SFT policy预训练value。",
+  "why_non_obvious": "critic需要终局信号传到早期token而actor仍要方差控制，两者共用λ未必合适。",
+  "trigger_condition": "当长CoT PPO早期token优势失真并塌短时，先校准value，再分别选择critic与actor的GAEλ。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当长CoT PPO早期token优势失真并塌短时，先校准value，再分别选择critic与actor的GAEλ。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.01491#s1",
+   "object": "长序列PPO的value与actor更新",
+   "information": "固定SFT采样的终答±1标签及当前rollout TD残差",
+   "operation": "critic预训练/更新λcritic1回归MC；actor λ.95或.99的GAE用于token PPO，KL0",
+   "claimed_effect": "8K消融PPO AIME5.6；仅value预训练29.4；VC-PPO41.9。16K另表VC48.8 vs GRPO38.9，不能混作同一设置。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "PPO                       5.6         36.7       38.7              7.3\n                VC-PPO w/o Decoupled-GAE            29.4        66.7       46.9              9.9\n                        VC-PPO                       41.9       76.6       48.6              11.4"
+   },
+   "failure_boundary": "非所有泛化任务改善：16K GPQA48.8低于GRPO49.4；单模型/未读seed，不能将近似V下λ<1宣称无偏。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "保留终答但调整value传播与actor GAE的分工。"
+  },
+  {
+   "problem": "P38",
+   "strength": 2,
+   "how": "初始化value偏差可使早token负优势与长度塌缩。"
+  }
+ ],
+ "scientific_replication": false
+}

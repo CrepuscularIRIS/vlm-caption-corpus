@@ -1,0 +1,204 @@
+{
+ "paper_key": "2607.16999",
+ "title": "Counterfactual Shapley Credit Assignment",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.16999.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–3",
+   "§2–4 Eqs3–11 pp4–10",
+   "§5 Figs5–7 pp11–13",
+   "AppA/B Eqs12–23 pp19–21",
+   "AppE Table3/F limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把轨迹动作作Shapley玩家，对coalition替换成baseline动作；同parent复用观测结果，偏离后重采样，估计观察return−反事实return分配信用。",
+  "why_non_obvious": "将skill与luck分开需SCM而非仅同题不同续写；baseline策略和噪声耦合定义改变因果故事。",
+  "trigger_condition": "When reward mixes action effects with environmental luck, use resettable causal simulations and coalition credit estimates.",
+  "contribution_type": "SCM反事实reward重分配+PTR",
+  "abstract_strategy": "比较同实现条件下替换行动的效果再分配合作贡献",
+  "abstract_trigger_condition": "模拟器可reset且反事实噪声独立假设成立",
+  "abstract_key_step": "coalition抽样复用一次simulation估所有action信用",
+  "abstract_why_non_obvious": "amortized O1/action仍需O(TM)simulations而非免费。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.16999#s1",
+   "object": "SkillLuck/CombinatorialLock tabular RL",
+   "information": "可恢复simulator、观测trajectory和baseline policy；非语言token",
+   "operation": "sample coalition，on-track复用/off-track重采样；κ/Q加权ϕ，替代reward，undiscountedϕ-GAE+prioritizedtrajectoryreplay",
+   "claimed_effect": "Lock T15以上baseline失败，仅ϕ+PTR扩展；每run预置1条最优轨迹，M16使episode效率胜但总simulation预算不胜。",
+   "conditions": [
+    "Lock20seeds",
+    "SkillLuckM1/50seeds",
+    "self-baseline训练"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.3 p13 cost qualification",
+    "quote": "at M =16 (Lock), ϕ-PPO wins on episode"
+   },
+   "failure_boundary": "resettable simulator与chosenSCM不可直接用于开放网页/文字caption干预；理论self-baseline总目标等价有待澄清",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 3,
+   "how": "明确替换动作后状态如何变化，不能在旧观察上伪拼。"
+  },
+  {
+   "problem": "P22",
+   "strength": 2,
+   "how": "耦合噪声与coalition MC样本量控制。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "动作reward重分配可借鉴但非现有VLM可直接实现。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "PPO/REINFORCE",
+   "kind": "method"
+  },
+  {
+   "name": "HCA/CCA/CoCoA/QCA",
+   "kind": "method"
+  },
+  {
+   "name": "RUDDER/SyntheticReturns",
+   "kind": "method"
+  },
+  {
+   "name": "ϕ without PTR",
+   "kind": "method"
+  },
+  {
+   "name": "PPO+PTR/PER",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "需可reset simulator；Assumption3.3独立counterfactual noise排相关外生噪声，非仅观察数据可识别。",
+   "locator": "AppF"
+  },
+  {
+   "text": "Thm3.7直接称max E sumϕ同原目标，但selfbaseline随π变化时Shapley效率sumϕ=Y−Ybaseline且两者同policy边际期望，字面总期望可能恒0；需区分冻结baseline/stopgradient估计与同时求导，未接受无条件保证。",
+   "locator": "Lemma3.5/Thm3.7 reader qualification"
+  },
+  {
+   "text": "重新算ϕ不自动纠正旧replay state/action occupancy；AppB称无policyIS需要，仍不等于on-policy无偏。",
+   "locator": "AppB Eq18 reader qualification"
+  }
+ ],
+ "question": {
+  "observed_failure": "SkillLuck无因果末动作也受终端luck奖励；Lock长链已知成功仍难利用。",
+  "load_bearing_assumption": "chosenSCM与baseline能表达欲测因果，可靠重放噪声",
+  "scope": "tabular和DoorKey attribution，无LLM训练",
+  "success_criterion": "归因与groundtruthcausal一致、episode和simulation双预算",
+  "why_open": "outcome关联不能区分动作技能和环境偶然。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "SkillLuck设计因果与无关动作"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Lockϕ/PTR消融"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "M16总sim成本负结果"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "f(z)=Y-Y^{\\sigma_z},\\quad\\hat\\phi_t=M^{-1}\\sum_m\\frac{\\kappa_t(z^{(m)})}{Q(z^{(m)})}f(z^{(m)})",
+    "locator": "Eq4/Def4.1"
+   },
+   {
+    "latex": "\\delta_t^\\phi=\\hat\\phi_t+V^\\phi(s_{t+1})-V^\\phi(s_t),\\quad A_t^\\phi=\\sum_{\\ell\\ge0}(\\lambda_\\phi)^\\ell\\delta_{t+\\ell}^\\phi",
+    "locator": "Eqs12–13 γphi1"
+   },
+   {
+    "latex": "|E\\hat\\phi_t^\\lambda-\\phi_t|\\le \\frac{2\\gamma(1-\\lambda)}{1-\\gamma\\lambda}\\|V-V_\\pi\\|_\\infty",
+    "locator": "Thm4.4 conditional claim"
+   }
+  ],
+  "signal_routing": "per-stepϕ替环境reward，critic Vphi和原V两个网络，PPO对离散action；batch std仅除不减mean，保留0基准。PTR按RMSϕ priority、fresh/replay混合且replay乘priorityIS；不是tokenlevelmask。",
+  "normalization": "other",
+  "invariance": "std-only非zscore；共同正scale可被batchstd消去。原γ已编码Y，ϕ-returnγphi1避免二次折扣。不是标准potential shaping，作者依Shapley效率与gradient equivalence主张保最优；selfbaseline/策略依赖及PPOclip/replay需额外条件，不作已核保证。",
+  "baseline_or_potential": "训练πbase=π但freshactions；DoorKey random vsnavigationbaseline改变归因。",
+  "degenerate_cases": "baseline总同动作则效果0；全无因果φ0；M有限非因果可能估噪声，近零std如何处理未读；offtrack重采样会降低common-noise相关。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "SkillLuck中间非因果与末端luck动作，Lock种入同一成功轨迹隔离利用/探索，DoorKey改变baseline查看归因；图读趋势不编精确success数字。",
+  "negative_results": [
+   {
+    "text": "SkillLuckσ0基线可胜ϕ，M1估计噪声；M16Lock总模拟效率不优。",
+    "locator": "§5.1/5.3"
+   },
+   {
+    "text": "没有PTR时成功种子被稀释；长Lock随机coalition仍高方差。",
+    "locator": "§5.2"
+   }
+  ],
+  "seeds": "SkillLuck50,Lock20,DoorKey20",
+  "falsifier": "将噪声改为跨step相关或替换不同SCM耦合，若归因/收益改向，则方法仅在指定counterfactual模型有意义。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "tabular/MLP[64,64] Fork配置",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null,
+   "episode_horizon_steps": {
+    "SkillLuck": 100,
+    "Combinatorial Lock": "5–25"
+   },
+   "turn_limit_source": "§5.1–5.2: finite-horizon MDP action steps, not conversational/tool turns."
+  },
+  "cost": "SkillM1需2T steps；LockM16需17T；DoorKey attributionM4096；Table3 B64chunk128,PPO4epochs,clip.2,λMC1,λphi.95。",
+  "pitfalls": [
+   {
+    "text": "理论O1是每action摊销给定M，不是总cost独立于horizon/γ/variance。",
+    "locator": "§4"
+   },
+   {
+    "text": "Lock有最优轨迹种子，不能声称解决从零长链探索。",
+    "locator": "§5.2"
+   }
+  ],
+  "code": null,
+  "lesson": "因果credit需说明替代行为、噪声复用、状态重放和成本；把同policy baseline期望与stopgradient估计严格区分。"
+ }
+}

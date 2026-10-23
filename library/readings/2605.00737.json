@@ -1,0 +1,63 @@
+{
+ "paper_key": "2605.00737",
+ "title": "To Call or Not to Call: A Framework to Assess and Optimize LLM Tool Calling",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2605.00737.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 definitions/controller",
+   "Table2/§4 controller results",
+   "§5 concluding discussion/limitations",
+   "AppendixB.6 settings/E.3.1–2"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "分别测无工具失败need与强制工具带来的utility，再从输入hidden state学need控制器。",
+  "why_non_obvious": "需要工具不等于工具有益；排序调用应验证实现收益，不能只看need预测准确率。",
+  "trigger_condition": "当自报是否需要工具不可靠时，用No-Tool/Always-Tool配对结果监督控制器，并独立评估工具增益与预算。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "当自报是否需要工具不可靠时，用No-Tool/Always-Tool配对结果监督控制器，并独立评估工具增益与预算。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2605.00737#s1",
+   "object": "工具调用选择",
+   "information": "训练标签来自No-Tool和Always-Tool任务分数；LNE输入固定final-layer prompt末token，无未来工具返回",
+   "operation": "N*=1[sNT低于阈值]，Δ*=sAT−sNT；MLP预测need，正分类样本内按confidence分配至多K调用，基模型不更新",
+   "claimed_effect": "Table2 Mistral3.1-24B GSM-Hard natural setting：self .51（5%调用）→LNE .43（43%调用），显示need控制器并非普遍增益。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Mistral3.1-24B GSM-Hard row",
+    "quote": "GSM-Hard       0.51 (5)      0.43 (43)       0.51 (5)     0.48 (20)   0.51 (5)    0.43 (40)   0.51 (5)    0.43 (43)"
+   },
+   "failure_boundary": "N*不等于Δ*>0；hindsight optimal用已实现结果，搜索随机性下非期望因果oracle；LUE gains不稳定，LLM factuality judge有偏。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "直接区分无工具失败与工具边际效用，反驳将need打标当当前actor工具价值。"
+  },
+  {
+   "problem": "P26",
+   "strength": 2,
+   "how": "在预算下从隐藏表示学调用判别。"
+  },
+  {
+   "problem": "P34",
+   "strength": 2,
+   "how": "对比自报need与冻结表示分类器。"
+  }
+ ],
+ "scientific_replication": false
+}

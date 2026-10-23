@@ -1,0 +1,179 @@
+{
+ "paper_key": "2505.20258",
+ "title": "ARM: Adaptive Reasoning Model",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.20258.txt",
+  "sections_read": [
+   "Abstract/contribution; §3 method printedpp3–5",
+   "Table1 printedp6; §4.3–5.2 and Table2 printedpp7–8",
+   "AppendixA decay paragraph; D training; L limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "四格式SFT建立Direct/ShortCoT/Code/LongCoT支持；Ada-GRPO对稀有格式的正确reward按组频数反比放大，并余弦衰减至普通reward。",
+  "key_step": "α=1+c(t)(G/F−1)，r'=αr，再组mean/std，完整响应所有token共享A。",
+  "why_non_obvious": "不是直接长度罚；借格式多样性降低长推理独占，但自然采样若某格式消失仍无救援。",
+  "trigger_condition": "普通GRPO约10steps倾向LongCoT独占，SFT仅学格式不能按难度选择。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "先建立策略多样性，再用逐渐退火的频率校正缓解胜者独占。",
+  "abstract_trigger_condition": "普通GRPO约10steps倾向LongCoT独占，SFT仅学格式不能按难度选择。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "α=1+c(t)(G/F−1)，r'=αr，再组mean/std，完整响应所有token共享A。",
+  "abstract_why_non_obvious": "不是直接长度罚；借格式多样性降低长推理独占，但自然采样若某格式消失仍无救援。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.20258#s1",
+   "object": "稀有格式正确奖励",
+   "information": "同组格式出现次数F、binary correctness、trainingstep；不需额外teacher估难度",
+   "operation": "r'=αr→groupzscore→globaltokenmean clippedGRPO",
+   "claimed_effect": "7B maj8平均76.1→75.9，平均tokens1164→786(−32.5%)；并非完全无损",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 printedp7 Adaptive row: datasets accuracy/token then avg",
+    "quote": "Adaptive 86.1 136 84.4 159 89.2 305 73.9 889 92.0 218 61.4 401 16.7 3253 72.0 766"
+   },
+   "failure_boundary": "allcorrect组中余弦幅度在std后可完全抵消；不强制保格式支持。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P29",
+   "strength": 3,
+   "how": "直接针对格式塌缩但只奖励已采样稀有模式。"
+  },
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "余弦校正经std全对组抵消的边界。"
+  },
+  {
+   "problem": "P61",
+   "strength": 3,
+   "how": "四模式自适应选择与SFT/RL分工。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "SFT",
+   "kind": "method"
+  },
+  {
+   "name": "SFT+GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "fixed-format instruction mode",
+   "kind": "method"
+  },
+  {
+   "name": "consensus mode",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者：固定四格式及缺难任务训练数据限制；新格式非自主发现。",
+   "quote": null,
+   "locator": "AppendixL printedp24"
+  }
+ ],
+ "question": {
+  "observed_failure": "普通GRPO约10steps格式塌缩，7B tokens1164；SFT medium Direct accuracy35.2%。",
+  "load_bearing_assumption": "稀有格式正确样本的强化能保留未来有用策略而不持续偏好低准确格式。",
+  "scope": "已有四格式SFT后的有限RL。",
+  "success_criterion": "自然选择保多格式、同预算精度非劣且token下降。",
+  "why_open": "权重退火与std作用未被单独说明，模式支持仍会丢失。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§3 SFT→RL"
+  },
+  {
+   "vocab": "M",
+   "id": "M12",
+   "locator": "§3.2格式探索"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "四格式结构化推理"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "c(t)=.5(1+cos(πt/T)); α_i=1+c(t)(G/F(o_i)−1); r'_i=α_i r_i",
+    "locator": "Eqs2–4 printedp4, algebraically simplified"
+   },
+   {
+    "latex": "A_ik=(r'_i−mean(r'))/std(r'); J=E[(1/Σ_i|o_i|)Σ_iΣ_k clipped_ratio_ik A_ik−βKL]",
+    "locator": "Eqs5–6 printedpp4–5"
+   }
+  ],
+  "signal_routing": "同一序列A广播包括格式token/推理/答案；Eq6所有生成token总和除总长度，非每序列均值；Code格式生成代码与模拟output，不能凭名称认定部署执行器。",
+  "normalization": "先reward按格式缩放，再整组mean/std；所有token globalmean，长响应总梯度权重可更大。",
+  "invariance": "reader：全对组r'=1+c d，c>0统一缩放中心化后抵消；混合对错时一般不抵消。非PBRS改变结果目标。",
+  "baseline_or_potential": "当前组reshape reward均值；非LOO。",
+  "degenerate_cases": [
+   "allwrong所有r'0；单格式α1、无多样性信号。",
+   "allcorrect等格式频率r'常数std0；未给epsilon。",
+   "罕见但错误格式仍r'0，没有纯探索奖励。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：记录allcorrect/mixed组中raw与normalized多样性推力随c变化；fixed支持对照，区分频率奖励与forced sampling。",
+  "negative_results": [
+   {
+    "text": "Table1 maj8平均3/7/14B分别−.8/−.2/−.7pp；7B/14B hardest tokens反而+7.9/+7.3%。",
+    "locator": "Table1 printedp6"
+   },
+   {
+    "text": "7B adaptive pass1平均72低于LongCoT固定74.5；consensus75.2但1856tokens。",
+    "locator": "Table2 printedp7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若消失格式无恢复或allcorrect退火推力不减，不能声称reward衰减保证保支持与最终无偏准确率。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5Base3/7/14B",
+   "framework": "LLaMAFactory SFT; VeRL RL",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": 0.001
+  },
+  "cost": "8A800；10.8K题每题4格式SFT，LoRA6epochbatch128lr2e-4；19.8K不同题RL9epochs batch1024 mini180 max4096 T1。",
+  "pitfalls": [
+   {
+    "text": "SFT与RL重用相同题曾导致背答案/泛化差；采用分开题库。",
+    "locator": "§4.1 footnote4"
+   }
+  ],
+  "code": "https://team-arm.github.io/arm (not executed)",
+  "lesson": "当以频率校正防塌缩，检查std后的实际作用及未采样模式；token节省应与逐任务准确率及训练预算一并报告。"
+ }
+}

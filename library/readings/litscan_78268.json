@@ -1,0 +1,207 @@
+{
+ "paper_key": "litscan:78268",
+ "title": "CapImagine",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78268.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 diagnostic/interventions pp3–5",
+   "§4 data and method pp5–6",
+   "§5 Tables1–3 pp7–9",
+   "AppB Table4 p13",
+   "AppE limitations p15"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "先检查latent对输入敏感性与干预后的答案，再将工具中间图的语义变化改写为显式caption，过滤矛盾/歧义轨迹后SFT。",
+  "why_non_obvious": "隐藏态表面是视觉推理载体，但替成常量仍可保准确率；收益可能来自训练而非latent因果信息。",
+  "trigger_condition": "When a purported reasoning representation may be bypassed, intervene on it and compare an explicit evidence-description baseline.",
+  "contribution_type": "现有latent视觉推理诊断+caption轨迹基线",
+  "abstract_strategy": "以干预诊断机制，再用可检查表示作最简替代",
+  "abstract_trigger_condition": "复杂中间表示是否真正承载决策信息不清楚时",
+  "abstract_key_step": "输入→表示与表示→输出分开检查，再同数据比较替代表示。",
+  "abstract_why_non_obvious": "相似表征不必无信息，准确率提高也不说明中介被利用，需额外对照。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78268#s1",
+   "object": "Qwen2.5-VL7B显式想象caption SFT",
+   "information": "数据teacher Qwen3-VL4B看问题与crop或原图+操作后图；学生训练/推理看原图与文本轨迹，无中间工具图。",
+   "operation": "Monet125k重写中间图成<think_image>文本，再全链润色与歧义/答案矛盾过滤至17k；只CoT-SFT，不做latent训练或RL。",
+   "claimed_effect": "V*85.9 vs同17k Monet79.6、原Monet83.3；TableVQA70.7 vs64.8。去caption用单token后V*82.7；无filter82.7。",
+   "conditions": [
+    "Monet主表含引用结果、同17k子集为再训练",
+    "best-checkpoint选择集未说明"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p7",
+    "quote": "CapImagine           85.9     87.8     82.9    74.1"
+   },
+   "failure_boundary": "teacher有crop但student无，可能蒸馏特权信息；在新图上文字想象不能保证找回原图未编码的细节。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:78268#s2",
+   "object": "Monet/Mirage的latent通路",
+   "information": "输入原图仍在模型上下文；对latent强制常量或匹配均值方差的噪声。",
+   "operation": "替换所有Monet latent为共享固定tensor；Mirage多种扰动，并单独查看现有视觉语义probe。",
+   "claimed_effect": "Table4 Monet V*82.7→83.3、HR4K71.1→70.1；Mirage2匹配noise77→76.2，但近零latent降35.5。",
+   "conditions": [
+    "有限已发布latent实现",
+    "只保留有效latent生成实例",
+    "不是整个latent范式不可能性证明"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "AppB Table4 p13",
+    "quote": "Monet do(Z)              83.3          85.2         80.3         70.1"
+   },
+   "failure_boundary": "匹配均值方差不保证分布内；干预后准确率稳定不等于逐例输出不变，也未隔离原图直达答案路径。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "how": "caption/中间表示干预会改变推理轨迹，应区别依赖性与真实视觉忠实。",
+   "strength": 3
+  },
+  {
+   "problem": "P36",
+   "how": "原始Visual-CoT常有证据与答案冲突、歧义，清洗影响显著。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "17k可解释文字轨迹SFT建立行为，比复杂latent未必差。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Monet full125k / same17k",
+   "kind": "method"
+  },
+  {
+   "name": "No rewriting single think_image token / no filtering",
+   "kind": "ablation"
+  },
+  {
+   "name": "DeepEyes / PixelReasoner / Mirage / LVR",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只是诊断现有实现，不否定latent范式；自然语言粒度不足，显式推理可有更高latency。",
+   "quote": "natural language is inherently limited in granularity",
+   "locator": "AppE p15"
+  },
+  {
+   "text": "X→Z→Y链省略直接X→Y及文字旁路；不同实例cosine相似性不是严格do(X)因果效应估计。文本干预特意改成错误结论，latent改常量/噪声不等价，不能直接用降幅证明优越的因果忠实性。",
+   "locator": "§3.1–3.3/§5.4 reader limitation"
+  },
+  {
+   "text": "主文称decode time与Monet相当，AppE称比latent更高latency；无墙钟pipeline与CI，不归一成相同效率结论。",
+   "locator": "§5.5/AppE"
+  }
+ ],
+ "question": {
+  "observed_failure": "Monet共享常量latent后V*82.7→83.3基本不降；HR4K只降1；同17kMonet79.6<CapImagine85.9。",
+  "load_bearing_assumption": "若中介承担任务视觉信息，其有效干预应改变任务输出；文字证据描述能保留中间图相关信息。",
+  "scope": "Monet/LVR/Mirage当前实现与Qwen2.5VL7B图像问答SFT。",
+  "success_criterion": "同数据文字基线提高准确率并对相关证据干预敏感，同时不把破坏性干预误作忠实证明。",
+  "why_open": "训练后的latent可能只是soft prompt/placeholder，增益缺机制验证。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M01",
+   "locator": "§4 caption替代复杂latent训练"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§3.3/AppB潜变量常量和noise干预"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§5.3同17k数据与单token消融"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "h_i=M(E(X);y_{<i}),\\quad y_i=\\mathbf1[i\\in I_L]\\phi(h_i)+\\mathbf1[i\\notin I_L]E(Decode(h_i))",
+    "locator": "Eqs1–2 p3，作为被诊断latent机制"
+   }
+  ],
+  "signal_routing": "CapImagine是普通CoT-SFT：监督改写的caption、推理及答案；没有给出新loss公式或细粒度mask。数据生成teacher能看真实中间crop/画线图；推理模型不再调工具，只从原图生成想象文字。Monet梯度限制latent的既有机制仅用于对照，不是本法。",
+  "normalization": "other",
+  "invariance": "没有组均值/std、reward/potential；不是PBRS。表示替换/文字改写会改变信息通路，不是保持策略不变的变换。",
+  "baseline_or_potential": "latent常量/噪声是机制干预控制；同17k训练控制数据量，不是policy baseline。",
+  "degenerate_cases": "无有效caption时退化单<think_image>token SFT；原图细节已丢失时想象可能编造，不能凭空添加真实观测；无GRPO全对/全错组。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同17k Monet vs CapImagine；去caption单token82.7 vs85.9。文本恶意修改结论使V*85.9→22.5、HR4K74.1→24.0，证明对该错误文本敏感但不单独证明忠实视觉推理。",
+  "negative_results": [
+   {
+    "text": "DeepEyes V*90.0与HR4K75.1/8K72.6均高于Cap85.9/74.1/70.7，真实重看仍补充信息。",
+    "locator": "Table1"
+   },
+   {
+    "text": "Mirage stage2近零latent77.0→35.5，存在显著受损例外。",
+    "locator": "AppB Table4"
+   },
+   {
+    "text": "TableVQA表差70.7−64.8=5.9pp，正文写6.1%；用表值。",
+    "locator": "§5.2/Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "用匹配长度/语义合理且只改关键视觉属性的caption与latent干预，同时控制原图直达路径；若文字仅服从诱导性错误而不依赖真实图像，则忠实性解释失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL7B；重写teacher Qwen3-VL4B",
+   "framework": "Monet codebase CoT-SFT",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8×A80080G；batch1 gradient accumulation16，LR/epoch未读到；仅测decode time近2x DeepEyes，不能代表整体pipeline。",
+  "pitfalls": [
+   {
+    "text": "训练集94.88%是Visual-CoT，重写可能与原答案冲突；自动过滤后仅17k，作者称人工检查但未报告审核样本数。",
+    "locator": "§4.2"
+   },
+   {
+    "text": "选best-performing checkpoint但未明确独立validation，保留评测选择泄漏疑问。",
+    "locator": "§5.1"
+   }
+  ],
+  "code": null,
+  "lesson": "当新中介机制提升分数时，先检查无中介/常量中介及同数据文字基线，并把数据清洗和训练测试信息差分开。"
+ }
+}

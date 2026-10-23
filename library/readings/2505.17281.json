@@ -1,0 +1,170 @@
+{
+ "paper_key": "2505.17281",
+ "title": "Search Wisely: Mitigating Sub-optimal Agentic Searches By Reducing Uncertainty",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.17281.txt",
+  "sections_read": [
+   "pp1–6 abstract/contributions/§2 diagnosis/§3 method/Table2/§5 threshold ablation/limitations",
+   "Appendix A.1 p10 diagnostic procedure; A.5 p12 settings"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "β-GRPO把最终正确奖励门控为所有search query token最小概率超过β才得1，继续训练已有Search-R1。",
+  "key_step": "以query包括tag的min token probability当confidence，整轨迹AND finalcorrect reward，非逐搜索动作credit。",
+  "why_non_obvious": "confidence gate相关于输出正确，但它混合语词罕见度、长度和决策必要性，不能解释成校准的知识边界。",
+  "trigger_condition": "Search-R1约27.7%搜索可由改提示后无检索回答；非搜索步骤错误33.98%。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "利用可观测置信代理筛奖励，使正确且高置信路径获得强化。",
+  "abstract_trigger_condition": "Search-R1约27.7%搜索可由改提示后无检索回答；非搜索步骤错误33.98%。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "以query包括tag的min token probability当confidence，整轨迹AND finalcorrect reward，非逐搜索动作credit。",
+  "abstract_why_non_obvious": "confidence gate相关于输出正确，但它混合语词罕见度、长度和决策必要性，不能解释成校准的知识边界。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.17281#s1",
+   "object": "检索轨迹奖励门",
+   "information": "search query生成概率含tags、最终GT EM；真实检索Wikipedia top3",
+   "operation": "correct AND min query prob>.4奖励1，否则0，GRPO继续训练",
+   "claimed_effect": "平均EM .309→.344；过搜索21.10→19.89，欠搜索42.04→34.71%",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p4 Table2 last row NQ/Trivia/Pop/Hotpot/2wiki/Musique/Bamboogle/Avg",
+    "quote": "Search-R1-β-GRPO (ours)   0.468    0.625      0.449     0.334      0.304     0.086        0.144        0.344"
+   },
+   "failure_boundary": "门控丢掉正确低置信轨迹；从scratch学不出有效search，必须warmstart。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P34",
+   "strength": 3,
+   "how": "工具搜索是否必要的代理诊断和RL门控。"
+  },
+  {
+   "problem": "P26",
+   "strength": 2,
+   "how": "不确定性与取证动作关系，但min queryprob不是视觉不确定性。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "抑制低置信成功路径可能进一步失去稀有行为支持。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Search-R1-GRPO continued training",
+   "kind": "method"
+  },
+  {
+   "name": "Search-R1",
+   "kind": "method"
+  },
+  {
+   "name": "Search-o1",
+   "kind": "method"
+  },
+  {
+   "name": "β=.2/.4/.6",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者资源限制未训练更大模型，open-ended deepresearch未检验。",
+   "quote": null,
+   "locator": "p6 Limitations"
+  }
+ ],
+ "question": {
+  "observed_failure": "21.10%过搜索/42.04%非搜索错误，finalEM.309。",
+  "load_bearing_assumption": "高概率query与必要且可靠搜索有稳定关系。",
+  "scope": "3B已有RAGpolicy、Wikipedia QA。",
+  "success_criterion": "同预算EM提高，独立标注必要性和总体成本同时改善。",
+  "why_open": "置信与正确相关非因果，必要性参考来自模型且no-searchprompt改变策略。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "§2.2逐步骤统计"
+  },
+  {
+   "vocab": "rs",
+   "id": "controlled_diagnostic_design",
+   "locator": "AppA.1有/无检索再生成"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "Eqs1–2 confidencegate"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "C(T)=min_(search steps t, w∈q_t) P(w); R(T)=1[af=a*f AND C(T)>β], β=.4",
+    "locator": "Eqs1–2 p4"
+   }
+  ],
+  "signal_routing": "query token概率仅用于整轨迹rewardgate，不是只query token接收新loss；正文继承GRPO但优势式、retrieval观察mask和loss归一未知。",
+  "normalization": "min而非平均/长度校正；奖励0/1。组mean/std未写。",
+  "invariance": "min随增加token/搜索只会不增，隐含长度与罕见词偏置；非PBRS，不保准确性目标最优解。",
+  "baseline_or_potential": "无新baseline；confidence非外部value。",
+  "degenerate_cases": [
+   "任何一个token≤β则所有正确结果reward0。",
+   "no-search空min未定义，不能自行设1当作者实现。",
+   "全组门控0造成无相对学习；冷启动已报告失败。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：先离线按长度、token罕见度分层检验minprob必要性AUROC，再同预算比较min/length-adjusted/randomgate；保留独立正确率。",
+  "negative_results": [
+   {
+    "text": "从scratch此reward学不到有效search；β.2/.4/.6 EM .341/.344/.336，非单调。",
+    "locator": "§4 p4/§5 p5"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "固定query长度与罕见词后confidence和必要性关联消失，或收益仅来自减少搜索/截断，则知识边界解释被削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B initialized Search-R1",
+   "framework": "Search-R1",
+   "group_size": 5,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "2A100，200steps lr1e-6 batch512 T1；2018Wikipedia E5 top3。",
+  "pitfalls": [
+   {
+    "text": "过搜索判据比较改prompt无检索答案与原检索答案等价，二者可能共同错；欠搜索把非搜索错误视作搜索可修复未实际检验。",
+    "locator": "AppA.1 p10"
+   }
+  ],
+  "code": "https://github.com/mianzhang/Search-R1 (not executed)",
+  "lesson": "当用confidence抑制工具，先验证它是否只惩罕见query；把必要性、正确性与校准三个问题分开。"
+ }
+}

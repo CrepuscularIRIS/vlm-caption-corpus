@@ -1,0 +1,178 @@
+{
+ "paper_key": "litscan:73124",
+ "title": "TIPS",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_73124.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–3 reward/PBRS",
+   "§4 Tables1–5/teacher refresh",
+   "§6 limits",
+   "AppC teacher selection",
+   "AppD scale",
+   "AppE.3 Table10",
+   "AppF.4–F.6 terminal boundary",
+   "AppH scoring pseudocode (read only)"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将lagged teacher对GT答案集的loglik差注入turn边界，用PPO学工具交互。",
+  "key_step": "整轮thought/action/observation前后potential差，teacher每200updates刷新，终止potential置0以telescoping。",
+  "why_non_obvious": "teacher更强不等于与actor行为对齐；严格PBRS下总return只是statebaseline变化，不是新增最优动作偏好。",
+  "trigger_condition": "When outcome-only multi-turn RL is unstable, add turn-boundary teacher-likelihood potential differences with terminal correction.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用可计算状态潜势重新分配学习信号，并检验代理与目标策略对齐。",
+  "abstract_trigger_condition": "When delayed feedback is noisy, redistribute it via a fixed-in-trajectory potential.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "差分+零终止边界保return差为前状态常数。",
+  "abstract_why_non_obvious": "局部正gain不能独立解释为因果必要性，终止补偿与估计器决定实际更新。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:73124#s1",
+   "object": "searchturn reward",
+   "information": "训练GT validanswer集合、laggedpolicyteacher与当前prefix含toolreturn",
+   "operation": "turnpotential差加入PPO，teacher定期刷新",
+   "claimed_effect": "7B averageEM37.28→41.71(+4.43pt,约11.9%relative)，并非+11.8pt",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen2.5-7B TIPS row; NQ/Hotpot/Trivia/Pop/2Wiki/MuSiQue/Bamboogle/Avg",
+    "quote": "TIPS           43.38      42.95        64.31        44.52     42.96    17.05       36.80       41.71"
+   },
+   "failure_boundary": "评测为7主QA；摘要/贡献7/8表述不一致，额外BrowseCompPlus是扩展。无当前actor动作必要性验证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "直接证明teacher/actor行为错配影响signal，强teacher不等currentpolicy"
+  },
+  {
+   "problem": "P19",
+   "strength": 2,
+   "how": "整轮信息势差与严格PBRS迁移需终止修正"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "outcome-only PPO/GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "rule MT-PPO/MT-GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "LLM-judge",
+   "kind": "method"
+  },
+  {
+   "name": "history-max gain",
+   "kind": "method"
+  },
+  {
+   "name": "different/fixed teacher",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "目前PPO训练，teacher打分额外成本；跨域math/code未在主实验验证。",
+   "locator": "§6"
+  },
+  {
+   "text": "AppF称terminal0可减常数达成，若终局原potential随轨迹变化，则单个全局常数不能全部置0；必须明确terminal override/补偿。",
+   "locator": "AppF Eq20（读者限定）"
+  },
+  {
+   "text": "AppH示例mean of answer logprob与正文logsumexp答案集合不一致，实际实现未核。",
+   "locator": "§3.1/AppH.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "PPO7B EM37.28，TIPS41.71；history-max35.20低于PPO37.28。",
+  "load_bearing_assumption": "终局reward足够识别中间工具作用，或更强teacher自然更好。",
+  "scope": "搜索QA整轮segment，laggedteacher打分",
+  "success_criterion": "固定环境/PPObudget下EM稳定与teacher/negative-delta消融",
+  "why_open": "终局同成功可含多余工具，teacher置信变化也可能受语言线索驱动。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§3 segmentreward与returnbaseline分离"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "AppC教师替换/Table4 historymax"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "\\Phi(S)=\\log\\sum_{a\\in\\mathcal A}p_{teach}(a|S);\\Delta_k=\\alpha[\\Phi(S_k)-\\Phi(S_{k-1})],\\quad\\Phi(S_K)=0",
+    "locator": "§3.1/3.2/AppF Eqs15–20"
+   },
+   {
+    "latex": "G^{R+I}_t=G^R_t+\\sum_{j=k}^K\\Delta_j=G^R_t-\\alpha\\Phi(S_{k-1}),\\quad\\gamma=1",
+    "locator": "Eq2/AppF Eq21"
+   }
+  ],
+  "signal_routing": "reward注入segment终边界，通过GAE(γλ1)向actor生成token传播，responsemask排除检索返回；teacher只读prefix+GT teacherforce，不读取未来未发生观察；turn含thought/query/observation，因此差值不能隔离检索像素/事实贡献。teachertrajectory固定，打分无梯度。",
+  "normalization": "other：PPO critic/GAE；未在所读配置列训练A是否whiten，Fig5 zscore只是展示不可移植为loss。正文答案集logsum概率，无答案长度归一说明；fixedα约.05–.3，dynamicα是额外实验。",
+  "invariance": "条件严格PBRS：γ1、segmentboundaries、trajectory内fixedα/teacher、所有terminalpotential0，则return只差presegmentstate常数。未clamp或非匹配discount不保；历史max截断不沿原potential。GAE/PPO clipping/critic近似有限样本行为改善不等于数学保证每次更新相同。 动态α若在trajectory内逐边界变化则差分不再简单telescoping，需附加补偿；AppH也未显示terminal0，理论不视作实现确认。",
+  "baseline_or_potential": "laggedteacherGT likelihood potential非currentactor value；更强teacher不保证对齐。main theorem只改statebaseline，不能据此声称学到逐工具因果必要性。",
+  "degenerate_cases": "重复无增益局部Δ0但全return仍有后续/terminal补偿；全错轨迹可有dense信号，不能恢复未采动作；α大增variance，historymax丢负delta有反例；teacher非平稳跨batch影响critic拟合。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4turngain40.93 vsoutcome37.28/historymax35.20；TableC不同teacher保持policy/task超参；refresh100/200/250/500，200附近好。",
+  "negative_results": [
+   {
+    "text": "historymax35.20<outcome37.28；异骨干更强teacher伤7B，频繁/不刷新均可较差；dynamic大/小band伤性能。",
+    "locator": "Table4/§4.3/AppC–D"
+   }
+  ],
+  "seeds": "所读核心范围未给独立多seed/CI，不把稳定曲线当方差估计。",
+  "falsifier": "若移除terminalcorrection效果仍被称policyinvariant则理论不适用；matchedconstant/无语义potential同等收益将削弱information解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B/7B Instruct",
+   "framework": "verl FSDP/sglang",
+   "group_size": 1,
+   "max_turns": 5,
+   "kl": 0.001
+  },
+  "cost": "PPOfamily Table10 rolloutn1/maxassistantturns5；正文最大retrievalturns4是另一计数。8H200/500steps；teacherwalltime+18%3B/+16%7B，约12%FLOPs需KVcache假设。",
+  "pitfalls": [
+   {
+    "text": "需要在正确boundary注入且mask环境tokens；终止0与teacher刷新必须每trajectory一致。",
+    "locator": "AppF/§3.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当使用似然差shaping时先核terminal correction与tokenreturn，而后测teacher对齐；不能把教师信心提升称当前policy必需信息。"
+ }
+}

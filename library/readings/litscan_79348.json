@@ -1,0 +1,193 @@
+{
+ "paper_key": "litscan:79348",
+ "title": "The Perceptual Bandwidth Bottleneck in Vision-Language Models: Active Visual Reasoning via Sequential Experimental Design (FOVEA)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79348.txt",
+  "sections_read": [
+   "Abstract",
+   "2 visibility definitions",
+   "3",
+   "4",
+   "5 Table1 and search results",
+   "6 limitations",
+   "Appendix D implementation/cost",
+   "F probe/selector diagnostics",
+   "G.1 evidence-only"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把主动视觉选择建模为S-BOED，在factorized belief、visibility calibration、ideal observer下导出coverage×resolution代理；用Yes/No probe选择候选crop。",
+  "why_non_obvious": "大图coverage与细节resolution相互冲突，最佳局部crop不一定来自模型原proposal；一步看不懂的视图可对下一步有用。",
+  "trigger_condition": "When fixed visual bandwidth erases task evidence, refine proposed crops by estimated resolvability and optionally one-step lookahead.",
+  "contribution_type": "decision-theoretic framing plus surrogate search",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "When observation selection limits inference, cast it as experimental design and derive a tractable conditional utility.",
+  "abstract_key_step": "分解目标覆盖概率与可分辨率，再用局部搜索逼近。",
+  "abstract_why_non_obvious": "代理依赖强观察者假设，实算法不是Bayesian exact solver。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79348#s1",
+   "object": "VLM crop command",
+   "information": "当前proposal、history、候选crop与query；每crop3次Yes/No",
+   "operation": "拦截crop，按1.5/1/.8尺度候选probe均值选最优并返还history",
+   "claimed_effect": "Qwen3VL30BA3B 5列均值Direct73.3/ReAct75.1→FOVEA77.7；8B70.9/72.5→74.9。",
+   "conditions": [
+    "greedy main results",
+    "每proposal3候选×3probe",
+    "max10轮"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "54.6%       84.8%    85.3%       84.5%           79.2%       77.7%"
+   },
+   "failure_boundary": "局部proposal遗漏无法恢复；proxy不等于EIG或当前policy crop必要性，额外计算高。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P30",
+   "how": "直接控制crop局部尺度/位置搜索，可能改善反复小crop，但不保证全局命中。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "必要证据probe有oracle/distractor与下游QA对照，但未校准stop决策。",
+   "strength": 2
+  },
+  {
+   "problem": "P18",
+   "how": "lookahead强调当前不回答但对下一步有用的探索。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "same-backbone ReAct",
+   "kind": "agent"
+  },
+  {
+   "name": "Direct",
+   "kind": "no tools"
+  },
+  {
+   "name": "RAP",
+   "kind": "perception"
+  },
+  {
+   "name": "oracle crop",
+   "kind": "diagnostic"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "ideal observer不成立：oracle crop仍可识别/推理失败。",
+   "locator": "6 limitations"
+  },
+  {
+   "text": "候选集未包含相关区域时局部refinement/lookahead无法恢复。",
+   "locator": "6 limitations"
+  },
+  {
+   "text": "推理成本增加，属于compute-accuracy曲线。",
+   "locator": "6; Table5"
+  }
+ ],
+ "question": {
+  "observed_failure": "主remote Direct38.4/ReAct45.1/greedy47.6/lookahead54.7低于oracle68；另50例oracle crop QA52%。",
+  "load_bearing_assumption": "细节在编码时丢失，推理无法恢复未采到的证据。",
+  "scope": "高分辨率crop界面",
+  "success_criterion": "同backbone提高命中与QA，报告额外token成本",
+  "why_open": "看清不保证理解；局部搜索不保证找到未知区域。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Appendix F fixed pool selector; G.1 fixed crop sequence"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table5 cost"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "P(S=1|ell,d)=1[ell in d]*phi(d); J_t(d)=(integral_{x in d}p_t(x)dx)*phi(d); I_t(y;z|d) approx H_t(y)*J_t(d)",
+    "locator": "Eqs2,7–8; Proposition3.5"
+   },
+   {
+    "latex": "Jhat(d)=(1/K)sum_k 1[probe_k(I_d,Q)=Yes]; d*=argmax_d Jhat(d)",
+    "locator": "Eq10; Appendix D.2"
+   },
+   {
+    "latex": "S_i=mean_{dprime in Perturb(d_next(di))} Jhat(dprime); d*=argmax_i S_i",
+    "locator": "Algorithm4 lookahead"
+   }
+  ],
+  "signal_routing": "probe只用于推理crop selection，无reward/advantage训练。历史隐式承载正负观察，不显式计算posterior map；lookahead模拟下一crop，invalid下一action置0，使用未来leaf均值而非精确Bellman总EIG。",
+  "normalization": "other: probe3个二元输出均值；lookahead未来leaf平均；理论posterior用Z归一化但实算法未显式做。",
+  "invariance": "非PBRS。I≈HJ需位置与答案factorization、S可由z辨别、S1时entropy≈0；不是任意VLM的信息增益恒等式。相同历史H(y)视为design-independent才不改变argmax。",
+  "baseline_or_potential": "无reward baseline。oraclecrop只分离搜索与识别，不代表完美答案。",
+  "degenerate_cases": "候选全错或probe全0/1排序无区分，tie规则未知；即使Jhat1也可能错误。局部seed遗漏使搜索受限。MCMC早停Jhat1可能被过度自信触发。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同3×3固定池probe vsjoint VLM vsrandom；oracle/distractor crop；相同crop序列去中间推理。",
+  "negative_results": [
+   {
+    "text": "50例oracle probe.633、QA52%，distractor .187/10%；score-QA Spearman仅.392。",
+    "locator": "Table6"
+   },
+   {
+    "text": "固定池probeQA30% vsVLMdirect20%和random10%；正文more than doubles不符合30vs20，按表记录。",
+    "locator": "Table7"
+   },
+   {
+    "text": "去中间推理66→48，在相同crop序列下仍需整合证据。",
+    "locator": "Table8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：匹配总token与候选高分辨率输入后若独立probe收益消失，不能归因S-BOED规划；测必要/不必要crop子集。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3VL30BA3B-Instruct;8B",
+   "framework": "ReAct + crop/detection/segmentation/depth/OCR",
+   "group_size": null,
+   "max_turns": 10,
+   "kl": null
+  },
+  "cost": "remote Table5 ReAct46.5k input/.3k output；greedy301.9k/3.1k；lookahead441.4k/17.5k。",
+  "pitfalls": [
+   {
+    "text": "D.3称MCMC-style接受更优否则.1概率，不能称严格MH平稳分布采样。",
+    "locator": "D.3"
+   }
+  ],
+  "code": null,
+  "lesson": "当优化crop前再探测候选时，必须把未执行候选的图像编码和probe也计入成本；增加stop/no-crop对照后才可迁移为节省裁图策略。"
+ }
+}

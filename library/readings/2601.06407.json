@@ -1,0 +1,136 @@
+{
+ "paper_key": "2601.06407",
+ "title": "Value of Information: A Framework for Human-Agent Communication",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2601.06407.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 Eqs1–5/Algorithm1",
+   "§5 setup",
+   "Table1/§6.2",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "显式比较问一次的预期决策效用提升与交互成本。",
+  "key_step": "LLM估计latent intent prior、模拟有限答案及posterior，one-step lookahead选正netVoI最大问题，否则commit。",
+  "why_non_obvious": "不确定不等于值得问：stakes和成本改变最佳决策；模拟belief不等于真实Bayes。",
+  "trigger_condition": "When a clarification has positive expected decision utility after its cost, ask; otherwise commit.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "按信息改变决策的价值而非熵本身决定获取信息。",
+  "abstract_trigger_condition": "When information is costly, compare expected post-information action utility to acting now.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "max action utility前后差减成本。",
+  "abstract_why_non_obvious": "概率校准与候选覆盖决定近似是否可信。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.06407#s1",
+   "object": "ask/commit推理控制",
+   "information": "预定义intent/action/question、效用与c；LLM模拟潜在回答，无未来真实答案",
+   "operation": "估计Vpost−V−c并阈值0停止",
+   "claimed_effect": "Mixed20Q c.05 utility5.01 vs最佳3.65；c.1却1.38 vs2.28",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 cost=.05 row; columns cost/best/rmax/second/rsecond/VoI/deltas",
+    "quote": "0.05      Round (τ =5)        3.65   Confidence (τ =0.5)     3.64     5.01       1.36         1.37"
+   },
+   "failure_boundary": "one-step近似及LLM不一致belief无全局最优保证；高cost存在负结果。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P05",
+   "strength": 2,
+   "how": "信息获取应按决策效用而非置信度，可迁移crop停止。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "fixed round/confidence/no-question grid-searched thresholds",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "预定义问题/动作；线性每轮cost；疾病belief校准较差。",
+   "locator": "Limitations/§6.2"
+  }
+ ],
+ "question": {
+  "observed_failure": "c.05最优baseline3.65 vs5.01；c.2 VoI−.96不如不问0。",
+  "load_bearing_assumption": "固定confidence阈值能跨stakes/cost决定询问。",
+  "scope": "4个模拟交互domain有限问答",
+  "success_criterion": "cost sweep的taskutility减累计cost，核高cost失效",
+  "why_open": "不确定性不足以表征信息对行动的价值。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table1 cost sweep"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "one-step与概率一致性边界"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "V(b)=\\max_a\\sum_\\theta b(\\theta)U(\\theta,a);V_{post}=\\sum_y p(y|q,b)V(b_y);NetVoI=V_{post}-V(b)-c",
+    "locator": "Eqs1–5"
+   }
+  ],
+  "signal_routing": "inference-time问题选择，没有RL/token reward。真实用户回答后更新；候选模拟回复只用于前瞻。",
+  "normalization": "other：belief概率求和和expected utility，无advantage/std。",
+  "invariance": "非PBRS。one-step最大效用差在精确一致Bayes下非负，LLM独立重估posterior不保证该性质。",
+  "baseline_or_potential": "V(b)是当前最佳行动效用，非learned policy critic。",
+  "degenerate_cases": "错误高置信可能提前停；需要两问互补时单步VoI0可错停；候选缺失/错误模拟导致漏问；c过高应停但校准误差仍可能问。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table1多个cost与每task调参baseline，Figure3校准用argmaxcorrectness近似非完整belief真值。",
+  "negative_results": [
+   {
+    "text": "c.10差−.90、c.20差−.96，反驳正文consistent matches/exceeds概括。",
+    "locator": "Table1"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "固定候选集用真实回答分布与LLM模拟分别计算，若误差主导决策则无parameter-free泛化依据。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "GPT4/Gemini2.5Flash等LLM推理控制",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "每轮每候选×答案分支LLM前瞻，预算Kmax；token/GPU时长未读到。c/U/候选集是任务输入，非无需配置。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当宣称免阈值调参时，仍核效用/成本和模拟校准，并报告cost极端处反例。"
+ }
+}

@@ -1,0 +1,55 @@
+{
+ "paper_key": "2608.14107",
+ "title": "Retrieval Grounding Latent Reasoning for Dense Retrieval",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.14107.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3.3–3.4",
+   "Tables1–4",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "silent latent stages重构累积CoT，并匹配邻阶段document logprob变化而非只匹配状态。",
+  "why_non_obvious": "把retrieval效果作为stage目标，stopgrad前态降低通过恶化baseline制造增益的直接梯度路径；不等于因果干预。",
+  "trigger_condition": "When latent intermediate states can shortcut terminal retrieval, supervise stage reconstruction and centered changes in document preference.",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When latent intermediate states can shortcut terminal retrieval, supervise stage reconstruction and centered changes in document preference."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.14107#s1",
+   "object": "dense query encoder latent trajectory",
+   "information": "positive/hardnegative documents、external CoT、silentstates",
+   "operation": "stageCE+contrastive retrieval+centered logprob-effect matching",
+   "claimed_effect": "BRIGHT nDCG10 RGLT34.20 vsfair25.70/LaSER29.90；去stage-effect31.26；24.0ms vsbase21.5。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "RGLT (Qwen3-8B)                        8B         34.20         39.97     12.90         23.60          4.60      13.70    2.62     13.42       41.8              70.83"
+   },
+   "failure_boundary": "FollowIR Core17 MAP5仅4.60低于LaSER11.40，非全面胜出；teacher CoT与候选池质量限制效果。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "阶段增量监督可启发表示诊断，非policy工具credit。",
+   "strength": 1
+  },
+  {
+   "problem": "P39",
+   "how": "latent效果蒸馏需真实可消费下游指标，不能只hiddenstate对齐。",
+   "strength": 2
+  }
+ ]
+}

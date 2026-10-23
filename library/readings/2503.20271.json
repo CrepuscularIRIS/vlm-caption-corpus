@@ -1,0 +1,64 @@
+{
+ "paper_key": "2503.20271",
+ "title": "ViLBench: A Suite for Vision-Language Process Reward Modeling",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.20271.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§2 Tables2–3 pp4–5",
+   "§3 Eq1–2/model loss pp5–6",
+   "Table6 p7",
+   "§6 limitations p8"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "比较同候选池ORM/PRM及视觉/文本主导子集，按PRM−ORM收益筛600题；MCTS得到73,560 step labels训练3B reward head。",
+  "why_non_obvious": "生成强不意味着奖励强，视觉主导任务PRM可能负收益。",
+  "trigger_condition": "当需评估视觉过程奖励是否真能选对轨迹时，按视觉需求和候选数拆分验证。",
+  "contribution_type": "benchmark+PRM训练",
+  "abstract_strategy": "隔离选择器能力与生成能力，并在失败子域检查奖励。",
+  "abstract_trigger_condition": "更高模型能力被错误当作可靠评价能力。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.20271#s1",
+   "object": "MathVerse视觉/文本主导候选选择",
+   "information": "同GPT4o生成池、7种VLLM评分器、最终GT答案",
+   "operation": "用ORM或step PRM做BoN并按主导模态分层",
+   "claimed_effect": "Table2文本Greedy58.9→PRM62.0，视觉51.0→48.9（−2.1pp）。",
+   "conditions": [
+    "7 RMs平均",
+    "选择器评估非RL训练增益"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p4",
+    "quote": "PRM           62.0 +3.1          48.9 -2.1"
+   },
+   "failure_boundary": "ViLBench按PRM有利样本筛选，PRM优势不是原分布无偏估计。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "strength": 3,
+   "how": "视觉grounding过程奖励可能被文本推理代理误导。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "固定PRM选择能力不等于当前actor动作价值。"
+  },
+  {
+   "problem": "P65",
+   "strength": 2,
+   "how": "必须按视觉证据需求分层，而非只看总收益。"
+  }
+ ],
+ "scientific_replication": false
+}

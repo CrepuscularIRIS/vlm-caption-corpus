@@ -1,0 +1,171 @@
+{
+ "paper_key": "2502.02508",
+ "title": "Satori: Reinforcement Learning with Chain-of-Action-Thought Enhances LLM Reasoning via Autoregressive Search",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2502.02508.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "4.1–4.2 Algorithm1",
+   "Tables1–2",
+   "6 analysis",
+   "7 conclusion",
+   "D.3 training",
+   "E.1–E.4 decisive ablations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "construct_informative_experience",
+  "key_step": "10K COAT示范教会continue/reflect/explore，再从FT生成的正确/错误前缀回退最多2步作为新初始状态做PPO。",
+  "why_non_obvious": "重启改变可达状态分布而非仅延长最终链；离线均衡错误前缀可避免在线成功样本淹没纠错训练。",
+  "trigger_condition": "When sparse terminal rewards and long reasoning hide recovery states, restart fresh rollouts from diverse successful and failed prefixes.",
+  "contribution_type": "method",
+  "abstract_strategy": "construct_informative_experience",
+  "abstract_trigger_condition": "When sparse terminal rewards and long reasoning hide recovery states, restart fresh rollouts from diverse successful and failed prefixes.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "10K COAT示范教会continue/reflect/explore，再从FT生成的正确/错误前缀回退最多2步作为新初始状态做PPO。",
+  "abstract_why_non_obvious": "重启改变可达状态分布而非仅延长最终链；离线均衡错误前缀可避免在线成功样本淹没纠错训练。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2502.02508#s1",
+   "object": "PPO初始上下文分布",
+   "information": "FT模型完整轨迹的答案正确性、回退前缀与reflect token",
+   "operation": "分开存正确/错误前缀，与原题合并采样；新生成续写用终局正确、ORM与纠错bonus训练",
+   "claimed_effect": "有RAE MATH50085.6/AMC67.5，无RAE81.6/57.5；AIME均20.0",
+   "conditions": [
+    "Qwen2.5Math7B",
+    "10KFT+300K RL questions"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table7",
+    "quote": "with RAE       93.2          85.6          46.6          67.5          20.0"
+   },
+   "failure_boundary": "旧前缀是条件输入，不能描述为对旧生成token做on-policy梯度",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P38",
+   "how": "从中间失败状态扩充续写，缩短探索到纠正的有效路径。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "先FT使特殊反思动作可用，再RL拓展。",
+   "strength": 2
+  },
+  {
+   "problem": "P27",
+   "how": "纠正错误给bonus，原正确改错给惩罚，但不保证全部任务不退化。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen2.5Math7B Instruct",
+   "kind": "model"
+  },
+  {
+   "name": "No RAE / β0 / no ORM",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者未给RAE更严格理论保证。",
+   "quote": "to tighter bounds of learned policy. We leave a more rigor-\nous theoretical justification for future work.                                                          104           105                   106",
+   "locator": "§4.2 initial states"
+  }
+ ],
+ "question": {
+  "observed_failure": "无RAE MATH50081.6 vs85.6；online restart被正确前缀占据。",
+  "load_bearing_assumption": "模型有局部纠错能力且前缀提供可恢复状态，FT能建立动作语义。",
+  "scope": "数学单模型自回归搜索，语言内部反思而非外部观测。",
+  "success_criterion": "等预算测有无RAE、bonus、ORM及错误前缀覆盖率。",
+  "why_open": "终局反馈稀疏；从题面重走会浪费已探索的可恢复状态。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4.1 Format Tuning"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_{rule}=\\mathbf1[y_L=y^*]-1,\\quad r=r_{rule}+\\sigma(r_\\psi(z,y))+r_{bonus}",
+    "locator": "§4.2 Reward Design"
+   },
+   {
+    "latex": "r_{bonus}=\\begin{cases}\\beta&z\\in D^-_{restart},y_L=y^*\\\\-\\beta&z\\in D^+_{restart},y_L\\ne y^*\\\\0&\\text{otherwise}\\end{cases}",
+    "locator": "§4.2"
+   }
+  ],
+  "signal_routing": "FT轨迹含continue/reflect/explore特殊token；PPO续写从原题或旧前缀+reflect开始。终局rule、sigmoid ORM与bonus汇总成轨迹奖励；未读到专门只给meta-action token的mask或精确GAE/whitening公式，因此不推定组std。",
+  "normalization": "other",
+  "invariance": "非严格PBRS：bonus依赖重启来源类别与终局正确性；ORM也改变目标。rule的常数−1本身不改变固定终局一次给奖的排序，但与变长折扣/实现结合须另核。",
+  "baseline_or_potential": "PPO critic从ORM初始化；sigmoid ORM不是组均值baseline。",
+  "degenerate_cases": "FT八采样全对/全错题被排除，p≈0/1不能靠此数据构造解决；在线buffer偏向正确会丢失错误恢复状态；β0仍有RAE与ORM。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table7 RAE有无；Table6 β0/.5；E.4 offline vs online buffer定性失败。",
+  "negative_results": [
+   {
+    "text": "β0的Olympiad48.9优于默认46.6，GSM93.6优于93.2；bonus并非全面改善。",
+    "locator": "Table6"
+   },
+   {
+    "text": "Round2 MATH50085.6→83.6，整体均值62.6→64.4；难题改善不保证单基准守恒。",
+    "locator": "Table1"
+   },
+   {
+    "text": "在线restart多数正确，模型缺少从错误路径学习反思。",
+    "locator": "E.4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "保持总续写token和正负前缀比例后RAE无优势，或反思token只增加长度而不增加错→对，迁移不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5Math7B，critic由ORM初始化",
+   "framework": "OpenRLHF PPO",
+   "group_size": 1,
+   "max_turns": null,
+   "kl": 0.0
+  },
+  "cost": "第一轮FT10K，RL300K问题；train batch128，rollout1024；actor lr2e−7 critic5e−6；prompt/generation上限2048，temp.6，β.5。第二轮不使用RAE，temp1.2每题8采样。",
+  "pitfalls": [
+   {
+    "text": "需要GT筛正确/错误以构造restart；测试时才是单模型无外部指导。",
+    "locator": "Algorithm1/D.3"
+   },
+   {
+    "text": "旧前缀是新episode输入，不应误当旧策略续写的PG replay。",
+    "locator": "§4.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当在线训练越来越多成功轨迹时，显式保留可恢复的错误前缀，否则反思动作可能失去训练支持。"
+ }
+}

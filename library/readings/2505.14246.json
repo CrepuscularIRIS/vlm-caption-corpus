@@ -108,7 +108,7 @@
     "locator": "App.B.2.1 p.15; B.2.2–B.2.4 pp.16–17",
     "quote": "200 test examples that form the MAT-Coding benchmark. These examples are manually validated to ensure the benchmark’s quality."
    },
-   "failure_boundary": "规模小；未见图像级去重、人工一致率、自然无工具成功率分层；合成退化不代表我们的高分辨率小目标分布。",
+   "failure_boundary": "[redacted: project-internal]",
    "verified": "fulltext"
   }
  ],

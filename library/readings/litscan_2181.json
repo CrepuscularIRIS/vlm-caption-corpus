@@ -1,0 +1,57 @@
+{
+ "paper_key": "litscan:2181",
+ "title": "ETO",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_2181.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3 Eq5–11/Algorithm1",
+   "§4/Table2",
+   "Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "targeted_self_supervised_objective",
+  "key_step": "从当前agent收集失败轨迹，与同任务专家轨迹按最终reward组成DPO偏好对，并迭代刷新。",
+  "why_non_obvious": "成功示范之外利用自身失败，但整轨迹负例会同时压低其中正确前缀。",
+  "trigger_condition": "当BC缺少环境失败经验时，收集当前策略失败并与高reward轨迹做偏好学习。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "targeted_self_supervised_objective",
+  "abstract_trigger_condition": "当BC缺少环境失败经验时，收集当前策略失败并与高reward轨迹做偏好学习。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:2181#s1",
+   "object": "agent整轨迹偏好",
+   "information": "环境最终reward、当前策略失败与expert示范；每轮reference更新到当前agent",
+   "operation": "不同reward才成对；−logσ[β(logπθ(ew)−logπθ(el)−logπref(ew)+logπref(el))]；任务和observation token masked",
+   "claimed_effect": "Llama2-7B ETO Table2 WebShop67.4、ScienceWorld unseen65.0、ALFWorld unseen72.4（均average reward）。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "Llama-2-7B-Chat + ETO (ours)                   67.4             73.8          65.0          68.6           72.4"
+   },
+   "failure_boundary": "不是action-level causal credit；原文限制指出失败可发生在中段，整条对比误惩正确前缀；无泛化准确率不降保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "BC后用策略实际失败构造偏好，补轨迹分布。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "整轨迹DPO保留信用粗糙问题。"
+  }
+ ],
+ "scientific_replication": false
+}

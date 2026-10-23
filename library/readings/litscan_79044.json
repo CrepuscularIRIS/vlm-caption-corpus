@@ -1,0 +1,166 @@
+{
+ "paper_key": "litscan:79044",
+ "title": "Reason, Then Re-reason: Cross-view Revisiting Improves Spatial Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79044.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3",
+   "4 Tables1/3–7",
+   "5 limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "adapt_via_conditioning",
+  "key_step": "冻结MLLM先在ego视频形成provisionalanswer/trace；VGGT预测geometry渲染oblique新视角，第二次以priorhypothesis+renderedvideo作条件验证纠正。",
+  "why_non_obvious": "同一视频的几何重表达可能更易消费；先立假设再验证优于直接concat。",
+  "trigger_condition": "When egocentric evidence leaves spatial relations ambiguous, condition a second inference on reconstructed cross-view evidence and the provisional hypothesis.",
+  "contribution_type": "training-free visual revisiting",
+  "abstract_strategy": "adapt_via_conditioning",
+  "abstract_trigger_condition": "When frozen models cannot consume latent structure directly, render it into their native input modality and condition a verification pass.",
+  "abstract_key_step": "3D几何渲染回视频，无参数更新。",
+  "abstract_why_non_obvious": "predicted新视角并非新传感器观测，可能放大reconstruction错误。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79044#s1",
+   "object": "两阶段空间QA",
+   "information": "ego8frames、VGGT较密采样生成3D、H=(trace,answer)、exo8frames",
+   "operation": "Reason→跨视角compare/reflect/confirm",
+   "claimed_effect": "Qwen2.5VL7B VSIavg24.8→29.5，sameview重问23.5，concat25.4；Qwen3VL4B30.7→36.5。",
+   "conditions": [
+    "frozen models",
+    "VSI/STIstatic"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "3        ReRe         29.5        18.0             18.8            40.0            31.1            34.1           35.3            32.5          22.0"
+   },
+   "failure_boundary": "没有必要时才revisit的路由，固定两次；render几何错误与负向翻转仍存在。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P27",
+   "how": "provisional→看另一视角→纠正，直接支持跨观测revisiting协议。",
+   "strength": 3
+  },
+  {
+   "problem": "P39",
+   "how": "几何证据转nativevideo改善frozen消费，需验证真实信息。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "sameview second pass",
+   "kind": "revisit control"
+  },
+  {
+   "name": "concat/interleaved",
+   "kind": "view aggregation"
+  },
+  {
+   "name": "exo-only/alternative camera paths",
+   "kind": "evidence controls"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "monoculargeometry不完美；低confidence删点会留空，仍可误导。",
+   "locator": "5"
+  },
+  {
+   "text": "A100约11s vsbaseline1s，VGGT为主；20frames约4s但收益下降。",
+   "locator": "Table7/5"
+  }
+ ],
+ "question": {
+  "observed_failure": "sameview重问24.8→23.5，crossview29.5；15.65%样本翻转中28.4%为对变错。",
+  "load_bearing_assumption": "第二视角重表达有助验证初始假设，但仅多想一次不够。",
+  "scope": "video spatial QA",
+  "success_criterion": "相同视图预算下提升与负flip/成本共同报告",
+  "why_open": "geometry错误与额外denseinput的信息增益可混淆协议收益。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables3–5 matched protocol/view controls"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table7 latency"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "H=(T,Atilde)~M(Vego,Q); Astar=M(prompt_rereason,H,Vexo,Q)",
+    "locator": "Eqs2–4"
+   },
+   {
+    "latex": "p(t)=c+r*(1-2t)*d, d=normalize([1,sqrt(2),1]); r=95th percentile horizontal distance",
+    "locator": "Eq5"
+   }
+  ],
+  "signal_routing": "无训练loss/reward/advantage。初始observe-infer-conclude trace作为第二phase条件；第二phasecompare-reflect-confirm。Vexo为VGGTpointcloud经Zbuffer/confidencefilter/medianfilter渲染，不是额外真实测量。",
+  "normalization": "other:几何置信度normalized后阈值.5过滤；无advantage归一化。",
+  "invariance": "非PBRS；无policy更新保证；新视角不增加底层视频外真实信息，但与首phase稀采样比较可提供更多已录信息。",
+  "baseline_or_potential": null,
+  "degenerate_cases": "未曾观测区域不能可靠恢复；geometry失败导致错误验证；无selectivegate，每样本固定两阶段；同ego重问可能强化错误。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "ego→ego、ego→exo、exo-only；concat/interleave；同render管线不同camera路径。",
+  "negative_results": [
+   {
+    "text": "Qwen2.5VL7B relative-direction36.0→35.3、appearanceorder24.9→22.0。",
+    "locator": "Table1"
+   },
+   {
+    "text": "Qwen3VL8B 4.44%全样本对→错，不保证个体准确率不降。",
+    "locator": "Table6"
+   },
+   {
+    "text": "100→20VGGTframes总延迟11→4s，VSIavg35.8→33.3。",
+    "locator": "Table7"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：固定相同底层frames与compute，若额外denseframes解释所有收益而非revisiting，需收窄跨视角机制归因。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5/3VL, InternVL2.5/3",
+   "framework": "frozen MLLM+VGGT+point rasterizer",
+   "group_size": null,
+   "max_turns": 2,
+   "kl": null
+  },
+  "cost": "8frames/phase；VGGT1fps~100frames；A100~11s；T.1 top-p.001",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当几何数据不符合MLLM输入时，可渲染成nativevideo并验证hypothesis，但保留原观测锚点与负flip统计。"
+ }
+}

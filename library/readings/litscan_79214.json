@@ -1,0 +1,164 @@
+{
+ "paper_key": "litscan:79214",
+ "title": "Self-Prophetic Decoding to Unlock Visual Search in LVLMs (SeProD)",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_79214.txt",
+  "sections_read": [
+   "Abstract",
+   "3",
+   "Tables1–5",
+   "4.1–4.2",
+   "5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "decompose_and_delegate",
+  "key_step": "搜索模型维持全轨迹，基础prophet只看当前crop与问题，输出grounding核查或答案草稿；概率阈值接纳前缀，首拒绝后回搜索分布。",
+  "why_non_obvious": "独立单步能力可避免后训练损坏与历史干扰，但简单文本拼接反而退化。",
+  "trigger_condition": "When tool-trained long-context search loses single-step perception, delegate focused drafts to a base model and accept compatible prefixes.",
+  "contribution_type": "decoding framework",
+  "abstract_strategy": "decompose_and_delegate",
+  "abstract_trigger_condition": "When long-horizon and local competence interfere, separate context scopes and couple via a selective interface.",
+  "abstract_key_step": "短上下文局部核查→长上下文接受/拒绝。",
+  "abstract_why_non_obvious": "不是把外部回答直接当真值。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79214#s1",
+   "object": "多轮高分辨率视觉搜索",
+   "information": "搜索全历史；prophet当前crop与问题，不接收搜索CoT；两模型token概率",
+   "operation": "grounding核查影响下一轮reasoning，answer draft影响当前答案；threshold概率接纳",
+   "claimed_effect": "Mini-o3 VisualProbe Hard47.2→50.5、Medium49.0→51.5、Easy66.7→69.6；H20全流程速度1.06/1.03/1.07x。",
+   "conditions": [
+    "默认Qwen2.5VL3B prophet",
+    "VisualProbe avg@32",
+    "τ=.3"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "50.5      51.5       69.6"
+   },
+   "failure_boundary": "增加第二模型；阈值启发式非严格分布保持；冻结prophet不是crop因果价值真值。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "how": "将局部感知与全局答案融合解耦，改善caption/答案接口需改造。",
+   "strength": 2
+  },
+  {
+   "problem": "P38",
+   "how": "避免长历史干扰并提供纠偏前缀。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Mini-o3",
+   "kind": "search policy"
+  },
+  {
+   "name": "DeepEyes",
+   "kind": "search policy"
+  },
+  {
+   "name": "naive prophet text prompting",
+   "kind": "interface ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "需要额外prophet模型；3B默认、7B进一步提升，成本结论限H20测量。",
+   "locator": "4.1–4.2"
+  },
+  {
+   "text": "论文未给概率接受的严格目标分布保持证明；r归一化范围不充分。",
+   "locator": "3.3 Eq5; reader boundary"
+  }
+ ],
+ "question": {
+  "observed_failure": "naive提示VisualProbe Hard46.2/Medium47.4低于Mini-o3的47.2/49.0。",
+  "load_bearing_assumption": "局部能力可互补但直接注入文本会干扰搜索策略。",
+  "scope": "同一crop条件下双模型推理接口",
+  "success_criterion": "提高三难度avg@32并测全流程开销",
+  "why_open": "基础模型更强局部能力不自动意味着可用纠偏。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table4"
+  },
+  {
+   "vocab": "M",
+   "id": "M14",
+   "locator": "Table3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "s_j=p_s(o_j|H,o_<j)^alpha*p_p(o_j|I_i,Qp,o_<j)^(1-alpha); alpha=.5-r; accept j<min{j:s_j<tau}",
+    "locator": "Eq5; implementation details"
+   }
+  ],
+  "signal_routing": "搜索生成crop；prophet若grounding=true给细节前缀供下一轮R，false触发重新定位；answer模式直接draft最终A。搜索teacher-force并行验证草稿，首拒绝开始从搜索分布续写；无RL梯度/优势。",
+  "normalization": "other: normalized token rank r用于α；p_s,p_p为各自softmax概率。α范围/clipping未知，不能假设凸混合。",
+  "invariance": "启发式阈值而非min(1,p_s/p_p)随机accept+残差修正，未保证目标分布不变；不是PBRS。",
+  "baseline_or_potential": "prophet是生成助手非reward baseline。",
+  "degenerate_cases": "阈值高/模型不合导致首token拒绝，搜索回退但仍付draft成本；τ过低可能接受差草稿；仅单轮answer仍可draft，无搜索纠偏。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table4 naive接口、去answer/grounding；Table5固定vs动态α。",
+  "negative_results": [
+   {
+    "text": "naive Hard46.2、Medium47.4低于baseline47.2/49.0。",
+    "locator": "Tables1,4"
+   },
+   {
+    "text": "去answer49.5/50.1/68.1；去grounding49.9/50.4/68.7，低于完整50.5/51.5/69.6。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：等推理预算和同额外模型成本下，普通候选重采样若同样提升，则专属接口解释弱化。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Mini-o3/DeepEyes/PixelReasoner search +Qwen2.5VL3B prophet",
+   "framework": "official inference pipelines",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "H20；batch4重复4次，accept74.6/74.2/80.7%，speedup1.06/1.03/1.07x。",
+  "pitfalls": [
+   {
+    "text": "VisualProbe avg@32；Mini-o3 V* avg@32、HR avg@8；不能混称全部greedy accuracy。",
+    "locator": "4 implementation"
+   }
+  ],
+  "code": null,
+  "lesson": "当调用额外局部模型时，应计算draft、验收与搜索的端到端成本，并保持局部输入不含待核查CoT。"
+ }
+}

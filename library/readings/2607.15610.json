@@ -1,0 +1,59 @@
+{
+ "paper_key": "2607.15610",
+ "title": "Process Reward Informed Tree Rollout for Effective Multi-Turn RL",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2607.15610.txt",
+  "sections_read": [
+   "Abstract; §4.1–4.3 Eq3–9 and Algorithm1",
+   "§5 Tables1–2; §6.2 Table4; Limitations opening"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把过程模型用于选择从哪里扩展/剪枝轨迹，保留剪枝失败分支共同估计终奖组内优势。",
+  "key_step": "每K个环境交互评分，高分prefix分叉M条、一般分继续、低于median−α或重复Θ次停止；全部完成/提前停分支入同一GRPO组。",
+  "why_non_obvious": "过程分数只决定采样预算，且不丢弃被判差的负例，避免只保留高分路径导致结果对比消失。",
+  "trigger_condition": "可恢复中间环境状态、存在可用过程排序器、长轨迹独立采样重复和死路成本高。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "将过程监督放在数据收集而非奖励通道，用共享前缀和保留失败对比提高采样有效性。",
+  "abstract_trigger_condition": "可恢复中间环境状态、存在可用过程排序器、长轨迹独立采样重复和死路成本高。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2607.15610#s1",
+   "object": "multi-turn rollout树和组内终奖优势",
+   "information": "已实现prefix中的动作、observation、近期测试/错误/阶段信号，PRM或judge分数；最终任务奖励",
+   "operation": "过程分数分配扩展/生存/剪枝；包括剪枝的完整树输出按终奖mean/std归一化后做GRPO",
+   "claimed_effect": "SWE-Bench Verified PATR-PRM resolved27.2、EnvDone92.2、turn24.4；GRPO22.2/79.2/25.8；Judge26.0/90.8/24.1。Table4 Judge保留全部26.0优于去剪枝Best_n23.4。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4 Eq3–9; Table2 p6; §6.2 Table4 p8",
+    "quote": "PATR-PRM (ours)           27.2               92.2       24.4"
+   },
+   "failure_boundary": "过程排序偏差会剪掉可恢复路径；改变prefix采样分布，不因动作仍来自policy就成为无偏独立rollout。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P58",
+   "how": "共享前缀并选择性分叉减少重复交互；评分成本和真实状态恢复须单独计量。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "提供采样侧方案，未直接解决同一轨迹不同动作的信用，防止将过程引导误读为step reward。",
+   "strength": 2
+  },
+  {
+   "problem": "P37",
+   "how": "保留早停/失败样本构成组内对比，避免筛选只剩看似有用的正路径。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

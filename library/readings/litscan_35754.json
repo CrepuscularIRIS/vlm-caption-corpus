@@ -1,0 +1,60 @@
+{
+ "paper_key": "litscan:35754",
+ "title": "ArCHer: Training Language Model Agents via Hierarchical Multi-Turn RL",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_35754.txt",
+  "sections_read": [
+   "Abstract; §3.2–3.5 equations1–7",
+   "§5.3–5.6 result/ablation discussion; §6 limitations",
+   "Appendix offline Table1 and accompanying text"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把跨turn长期回报学习和turn内token生成分为高层off-policy TD critic与低层policy gradient。",
+  "key_step": "replay中的utterance transition训练Q=r+γVnext；当前actor在replay state重新采样整句估计V及actor更新，将Q−V作为该句末端信号。",
+  "why_non_obvious": "沿每个token跨所有turn传播稀疏回报使有效horizon极长；utterance级TD保留多轮作用又能复用交互数据。",
+  "trigger_condition": "环境交互昂贵、长多轮任务有计算性奖励且可保存历史transition。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "在较粗决策尺度估计长期价值，在较细动作尺度优化生成策略。",
+  "abstract_trigger_condition": "环境交互昂贵、长多轮任务有计算性奖励且可保存历史transition。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:35754#s1",
+   "object": "高层utterance critic与低层token actor",
+   "information": "历史replay transitions、当前policy从旧state采样utterance、target Q/V",
+   "operation": "高层TD+Polyak；低层REINFORCE或token baseline；离线采用IQL/AWR约束数据外动作",
+   "claimed_effect": "离线Twenty Questions Table1 IQL+AWR return−14.1，IQL+REINFORCE−20，增加BC−15.3，filteredBC−15.4。主文特定在线任务报告<1000 vs PPO>100k samples达约−17 return。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3 Eq1–7; §5.3; Appendix Table1 p21",
+    "quote": "ArCHer (IQL + AWR)                                                                   −14.1"
+   },
+   "failure_boundary": "离线直接移植在线REINFORCE会塌缩；critic误差与OOD动作需控制，100×仅所述任务交互样本效率。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "跨turn TD值向每utterance内tokens路由，处理长期动作信用。",
+   "strength": 3
+  },
+  {
+   "problem": "P58",
+   "how": "replay复用昂贵交互但当前utterance仍需新采样与critic训练。",
+   "strength": 2
+  },
+  {
+   "problem": "P60",
+   "how": "actor当前采样与replay critic数据分开，不能把旧动作直接当on-policy。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

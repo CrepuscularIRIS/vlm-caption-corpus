@@ -1,0 +1,181 @@
+{
+ "paper_key": "litscan:78069",
+ "title": "GeoSense",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_78069.txt",
+  "sections_read": [
+   "Abstract",
+   "§3–4 pp3–5 Eqs1–3",
+   "§5 Tables2–4 pp6–8",
+   "§5.5 latency及limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "同一VG-LLM分别正常几何与zero-padding几何输入答题，对GT判四象限，用有利分支教<vggt>请求，无利/有害分支保2D，再把几何作为独立token通道注入。",
+  "why_non_obvious": "空间任务并非总需要3D：约700k诊断仅5%获益、3%受损，场景类别不能替代样本效用。",
+  "trigger_condition": "When an auxiliary modality sometimes helps and sometimes harms, use paired outcome discrepancies to supervise an adaptive request token.",
+  "contribution_type": "两阶段SFT与按需几何工具门",
+  "abstract_strategy": "把模型条件能力差异转为动作监督",
+  "abstract_trigger_condition": "额外感知资源有代价且效用依任务与模型而变时",
+  "abstract_key_step": "同条件双分支测量→分组重写轨迹→门控独立资源通道",
+  "abstract_why_non_obvious": "只训练使用新模态可能污染原2D表示，按需调用与输入解耦需同时设计。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:78069#s1",
+   "object": "Qwen2.5-VL3B+VGGT1B按需几何输入",
+   "information": "训练由VG-LLM双条件正确性与GT构造；推理只有2D图与问题，触发后才提取几何并二次推理。",
+   "operation": "冻结两个encoder，先对齐projector/backbone，再117k perception SFT：3D正确/2D错误样本两轮请求；3D错误/2D正确样本不请求；一致样本保留。",
+   "claimed_effect": "Table3同数据VSI48.07/always-on52.34→54.86；MindCube35.67/30.58→45.08，平均注入35.68%；Table2空间平均43.4→56.6。",
+   "conditions": [
+    "对照包含模态架构与数据重写，不能单归因gate",
+    "四象限原文顺序是3D、2D"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p7",
+    "quote": "+ alternative VGGT (GeoSense) 35.68% 54.86"
+   },
+   "failure_boundary": "离线能力标签随模型更新会漂移；单次正确性不等于不可替代的信息必要性；动态多视角几何不稳。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P05",
+   "how": "双分支有/无额外感知答题差异直接构造必要性标签。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "请求/不请求两类SFT先建立动作支持。",
+   "strength": 3
+  },
+  {
+   "problem": "P51",
+   "how": "保能力主张需核每项，而非总平均；主表存在下降。",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "VG-LLM additive always-on fusion",
+   "kind": "method"
+  },
+  {
+   "name": "Same-data Qwen2.5-VL-3B",
+   "kind": "control"
+  },
+  {
+   "name": "Alignment only / perception SFT",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "外部geometry质量/粒度限制dense multi-scene及wide-angle多视角；token过多或噪声可伤害。",
+   "locator": "Limitations p9"
+  },
+  {
+   "text": "严格保一般能力未由主表支持：MMBench76.6→75.9、MME(P)1526.1→1473.7、POPE87.5→85.4，仅WeMath25.8→41.2显著拉高平均。",
+   "locator": "Table2 reader limitation"
+  },
+  {
+   "text": "VSI调用率§5.3为43.7%，§5.5约36%；后者接近两任务平均35.68%。不同口径未解释。",
+   "locator": "§5.3/§5.5"
+  }
+ ],
+ "question": {
+  "observed_failure": "700k探查约67%双对、25%双错、5%几何独有正确、3%几何有害；VG-LLM扩大训练POPE86.9→74.2。",
+  "load_bearing_assumption": "离线双分支差异在新模型与测试任务中能被2D输入预测，且外部几何确有可靠信息。",
+  "scope": "一次可选VGGT调用/第二次推理的静态或多视角VQA。",
+  "success_criterion": "相比always-on减少调用与时延，提升空间答题且逐项监测一般视觉保留。",
+  "why_open": "任务语义/图像简单度无法可靠决定是否需要几何。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§3.1四组700k样本计数"
+  },
+  {
+   "vocab": "M",
+   "id": "M06",
+   "locator": "双条件评估先于必要性监督"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3同训练数据注入方式与Fig4 noise-image control"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "F_{geo}=E_{geo}(V),\\quad T_{geo}=W_{proj}^{3D}F_{geo},\\quad H_{input}=T_{text}\\oplus T_{vision}\\oplus E_{start,g}\\oplus T_{geo}\\oplus E_{end,g}",
+    "locator": "Eqs1–3 pp3–4"
+   }
+  ],
+  "signal_routing": "监督请求token与后续答案（具体loss mask未给出）；无RL优势。两个视觉encoder冻结，LLM、projectors和边界token训练。推理2D首轮生成<vggt>才触发提取并concat，第二轮继续任务。训练probe使用原VG-LLM且缺几何用zero-padding，非最终共享模型online反事实。",
+  "normalization": "other",
+  "invariance": "SFT无组标准化、无potential/shaping；独立串接通道不是与加法融合等价的不变换。",
+  "baseline_or_potential": "2D zero-padding分支是离线标签对照，不是advantage baseline；不声称PBRS。",
+  "degenerate_cases": "双对/双错样本均保留原样，不给四象限不同RL收益；若数据无有益触发样本会缺调用支持，若总触发则退化always-on且付二次推理。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3同数据比较无geometry/always fusion/adaptive独立token；Table4对齐后MME1803、perception后1922但仍低于base2104（该表MME总分口径不同于Table2）。Fig4输入噪声使trigger confidence减弱，但未定量证明校准。",
+  "negative_results": [
+   {
+    "text": "VSI RelativeDirection52.85<fusion61.61；MindCube Rotation31.5<无geometry34.5。",
+    "locator": "Table3"
+   },
+   {
+    "text": "多个通用指标未恢复原基座水平，非inferiority检验与多seed未给出。",
+    "locator": "Tables2/4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "在当前caption+crop模型上按相同prefix成对测crop/nocrop，多次采样形成置信标签；若离线gate只识别任务类型且对真实增益无区分，则必要性迁移失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL3B+VGGT1B",
+   "framework": null,
+   "group_size": null,
+   "max_turns": 2,
+   "kl": null
+  },
+  "cost": "8×A10080G；alignment14h/perception20h；Adam lr1e-6 warmup.03，batch32→96；A100 latency2D852ms、adaptive895ms、always950ms、triggered1008ms。",
+  "pitfalls": [
+   {
+    "text": "请求意味着外部encoder+第二次MLLM推理，调用率不等于同比例总时延收益。",
+    "locator": "§5.5"
+   },
+   {
+    "text": "Table1 perception117k与Table2总FT940k口径不同；不推定全部940k均是必要性标签。",
+    "locator": "Tables1–2"
+   }
+  ],
+  "code": null,
+  "lesson": "当工具输入可能损害已有表示时，先分离输入通道并测四象限，再教请求token；用真实二次推理成本而非只报调用率。"
+ }
+}

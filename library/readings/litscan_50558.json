@@ -1,0 +1,159 @@
+{
+ "paper_key": "litscan:50558",
+ "title": "Optimizing Anytime Reasoning via Budget Relative Policy Optimization",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_50558.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "2",
+   "3 main/ablation",
+   "AppendixA/B masks",
+   "AppendixD Tables1–2",
+   "Limitations checklist"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "同一thinking在预算截断处分支summary，分别优化思考的future-budget累计reward与summary的均匀budget目标；BRPO混合过去budget进度和groupreturn基线。",
+  "why_non_obvious": "同一prefix可低成本采多summary；thinking与answer extraction难点/预算分布不同。",
+  "trigger_condition": "When a model must answer at any budget, train truncated-prefix summaries and budget-relative thinking credit.",
+  "contribution_type": "budget-aware RL",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When intermediate work and final extraction have different learning needs, decouple their objectives while sharing parameters.",
+  "abstract_key_step": "thinking优化预算加权return，summary单独均匀训练。",
+  "abstract_why_non_obvious": "最优summary可忽略多余信息的理论条件，不等于真实summary单调可靠。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:50558#s1",
+   "object": "thinking tokens和summary tokens",
+   "information": "GT verifier、多预算prefix、每prefix4summary",
+   "operation": "BRPO futurebudgetreturn−混合baseline；summary单独分组训练",
+   "claimed_effect": "final8000tokens macro ARbase52.7 vsGRPO50.7；anytime32budgets ARuniform46.0 vsGRPO43.0。",
+   "conditions": [
+    "R1Distill1.5B",
+    "math5benchmarks"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "AppendixD Table1",
+    "quote": "AR-base            68.4       32.7         85.5      29.6           47.3          52.7"
+   },
+   "failure_boundary": "仅1.5B数学；最优summary假设与实际decoupled surrogate之间不能推单调保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "强制budget结束后仍训练可答summary，而非截断一律算错。",
+   "strength": 3
+  },
+  {
+   "problem": "P11",
+   "how": "按future budgets分段回报而非全序列同reward。",
+   "strength": 2
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO with DrGRPO corrections",
+   "kind": "baseline"
+  },
+  {
+   "name": "dense reward only",
+   "kind": "ablation"
+  },
+  {
+   "name": "decouple only / variance reduction",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "读者：最优summary可选最有用prefix才有budget性能单调；实践summary未保证，且maximizing lowerbound不保证原目标同步增加。",
+   "locator": "2.1/2.2"
+  },
+  {
+   "text": "读者：实验单一1.5B及数学，工具观测变化未测试。",
+   "locator": "3"
+  }
+ ],
+ "question": {
+  "observed_failure": "GRPO final50.7/anytime43.0，ARbase52.7/44.9，ARuniform52.5/46.0。",
+  "load_bearing_assumption": "中间prefix的answerability能给thinking更细credit且summary需单独适配截断。",
+  "scope": "budgeted math reasoning",
+  "success_criterion": "预算曲线面积与终点准确率同时评估",
+  "why_open": "summary误差和有限采样会改变进度baseline质量。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "3.2 dense/decouple/variance ablations"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J=E sum_j P_j r_phi(x,z_<=b_j); R_t=sum_{j>=j_t}P_j r_phi(x,z_<=b_j)",
+    "locator": "Eqs3,6"
+   },
+   {
+    "latex": "V1=[sum_{j<jt}lambda^(jt-j)*r_j / sum_{j<jt}lambda^(jt-j)]*sum_{j>=jt}P_j; V2=mean_group R_t; V=((jt-1)/m)V1+((m-jt+1)/m)V2",
+    "locator": "Eqs7–9"
+   }
+  ],
+  "signal_routing": "thinkingtoken t获R_t−V，summary对每prefix的answer组单独训练；共享θ但两种预算prior。插入ellipsis/endthink/finalanswer提示tokens忽略loss；tree attention防summary分支互看。",
+  "normalization": "other: V1折扣权重和归一化×剩余budget mass；V2组均值；正文BRPO无std。summary称GRPO/DrGRPO实现，具体std/loss reduction未核。",
+  "invariance": "非PBRS；优化预算加权准确率新目标。summary用pBprime而thinking用pB时为解耦surrogate，不是完全相同目标梯度。",
+  "baseline_or_potential": "V1仅前budget评估；V2包含同组sample，有限样本self-inclusion不能直接称严格action-independent。",
+  "degenerate_cases": "jt1时V1空和但混合权重0，数值实现未知；m1退化终点目标与groupbaseline；全summary错时无有效进度；pB只有终点仍可从summary训练受益。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "dense reward用V2隔离BRPO；decouple保持thinking不变；BRPO单独加入再与decouple组合。",
+  "negative_results": [
+   {
+    "text": "ARbase final52.7高于uniform52.5，但anytime44.9低于46.0，预算目标存在权衡。",
+    "locator": "AppendixD Tables1–2"
+   },
+   {
+    "text": "作者报告长度罚减短但不稳定/损性能，未在本记录精确读图数值。",
+    "locator": "3.2.1"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：固定summary质量与总采样预算，若收益仅来自额外summary训练则不能归因thinkingcredit。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeekR1DistillQwen1.5B",
+   "framework": "Verl/PPO; vLLM cache+FlexAttention",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "40315math，8A10080G约30h；G8×4budgets×4summaries≤128tokens；batch64",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当一个prefix派生多个答案时使用树attention/cache并mask插入tokens，避免重复长prefix计算。"
+ }
+}

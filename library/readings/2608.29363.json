@@ -1,0 +1,55 @@
+{
+ "paper_key": "2608.29363",
+ "title": "TRACER: Per-Tool Context Retention for LLM Agents via Consequence-Attributed Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.29363.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "3.2–3.4",
+   "Tables1–3",
+   "transfer discussion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "轻量Beta policy逐tool-output-instance决定保留比例；sessioncost加observed recall floor与learned单slot keepall反事实credit。",
+  "why_non_obvious": "压缩省token可能引发重调用，必须把整session后果纳入；模型counterfactual仍需intervention验证。",
+  "trigger_condition": "When compression savings trigger expensive re-invocations, optimize per-output retention against downstream session consequences.",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When compression savings trigger expensive re-invocations, optimize per-output retention against downstream session consequences."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.29363#s1",
+   "object": "context retention policy slots",
+   "information": "eventprefix特征、query、实际sessiontokens/success、keepall reference、outcome model",
+   "operation": "REINFORCE训练Beta retention；coeff=alpha*A+recallfloor+beta*modelattribution",
+   "claimed_effect": "Truncation RL-only success74.8→77.0%，iso-success tokenratio.728→.694；Summarization76.2→81.0%，.560→.541；intervention aggregate rankrho.66。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 Truncation",
+    "quote": "TRACER             77.0%                   0.694          [.685, .704]        −4.7%                0.021         69.4"
+   },
+   "failure_boundary": "production40heldoutqueries，reference计数window不是严格causal matching；learned costdelta有误差，非无偏因果保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "总成本必须包括后续recover调用，crop/revisit不能只计当前cost。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "counterfactual outcome模型需实际单工具干预核验。",
+   "strength": 3
+  }
+ ]
+}

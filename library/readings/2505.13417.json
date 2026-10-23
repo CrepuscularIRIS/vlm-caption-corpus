@@ -1,0 +1,184 @@
+{
+ "paper_key": "2505.13417",
+ "title": "AdaptThink: Reasoning Models Can Learn When to Think",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.13417.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–2",
+   "§3–5 pp3–8",
+   "§7 Limitations p9"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "首token强制Thinking/NoThinking均衡采样，用固定参考逐题准确率baseline和小NoThinking偏好训练模式选择。",
+  "key_step": "行为分布首token在</think>和固定起始词各.5，其后old policy；A=R−Rref+δ1(NoThinking)，无组std，loss分母改为行为分布。",
+  "why_non_obvious": "既改变采样支持又改变优势，不能只添长度罚；但forced固定起词不覆盖全部自然首token，IS不是无条件完整支持校正。",
+  "trigger_condition": "初始NoThinking概率近0导致普通on-policy训练无法比较两种模式。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "强制保留竞争行为的支持，用有参考的结果反馈学习省算力选择。",
+  "abstract_trigger_condition": "初始NoThinking概率近0导致普通on-policy训练无法比较两种模式。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "行为分布首token在</think>和固定起始词各.5，其后old policy；A=R−Rref+δ1(NoThinking)，无组std，loss分母改为行为分布。",
+  "abstract_why_non_obvious": "既改变采样支持又改变优势，不能只添长度罚；但forced固定起词不覆盖全部自然首token，IS不是无条件完整支持校正。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.13417#s1",
+   "object": "模式选择采样与优势",
+   "information": "题目、GT答案、固定原模型每题16样本准确率；部署自然首token",
+   "operation": "50/50行为分布、δ=.05、参考baseline与clipped IS",
+   "claimed_effect": "1.5B平均准确率+2.4pp/长度−53%；7B+2.3pp/−40.1%",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p6 Table1 1.5B AdaptThink, GSM/MATH/AIME Acc-Length-RatioNT, final averages",
+    "quote": "AdaptThink               83.1    480   86.9%   82.0   1782   76.8%   31.0     6679   40.4%   +2.4   -53.0%"
+   },
+   "failure_boundary": "没有多轮工具，固定δ不构成非劣约束保证。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2505.13417#s2",
+   "object": "偏好强度",
+   "information": "相同1.5B训练，不同δ",
+   "operation": "δ0到.1比较准确率效率",
+   "claimed_effect": "δ0 +5.5pp/−32.8%，δ.1 −.5pp/−64.5%",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p7 Table2 δ=.1 row",
+    "quote": "δ = 0.1                82.5    358   91.7%   78.2   1272   90.4%   26.7     5301   83.5%   -0.5   -64.5%"
+   },
+   "failure_boundary": "模式偏好可牺牲准确率，paper标题约束非硬保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P29",
+   "strength": 3,
+   "how": "强制采样保留首决策支撑。"
+  },
+  {
+   "problem": "P02",
+   "strength": 3,
+   "how": "奖励直答模式与任务准确率的冲突。"
+  },
+  {
+   "problem": "P23",
+   "strength": 3,
+   "how": "固定起词/空think与自然完整模式事件不等价。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "naive GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "DPOShortest",
+   "kind": "method"
+  },
+  {
+   "name": "TLMRE",
+   "kind": "method"
+  },
+  {
+   "name": "RFTMixThinking",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只1.5B/7B数学训练；MMLU为OOD评测，无视觉工具实验。",
+   "quote": null,
+   "locator": "§7 p9"
+  }
+ ],
+ "question": {
+  "observed_failure": "naive GRPO NoThinking近0且MATH500长度约3500后增长。",
+  "load_bearing_assumption": "两模式成功率差可从均衡rollout识别，训练后的自然模式选择保留该差异。",
+  "scope": "单轮数学首token模式选择。",
+  "success_criterion": "自然解码准确率非劣且token减少，按难度分化。",
+  "why_open": "未隔离全局偏置、支持限制与reference基线承重性。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§4.2逐组两模式计数"
+  },
+  {
+   "vocab": "rs",
+   "id": "generative_process_redesign",
+   "locator": "Eq8"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A=R(x,y)−R̄ref(x)+δ1[y1=</think>]; R̄ref=mean of K=16 reference rewards",
+    "locator": "Eqs5–6 p4"
+   },
+   {
+    "latex": "πIS(y1=</think>)=πIS(y1=wstart)=.5; t>1:πIS=πold; L=−EIS min[(πθ/πIS)A,clip(πθ/πIS,1−ε,1+ε)A]",
+    "locator": "Eqs8–9 pp4–5"
+   }
+  ],
+  "signal_routing": "同一A作用完整响应概率，包括首mode和后续答案；作者sequence ratio写法，token实现/length归一未说明，不能自动替成首token单独IS。",
+  "normalization": "固定reference mean-only，无组std/KL；K16δ.05ε.2。",
+  "invariance": "x常数baseline在完整支持无裁剪PG期望消去，不给硬非劣保证；restricted support、clipping可令baseline改变实效。非PBRS。",
+  "baseline_or_potential": "固定初始policy逐题baseline，非当前组均值或action value。",
+  "degenerate_cases": [
+   "全对仍有模式δ差，reference过时可令大部分A正；全错直答仍可能得δ−Rref。",
+   "πNT严格0时forced生成也不能保证有限IS梯度恢复；πIS只两种首词，其他首词缺支持。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "[redacted: project-internal]",
+  "negative_results": [
+   {
+    "text": "δ.1平均准确率−.5pp；7B隐式thinking比例4.2%高于原模型.7/.9。",
+    "locator": "Tables2–3 pp7–8"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "自然选择不比统一bias更按题分化，或needs-look准确率下降，则不能声称学会必要时crop。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepSeek-R1-Distill-Qwen1.5B/7B",
+   "framework": "VeRL",
+   "group_size": 16,
+   "max_turns": 1,
+   "kl": 0
+  },
+  "cost": "40KDeepScaleR、batch128、16Kctx、lr2e-6、314steps；8H80032h/32H80028h，选择300/150step。",
+  "pitfalls": [
+   {
+    "text": "固定wstart不是所有Thinking事件；首token与多token工具前缀不可直接等同。",
+    "locator": "Eq8"
+   }
+  ],
+  "code": "https://github.com/THU-KEG/AdaptThink (not executed)",
+  "lesson": "当直答采样消失，先保留竞争分支再测自然选择；固定偏好不能替代非劣检验。"
+ }
+}

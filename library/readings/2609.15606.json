@@ -1,0 +1,62 @@
+{
+ "paper_key": "2609.15606",
+ "title": "VideoScout: Learning Agentic Active Exploration with Adaptive Reasoning Pacing for Long Video Understanding",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2609.15606.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "Algorithm1",
+   "Cold-start SFT",
+   "Trajectory RL Eqs3–9",
+   "TablesVI–VIII",
+   "G Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "generative_process_redesign",
+  "key_step": "把视频采样变成连续evidence acquisition：speed/notes/rewatch/answer动作，先turnSFT再trajectoryDAPO。",
+  "why_non_obvious": "把何时观察和何时答合并学习，但teacher timing只是示范代理不是最小充分证据时刻。",
+  "trigger_condition": "When a one-shot video scan misses sparse evidence, learn sequential viewing pace, memory, revisit and stopping actions.",
+  "contribution_type": "method",
+  "abstract_strategy": "generative_process_redesign",
+  "abstract_trigger_condition": "When a one-shot video scan misses sparse evidence, learn sequential viewing pace, memory, revisit and stopping actions."
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.15606#s1",
+   "object": "long-video active exploration",
+   "information": "当前clip、query、文本memory、teacher answerprogress/GT训练标签",
+   "operation": "speed1/2/4x顺序读；局部rewatch；composite terminal reward训练",
+   "claimed_effect": "LVBench SFT43.4/RLonly18.5/SFT+DAPO45.1；VideoMMMU49.4/37.7/54.6；去rewatch LV42.5。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "TableVI",
+    "quote": "SFT+RL(DAPO)          45.1           54.6             51.0           35.4"
+   },
+   "failure_boundary": "rewatch仅最近fastwindow不能任意回早段；textmemory可积累错误；无audio；timing正确性门不保证policy精度不降。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P21",
+   "how": "直接active视觉采样/SFT→RL机制可迁移crop。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "RLonly崩塌显示先教行动空间与格式的重要性。",
+   "strength": 3
+  },
+  {
+   "problem": "P27",
+   "how": "rewatch范围限制决定纠偏能力。",
+   "strength": 2
+  }
+ ]
+}

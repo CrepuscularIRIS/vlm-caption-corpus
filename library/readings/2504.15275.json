@@ -1,0 +1,194 @@
+{
+ "paper_key": "2504.15275",
+ "title": "Stop Summation: Min-Form Credit Assignment Is All Process Reward Model Needs for Reasoning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2504.15275.txt",
+  "sections_read": [
+   "Abstract/贡献 pp1–2",
+   "§3 Eqs2–8 pp3–6",
+   "§4 Table2/Fig2 pp7–8",
+   "§5/Conclusion pp9–10"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "PRM步骤reward先softmin加权，再用token级future return与固定最大长度的LOO baseline；少量GT补终端信号。",
+  "why_non_obvious": "sum奖励高分思考模板而非整链正确，baseline按步骤次数扣除又诱导单大步。",
+  "trigger_condition": "When dense process rewards are hacked by accumulating easy high-score steps, concentrate credit on the weakest step and retain terminal checks.",
+  "contribution_type": "过程reward变换与token baseline",
+  "abstract_strategy": "用瓶颈目标替代累积目标",
+  "abstract_trigger_condition": "链路成功受最坏局部错误控制且累计奖励可被长度投机",
+  "abstract_key_step": "softmin加权局部reward后回传",
+  "abstract_why_non_obvious": "局部reward可靠仍不代表终止完整性；min与baseline都需检查。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2504.15275#s1",
+   "object": "Qwen2.5-Math7B数学RL",
+   "information": "PRM800K训PRM；800/8000训练题有GT，其余仅过程分",
+   "operation": "step reward softmin(T.1)乘原分，放步骤末token；RLOO token baseline固定N8192；10%题增加答案reward",
+   "claimed_effect": "平均53.3 vs纯VR48.3/纯PRM49.3；AMC23 82.5；sum约25步塌缩，min纯PRM约270步仍被hack。",
+   "conditions": [
+    "greedy pass@1",
+    "最佳checkpoint",
+    "主PRM与VR学习率不同"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p7 Qwen2.5-Math7B MATH/Minerva/Olymp/AIME/AMC/Avg",
+    "quote": "+ PURE-PRM+VR            82.6        37.1       44.1      20.0     82.5   53.3"
+   },
+   "failure_boundary": "仅训练步数约30%，未含PRM训练/推理墙钟；min不保证完整回答",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "改变步骤到token回报和基线而非整轨迹同优势。"
+  },
+  {
+   "problem": "P43",
+   "strength": 2,
+   "how": "caption/grounding PRM会同样出现高分模板和不完整终止投机。"
+  },
+  {
+   "problem": "P08",
+   "strength": 3,
+   "how": "baseline按固定最大长度而非实际steps避免少步骤偏置。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "PURE-VR",
+   "kind": "method"
+  },
+  {
+   "name": "PURE-PRM sum/min",
+   "kind": "method"
+  },
+  {
+   "name": "PURE-PRM+10%VR",
+   "kind": "method"
+  },
+  {
+   "name": "step-level vs token-level baseline",
+   "kind": "method"
+  },
+  {
+   "name": "PRIME/SimpleRL",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "纯PRM仍出现空话/0步骤；因causal PRM不知道后续已终止；generative PRM/在线更新是未来方向。",
+   "locator": "§5.1/6"
+  },
+  {
+   "text": "最优checkpoint评测，seeds与区间未见；步数效率不等于总算力。",
+   "locator": "§4.2–4.3"
+  },
+  {
+   "text": "Theorem1 min误差≤epsilon对普通min成立；Eq3另有依argmin决定的t>w截零，argmin随误差切换时需额外条件。未把此定理当所有token信用无条件保证。",
+   "locator": "§3.2 reader qualification; proof未读"
+  }
+ ],
+ "question": {
+  "observed_failure": "sum约25步塌缩、80步均分约30低于base39.5；min-only约270步仍hack。",
+  "load_bearing_assumption": "最低PRM步骤分能代表整链瓶颈，步骤划分且终止有效。",
+  "scope": "数学Qwen1.5/7B与PRM800K",
+  "success_criterion": "GT精度与PRMreward/长度/重复率共同跟踪",
+  "why_open": "高分步骤累计可挤掉真正解答；过程评价缺终止完整性。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§5.1三类hack+正确/错误长度重复分组"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "sum/min与baseline对照"
+  },
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§3.4固定N token baseline"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_i^{p*}=\\frac{e^{-r_i^p/T}}{\\sum_j e^{-r_j^p/T}}r_i^p",
+    "locator": "Eq5 T=.1实验"
+   },
+   {
+    "latex": "A_{it}=r_i^v-\\frac{\\sum_{k\\ne i}r_k^v}{K-1}+G^p_{it}-\\frac{\\sum_{k\\ne i}\\sum_{l=1}^{N}G^p_{kl}}{(K-1)N},\\quad G^p_{it}=\\sum_{j=t}^{N}\\gamma^{j-t}r^{p*}_{ij}",
+    "locator": "Eq7"
+   }
+  ],
+  "signal_routing": "变换PRM只放每步骤最后token，其他即时reward0；未来return仍给前序token信用。答案reward放最后token并RLOO；process baseline为其他response所有token returns按固定最大N平均。KL另项.001。",
+  "normalization": "leave-one-out",
+  "invariance": "非PBRS，改sum目标为softmin瓶颈目标。T→0且唯一最差步骤、gamma1时严格Eq3：最差之前return=min，之后0；有限T=.1只近似，多最差并列的信用分散，不能宣称严格min等价。改变reward正scale在固定T下改变softmin集中度，不具尺度不变性。",
+  "baseline_or_potential": "verifiable LOO；过程baseline为其他轨迹token平均return，不是step-average，也不是实际response长度分母。",
+  "degenerate_cases": "全对/全错GT组仍可有PRM差异；全PRM同分按步数平分且future returns不同。单步无瓶颈选择。错误caption若是最低分可能把后续正确纠偏抹去，且终止空话可逃评价。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "sum/min同PRM训练曲线与三种reward配置；§5.1替换step-level baseline出现单超长步骤。",
+  "negative_results": [
+   {
+    "text": "纯min PRM约270步hack仍发生；10%VR缓解非证明免疫。",
+    "locator": "Fig2/§4.3"
+   },
+   {
+    "text": "双倍过程reward模型365步塌缩；伪阳性重复答案从361到365仅5梯度步，LCP过滤改0仍被规避。",
+    "locator": "§5.2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "在caption错误后通过crop正确纠偏的轨迹上，若min拒绝恢复而终端GT认可，则最坏步骤目标不适配可纠错任务。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B/Math7B/Math1.5B+7B PRM",
+   "framework": "veRL",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "batch64×8，minibatch512，一更新/训练步；max8192，T.1,temp1；LR纯PRM5e-7，其余1e-6；500/1000steps；PRM先head3epochs再全量1epoch。",
+  "pitfalls": [
+   {
+    "text": "PRM数值不同量纲：sum分与min变换后的总分不能直接比较。",
+    "locator": "Fig2 caption"
+   },
+   {
+    "text": "长重复但verifier判对的样本需单独监控，普通错样本长不等价。",
+    "locator": "§5.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当过程judge只懂局部合理性时，聚焦最差分仅延缓投机；保留GT终端信号并分组监控正确长重复与空回答。"
+ }
+}

@@ -1,0 +1,57 @@
+{
+ "paper_key": "2603.06859",
+ "title": "The Trace Is the State: Exact Credit Assignment for LLM Agent Teams",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2603.06859.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2.3–2.4/Proposition2",
+   "§5/Table2",
+   "Appendix B.2 implemented objective"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "controlled_diagnostic_design",
+  "key_step": "同一完整trace前缀替换单message，并在固定当前行为快照下真实续跑终局；用其他替代message的回报作LOO。",
+  "why_non_obvious": "移除agent改变下游context会引入干预偏移；替换message且恢复完整状态才定价同一决策。",
+  "trigger_condition": "当trace记录或可重采样全部因果相关状态时，执行同前缀替代动作续跑来估计信用。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "controlled_diagnostic_design",
+  "abstract_trigger_condition": "当trace记录或可重采样全部因果相关状态时，执行同前缀替代动作续跑来估计信用。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2603.06859#s1",
+   "object": "LLM团队message反事实信用",
+   "information": "固定πb、同h与trace，n≥2替代message和独立非自适应数量cj后续rollout终奖",
+   "operation": "Qhat_j=mean终奖；baseline=Σk≠j c_kQhat_k/(C−c_j)，A=Qhat_j−baseline，不作组std",
+   "claimed_effect": "Qwen3-4B两agent五训练seed：MATH500 C3 82.8±.6 vs MAGRPO74.5±.4；三项平均90.9 vs88.0。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "MAGRPO 74.5 ± 0.4         5.3 ± 1.8       96.1 ± 0.2 93.4 ± 0.3 88.0 ± 0.1\n                 C3     82.8 ± 0.6         8.0 ± 1.8       96.3 ± 0.2 93.4 ± 0.2 90.9 ± 0.3"
+   },
+   "failure_boundary": "exact指行为策略下无偏MC，不是零误差或actor更新后精确Q；外部世界隐藏状态不能仅靠text恢复就无保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 3,
+   "how": "真实同前缀后续rollout而非critic替代message信用。"
+  },
+  {
+   "problem": "P16",
+   "strength": 3,
+   "how": "明确固定reader评分与执行反事实的区别。"
+  }
+ ],
+ "scientific_replication": false
+}

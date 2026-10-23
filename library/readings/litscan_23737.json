@@ -1,0 +1,56 @@
+{
+ "paper_key": "litscan:23737",
+ "title": "RRD",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_23737.txt",
+  "sections_read": [
+   "Abstract/introduction",
+   "§3.1–3.2 Eq6–11",
+   "§4.1 settings/§4.2 ablation prose"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "algebraic_equivalence_unification",
+  "key_step": "用随机K个transition的放大和拟合总return，平方误差的额外方差项产生可调平滑正则。",
+  "why_non_obvious": "无偏return估计进入square后不再给原始loss的无偏估计，恰多出trajectory内奖励方差惩罚。",
+  "trigger_condition": "当完整长轨迹回归昂贵时，随机子序列降低计算，并显式控制所引入的方差正则。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "algebraic_equivalence_unification",
+  "abstract_trigger_condition": "当完整长轨迹回归昂贵时，随机子序列降低计算，并显式控制所引入的方差正则。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:23737#s1",
+   "object": "episodic reward redistribution",
+   "information": "trajectory总reward及均匀无放回K个state-action样本",
+   "operation": "L=E(R−T/K Σ_i Rhat_i)^2=LRD+E[T² Varτ(Rhat)*(T−K)/(K(T−1))]",
+   "claimed_effect": "K=T时surrogate gap为0，退化完整return decomposition；K=1连接uniform redistribution。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "§3.2 Eq11/§3.2.2",
+    "quote": "This gap can be eliminated by choosing K = T in the sampling distribution (see Eq. (7)) so that our\napproach degrades to the original deterministic implementation of return decomposition."
+   },
+   "failure_boundary": "低重建误差不唯一确定真实逐步信用；这是proxy reward替换，不是自动严格PBRS或全策略return-equivalence保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "解释segment/step sum-reward拟合中的可辨识性及随机化正则。"
+  },
+  {
+   "problem": "P16",
+   "strength": 2,
+   "how": "稠密proxy重建终奖不等于动作因果贡献。"
+  }
+ ],
+ "scientific_replication": false
+}

@@ -1,0 +1,54 @@
+{
+ "paper_key": "litscan:3617",
+ "title": "DeltaBench: Can Large Language Models Detect Errors in Long Chain-of-Thought Reasoning?",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_3617.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction contributions",
+   "3 dataset/annotation",
+   "4.4 Table2",
+   "HitRate@k",
+   "7 Limitations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "GPT4把长CoT分成subtask sections，人标全部错误/有用性/反思；用PRM阈值或critic标出错误section。",
+  "why_non_obvious": "最终错答不足定位全部局部错误，长CoT与短step PRM分布不同。",
+  "trigger_condition": "When long reasoning hides local errors, evaluate all human-annotated sections rather than only the first error.",
+  "contribution_type": "benchmark",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When an outcome obscures intermediate failures, evaluate structured local annotations."
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:3617#s1",
+   "object": "长CoT error localization",
+   "information": "1236人工标注样本、48subcategories，多个生成模型",
+   "operation": "PRM以datasetreward均值减std阈值，critic预测所有errorsections，macroF1评估",
+   "claimed_effect": "Table2 GPT4turbo macroF1 40.76，QwenMathPRM7B29.22高于72B26.38。",
+   "conditions": [
+    "long CoT, section-level",
+    "多学科"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2",
+    "quote": "Qwen2.5-Math-PRM-7B                30.30          34.96                     29.22"
+   },
+   "failure_boundary": "人工subjectivity、错误预筛选与dataset阈值，不能作为普遍过程reward校准。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P50",
+   "how": "错误定位能力不足警示自纠错/过程judge，但无训练机制。",
+   "strength": 2
+  }
+ ]
+}

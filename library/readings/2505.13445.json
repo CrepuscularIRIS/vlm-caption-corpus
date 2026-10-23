@@ -1,0 +1,168 @@
+{
+ "paper_key": "2505.13445",
+ "title": "Trust, But Verify: A Self-Verification Approach to Reinforcement Learning with Verifiable Rewards",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2505.13445.txt",
+  "sections_read": [
+   "Abstract/contributions pp1–3",
+   "§3–5 pp3–10",
+   "Appendix A/C p14 limitations/settings; D.1–2 p15 normalization"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "RISE把当前policy解题轨迹再包装成验证题，同时用GT outcome规则监督解题和验证score，混合两任务PPO。",
+  "key_step": "generation reward作为verification目标标签；验证轨迹有自己的reward/GAE，不把自评分回灌为原解题奖励。",
+  "why_non_obvious": "在线验证分布与当前错误贴合；正确性标签来自GT，并非自我打分闭环自动真值。",
+  "trigger_condition": "仅outcome RL self-verification弱：1.5B平均验证26.8%。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "复用同一可验证任务结果生成在线元判断任务，联合训练。",
+  "abstract_trigger_condition": "仅outcome RL self-verification弱：1.5B平均验证26.8%。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "generation reward作为verification目标标签；验证轨迹有自己的reward/GAE，不把自评分回灌为原解题奖励。",
+  "abstract_why_non_obvious": "在线验证分布与当前错误贴合；正确性标签来自GT，并非自我打分闭环自动真值。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2505.13445#s1",
+   "object": "在线解题+验证训练",
+   "information": "GT math答案→原轨迹score∈{1,−.5,−1}；验证输入只有题目+候选，目标是该score",
+   "operation": "独立验证CoT采样后合并G∪V，shared actor/critic PPO",
+   "claimed_effect": "1.5B reasoning24→24.4，verification26.8→74.5；3B32.5→33.5/35.8→74.3",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "p7 Table1 RISE-3B reasoning five datasets+avg then verification",
+    "quote": "RISE-3B       64.3    7.9   42.5   26.2   26.6   33.5   81.0    86.3   74.4   56.1   73.6   74.3"
+   },
+   "failure_boundary": "验证accuracy受正确/错误类别比例影响，非校准/平衡能力；不能拿作caption因果credit。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P40",
+   "strength": 2,
+   "how": "将描述/判断可靠性另作监督任务，需额外可验证事实标签。"
+  },
+  {
+   "problem": "P42",
+   "strength": 2,
+   "how": "自检显式训练而非仅期待答案reward自然长出。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Zero-RL PPO",
+   "kind": "method"
+  },
+  {
+   "name": "SFT",
+   "kind": "method"
+  },
+  {
+   "name": "offline verification",
+   "kind": "method"
+  },
+  {
+   "name": "majority voting",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者只数学；无GT伪验证继续RL和discriminative verifier留作未来。",
+   "quote": null,
+   "locator": "AppendixA p14"
+  }
+ ],
+ "question": {
+  "observed_failure": "1.5B Zero-RL验证26.8%，RISE74.5%，但解题仅+.4pp。",
+  "load_bearing_assumption": "验证任务学习可转移到生成推理而非只识别格式/类别先验。",
+  "scope": "同policy在线数学候选的最终结果验证。",
+  "success_criterion": "固定候选类别平衡后验证提升，且固定总算力解题提升。",
+  "why_open": "增加验证算力和自身候选难度分布混杂，验证不监督推理每步事实。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§5.5 online vs offline verification固定比例"
+  },
+  {
+   "vocab": "rs",
+   "id": "self_supervised_signal_engineering",
+   "locator": "§4.1 outcome作为二阶监督"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "ro(y,y*)=1 boxed matched; −.5 boxed mismatched; −1 unboxed; verifier target y*v=ro(yg,y*g)",
+    "locator": "§4.1 p5"
+   },
+   {
+    "latex": "B=G∪V; Â_t=Σ_l(γλ)^lδ_(t+l); δ_t=r_t+γV(s_(t+1))−V(s_t), γ=λ=1",
+    "locator": "Eq3 p4/§4.2 pp5–6"
+   }
+  ],
+  "signal_routing": "原解题与验证为独立trajectory，terminal own reward通过critic GAE到该响应token，same SGD共同更新；验证reward不反向穿过所评原答案sampling。",
+  "normalization": "per-response token loss平均T（正文）；无明确groupstd，adv whitening未知；训练三值score，测试score1→1其余0。",
+  "invariance": "非PBRS，新增验证任务改变训练分布/目标；γλ=1本身不推出token平均，平均是作者另述实现选择。",
+  "baseline_or_potential": "shared learned state-value critic across tasks。",
+  "degenerate_cases": [
+   "候选几乎全错时always incorrect accuracy很高，须报balanced/F1而不是总accuracy。",
+   "格式错可无需数学判断直接−1；最终答对但过程错仍被标correct。"
+  ]
+ },
+ "evidence_design": {
+  "discriminating_experiment": "proposed：固定解题候选、平衡正负/格式有效，比较online/offline验证并匹配总tokens；caption任务需人工/定位事实GT后才可迁移。",
+  "negative_results": [
+   {
+    "text": "1.5B MATH54.6<Zero55.3，Minerva17.2<17.4；3B Minerva26.2<27.4。",
+    "locator": "Table1 p7"
+   },
+   {
+    "text": "offline解题接近online，验证差距更大；更多verification compute不是单调解题收益。",
+    "locator": "§5.5 p9"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若固定候选平衡后验证增益消失或仅格式识别有效，不支持推理验证能力提升。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5 base1.5/3/7B",
+   "framework": "verl PPO",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "8523MATH-hard；generation batch1024 verification128 mini128，12epochs，maxresponse3000；actor5e-7 critic9e-6；额外验证rollouts。",
+  "pitfalls": [
+   {
+    "text": "KL loss禁用与coefficient .01并列，未给路由不能补reward shaping实现。",
+    "locator": "AppC p14"
+   }
+  ],
+  "code": null,
+  "lesson": "当训练验证任务，必须保存原候选分布、正负比例与独立reward路由；自检提升不等于可直接替代GT。"
+ }
+}

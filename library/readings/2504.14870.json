@@ -1,0 +1,187 @@
+{
+ "paper_key": "2504.14870",
+ "title": "Acting Less is Reasoning More! Teaching Model to Act Efficiently",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2504.14870.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 Eqs1–7 pp4–6",
+   "Tables1–4 pp7–9",
+   "AppB/D pp13–14",
+   "AppE/F Tables6–8 pp15–16"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "self_supervised_signal_engineering",
+  "key_step": "正确性乘工具效率函数，GRPO按同题历史成功轨迹最少调用数n构造峰值在n的工具reward，PPO则调用数单调余弦衰减。",
+  "why_non_obvious": "可观测最少成功调用不同于真实必要调用；成功乘法门控和局部目标形状都影响探索。",
+  "trigger_condition": "When outcome-only tool RL overuses tools, reward efficient successful trajectories using an empirical per-question call target.",
+  "contribution_type": "工具成本成功门控reward",
+  "abstract_strategy": "把可达成功解的资源统计作局部参考",
+  "abstract_trigger_condition": "真实最少资源未知但已有多条成功轨迹时",
+  "abstract_key_step": "维护历史成功最小资源，再乘到任务reward",
+  "abstract_why_non_obvious": "奖励不是全局越少越好，正n目标对欠调用也惩罚。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2504.14870#s1",
+   "object": "Qwen2.5搜索/ToRL代码工具",
+   "information": "训练GT答案、当前/历史同题成功调用数；推理只问题和工具反馈。",
+   "operation": "PPO cos(mπ/(2m+c))；GRPO n>0用sin(πm/(m+n))，历史更新最少成功n；reward=alpha*rtool*correct，环境输出mask。",
+   "claimed_effect": "7B搜索NQ PPO调用3.282→1.040，EM.449→.446；OTC-GRPO对SearchGRPO调用1.697→.990、EM.399→.444。",
+   "conditions": [
+    "alpha1，search c4/code c3",
+    "历史minimum不是oracle necessity",
+    "正确性与调用数一起报告"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p7",
+    "quote": "OTC-PPO           0.446     1.040 (▼ 68.3%)"
+   },
+   "failure_boundary": "1.5B代码AIME23.3→20.0；非劣未检验；失败成本门控仅在纯correct reward成立。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P03",
+   "how": "成功门控成本直接对应目标及尺度风险。",
+   "strength": 3
+  },
+  {
+   "problem": "P06",
+   "how": "只见正调用成功时经验最小不能确认无工具可行。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "共同alpha可能被标准GRPO组std抵消，但本文未给具体adv公式。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Search-R1 PPO/GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "ToRL GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "alpha1/2/3 and call cap1/2/3",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "AppD引用外部人口最优理论假设并写Acc=1，不保证有限容量/采样/训练时非劣；Eq10展示时省correct门，不能视为一般严格证明。",
+   "locator": "AppD.2"
+  },
+  {
+   "text": "如果任务reward加正format，即使答案错也有工具效率reward，和正文失败门控解释不同。",
+   "locator": "AppD.3"
+  },
+  {
+   "text": "TP=sumcorrect/sumcalls可因少调用上升而精度下降，无工具总调用0时未定义。",
+   "locator": "§4.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "SearchPPO7B NQ平均3.282调用，OTC1.040；1.5B代码效率改善伴准确率掉3.3pp。",
+  "load_bearing_assumption": "历史最少成功轨迹近似该模型最小必要调用且GT可靠。",
+  "scope": "最多4search/3code calls，3B/7B与数学1.5B/7B",
+  "success_criterion": "joint EM/calls而不是单TP上升；保持难例成功",
+  "why_open": "终端正确性不区分冗余调用；单纯加成本会鼓励失败短路。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Tables1–2 EM/TC/TP共同度量"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table3同答少调用/得失题分组"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables6–7 alpha与上限消融"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r^{tool}=\\alpha r_{tool}(m,n)r_\\phi,\\quad r_\\phi=\\mathbf1[correct]",
+    "locator": "Eq7"
+   },
+   {
+    "latex": "r_{tool}^{PPO}=\\cos\\frac{m\\pi}{2m+c};\\quad r_{tool}^{GRPO}=\\begin{cases}\\cos\\frac{m\\pi}{2m+c},&n=0\\\\\\sin\\frac{\\pi m}{m+n},&n>0\\end{cases}",
+    "locator": "Eqs5–6 (m=n=0值1)"
+   }
+  ],
+  "signal_routing": "AppB PPO/GRPO I(token)只给policy reasoning/toolcall token梯度，排环境observation；每条按policy token数平均。PPO GAE；GRPO只称相对组reward，未显式std公式，不能推定。",
+  "normalization": null,
+  "invariance": "非PBRS；若实施标准mean/std，alpha共同scale抵消（KL相对项等例外），AppE alpha实验主要OTC-PPO数值不能证明GRPO尺度有效。n>0 reward峰在n，m<n也受罚；旧n更新顺序对更少调用成功奖励有影响，未给实现。",
+  "baseline_or_potential": "n为跨epoch历史minimum成功call，不是当前policy反事实baseline；PPO不用n。",
+  "degenerate_cases": "全错纯correct组reward0；无成功时n初始化/保留规则未详述。m=n>0成功同reward不能推动更少；新成功m<n若先更新n可满分，若不更新先受罚。no-tool p0未修复。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "代码call上限1/2/3下OTC稳定更少；alpha2/3搜索PPO比alpha1更差，说明超参不能无条件放大。",
+  "negative_results": [
+   {
+    "text": "PPO3B NQ EM.403→.355；1.5B AIME24/25 23.3→20.0；7B AIME25 26.7→23.3。",
+    "locator": "Tables1–2"
+   },
+   {
+    "text": "SearchGRPO7B 2Wiki.340→.311，OOD不全保留。",
+    "locator": "Table4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "保留历史最小与当前多次nocall探测，若n跟错误偶然成功或过时能力锁定且损害需工具题，则经验minimum目标不可靠。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5 3B/7B；Qwen2.5-Math1.5B/7B",
+   "framework": "Search-R1/ToRL继承设置",
+   "group_size": null,
+   "max_turns": "search4/code3",
+   "kl": null
+  },
+  "cost": "8A10080G；调用与响应长度/训练时下降有图，未抄墙钟数；组数LR等原文引用基线未知。",
+  "pitfalls": [
+   {
+    "text": "search prompt也改为必要才调用，reward改动并非唯一差异。",
+    "locator": "§4.1"
+   },
+   {
+    "text": "global historical n易受偶然正确与能力漂移影响。",
+    "locator": "reader analysis"
+   }
+  ],
+  "code": null,
+  "lesson": "当成本乘成功reward时，检查零成功组、format残余奖励、历史目标更新和无工具支持，再以配对得失题判断是否真保持准确率。"
+ }
+}

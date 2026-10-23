@@ -1,0 +1,166 @@
+{
+ "paper_key": "2503.04697",
+ "title": "L1: Controlling How Long A Reasoning Model Thinks With Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2503.04697.txt",
+  "sections_read": [
+   "Abstract",
+   "§3 Eqs1–2 p4",
+   "§4 settings p5",
+   "§5 Fig2/Table1 pp6–8",
+   "§7 limitations p10",
+   "AppA.1 Table2 p15"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "adapt_via_conditioning",
+  "key_step": "prompt附随机目标token数，RL同时学正确与长度；Exact绝对偏差惩罚，Max仅正确答案乘软上限权重。",
+  "why_non_obvious": "事后截断会打断推理，预算条件必须进入训练；exact会强迫简单题也用满预算。",
+  "trigger_condition": "When a user supplies an inference budget, train the policy to condition reasoning on it rather than truncate after decoding.",
+  "contribution_type": "条件化RL奖励",
+  "abstract_strategy": "将资源约束作为策略输入",
+  "abstract_trigger_condition": "可控预算而非固定长短输出是需求时",
+  "abstract_key_step": "在多预算训练分布中优化结果与约束联合目标",
+  "abstract_why_non_obvious": "预算是指令变量，不是由模型自动识别的必要计算量。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "2503.04697#s1",
+   "object": "DeepScaleR1.5B可控输出",
+   "information": "prompt目标n，训练正确答案；输出长度包括reasoning和final完整生成。",
+   "operation": "Exact GRPO700steps后Max120steps，训练n∼U整数[100,4000]；Max混合保留exact任务。",
+   "claimed_effect": "Table1同约840token预算L1-Max816token/47.8 vsGPT4o840/45.6平均准确率；Table2 Exact数学meanerror3.01%、RMSE18.44%。",
+   "conditions": [
+    "math RL",
+    "16推理随机种子",
+    "不代表同训练成本模型比较"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p8",
+    "quote": "853        40.5       816         47.8"
+   },
+   "failure_boundary": "预算外长度和OOD误差较大；更低预算会牺牲准确率。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P33",
+   "how": "直接处理用户预算条件停止，但非视觉证据充分性。",
+   "strength": 2
+  },
+  {
+   "problem": "P03",
+   "how": "Max成功条件成本奖励可迁移须审计归一化。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "S1 budget forcing",
+   "kind": "method"
+  },
+  {
+   "name": "DeepScaleR4K /24K",
+   "kind": "control"
+  },
+  {
+   "name": "SFT length relabeling",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "只控制完整输出长度，训练最长4K；超训练目标长度泛化未知。",
+   "locator": "§7"
+  },
+  {
+   "text": "soft violation口径原文写|generated−target|>500，不能当严格超过预算比例；Exact mean error为有符号均值可相互抵消。",
+   "locator": "pp7–8 reader caution"
+  }
+ ],
+ "question": {
+  "observed_failure": "原reasoner无法按用户预算控制，S1在512/1024预算比L1低约20–25pp（作者主文）。",
+  "load_bearing_assumption": "同模型可学习预算条件的不同解题轨迹。",
+  "scope": "数学推理完整生成token预算",
+  "success_criterion": "同生成token量比较准确率、RMSE与预算违规",
+  "why_open": "硬截断改变过程，纯SFT重标长度数据不能可靠学约束。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M10",
+   "locator": "Fig2准确率/长度曲线"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Exact与Max及SFT对照"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r_{Exact}=\\mathbf1[correct]-\\alpha|n_{gold}-n_y|,\\quad \\alpha=.0003",
+    "locator": "Eq1 p4/§4"
+   },
+   {
+    "latex": "r_{Max}=\\mathbf1[correct]\\,clip(\\alpha(n_{gold}-n_y)+\\delta,0,1),\\quad\\delta=.5",
+    "locator": "Eq2 p4"
+   }
+  ],
+  "signal_routing": "完整response标量reward用于GRPO；没有明确token mask/adv normalization公式，不按GRPO名称填mean+std。Max另混合Exact指令，比例未说明；Max alpha具体值未独立给出。",
+  "normalization": null,
+  "invariance": "Exact偏差项改变最优长度且可奖励错误但贴近长度；Max正确性门控，非PBRS。若标准组std且组内全对未饱和，alpha共同尺度可消失（条件推论）。",
+  "baseline_or_potential": "无显式状态价值或反事实基线。",
+  "degenerate_cases": "Max全错reward0，标准相对优势无梯度；正确且clip饱和的组也无长度偏好。Exact全错仍优化目标长度，非accuracy-only；预算无关内容可凑长度。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Exact/Max比较显示可少用token而保精度；额外500步Exact数学RMSE18.44→10.04但高预算性能略降。",
+  "negative_results": [
+   {
+    "text": "OOD mean error21.22/40.54%，比数学3.01大；更严长度控制不总提升准确率。",
+    "locator": "Table2 p15"
+   }
+  ],
+  "seeds": "16推理随机种子；独立训练种子未给",
+  "falsifier": "在相同实际计算预算和难度分层下若收益只由超预算长尾产生，则预算效率主张失效。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "DeepScaleR1.5B；附录7B未详细读",
+   "framework": "VeRL",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "lr1e-6 batch128 train4K/eval8K；700+120steps，训练GPU时未知。",
+  "pitfalls": [
+   {
+    "text": "token预算不同于工具延迟/视觉token；不能把整体长度变短当少crop。",
+    "locator": "transfer boundary"
+   }
+  ],
+  "code": null,
+  "lesson": "当评估可控预算时，同时报真实长度、误差分布与准确率，避免有符号meanerror掩盖长短偏差。"
+ }
+}

@@ -1,0 +1,183 @@
+{
+ "paper_key": "litscan:77427",
+ "title": "Agent0-VL",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77427.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "3–4/Eq1–6/Algorithm1",
+   "5.1–5.3/Table1–3",
+   "Conclusion",
+   "B implementation",
+   "D data pipeline"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "同一模型分solver/verifier角色，将可执行工具反馈接入自检与修复",
+  "key_step": "生成score/conf/critique，聚合工具和自评分，低置信度触发repair，再组相对更新",
+  "why_non_obvious": "工具不仅供解题也供检查，但可靠性仍取决于模型评分/置信度而非天然验证器",
+  "trigger_condition": "当纯文字自评误导时，用真实工具反馈约束同模型双角色训练",
+  "contribution_type": "method",
+  "abstract_strategy": "同一模型分solver/verifier角色，将可执行工具反馈接入自检与修复",
+  "abstract_trigger_condition": "当纯文字自评误导时，用真实工具反馈约束同模型双角色训练",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "生成score/conf/critique，聚合工具和自评分，低置信度触发repair，再组相对更新",
+  "abstract_why_non_obvious": "工具不仅供解题也供检查，但可靠性仍取决于模型评分/置信度而非天然验证器"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77427#s1",
+   "object": "多轮solver-verifier共享策略",
+   "information": "原图、问题、真实工具返回、同模型score/conf/critique；cold-start外部教师",
+   "operation": "低置信度修复、过程奖励与结果加总、GRPO循环演化",
+   "claimed_effect": "7B主表平均58.3→65.6；Table3去repair MathAvg59.4→57.5，去tool53.1，SFTonly51.8",
+   "conditions": [
+    "Qwen2.5VL7B/Qwen3VL8B",
+    "200k SFT+40k RL",
+    "8H200"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables1,3",
+    "quote": "w/o Self Repair                                            57.5                71.6            86.1           64.1            57.9"
+   },
+   "failure_boundary": "零外部奖励不覆盖初始化；工具正确执行不保证输入事实正确或自评分校准",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:77427#s2",
+   "object": "自演化初始化",
+   "information": "外部正确性reward",
+   "operation": "自演化前先训练2epochs",
+   "claimed_effect": "限定zero-external-reward仅后阶段，非全流程",
+   "conditions": [
+    "Appendix B"
+   ],
+   "evidence": {
+    "kind": "author_claim",
+    "locator": "Appendix B",
+    "quote": "is trained for 2 epochs using conventional RL with exter-                    Process:\nnally defined correctness signals to initialize stable explo-                <think>"
+   },
+   "failure_boundary": "未独立复现",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P43",
+   "how": "工具验证过程信号但自评分仍需外部校准",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "格式与工具行为SFT加外部warmup是实际前提",
+   "strength": 2
+  },
+  {
+   "problem": "P52",
+   "how": "自验证不可替人工且已有人工QC",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Qwen-TIR",
+   "kind": "method"
+  },
+  {
+   "name": "w/o Self Repair / Tool Use / SERC",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "无工具版本MathAvg53.1低于59.4，SFTonly51.8",
+  "load_bearing_assumption": "同模型score×confidence加工具验证能提供非自洽幻觉的优化信号",
+  "scope": "工具增强自检/修复训练",
+  "success_criterion": "独立GT/人工评价下每阶段改进，且高置信错例不被遗漏",
+  "why_open": "自评reward可被策略共同操纵，未见校准/独立打乱自评对照"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "Algorithm1/B"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§4.1 solver/verifier"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r^{(t)}_{proc}=\\lambda_{tool}r(tool_t)+score_t conf_t-\\beta_{div}D_{KL}(\\pi^V_\\theta\\|\\pi^E_\\theta);\\quad g_t=\\sigma(\\kappa(\\tau_c-conf_t));\\quad r_t=r^{(t)}_{proc}-g_t C^{(t)}_{repair}",
+    "locator": "Eq2–4（原文E记号未定义一致）"
+   },
+   {
+    "latex": "g(\\tau)=\\alpha_{out}r_{out}+\\sum_{t=1}^T\\gamma^{t-1}r_t;\\quad \\hat A_i=(g_i-mean(g))/(std(g)+\\epsilon)",
+    "locator": "Eq5/§4.3"
+   }
+  ],
+  "signal_routing": "过程分聚合为整条trajectory return再给同组归一化优势，并未给逐步独立advantage；solver/verifier共享参数。Eq6序列比πθ(τ)/πold(τ)，具体verifier token/env token掩码、奖励stop-gradient未说明，不能补写。",
+  "normalization": "mean+std",
+  "invariance": "非PBRS：score×conf、tool reward、repair cost均改变偏好。跨角色KL在不同角色上下文上的对应定义未知；Eq2使用πE而Eq1角色S/V不一致。",
+  "baseline_or_potential": "组均return；Eq6 KL对old policy，而非明确固定SFT参考。",
+  "degenerate_cases": "全同return std+epsilon令A0；自评高置信错误不会触发conf<.7修复；低conf正确也可能罚。Eq3软gate与Algorithm1硬阈值不一致。长轨迹累计过程正reward可能偏好多步；无明确stop预算。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3去repair/tool/SERC分解；Table2迭代趋势非独立因果控制。",
+  "negative_results": [
+   {
+    "text": "自演化前仍用2epoch外部正确性奖励，不能以结果支持完全零监督训练。",
+    "locator": "Appendix B"
+   },
+   {
+    "text": "表1/2/3基座MMMU与MME-Real列口径不一致，跨表基线不可直接合并。",
+    "locator": "Tables1–3"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同等工具与外部warmup下，打乱score/conf仍同样提升，或独立检查高置信错误不降，则自验证解释弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct / Qwen3-VL-8B",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.001
+  },
+  "cost": "8H200；200k SFT3epochs、外部reward RL2epochs、自演化1epoch；主文group8与4rollouts/task并存未解释",
+  "pitfalls": [
+   {
+    "text": "初始化GPT-5/Qwen72B教师，真实sandbox返回、辅助verifier过滤、约10k人工spotcheck；非端到端零外部监督。",
+    "locator": "§5.1 / B / D"
+   },
+   {
+    "text": "conf是评价者确信程度，不是被评动作正确概率；高置信判错可能不repair。",
+    "locator": "Eq3/Algorithm1"
+   }
+  ],
+  "code": null,
+  "lesson": "当系统声称自奖励演化时，应把初始化外部奖励、工具可验证性、自评校准和梯度路由分别核对，再讨论能否移植。"
+ }
+}

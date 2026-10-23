@@ -1,0 +1,199 @@
+{
+ "paper_key": "2609.19164",
+ "title": "Advantage Scale Calibration Imbalance in Group-Relative Optimization under Low-Variance Rewards: Diagnosis and Bounded Recovery",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2609.19164.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "scale-interface theory Eq1–5",
+   "Reward-Resolution Protocol",
+   "MaxNorm-AC Eq6–11",
+   "Tables1–3",
+   "Discussion: Boundaries and Applicability",
+   "Conclusion"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "先按奖励可信分辨率合并微小差并跳过零差组，再用max(max|u|,tau)除原始组内优势，仅重标定reward分支。",
+  "key_step": "冻结归一化优势；KL不除同一分母。分母同时控制reward尺度、prompt权重和局部有效KL。",
+  "why_non_obvious": "避免std不代表小差可学习；KL存在时无归一化的小reward梯度可能被主导。maxfloor对最大优势和逆尺度同时给界。",
+  "trigger_condition": "When credible nonzero cardinal reward gaps are small, calibrate their scale under a pre-established resolution floor and separately inspect reward/KL gradients.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把隐含尺度拆成三类耦合效应，用可信度门槛和有界算子校准。",
+  "abstract_trigger_condition": "When credible nonzero cardinal reward gaps are small, calibrate their scale under a pre-established resolution floor and separately inspect reward/KL gradients.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "冻结归一化优势；KL不除同一分母。分母同时控制reward尺度、prompt权重和局部有效KL。",
+  "abstract_why_non_obvious": "避免std不代表小差可学习；KL存在时无归一化的小reward梯度可能被主导。maxfloor对最大优势和逆尺度同时给界。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.19164#s1",
+   "object": "group advantage denominator",
+   "information": "可信连续reward差、RLOO numerator、tau=.01",
+   "operation": "resolution protocol+MaxNorm，KL外置",
+   "claimed_effect": "Qwen3-32B AIME25 p90 reference79.4±.9→84.2±1.2；六单元平均约+4.77。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen3-32B AIME25",
+    "quote": "Qwen3-32B AIME25 78.8 ± 1.3 79.4 ± 0.9 78.8 ± 0.9 84.0 ± 1.0 84.2 ± 1.2 +4.8"
+   },
+   "failure_boundary": "可信cardinal reward和非零组；local first-order不是完整AdamW保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "分析何时尺度抵消，以及floor-active与inactive的差别。"
+  },
+  {
+   "problem": "P04",
+   "strength": 3,
+   "how": "[redacted: project-internal]"
+  },
+  {
+   "problem": "P22",
+   "strength": 2,
+   "how": "低方差可为噪声或可信小差，需先校准分辨率。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "RLOO + Protocol",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO + Protocol",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO + beta_q compensation",
+   "kind": "method"
+  },
+  {
+   "name": "Dr.GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "REINFORCE++",
+   "kind": "method"
+  },
+  {
+   "name": "prespecified p90 + Protocol",
+   "kind": "method"
+  },
+  {
+   "name": "GOPO",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "作者把结论限制为可信、低方差、非零cardinal差；仅rank可靠则不适用。",
+   "quote": null,
+   "locator": "Discussion p7"
+  }
+ ],
+ "question": {
+  "observed_failure": "Table3 GRPO inverse-scale P95/P99=980/3100，MaxNorm=100/100；RLOO reward/KL比.48。",
+  "load_bearing_assumption": "奖励差的数量大小可信，分辨率可预先估计且不按验证准确率调。",
+  "scope": "固定batch和分母的局部一阶更新及连续verifier奖励。",
+  "success_criterion": "限制逆尺度尾部同时改善matched-KL性能和方向，而非只压尾部。",
+  "why_open": "本流水线多为二值正确性+人为cost，可信分辨率不是统计方差阈值；无KL时诊断不同。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Eq1–5"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2"
+  },
+  {
+   "vocab": "rs",
+   "id": "algebraic_equivalence_unification",
+   "locator": "Eq4–5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "u_i=r_i-mean_{j!=i}r_j=(G/(G-1))(r_i-rbar); s=max(tau_res,max_j|u_j|); w_i=stopgrad(u_i/s)",
+    "locator": "Eq6–8"
+   },
+   {
+    "latex": "L=-E_q[(1/G)sum_i(1/L_norm)sum_t min(rho_it w_i,clip(rho_it)w_i)]+beta L_KL",
+    "locator": "Eq9–10"
+   },
+   {
+    "latex": "g_q=(1/s_q)[g_R,q^0-beta s_q g_KL,q]; beta_eff,q=beta s_q; |w_i|<=1; 1/s<=1/tau",
+    "locator": "Eq4–5,11"
+   }
+  ],
+  "signal_routing": "同一response所有policy生成token用冻结w_i；梯度只过ratio与KL，reward/denominator/采样均stopgrad。Lnorm沿用base：response长度或DrGRPO固定Lmax；KL保持原token/sequence实现不除s。零可信差组连KL一起跳过。",
+  "normalization": "other",
+  "invariance": "floor不活跃时对全部u共同正缩放完全抵消，保留符号/rank和同组比值但不保留跨组绝对大小。floor活跃且固定tau时w随u线性变化。reward平移被center去除，bin边界可能影响平移。非PBRS；prompt reweight改变估计目标。beta_eff仅固定batch一阶方向代数，不是完整PPO/AdamW等价。",
+  "baseline_or_potential": "LOO baseline；MaxNorm centered与LOO仅floor inactive时比例消掉等同。RRP分辨率δ=.01与tau同阶；零差组独立计数。",
+  "degenerate_cases": "全对/全错同reward→跳过reward和KL；不能创造零差监督。binary混合组max|u|通常O(1)，小cost未必恢复；全对cost在floor以内才与lambda成比例。若奖励仅排序可信，放大小差无依据。beta0时KL主导解释不适用。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2把protocol、train-time binning和zero-gap KL分开；RLOO+protocol71.4→MaxNorm-no-binning78.3隔离分母。Table3和matched-KL76.5vs73.1支持不只是KL更小。",
+  "negative_results": [
+   {
+    "text": "单加protocol GRPO70.6→71.3不足以解释全部收益；保留零差KL为77.8 vs78.3。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": "5 training seeds; seed bootstrap95%CI; paired comparison bootstraps six model-task units",
+  "falsifier": "同reward分辨率和matchedKL下只压逆尺度尾部而不改善梯度对齐/性能，或小差重复judge不可信，则否定使用条件。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-32B and Qwen3-Next-80B-A3B-Thinking",
+   "framework": null,
+   "group_size": 16,
+   "max_turns": null,
+   "kl": "fixed beta; default beta*tau=2e-5 at tau=.01 (implies beta=.002)"
+  },
+  "cost": "DeepMath103K/OpenCodeReasoning，最终同计算checkpoint；学习率、硬件、实际步数指向supplement，本地已读主文未提供，保留未知。",
+  "pitfalls": [
+   {
+    "text": "RRP需要预先可审计的reward分辨率；不能用验证accuracy选择tau。",
+    "locator": "Reward-Resolution Protocol"
+   },
+   {
+    "text": "作者正文宣称cardinal recovery不等于跨组绝对尺度完整保留。",
+    "locator": "Eq8"
+   }
+  ],
+  "code": null,
+  "lesson": "当小差变弱时，先量reward/KL梯度比与可信分辨率，再决定归一化；监控floor激活与零差跳过率。"
+ }
+}

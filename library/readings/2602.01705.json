@@ -1,0 +1,57 @@
+{
+ "paper_key": "2602.01705",
+ "title": "LaDi-RL: Latent Diffusion Reasoning Prevents Entropy Collapse in Reinforcement Learning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2602.01705.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.1–3.3 Eq3–7",
+   "Table1/4/5 discussion",
+   "checklist limitations statement"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "分层采N个latent、每latent解码M次；latent用平均终答奖，text仅在同latent内比较。",
+  "why_non_obvious": "一次错误无法区分latent差与decoder差；重复解码可边缘化部分解码噪声，但仍依赖当前decoder。",
+  "trigger_condition": "当latent→text两层随机策略耦合信用时，用分层rollout给两层不同优势并分别优化。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "当latent→text两层随机策略耦合信用时，用分层rollout给两层不同优势并分别优化。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2602.01705#s1",
+   "object": "latent diffusion与text decoder",
+   "information": "最终文本正确奖；latent为SDE去噪Gaussian转移，text按最终latent条件生成",
+   "operation": "latent A对N个M均奖做std，text A在同latent的M回答mean/std；αLlatent+(1−α)Ltext，另加组latent排斥引导",
+   "claimed_effect": "数学均值LaDi-RL43.45 vs AR-GRPO37.73；LaVAE-RL23.92，latent表示选择不是自动有效。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "AR Vanilla GRPO                17.2+1.5   17.1+1.1  44.7+2.3    74.1+2.5   35.3+2.0    38.0+2.4    37.73+1.96\n GRPO+Entropy Adv.              18.0+2.3   18.8+2.8  43.1+0.7    76.8+5.2   37.8+4.5    38.4+2.8    38.82+3.05\n Multiplex Thinking             20.6+4.9   19.7+3.7  50.7+8.3    78.0+6.4   38.6+5.3    41.7+6.1    41.55+5.78\n LaVAE-RL                       7.3−8.4    8.5−7.5   26.6−15.8  53.4−18.2   20.9−12.4   26.8−8.8    23.92−11.85\n LaDi-RL                        22.3+6.6   20.5+4.5  52.6+10.2   81.4+9.8   40.7+7.4    43.2+7.6    43.45+7.68"
+   },
+   "failure_boundary": "latent效用仅是当前decoder条件的MC估计；M1 text组无对比、N1 latent无对比，std0处理未读；latent-only共享骨干会塌缩。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "分层随机因素按条件分组信用，可映射动作选择与答题解码但需重构。"
+  },
+  {
+   "problem": "P29",
+   "strength": 2,
+   "how": "latent探索和排斥减轻支持塌缩，非一般保证。"
+  }
+ ],
+ "scientific_replication": false
+}

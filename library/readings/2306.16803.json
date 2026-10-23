@@ -1,0 +1,153 @@
+{
+ "paper_key": "2306.16803",
+ "title": "Would I have gotten that reward? Long-term credit assignment by counterfactual contribution analysis",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2306.16803.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–3 Eqs3–4/Theorems1/3/Prop2/5",
+   "§4 Figs3–5",
+   "§5 discussion",
+   "AppE3/E4/E8.2–3/M2 compute"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将HCA到达具体state的贡献改为到达reward或rewarding-object编码的贡献。",
+  "key_step": "学习h(a|s,u,policylogits)，比π再减1，给所有动作按未来每个reward单独信用。",
+  "why_non_obvious": "状态保留无关动作历史导致伪贡献；reward编码太粗会alias不同任务，学feature需兼顾充分性与信息量。",
+  "trigger_condition": "When state-based hindsight assigns credit to irrelevant actions, condition contributions on reward-relevant outcomes instead.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "为信用分配使用更小但足以预测奖励的结果表示。",
+  "abstract_trigger_condition": "When detailed outcomes reveal every past action, discard irrelevant identity while retaining reward information.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "reward outcome而非完整state的逆模型。",
+  "abstract_why_non_obvious": "最小理论方差编码不一定最易从有限数据学习。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2306.16803#s1",
+   "object": "长程policy-gradient的未来reward贡献",
+   "information": "on-policy轨迹中当前state/action与未来reward/object编码；训练hindsight classifier",
+   "operation": "w=h(a|s,u)/π(a|s)−1，未来reward分给所有action而非仅实际action",
+   "claimed_effect": "在确定互异state条件下HCA+与REINFORCE完全相等（方差比1）；COCOA使用充分reward编码+真w可无偏",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "§3.3 Proposition2",
+    "quote": "In environments where each action sequence leads deterministically to a different\nstate, we have that the HCA+ estimator is equal to the REINFORCE estimator (c.f. Tab. 1)."
+   },
+   "failure_boundary": "真w和fully predictive U条件不可省；学习模型偏差、连续独特reward可能再退化。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P41",
+   "strength": 2,
+   "how": "视觉结果编码的充分性/身份泄漏决定credit可靠性。"
+  },
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "未来各奖励到当前动作的显式贡献估计可作原理对照。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "REINFORCE/Advantage/Qcritic/HCA+/HCA-return/TrajCV",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "h为policy-dependent且需rewarding on-policy数据；复杂稀疏任务难扩；独特连续reward也可能泄漏state身份。",
+   "locator": "§5"
+  },
+  {
+   "text": "Theorem3 covariance排序限仅末时刻reward且仅优化初时刻policy的简化场景，非所有MDP通用界。",
+   "locator": "Theorem3"
+  }
+ ],
+ "question": {
+  "observed_failure": "100步key-door中HCA即使用真系数仍接近REINFORCE，难持续学到取key；shadow DP分析隔离拟合误差。",
+  "load_bearing_assumption": "影响到达某个具体未来state就意味着影响其reward。",
+  "scope": "有限期/吸收零reward的离散动作MDP",
+  "success_criterion": "真梯度bias/variance、固定共享轨迹比较、reward aliasing对照",
+  "why_open": "多条不同路径可到同奖励，state差异夸大所有动作贡献。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Prop2反例/Theorem3条件"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "DP shadow/aliasing实验"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "w(s,a,u)=\\frac{\\sum_{k\\ge1}p^\\pi(U_{t+k}=u|s,a)}{\\sum_{k\\ge1}p^\\pi(U_{t+k}=u|s)}-1=\\frac{p^\\pi(a|s,U^{\\prime}=u)}{\\pi(a|s)}-1",
+    "locator": "Eq3"
+   },
+   {
+    "latex": "\\hat g=\\sum_t[\\nabla\\log\\pi(A_t|S_t)R_t+\\sum_a\\nabla\\pi(a|S_t)\\sum_{k\\ge1}w(S_t,a,U_{t+k})R_{t+k}]",
+    "locator": "Eq4"
+   }
+  ],
+  "signal_routing": "当前即时Rt仍给采样action score；每个未来reward经w给全部离散actions的∇π。h监督拟合后系数作估计量使用，不是额外reward/PBRS；VLM token路由未研究。",
+  "normalization": "other：hindsight/π probability ratio−1，无组std；sum_k是期望出现次数比，不是至少出现一次概率。",
+  "invariance": "真w且U对R fully predictive时保持原无折扣expectedreturn梯度无偏；不是严格PBRS，也不保持每轨迹return。Theorem3方差PSD排序仅特定单初action/单末reward。",
+  "baseline_or_potential": "无必须valuebaseline；−1项在all-action梯度中中心化。COCOA不是保持同一外源随机数的个体counterfactual，作者区分do效果与更强反事实。",
+  "degenerate_cases": "π(a|s)≈0 ratio不稳、未采样支持难学；U=state且独特轨迹退化REINFORCE；U=R相同值混任务；reward独特连续值可同样伪贡献；U常量非充分则可偏。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "DP真w/value和learned分开；shadow同策略同轨迹测bias/variance；rewardaliasing与taskinterleaving。",
+  "negative_results": [
+   {
+    "text": "奖励同值alias时COCOA-reward退化，feature更稳；所有法因treasure相对噪声变小而变差。",
+    "locator": "§4.3/Fig5"
+   },
+   {
+    "text": "contrastive ratio学习不及hindsight分类；learned coefficients并非无偏。",
+    "locator": "§3.4/4.1"
+   }
+  ],
+  "seeds": "Fig3 30seeds standard error；未把所有图统一假设为30seed；DP真梯度只在受控小环境。",
+  "falsifier": "把视觉outcome编码泄漏轨迹/动作身份后w仍大量给无关动作，或holdout真分叉梯度偏差大，则不能迁移信用主张。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "小MLP policy/hindsight及reward feature网络",
+   "framework": "JAX/Haiku",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "单RTX3090最终实验各几小时内；开发+搜索估2GPU月。用entropy+epsilon-greedy保探索；feature reward MSE+稀疏/L2、离散化支持DP。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当构造信用标签时，优先检验结果编码是否携带无关动作身份；用共享数据和真梯度小环境区分估计器偏差与策略数据差异。"
+ }
+}

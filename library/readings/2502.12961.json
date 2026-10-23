@@ -1,0 +1,161 @@
+{
+ "paper_key": "2502.12961",
+ "title": "Adaptive Tool Use in Large Language Models with Meta-Cognition Trigger",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2502.12961.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "2 representation extraction",
+   "3.1–3.2",
+   "4 benchmark scope",
+   "6 Tables1–6",
+   "8 limitations",
+   "C.4 layer choice",
+   "D.1–D.2 probe ablations"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "disentangle_mixed_signals",
+  "key_step": "用强/弱元认知指令下配对隐藏表示差的PCA第一方向作probe；对首个Yes/No token按原决定使用不同阈值。",
+  "why_non_obvious": "Yes和No的embedding影响分数尺度，统一阈值/跨层平均会混淆决策语义；检测指令方向准确不等于真实工具收益校准。",
+  "trigger_condition": "When latent decision scores depend on the original action label, calibrate separate action-conditional thresholds before overriding a decision.",
+  "contribution_type": "method",
+  "abstract_strategy": "disentangle_mixed_signals",
+  "abstract_trigger_condition": "When latent decision scores depend on the original action label, calibrate separate action-conditional thresholds before overriding a decision.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "用强/弱元认知指令下配对隐藏表示差的PCA第一方向作probe；对首个Yes/No token按原决定使用不同阈值。",
+  "abstract_why_non_obvious": "Yes和No的embedding影响分数尺度，统一阈值/跨层平均会混淆决策语义；检测指令方向准确不等于真实工具收益校准。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2502.12961#s1",
+   "object": "是否调用工具的二元决定",
+   "information": "查询、工具上下文、首token内部表示、强弱元认知对照指令与验证标签",
+   "operation": "PCA探针选择单层，Yes低于lyes翻No，No高于lno翻Yes，其他保留",
+   "claimed_effect": "MetaTool LM3-8B SFT后调用277→240，决定准确率82.1→84.3%；RAG LM3-8B63→76%，PYes75%",
+   "conditions": [
+    "可访问模型hidden states",
+    "独立阈值拟合数据"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Tables1,6",
+    "quote": "in industry-grade deployments.                             MeCo             206 (65.0%)          240 (84.3%)"
+   },
+   "failure_boundary": "决定准确不等于端到端工具任务成功，也不能直接证明crop能增益",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P24",
+   "how": "可把内部表示作为单独校准的tool gate特征，原动作条件阈值值得作为诊断。",
+   "strength": 2
+  },
+  {
+   "problem": "P34",
+   "how": "probe分类与最终tool选择必须分开评估，不把元认知分数当收益概率。",
+   "strength": 2
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "Naive Yes/No and PYes threshold",
+   "kind": "method"
+  },
+  {
+   "name": "Always Call",
+   "kind": "baseline"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "评测主要限是否需要工具，不覆盖工具选择、参数与最终答案。",
+   "quote": "Our current evaluation of the MeCa benchmark                    arXiv:2402.10612.\nprimarily focuses on the decision-making com-\nponent—whether tool use or retrieval is neces-                Kuicai Dong, Yujing Chang, Shijie Huang, Yasheng\n                                                                Wang, Ruiming Tang, and Yong Liu. 2025. Bench-\nsary—rather than the full end-to-end performance                marking retrieval-augmented multimomal generation",
+   "locator": "§8"
+  }
+ ],
+ "question": {
+  "observed_failure": "MetaTool LM3-8B naive SFT后82.1%决定准确、277调用；MeCo84.3%、240调用。",
+  "load_bearing_assumption": "对照指令诱导方向与真实工具需求有关，并且验证阈值可泛化到目标场景。",
+  "scope": "工具必要性分类及RAG trigger；没有完整工具执行质量检验。",
+  "success_criterion": "保持漏调用率/最终正确性受控，测调用成本而非仅探针分类准确。",
+  "why_open": "模型默认Yes/No和隐藏状态尺度都可能带偏差，工具调用不是单纯不确定性。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [],
+ "objective": {
+  "equations": [
+   {
+    "latex": "v_f=PC_1(\\{(-1)^i(A^+_{f,i}-A^-_{f,i})\\}_i)",
+    "locator": "§3.1"
+   },
+   {
+    "latex": "\\hat d=\\begin{cases}\\mathrm{No}&d=\\mathrm{Yes},\\nu<l_{yes}\\\\\\mathrm{Yes}&d=\\mathrm{No},\\nu>l_{no}\\\\d&\\mathrm{otherwise}\\end{cases}",
+    "locator": "reader transcription of §3.2 rule; equality convention not specified"
+   }
+  ],
+  "signal_routing": "无RL奖励/优势；冻结模型表示训练PCA probe并拟合两个阈值，推理只覆盖是否tool的决策。模型自身SFT是另一个可选基线/设置，不是MeCo梯度训练。探针根据第一Yes/No token单层表示评分，不把解释所有token累积成分数；标量投影/归一化精确定义未展示，未补公式。",
+  "normalization": "other",
+  "invariance": "无PBRS。不同层score范围不同，不做跨层平均；Yes/No各自校准阈值，不是概率且不具跨模型/跨动作仿射不变性保证。",
+  "baseline_or_potential": "对照指令表示差是probe输入，不是policy gradient baseline。",
+  "degenerate_cases": "若模型总输出同一标签，另一阈值无训练支持；新工具/无可用工具/高置信错误可能不服从校准；不能访问hidden states的闭源模型无法直接实现。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "C.4单层vs跨层尺度分析；D.1有无query的probe分类对照；Tables4–5前/后SFT及分任务比较，Table6与PYes区分。",
+  "negative_results": [
+   {
+    "text": "SFT后Llama8B Task5有context MeCo79.5低于PYes80.5；无context82低于84，非所有分组一致改善。",
+    "locator": "Table5"
+   },
+   {
+    "text": "RAG LM3-8B MeCo76仅比PYes75高1点，低于GPT4Turbo naive84。",
+    "locator": "Table6"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "同一caption状态收集真实crop/直答结果后，若元认知score对增量收益不比Yes概率更准，则不应作为crop收益奖励。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Llama3 8B/70B Instruct；Mistral7B Instructv.3",
+   "framework": "RepE PCA; backbone frozen for MeCo",
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "查询+解释对照小样本；D.1用2048 token-level pairs，256 pairs通常少于10queries。RAG search总14.8s，MeCo额外无context.95s/有context1.74s；PYes对应.89/.98s。",
+  "pitfalls": [
+   {
+    "text": "probe近完美的是强弱指令方向分类，不是最终工具必要性分类。",
+    "locator": "§3.1"
+   },
+   {
+    "text": "Task1/4阈值从MetaTool迁移，其余任务另取100测试、剩余拟合，不是全部零样本迁移。",
+    "locator": "§6.2"
+   },
+   {
+    "text": "正文选−5至−2最佳层，C.4具体选倒数第二层；各模型最佳层不能凭通称推定。",
+    "locator": "§3.2/C.4"
+   }
+  ],
+  "code": null,
+  "lesson": "当隐藏分数受原决策类别和层尺度影响时，分别校准，并用实际下游任务结果验证，而不要把方向分类准确率当成本收益保证。"
+ }
+}

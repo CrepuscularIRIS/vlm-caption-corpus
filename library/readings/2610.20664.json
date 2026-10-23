@@ -1,0 +1,61 @@
+{
+ "paper_key": "2610.20664",
+ "title": "Information-Gain Calibrated On-Policy Distillation for Deep Search Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2610.20664.txt",
+  "sections_read": [
+   "摘要/贡献",
+   "§3.2/§4.1–4.4 Eq2–10",
+   "§5.1/Table1–2",
+   "§5.4–5.5/结论"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用检索后金答案似然变化同时校准OPD的跨轮监督份额与查询token更新方向。",
+  "key_step": "ITC将token体积先转成轮均值再按绝对IG加权；IQC仅给action-critical tokens增加有符号IG。",
+  "why_non_obvious": "教师检索前措辞偏好与实际检索证据效用可反向；长最终答案又天然占更多蒸馏预算。",
+  "trigger_condition": "on-policy蒸馏工具agent时，教师前缀评分看不到当前查询返回的证据。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "监督预算大小和方向两种偏差来自不同信息缺失。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.20664#s1",
+   "object": "学生检索回合与查询token",
+   "information": "冻结teacher在学生前后检索历史上评分金答案；部署不计算IG",
+   "operation": "按绝对IG分配turn监督，并在query action tokens加有符号IG校正",
+   "claimed_effect": "Table1 2B六集均值49.4，相比OPD46.0提高3.4；4B55.0相比53.3提高1.7。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 1",
+    "quote": "IG-OPD (Ours)       62.7        56.3         62.0           14.4        63.7        37.3         49.4"
+   },
+   "failure_boundary": "teacher答案似然是proxy，非学生因果必要性；不是严格保持原策略最优的PBRS。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "区分所有蒸馏token与工具action-critical tokens的两条信号路由。",
+   "strength": 2
+  },
+  {
+   "problem": "P16",
+   "how": "直接依赖冻结teacher测信息增益，不能替代当前学生crop需要。",
+   "strength": 2
+  },
+  {
+   "problem": "P35",
+   "how": "早期负IG若过强会压制探索，论文用渐进系数保搜索行为。",
+   "strength": 2
+  }
+ ]
+}

@@ -1,0 +1,193 @@
+{
+ "paper_key": "2609.35084",
+ "title": "GraphHCA: Closed-Form Hindsight Credit Assignment for Long-Horizon LLM Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2609.35084.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3–4 Eq1–16",
+   "§5 Tables1–3",
+   "§6",
+   "AppD.1–D.2 Tables4–6"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "合并同组rollout的环境state构图，按动作频率折扣backup成功值，log差构成state内标准化step优势。",
+  "key_step": "将HCA后验比率转成success value比率；经验图代理形成局部优势并加回terminal优势。",
+  "why_non_obvious": "最短路只看最好续写，期望backup能分辨同距离后继的可靠性。",
+  "trigger_condition": "When repeated deterministic states occur, pool rollout graphs and add local relative credit while retaining terminal credit.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "隐式后验转成观测图固定点，明确精确理论与经验代理边界。",
+  "abstract_trigger_condition": "When repeated deterministic states occur, pool rollout graphs and add local relative credit while retaining terminal credit.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "将HCA后验比率转成success value比率；经验图代理形成局部优势并加回terminal优势。",
+  "abstract_why_non_obvious": "最短路只看最好续写，期望backup能分辨同距离后继的可靠性。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2609.35084#s1",
+   "object": "graph credit",
+   "information": "同task N8 rollouts、state键、action频率和success",
+   "operation": "gamma.95期望backup，log差同state std后加AT",
+   "claimed_effect": "Sokoban84.0±1.2 vsGRPO71.1±3.9、GraphGPO81.6±4.03。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 p9",
+    "quote": "Sokoban [6×6] 11.7 71.1±3.9 79.0±3.1 81.6±4.03 84.0±1.2"
+   },
+   "failure_boundary": "共享state的history/horizon别名，无成功图无信号。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P14",
+   "strength": 3,
+   "how": "step与terminal信用相加。"
+  },
+  {
+   "problem": "P19",
+   "strength": 3,
+   "how": "图共享失败轨迹局部路径。"
+  },
+  {
+   "problem": "P15",
+   "strength": 3,
+   "how": "保留AT且step-only更差。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "RLOO",
+   "kind": "method"
+  },
+  {
+   "name": "PPO",
+   "kind": "method"
+  },
+  {
+   "name": "GiGPO",
+   "kind": "method"
+  },
+  {
+   "name": "HCAPO",
+   "kind": "method"
+  },
+  {
+   "name": "GraphGPO",
+   "kind": "method"
+  },
+  {
+   "name": "power-mean/max backup",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "经验图混合不同history和remaininghorizon，非精确success probability。",
+   "quote": "The resulting Φ̂ is a discounted empirical surrogate for Φ, aggregating visits with potentially different interaction histories and remaining horizons.",
+   "locator": "§4.2 p6"
+  }
+ ],
+ "question": {
+  "observed_failure": "ALFWorld1.5B GRPO71.1 vsGraphHCA95.7，step-only92.5。",
+  "load_bearing_assumption": "确定转移且state足以决定成功、跨rollout可合并。",
+  "scope": "同任务共享图二值终局。",
+  "success_criterion": "同rollout预算提升success并通过state别名与长路径压力测试。",
+  "why_open": "同图像或caption不等于同policy history。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "§4 exact/surrogate"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3"
+  },
+  {
+   "vocab": "rs",
+   "id": "reframe_as_solvable_object",
+   "locator": "Eq3–9"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "h(a|s,G)/q(a|s)=Phi(next)/Phi(s); Psi=log max(Phi,eps); ell=Psi(next)-Psi(s)",
+    "locator": "Eq3–8"
+   },
+   {
+    "latex": "Phihat(s)=gamma_bar sum_a qhat(a|s)Phihat(next); qhat=n(s,a)/n(s); Phihat(G)=1,Phihat(F)=0",
+    "locator": "Eq9"
+   },
+   {
+    "latex": "AT=(R-mu_R)/sigma_R; As=(ellhat-mu_Bs)/sigma_Bs; Ahat=AT+w_s As; J=E[(1/sum_i T_i)sum_it clip-surrogate(ratio_it,Ahat_it)]-betaKL",
+    "locator": "Eq1,11–13"
+   }
+  ],
+  "signal_routing": "AT送整trajectory每step；As在同state所有离开transition内std，singleton或zero variance置0。w_s=1在std后。Eq13是action/step级ratio和ΣT分母，think/action输出如何展开subword loss未给，不能推定token聚合。graph固定当前rollout统计不训critic。",
+  "normalization": "per-channel",
+  "invariance": "精确Bayes需确定转移、未来success独立于过去history/time、q支持且Phi正；logratio还需floorinactive。gamma_bar是人为传播折扣非taskdiscount，经验代理不等于精确posterior。原始势差telescopes但terminal值依成败，statewise std破坏telescoping且直接加advantage，不具严格PBRS保证。固定点唯一不代表state合并正确。",
+  "baseline_or_potential": "success log势及同state均值；terminal组baseline另算。",
+  "degenerate_cases": "无goal可达图Φ0全floor→As0；singleton/等后继值As0。全失败且无成功图两项皆0。gamma小使长路径floor抹差；gamma→1失strictcontraction。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3同图powermean ω1/5/10/max，overall95.7/95.3/91.8/90.1；Table4拆AT/As，Table5gamma敏感性。",
+  "negative_results": [
+   {
+    "text": "1.5BWebShop success81.3与GraphGPO持平；step-only92.5低于95.7。",
+    "locator": "Tables1,4"
+   }
+  ],
+  "seeds": "3 RL seeds",
+  "falsifier": "history-aware键消除收益或随机图边同样有效，则图信用解释不成立。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-1.5B/7B-Instruct;Qwen2.5-VL-3B-Instruct",
+   "framework": null,
+   "group_size": 8,
+   "max_turns": 50,
+   "kl": null
+  },
+  "cost": "150updates lr1e-6；1.5B/VL3B4A10080GB、7B8A100；最近2轮记忆。graph.028s+adv.110s vsrollout184s/update25.1s，作者额外.062%。",
+  "pitfalls": [
+   {
+    "text": "state合并混合history/horizon。",
+    "locator": "§4.2"
+   },
+   {
+    "text": "gamma.55/.75在距离8/17后必触eps.01，抹掉长路径差。",
+    "locator": "AppD.2"
+   }
+  ],
+  "code": null,
+  "lesson": "当用共享图估value时先验证state等价，再报告floor与singleton比例，不能把数学收敛当估计正确。"
+ }
+}

@@ -1,0 +1,190 @@
+{
+ "paper_key": "litscan:73751",
+ "title": "RLVLMFaith",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_73751.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 perturbations/faithfulness definition",
+   "Table1/§3 training/§3.2–3.3",
+   "§4 limits",
+   "AppB.5 judge prompt",
+   "AppC hyperparameters/augmentation prompt",
+   "AppD.6 Table7 grounding",
+   "AppD.9 judge validation",
+   "AppG.4 reward failure"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "控制误导caption/think prefix，分开视觉回答正确性、外显reasoning-answer一致性与RL后变化。",
+  "key_step": "GT错误选项生成语言干扰；correctness-only与一致性门控reward×augmentation实验，发现联合shortcutcollapse。",
+  "why_non_obvious": "能答对或CoT自洽不等视觉grounding；一致性奖励可鼓励复制正确caption并泛化成复制错误caption。",
+  "trigger_condition": "When visual RL accuracy improves, test conflicting textual cues and separately measure reasoning-answer consistency.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "用正交扰动暴露优化指标未覆盖的行为，并测试两个修复是否负相互作用。",
+  "abstract_trigger_condition": "When proxy metrics rise, perturb the information source and inspect whether fixes compose.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "分离answer correctness与textualconsistency；correct/wrong hints交叉训练。",
+  "abstract_why_non_obvious": "两种分别合理的修复可能共同提高捷径reward。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:73751#s1",
+   "object": "视觉grounding抗误导评测",
+   "information": "保持图像/referringexpression，按GTbbox相反方位生成错误文字",
+   "operation": "分别注入wrongcaption或wrongthink，比较原bbox输出IoU",
+   "claimed_effect": "SpaceR baseline P@.5=.756；wrongcaption ΔIoU−.268(relative−39%)，wrongthink−.548(−80%)",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "AppD.6 Table7 SpaceR row; P@.5/WCdelta/relative/follow/WTdelta/relative/follow",
+    "quote": "SpaceR                     0.756     −0.268          −39%               0.57           −0.548        −80%               0.45"
+   },
+   "failure_boundary": "对外部误导文字的敏感性不等内部CoT因果faithfulness或裁图必要性。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P42",
+   "strength": 3,
+   "how": "直接揭示RL外显证据/回答一致性漂移及naivegate+augmentation失败"
+  },
+  {
+   "problem": "P40",
+   "strength": 2,
+   "how": "写对选错需分离真实caption充分性与text末判断一致性"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "Base prompting",
+   "kind": "method"
+  },
+  {
+   "name": "Stop-Think",
+   "kind": "method"
+  },
+  {
+   "name": "Wrong-Caption/Think with/without disclaimer",
+   "kind": "method"
+  },
+  {
+   "name": "RL correctness only",
+   "kind": "method"
+  },
+  {
+   "name": "augmentation only",
+   "kind": "method"
+  },
+  {
+   "name": "faithfulness-as-reward",
+   "kind": "method"
+  },
+  {
+   "name": "augmentation+faithfulness",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "faithfulness仅外显CoT末判断与finalanswer一致，非internalcausalfaithfulness；judge不验证视觉事实。",
+   "locator": "§1 clarification/Box12"
+  },
+  {
+   "text": "closedmodel WrongThink靠强制copy prompt，不同于opensource assistantprefix，不能归因差异全由RLrecipe。",
+   "locator": "AppB.4 Box11/§2"
+  },
+  {
+   "text": "组合collapse为所试设置及示例，不能证明一切一致性reward必然崩溃。",
+   "locator": "AppG.4"
+  }
+ ],
+ "question": {
+  "observed_failure": "SpaceR wrongthink IoU relative−80%；StopThink在SpatialMMmultihop提升6.15pt；RLaccuracy与一致率可分离。",
+  "load_bearing_assumption": "正确finalanswer或textselfconsistency证明视觉推理可靠；augmentation与faithreward效果可相加。",
+  "scope": "spatial/count/math视觉QA与RefCOCOg，QwenVL7BRL",
+  "success_criterion": "clean/wronghint accuracy、correct∧consistent、全体consistency分报并跨seed",
+  "why_open": "文本捷径可同时提高格式/正确性/一致性，不需真实图像判断。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "wrongcaption/think与reward×augmentation"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "§1 correctness/consistency/grounding分离"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "c(o)=1[\\text{judge(final judgment in think matches answer)}];r_{correct}^{faith}=1[answer=GT]\\,c(o)",
+    "locator": "§3.3/AppG.4，符号为对原文操作的复述"
+   },
+   {
+    "latex": "P(aug)=.4=.1\\times\\{rightcaption,wrongcaption,rightthink,wrongthink\\}",
+    "locator": "§3.1/AppC"
+   }
+  ],
+  "signal_routing": "consistencyjudge输入question+完整generatedresponse(含finalanswer)，不看图且明确不判断answercorrectness；只检查think末判断，允许改口，空think vacuouslyyes，missinganswer no。terminal correctness经consistency门控，未提供独立caption/answertoken路由；futurefinalanswer仅训练/离线judge可用。",
+  "normalization": "other：称verl GRPO，所读正文/配置未列A公式/std细节，不从名字推定；reward叙述format.1/correct1，叠加/覆盖实现未核。",
+  "invariance": "非PBRS；correctnessgate改整条轨迹reward与组比较。自洽与事实真不等价；空thinkyes规则提供缩短reasoning的潜在捷径（读者分析），未证明它是唯一collapse原因。",
+  "baseline_or_potential": "无新valuebaseline；Qwen3 textjudge是consistencyclassifier而非视觉必要性oracle。",
+  "degenerate_cases": "correctbutinconsistent失去正确性奖励；wrongbutconsistent仍无correctreward；emptythink可通过一致性但还受format约束。全same reward是否zero依实际GRPO实现；不增加缺失修正行为。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "wronghint与disclaimer同图控制；数据混合±Geometry±augmentation；AppG4一致性reward与augmentation共同失败；D9多judge/human只验证consistency标注。",
+  "negative_results": [
+   {
+    "text": "augmentation改善wrongcaption仍faithfulnessdrift；faithreward单独对齐但加augmentation会复制误导文字/shortcollapse。",
+    "locator": "§3.3/AppG.4"
+   },
+   {
+    "text": "seed变化有时大于数据组合效应，单seed不足。",
+    "locator": "§3.2"
+   }
+  ],
+  "seeds": "正文报告跨seed明显变化；已读范围未确认每臂准确seed数。judge人工600examples/8annotators、每例3人，554/600全同(92.3%)，不等模型性能多seed。",
+  "falsifier": "人工独立视觉事实+文本一致性分别标注，若gate只提高自洽而视觉事实不增/更依赖caption，即推翻grounding解释。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-VL-7B-Instruct actor; Qwen3-32B evaljudge",
+   "framework": "verl",
+   "group_size": 8,
+   "max_turns": null,
+   "kl": 0.0
+  },
+  "cost": "SAT2 32K+Pixmo15K±Geo2.1K，5epochs/batch512，maxprompt4096 response2048；faithjudge每response调用开销较高未给总时长。",
+  "pitfalls": [
+   {
+    "text": "生成augmentation的Qwen3只读question+指定answer生成声明，correctcaption可能直接泄露标签，不是图像事实标注；correct/wrong各10%防总是忽略提示。",
+    "locator": "AppC Box15"
+   }
+  ],
+  "code": null,
+  "lesson": "当用语言一致性约束视觉训练时，加入正确/错误提示交叉与空reasoning对照，防止把可复制的答案线索当grounding。"
+ }
+}

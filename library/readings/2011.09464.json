@@ -1,0 +1,140 @@
+{
+ "paper_key": "2011.09464",
+ "title": "Counterfactual Credit Assignment in Model-Free Reinforcement Learning",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2011.09464.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2.3–2.6 Theorems1–3/Prop1/Eqs3–7",
+   "§4.2–4.3 Figs3/5",
+   "§6 conclusion",
+   "AppA1–3/AppB2.3"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "未来条件baseline吸收运气，动作独立约束避免把行动贡献也减掉。",
+  "key_step": "hindsight网络预测return同时让动作分类器无法从Φ额外预测当前动作。",
+  "why_non_obvious": "未来信息能减方差但一般动作依赖会偏置；仅critic拟合更好不足以合法。",
+  "trigger_condition": "When future returns contain exogenous noise, condition the baseline on hindsight information independent of the credited action.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "移除与行动无关的结果波动并约束泄漏。",
+  "abstract_trigger_condition": "When a rich future-conditioned baseline risks absorbing the treatment effect, enforce conditional action independence.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "return预测+动作信息对抗约束。",
+  "abstract_why_non_obvious": "理论独立性不等于有限分类器训练成功。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2011.09464#s1",
+   "object": "policy-gradient的hindsight baseline",
+   "information": "训练完整未来轨迹；actor仅历史X，Φ可读未来但需A⊥Φ|X",
+   "operation": "用V(X,Φ)代替V(X)，以动作后验分类+KL约束学习Φ",
+   "claimed_effect": "精确条件独立/conditional expectation下优势二阶矩不增，即比率≤1；不保证完整梯度方差同样排序",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "theorem",
+    "locator": "Theorem2 conditional-independence premise",
+    "quote": "At is independent from Φt given Xt"
+   },
+   "failure_boundary": "实用分类器/非零容差只近似独立，理论无偏与低方差不能自动继承。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "strength": 2,
+   "how": "逐动作未来信息baseline的合法性与泄漏约束可迁移。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "actor-critic/State-HCA/Return-HCA",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "未来Φ可能泄漏动作；分类器不精确/容差非零时存在残余bias。完整gradient含score因子，优势方差界不等其方差界。",
+   "locator": "Theorem2/§2.6/AppA1"
+  }
+ ],
+ "question": {
+  "observed_failure": "interleaved任务CCA在<5e8steps解决hard/easy，actorcritic到2e9仍不能hard；Fig5 median10seeds。",
+  "load_bearing_assumption": "仅用当前状态baseline足以隔离外源运气。",
+  "scope": "on-policy delayed/noisy reward credit",
+  "success_criterion": "高/低外源方差对照及动作信息泄漏测试",
+  "why_open": "episode特有噪声事前未知但事后可见。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M07",
+   "locator": "Theorem1 vs2信息边界"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "高/低方差任务/AppB2.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "g=\\sum_t\\gamma^t\\nabla\\log\\pi(A_t|X_t)[G_t-V(X_t,\\Phi_t)],\\quad A_t\\perp\\Phi_t|X_t",
+    "locator": "Eq4/Theorem2"
+   },
+   {
+    "latex": "L_{hs}=\\sum_t(G_t-V(X_t,\\Phi_t))^2;L_{IM}=E_\\Phi KL(\\pi(\\cdot|X_t)\\Vert h_\\omega(\\cdot|X_t,\\Phi_t));L_{sup}=-\\sum_t\\log h_\\omega(A_t|X_t,\\Phi_t)",
+    "locator": "§2.6"
+   }
+  ],
+  "signal_routing": "actor score乘stopgrad hindsight advantage；classifierω只用Lsup更新，其他loss视ω固定；Φ受baseline与IM，完整未来仅训练期，部署policy仍历史输入。一般FC-PG若无独立性须π(A|X)/P(A|X,Φ)校正baseline。",
+  "normalization": "other：无组std；IM可按policy entropy容差βH调节，KL是动作分布约束不是reference-policy KL。",
+  "invariance": "原expectedreturn gradient在精确独立/正确模型条件下无偏；不是PBRS或reward replacement；任意未来baseline不可随意减。",
+  "baseline_or_potential": "V(X,Φ)是未来条件baseline；真实conditional expectation给优势二阶矩界；score-weighted梯度方差未同界保证。",
+  "degenerate_cases": "Φ=当前动作违反support/独立；Φ常量退化常规baseline；所有reward由动作决定时合法Φ不能消其效应；近确定policy动作classifier判别弱/数据支持差。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "高/低外源方差key-door；随机任务交错；B2.3提高苹果reward方差。",
+  "negative_results": [
+   {
+    "text": "普通actorcritic低方差任务也可完美解决；HCA因不精确posterior可退化。AppA指出精确独立难实现，容差>0。",
+    "locator": "§4.2/AppA1"
+   }
+  ],
+  "seeds": "Fig5 median10seeds；未读全部seed/CI与参数表。",
+  "falsifier": "holdout强动作classifier仍能从Φ提高预测，或数值真梯度对照显著bias，则无偏迁移失败。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "RNNactor+backwardRNN/attention hindsight+value+classifier",
+   "framework": null,
+   "group_size": null,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "key-door full-episode训练γ.99；多任务最高2e9step比较；未来序列模型额外显存/训练成本，硬件未读。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当baseline读未来时，必须检查动作信息泄漏并停止actor经baseline反传，不能以预测return更准替代无偏性条件。"
+ }
+}

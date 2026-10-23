@@ -1,0 +1,181 @@
+{
+ "paper_key": "litscan:77335",
+ "title": "Octopus",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77335.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "2/Eq1–2",
+   "3.1–3.2/Table1",
+   "4.1–4.3/Eq3–6",
+   "5/Table2–3",
+   "Conclusion",
+   "A.1/Table4",
+   "A.2 Algorithm1"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "重组现有前后回答制造稀缺纠错，再用分段mask解耦冲突",
+  "key_step": "同题o1_i和o2_j拼接、平衡四种正确性转移；StageI冻结o1的PG，StageII仅一致对解mask",
+  "why_non_obvious": "只加纠错奖励会鼓励先故意答错；同样序列结果奖励对错误前缀和正确后缀含义冲突",
+  "trigger_condition": "当wrong→correct太稀且结果奖励强化错误前缀时，先用拼接供给样本再分段路由",
+  "contribution_type": "method",
+  "abstract_strategy": "重组现有前后回答制造稀缺纠错，再用分段mask解耦冲突",
+  "abstract_trigger_condition": "当wrong→correct太稀且结果奖励强化错误前缀时，先用拼接供给样本再分段路由",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision=null；无 reviews_path，未读取独立审稿。",
+  "abstract_key_step": "同题o1_i和o2_j拼接、平衡四种正确性转移；StageI冻结o1的PG，StageII仅一致对解mask",
+  "abstract_why_non_obvious": "只加纠错奖励会鼓励先故意答错；同样序列结果奖励对错误前缀和正确后缀含义冲突"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77335#s1",
+   "object": "单次生成中的o1<sc>o2",
+   "information": "同题当前策略8条完整自纠错rollout及GT正确性；冷启动混采含强模型GT辅助",
+   "operation": "重组o1_i/o2_j成候选，保留原始样本补至16并优先wrong→correct；两阶段mask",
+   "claimed_effect": "平均71.7；无增广67.4、随机增广68.6、无StageI69.8、SFTonly63.4",
+   "conditions": [
+    "Qwen3-VL-8B-Instruct",
+    "10k混采cold-start、ViRL39k RL"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3",
+    "quote": "w/o Octopus Augmentation           79.0         63.9          75.7         62.0         71.7       68.8            50.5            67.4↓4.3"
+   },
+   "failure_boundary": "拼接并非从新前缀条件下真实采样；只做文本自纠错，未学工具使用或是否纠错",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "how": "造出稀缺纠错样本并格式priming",
+   "strength": 3
+  },
+  {
+   "problem": "P26",
+   "how": "纠错固定触发，与按需补看仍有差距",
+   "strength": 2
+  },
+  {
+   "problem": "P27",
+   "how": "保留wrong→correct信号但尚无新像素工具证据",
+   "strength": 3
+  },
+  {
+   "problem": "P61",
+   "how": "选择性前缀更新避免奖励冲突，不保证直答非劣",
+   "strength": 3
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GSPO / SRPO",
+   "kind": "method"
+  },
+  {
+   "name": "random augmentation / no StageI",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [],
+ "question": {
+  "observed_failure": "手插Wait wrong→correct仅0.3%，Alternatively为0；提示式RL低于1%",
+  "load_bearing_assumption": "同题可独立完整的后半推理重组后仍提供有效纠错学习信号",
+  "scope": "固定带<sc>的单次文本内自纠错",
+  "success_criterion": "同生成预算胜随机拼接且前段准确率不因奖励hack下降",
+  "why_open": "尚未证明将文本后缀换成有工具状态的轨迹仍有效，也无commit/recheck选择"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 0
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M11",
+   "locator": "§4.1 cold-start"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table3"
+  },
+  {
+   "vocab": "rs",
+   "id": "heterogeneous_decomposition",
+   "locator": "§4.3"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "r^\\prime(c_1,c_2)=\\{1\\ (0,1),\\ .75\\ (1,1),\\ 0\\ (0,0),\\ -.25\\ (1,0)\\};\\quad r_{sc}=.9r^\\prime+.1\\min(r_f(o_1),r_f(o_2))",
+    "locator": "Eq3,6"
+   },
+   {
+    "latex": "s_i(\\theta)=\\pi_\\theta(o_2\\mid x,o_1\\oplus\\langle sc\\rangle)/\\pi_{old}(o_2\\mid x,o_1\\oplus\\langle sc\\rangle);\\quad J_I=J_{GSPO}-\\mathbb E KL_{o_1}(\\pi_\\theta\\|\\pi_{ref})",
+    "locator": "Eq4–5"
+   },
+   {
+    "latex": "A_i=(r_i-mean(r))/std(r);\\quad m^{II}_{o_1}=\\mathbf1[c(o_1)=c(o_2)]",
+    "locator": "§2 Eq1–2; §4.3 StageII（mask文字转写）"
+   }
+  ],
+  "signal_routing": "StageI只o2拿PG，o1仍拿KL，故不是完全无梯度；ratio只o2。StageII去o1 KL，仅correct→correct或wrong→wrong的o1加入PG，转变对继续mask，o2继续训练。序列ratio原文未写长度开方，不能替换成其他GSPO版本。GT仅用于训练cold-start/验正确性，不是测试输入。",
+  "normalization": "mean+std",
+  "invariance": "不是严格PBRS；奖励形状与平衡采样改变目标。GSPO只控制更新比，不证明纠正拼接生成分布的偏差；新前缀下old logprob重算实现未核。",
+  "baseline_or_potential": "16条训练组均值；无critic；原8条保留+补充到16。正文又称从64中选16、Alg1循环N而实际输入n，计数记为意图并标不一致。",
+  "degenerate_cases": "全对/全错不能从重组凭空造正确性支持，Alg1随机补齐并称advantage消失；std0处理未写。混合不同初始正确性且shaped reward时不必全同值。未生成完整独立o2时拼接不连贯；固定sc无stop。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table3随机拼接68.6低于规则71.7；Fig5不mask的shaping约200步出现先故意错后 trivial改对；Fig4同分布cold-start熵下降大于混采。",
+  "negative_results": [
+   {
+    "text": "纯binary reward前后正确率接近；仅shaping产生reward hacking。",
+    "locator": "§4.2/Fig5"
+   },
+   {
+    "text": "同分布cold-start更易低熵，混采强模型较好；不可把论文简化为全自生成SFT。",
+    "locator": "§4.1/Fig4"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "匹配采样平衡而不用真实纠错内容仍达到增益，或工具拼接后条件似然/状态不成立，则迁移主张弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen3-VL-8B-Instruct；cold-start teacher Qwen3-VL-30B-A3B-Instruct",
+   "framework": "LLaMA-Factory SFT / Easy-R1 RL / vLLM",
+   "group_size": 16,
+   "max_turns": 1,
+   "kl": null
+  },
+  "cost": "8H100；生成8训练16；初10步均值958.1s vs GSPO16 1322.8s约.72×，非总训练端到端成本；5epoch RL",
+  "pitfalls": [
+   {
+    "text": "cold-start 10k混采o2使用x,o1,GT；全自生成版本存在熵塌缩差异。",
+    "locator": "§4.1"
+   },
+   {
+    "text": "生成省时不等于零优化开销；GSPO未自动提供拼接分布无偏保证。",
+    "locator": "§5.1–5.2/Eq5"
+   }
+  ],
+  "code": "https://dripnowhy.github.io/Octopus/",
+  "lesson": "当最终正确奖励同时强化错误前缀时，应拆损失段并保留一致对训练；不要用奖励鼓励先错来制造纠错。"
+ }
+}

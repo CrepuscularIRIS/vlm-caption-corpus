@@ -1,0 +1,199 @@
+{
+ "paper_key": "litscan:77605",
+ "title": "Anchored Policy Optimization: Mitigating Exploration Collapse via Support-Constrained Rectification",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_77605.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2–4 mechanism and Eq1–10",
+   "§5/Table1–2 main experiments",
+   "§6/Table3/Fig5–6 ablations",
+   "§8 conclusion/impact",
+   "AppB.3–4 recovery gradient and clipping",
+   "AppC.1/Table5",
+   "AppD.3–4/Table6–7"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "将负优势更新从单纯压低采样token改成压低该token并提高reference Top-K其余token总质量；把该组合放入同一PPO surrogate。",
+  "key_step": "对A_t<0构造排除当前采样token的reference Top-8集合，以其reference总质量归一化当前policy集合质量，再从原ratio中减去β倍集合ratio；正优势沿用原ratio。",
+  "why_non_obvious": "惩罚一个错误候选会经softmax同时挤压其他低概率候选；支撑集质量目标允许集合内重排，区别于全分布KL shape matching。但Top-K是模型置信代理，并非正确性标签。",
+  "trigger_condition": "负更新伴随Pass@1上升而Pass@K下降，且reference仍覆盖可用候选。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "把失败更新的恢复方向限制到可信候选集合，而不是只改负样本标量权重。",
+  "abstract_trigger_condition": "负更新伴随Pass@1上升而Pass@K下降，且reference仍覆盖可用候选。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "todo decision null; no reviews",
+  "abstract_key_step": "对A_t<0构造排除当前采样token的reference Top-8集合，以其reference总质量归一化当前policy集合质量，再从原ratio中减去β倍集合ratio；正优势沿用原ratio。",
+  "abstract_why_non_obvious": "惩罚一个错误候选会经softmax同时挤压其他低概率候选；支撑集质量目标允许集合内重排，区别于全分布KL shape matching。但Top-K是模型置信代理，并非正确性标签。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:77605#s1",
+   "object": "负优势token的policy ratio",
+   "information": "当前πθ、rollout πold、冻结πref Top-K；A<0不等于独立验证该token错误",
+   "operation": "exclusive anchor + support-mass ratio rectification + PPO min clip",
+   "claimed_effect": "Qwen2.5-Math-7B平均Pass@1/Pass@K为50.67/78.07；GRPO为48.68/76.56。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.1–4.4; Table2 Qwen2.5-Math-7B APO row",
+    "quote": "APO (Ours) 33.40 73.33 16.28 56.67 75.51 100.0 82.65 94.00 45.50 66.37 50.67 78.07"
+   },
+   "failure_boundary": "ref支撑集可含错候选；A=0无恢复；稀有token恢复梯度随其概率趋零。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:77605#s2",
+   "object": "anchor大小/恢复和压制强度",
+   "information": "固定K=8、λ=1.05，β消融",
+   "operation": "对比β=0与.1及K=4/8/16",
+   "claimed_effect": "β=0平均Pass@1降至48.86，说明该设置下anchor有增益，非普遍恢复保证。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "AppC.1/Table5 beta0 No Anchor numeric row",
+    "quote": "β = 0 (No Anchor) 28.0 / 70.0 15.6 / 53.3 73.1 / 100                     82.9 / 92.6   44.7 / 65.4      48.86        76.26"
+   },
+   "failure_boundary": "只在Qwen2.5-Math-7B做该灵敏度；未见多训练seed置信区间。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "strength": 3,
+   "problem": "P29",
+   "how": "直接检验负更新挤压探索及集合支持恢复。"
+  },
+  {
+   "strength": 3,
+   "problem": "P62",
+   "how": "明确reference支撑保持；仍无硬支持下界。"
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO-KL (0.01)",
+   "kind": "method"
+  },
+  {
+   "name": "GRPO-KL Error-Only (0.01)",
+   "kind": "method"
+  },
+  {
+   "name": "NSR",
+   "kind": "method"
+  },
+  {
+   "name": "base models",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "AppB4 Eq24声称区间外梯度均为零，与Eq23 min surrogate冲突。A<0且rtilde>1+ε时min选raw项，梯度仍为A∇rtilde；仅负优势下界外平坦。rtilde也不是真实likelihood ratio，不能推得真实policy KL或参数步长的硬trust-region保证。",
+   "locator": "AppB.4 Eq23–24",
+   "quote": null
+  },
+  {
+   "text": "Top-8的97.47%是1000 MATH样本GT前缀下正确next-token覆盖，不是整条轨迹正确率或生成前缀覆盖。Llama平均Pass@K由base55.11到APO47.11，仍明显下降。",
+   "locator": "Table1; Table2",
+   "quote": null
+  }
+ ],
+ "question": {
+  "observed_failure": "Llama GRPO Pass@K 55.11→43.82；APO仅恢复至47.11。",
+  "load_bearing_assumption": "reference Top-K在训练生成前缀上保有可恢复正确候选，且负优势对错误方向有足够信息。",
+  "scope": "数学文本RLVR的负优势token更新。",
+  "success_criterion": "同Pass@1或同采样预算下Pass@K和罕见正确候选质量提升，同时检验未进入TopK的路径。",
+  "why_open": "teacher-forced单token覆盖不足以证明生成分布下候选可恢复，且梯度仍依赖当前质量。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§4/TopK正确性假设"
+  },
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "§6.1 β=0 ablation"
+  },
+  {
+   "vocab": "rs",
+   "id": "structural_prior_encoding",
+   "locator": "§4.1–4.3 reference support set"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "S_t=TopK(π_ref(.|s_t))\\{y_t}; Z_ref=Σ_{k∈S_t}π_ref(k|s_t); r_anchor=Σ_{k∈S_t}π_θ(k|s_t)/Z_ref",
+    "locator": "§4 Eq6–8"
+   },
+   {
+    "latex": "r_tilde=λπ_θ(y_t|s_t)/π_old(y_t|s_t)−βr_anchor if A_t<0; otherwise r_tilde=r_t",
+    "locator": "§4 Eq9–10"
+   },
+   {
+    "latex": "L=E[min(r_tilde A_t,clip(r_tilde,1−ε,1+ε)A_t)]",
+    "locator": "AppB.4 Eq23"
+   }
+  ],
+  "signal_routing": "正A普通PPO；负A采样token受push、其余reference anchor集合受pull；共享参数更新并不等于只影响这些token。零A两项都无梯度。没有额外工具/答案分段mask，D4只定义有效token mean。",
+  "normalization": "reference集合归一化Z_ref是固定支撑质量，不是advantage std。default K8 β.1 λ1.05 ε.2；D4有效token全局平均。reference加权ratio的代数化简为当前集合概率和/Z_ref，不需要MC importance sampling。",
+  "invariance": "集合内概率重新分配若总质量不变，anchor值不变；集合之外正确候选无直接anchor奖励。默认πold=πref时rtilde初值λ−β=.95，不是1。",
+  "baseline_or_potential": "reference冻结分布做Top-K和Z归一化；不是policy的counterfactual reward baseline。",
+  "degenerate_cases": "空S或Z=0未见实现处理；实际有限logit/K8通常非空。A=0无恢复；β=0退化为负ratio缩放λ而不必等于GRPO；λ1 β0才等原ratio。所有候选都错仍增加anchor质量。Eq24 clipping导数冲突如limitations。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "已有negative-only KL vs全KL区分timing，以及β0区分anchor贡献；还需同负反馈预算下随机TopK、oracleTopK和referenceTopK比较支撑来源。",
+  "negative_results": [
+   {
+    "text": "λ1.1平均Pass@1为49.20低于default50.67；K4为49.46；Llama coverage仍低于base。",
+    "locator": "§6.1/Table5; Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "若等Pass@1的KL/entropy或随机支撑取得相同Pass@K，或生成前缀下referenceTopK覆盖差且稀有正确token继续消失，则“有效支撑恢复”解释不足。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-7B, Qwen2.5-Math-7B, Llama-3.2-3B-Instruct; DAPO17K",
+   "framework": "verl GRPO, batch512/minibatch32, lr1e-6, clip.2, context2048/prompt512, 240 optimizer training steps",
+   "group_size": 8,
+   "max_turns": 1,
+   "kl": "KL baselines .01; APO ratio-anchor mechanism, no additional APO KL specified"
+  },
+  "cost": "Table6 GRPO96 GPUh, GRPO-KL115, APO114; platform32 A80080GB. APO约+19%对GRPO，不是零额外成本。",
+  "pitfalls": [
+   {
+    "text": "Sparse anchor并不意味着softmax对其他logit无梯度；topK gathering需要reference前向。Pass@K在AIME/AMC用K256，MATH500/Minerva K16；不能把不同K当同覆盖预算。",
+    "locator": "§5.1; AppD.3–4"
+   }
+  ],
+  "code": "作者称基于verl；未读取/执行实现。",
+  "lesson": "记录ratio裁剪对象、优势门控与token聚合三者；以解析二token反例核对所谓trust-region保证，再做小规模训练。"
+ }
+}

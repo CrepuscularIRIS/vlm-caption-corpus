@@ -1,0 +1,61 @@
+{
+ "paper_key": "2610.12828",
+ "title": "TreeHCA: Hindsight-Guided Exploration and Credit Assignment for Multi-Turn LLM Agents",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "2610.12828.txt",
+  "sections_read": [
+   "摘要/贡献",
+   "§4.2–4.3",
+   "§5.1–5.3 Eq9–17",
+   "§6.1–6.4/Table1–5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "用参考答案似然变化选择树扩展位置和候选，再用逆分数回传终局优势。",
+  "key_step": "把选择偏置与信用估计配套设计，明确有限候选池选择和理想倾斜分布的区别。",
+  "why_non_obvious": "偏向高分候选采样后，直接平均其成功不能代表原策略；逆权重而非再次乘高分才对应改回测度。",
+  "trigger_condition": "已有轨迹缺少同前缀有信息的动作替代时，针对低答案兼容性回合扩展。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "generative_process_redesign",
+  "abstract_trigger_condition": "信用估计质量受训练轨迹的比较支持约束。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2610.12828#s1",
+   "object": "共享前缀的工具交互树",
+   "information": "训练金答案平均token logp差和执行后的工具观测",
+   "operation": "低分turn父节点重采样，按exp差值选一个候选继续；归一化逆分数回传叶优势",
+   "claimed_effect": "Table4 Qwen3-4B HotpotQA seed42，hindsight+TreeHCA为51.76 EM/65.88 F1；同探索AT2PO信用49.60/62.74。",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table 4",
+    "quote": "Hindsight       T REE HCA       51.76    65.88"
+   },
+   "failure_boundary": "单seed消融；逆分数树回传不是有限池精确IS公式的直接实现保证。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "回合级信用可映射工具决策，但需树展开与额外执行。",
+   "strength": 2
+  },
+  {
+   "problem": "P09",
+   "how": "真正共享前缀的替代提供局部比较，须同时校正选择偏置。",
+   "strength": 2
+  },
+  {
+   "problem": "P25",
+   "how": "有限N候选仍来自策略支持，不能产生概率为零的行为。",
+   "strength": 1
+  }
+ ]
+}

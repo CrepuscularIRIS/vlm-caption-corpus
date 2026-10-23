@@ -1,0 +1,155 @@
+{
+ "paper_key": "2510.06214",
+ "title": "Stratified GRPO: Handling Structural Heterogeneity in Reinforcement Learning of LLM Search Agents",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2510.06214.txt",
+  "sections_read": [
+   "Abstract",
+   "2",
+   "3",
+   "4 Tables1–2",
+   "Conclusion",
+   "Algorithm1",
+   "AppendixD"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "heterogeneous_decomposition",
+  "key_step": "按同prompt的搜索次数分层，层内奖励mean+std后与全组normalized advantage混合。",
+  "why_non_obvious": "工具次数引起不同奖励分布，层内比较保留低平均回报策略的探索，但会移除选择层之间的收益信号。",
+  "trigger_condition": "When structurally different tool trajectories compete, normalize within structural strata and blend global feedback.",
+  "contribution_type": "advantage estimator",
+  "abstract_strategy": "heterogeneous_decomposition",
+  "abstract_trigger_condition": "When a shared statistic mixes heterogeneous modes, compute local statistics before mixing.",
+  "abstract_key_step": "分层局部标准化加全局回退。",
+  "abstract_why_non_obvious": "条件均值零不等于原始期望reward梯度无偏。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence"
+ },
+ "signatures": [
+  {
+   "sig_id": "2510.06214#s1",
+   "object": "search trajectory advantage",
+   "information": "同prompt八rollout的EM及search count",
+   "operation": "SAN按次数层标准化，与GN按α混合",
+   "claimed_effect": "Base avg33.3→41.6，Instruct29.2→40.5；SAN-only36.7/39.9。",
+   "conditions": [
+    "Qwen2.5-3B",
+    "7 QA benchmarks"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1",
+    "quote": "45.9      61.4         43.0       40.8    39.9     17.7         42.7      41.6"
+   },
+   "failure_boundary": "SAN改变优化方向，不能保证减少搜索；原方法搜索增至约2.5次。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P02",
+   "how": "直接改变结构混合的advantage；迁移需保留直答/crop跨层选择。",
+   "strength": 3
+  },
+  {
+   "problem": "P01",
+   "how": "count层内恒定crop成本会被中心化消掉。",
+   "strength": 3
+  }
+ ],
+ "baselines": [
+  {
+   "name": "GRPO",
+   "kind": "method"
+  },
+  {
+   "name": "SAN-only",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "小stratum估计噪声大，混合GN会重新引入跨层信号。",
+   "locator": "3"
+  },
+  {
+   "text": "conditional zero mean与unit variance只在非零population variance及ε0条件下成立，不是原目标gradient无偏。",
+   "locator": "Theorems3–5; reader"
+  }
+ ],
+ "question": {
+  "observed_failure": "Instruct GRPO avg29.2，SAN39.9，混合40.5；Base SAN单独在单跳任务下降。",
+  "load_bearing_assumption": "结构不同的轨迹需要局部比较。",
+  "scope": "同prompt工具次数分层",
+  "success_criterion": "提高多跳QA同时观察层占比与成功率",
+  "why_open": "删除跨层差异也可能删除选择更优工具次数的信号。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Table2"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "A_SAN_i=(R_i-mu_k)/(sigma_k+eps); A_GN_i=(R_i-mu)/(sigma+eps); A_i=alpha*A_SAN_i+(1-alpha)*A_GN_i",
+    "locator": "Eqs2,4,7"
+   },
+   {
+    "latex": "E[A_SAN grad log p]=sum_k p_k/(sigma_k+eps)*grad mu_k",
+    "locator": "Theorem3; fixed structural partition"
+   }
+  ],
+  "signal_routing": "trajectory级advantage用于policy更新；未给分步credit及观察token mask，不凭GRPO名称补。reward仅EM，无显式search-cost。",
+  "normalization": "per-stratum mean+std再与全group mean+std混合；Algorithm1方差除n非n−1。αBase.6/Instruct.8。",
+  "invariance": "ε0时正仿射变换不变；层内常数成本−λ*k完全抵消。非PBRS；层依赖轨迹导致移除sum mu_k grad p_k项，不保持原expected reward目标。",
+  "baseline_or_potential": "按轨迹属性而非仅状态的层baseline；人口式目标为加权层内梯度，不是完整原reward梯度。",
+  "degenerate_cases": "singleton/同reward层A_SAN0；全对/全错group均0；α1且按exactcount分层无跨次数成本信号，α0回GRPO。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Table2 GN/SAN/blend，Fig1搜索次数与奖励。",
+  "negative_results": [
+   {
+    "text": "Base PopQA43.8→43.0；SAN-only NQ45.2→43.7。",
+    "locator": "Tables1–2"
+   },
+   {
+    "text": "Instruct 2Wiki SAN41.0而blend37.3，非每格提升。",
+    "locator": "Table2"
+   }
+  ],
+  "seeds": null,
+  "falsifier": "读者：把constant count cost注入每层检查A变化；若SAN不变，不能声称它能学习少crop。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B Base/Instruct",
+   "framework": "VERL",
+   "group_size": 8,
+   "max_turns": 4,
+   "kl": 0.001
+  },
+  "cost": "8GPU、200steps、batch256、每prompt8rollout，4轮，top3 retrieval。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当用工具次数分层时，应先看每层有效样本数与跨层policy变化，再调混合而非只看advantage方差。"
+ }
+}

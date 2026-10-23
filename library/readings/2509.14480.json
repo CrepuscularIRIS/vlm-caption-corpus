@@ -1,0 +1,86 @@
+{
+ "paper_key": "2509.14480",
+ "title": "Process-Supervised Reinforcement Learning for Interactive Multimodal Tool-Use Agents",
+ "tier": "lite",
+ "decision": "reject",
+ "access": {
+  "source": "local_pdf",
+  "locator": "2509.14480.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 agent-token mask/GRPO",
+   "§3 TARL/mixed-task",
+   "§4 Tables2–3",
+   "§5.1 reward-granularity/§5.2 mixed-task analysis",
+   "two reviews"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "完整轨迹judge给turn标签，但最佳训练方案先聚合成轨迹总分，再广播给所有agent tokens；同时混入数学任务。",
+  "key_step": "GPT4.1全历史+GT给每轮−1/0/1，最多一处major−1；保留10倍终局成功，加归一化过程质量。",
+  "why_non_obvious": "细粒度评审与细粒度梯度路由是两件事；文中实际per-turn奖励分配不如轨迹聚合稳定。",
+  "trigger_condition": "工具agent仅终奖且judge能辨识重大错误时，尝试过程评价作轨迹级质量补充并检验局部路由。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "以结构化过程诊断改善轨迹排名，避免把不准局部标签强制当精确信用。",
+  "abstract_trigger_condition": "工具agent仅终奖且judge能辨识重大错误时，尝试过程评价作轨迹级质量补充并检验局部路由。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2509.14480#s1",
+   "object": "工具轨迹总奖励",
+   "information": "GPT4.1看到全部对话、环境反馈和GT工具调用；终局规则verifier",
+   "operation": "聚合过程分+10R，经组mean/std后广播agent tokens，环境mask0",
+   "claimed_effect": "Retail GRPO51.3→TARL53.9→Math+TARL57.4 pass^1；PPO48.7→53.0。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table2 GRPO+MATH+TARL row",
+    "quote": "+MATH + TARL      15.8      236                 57.4 (+6.1)      42.6 (+5.2)      36.5 (+6.1)      33.9 (+6.9)"
+   },
+   "failure_boundary": "+6.1是百分点，不是文中所谓6% relative；不能归因于TARL单独。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "2509.14480#s2",
+   "object": "PPO过程奖励放置位置",
+   "information": "同一组turn标签",
+   "operation": "比较各turn末token+GAE与轨迹归一化广播",
+   "claimed_effect": "§5.1局部turn分配训练reward低于vanilla PPO；轨迹方案对应Table2 +4.3pp。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§5.1/Fig4",
+    "quote": "assigning rewards at turn-level granularity leads to degraded performance"
+   },
+   "failure_boundary": "失败机制为作者假设；未证明所有任务都应轨迹路由。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "区分过程评分与实际token credit，提供局部路由失败对照。",
+   "strength": 3
+  },
+  {
+   "problem": "P15",
+   "how": "最佳方案保留终奖并广播，不支持去掉工具段终答信用。",
+   "strength": 3
+  },
+  {
+   "problem": "P27",
+   "how": "minor纠错与major不可逆错误标签可作诊断。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false,
+ "reviews_source": {
+  "path": "research/reviews/2509.14480.json",
+  "note_ids": [
+   "QCxTusUt8z",
+   "NvHvC5ik8N"
+  ],
+  "note": "读取两条review：关注single-major-error假设、混合训练样本预算、仅Retail泛化/合成语音局限；review中turn级更好概括与正文真正奖励路由不符，按原文记录。"
+ }
+}

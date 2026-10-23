@@ -1,0 +1,59 @@
+{
+ "paper_key": "litscan:35435",
+ "title": "GLoRe: When, Where, and How to Improve LLM Reasoning via Global and Local Refinements",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_35435.txt",
+  "sections_read": [
+   "Abstract; §3.1 training and value interpretation",
+   "Tables1–3; §4.2 refinement and reranking; §5 opening"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "把何时修正、哪里错、如何修正拆开：ORM选择答案，SORM定位错误，互补的global/local模型生成候选。",
+  "key_step": "每prefix采样8条续写，任一成功则标正，训练stepwise ORM；以首个低分step标[BAD]训练局部修正，再将原稿/全局/局部候选用ORM重排。",
+  "why_non_obvious": "低actor成功率不等于当前推理错误；正确prefix也可能不适合该actor继续，故局部和重新开始互补。",
+  "trigger_condition": "模型能在部分重采样中修正错误，但自身不知道何时/何处修正。",
+  "contribution_type": "methodological",
+  "abstract_strategy": "分别学习错误定位、候选修复与是否采用修复，保留原候选以防修坏。",
+  "abstract_trigger_condition": "模型能在部分重采样中修正错误，但自身不知道何时/何处修正。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:35435#s1",
+   "object": "推理prefix可完成性与修正候选",
+   "information": "student rollout、GT终答、每prefix8条至多300token续写、[BAD]位置",
+   "operation": "max-success二元标签及前向正标签传播/结果字符串复用/位置平衡；local+global生成，ORM重排",
+   "claimed_effect": "Table3 GSM8K13B错误初稿修正率global .281、local+SORM .283，二者合并 .412；此表是错误初稿子集可修复覆盖，不是总体准确率。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3.1; Table3 p7; §4.2",
+    "quote": "Global Refinement + Local Refinement + SORM                 0.280          0.412          0.19            0.37"
+   },
+   "failure_boundary": "有限样本max成功只能近似可解性；字符串复用不能证明逻辑有效，局部错误标签噪声仍影响修正。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P27",
+   "how": "明确训练修正动作并保留原答案用于重排，适合SFT缺失纠偏行为的构造线索。",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "区分actor value与逻辑step validity；SORM可解性也不是当前actor增量效用。",
+   "strength": 3
+  },
+  {
+   "problem": "P25",
+   "how": "搜索、错误定位和修正配对提供行为支持而非只增加结果奖励。",
+   "strength": 2
+  }
+ ],
+ "runtime_verified": false,
+ "scientific_replication": false
+}

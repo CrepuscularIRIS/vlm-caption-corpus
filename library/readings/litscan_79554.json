@@ -1,0 +1,134 @@
+{
+ "paper_key": "litscan:79554",
+ "title": "ForeSight",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_text",
+  "locator": "litscan_79554.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§3.2–3.5 Eqs1–4",
+   "Tables1–6",
+   "§4.1/5"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "低层视觉工具+Canny/color/zoom与遮掉暂答区域的视觉反思。",
+  "key_step": "SFT种入工具和反思，GRPO以GT定位/识别及验证一致性奖励训练。",
+  "why_non_obvious": "重新观察剩余区域可揭示odd-one-out误定位，但并非一般任务的充分性证明。",
+  "trigger_condition": "When an odd-one-out draft may be wrong, mask its region and inspect remaining objects before revising.",
+  "contribution_type": "methodological",
+  "abstract_strategy": "利用预测驱动的输入干预暴露残余证据。",
+  "abstract_trigger_condition": "When a tentative answer should exhaust a distinctive visual property, remove its region and check residual evidence.",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": "low_evidence; decision=null",
+  "abstract_key_step": "暂答→遮罩反馈→保留/修正。",
+  "abstract_why_non_obvious": "反思一致性与正确性需共同监督，遮罩不自动验证答案。"
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:79554#s1",
+   "object": "Odd-one-out定位/属性判断",
+   "information": "训练GT bbox/文本；推理用自己draft bbox遮罩，无GT",
+   "operation": "1425条SFT含596无工具/829有工具，3929条GRPO混合reward",
+   "claimed_effect": "IoU32.56→62.24，F1 64.97→84.24；SFT-only IoU57.47",
+   "conditions": [
+    "限论文所述模型、任务和资源设置"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§3/Table2/5",
+    "quote": "ForeSight (7B)                                                                                                                                                                                     62.24                                                                      84.24                                                                        84.52       87.18"
+   },
+   "failure_boundary": "反思与训练复合变化不能全归因于遮罩。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P25",
+   "strength": 2,
+   "how": "暂答与输入干预后的纠正行为SFT可迁移。"
+  }
+ ],
+ "baselines": [
+  {
+   "name": "SFT-only/RL-only/tools-only/reflection-only",
+   "kind": "method"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "主要odd-one-out，未见独立limitations节；未来扩更多视觉任务。",
+   "locator": "§5"
+  }
+ ],
+ "question": {
+  "observed_failure": "tools-only F1 57.19，reflect-only45.96，合用84.24；未训练工具对Claude F1 82.50→66.10。",
+  "load_bearing_assumption": "文字反思或仅提供工具即可利用低层视觉。",
+  "scope": "7B CG-SalBench odd-one-out",
+  "success_criterion": "SFT/RL及工具/反思交叉消融与泛化",
+  "why_open": "没有视觉反馈时模型无法可靠复核局部判断。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M09",
+   "locator": "Tables3–5"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "I^{\\prime(k)}=I\\odot(1-1_{I_{ans}^{(k-1)}});R=.2R_{fmt}+1.2R_{IoU}+R_{F1}+.8R_{tc}+1.2R_{ver}",
+    "locator": "Eqs1/4"
+   },
+   {
+    "latex": "R_{tc}=1[T_{used}=1,T_{over}=0,A>\\theta]\\text{ (else -1 if overuse/invalid, else 0)};R_{ver}=1\\text{ if consistency valid, }-.5\\text{ if invalid format, else }0",
+    "locator": "Eqs2–3"
+   }
+  ],
+  "signal_routing": "全轨迹复合reward→GRPO，未给逐tool/verify token独立advantage。GT正确draft要求verify correct且final保持；错误draft要求verify incorrect且final修订。",
+  "normalization": "other：命名GRPO但优势公式/std实现未列，不推断。",
+  "invariance": "非PBRS；调用成功bonus改变工具偏好，非只必要时调用约束。",
+  "baseline_or_potential": "未列critic/具体组baseline实现。",
+  "degenerate_cases": "正确无工具样本不获tool bonus，正确有工具可得+.8，可能诱导冗余；全错组如果format/verify不同仍有复合reward差；遮掉错误目标不保证发现真异常。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "Tables3–5分开训练与纯推理工具效应；消融两模块。",
+  "negative_results": [
+   {
+    "text": "MMBench82.47→81.50；reflection-only F1比无两模块51.40降至45.96；不少closed-source反思损识别。",
+    "locator": "Tables3/4/6"
+   }
+  ],
+  "seeds": "未在所读范围报告；不推断种子数或CI。",
+  "falsifier": "保留同训练数据/reward，仅随机遮罩也同效则定向视觉反馈解释削弱。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5VL7B",
+   "framework": "SWIFT",
+   "group_size": 7,
+   "max_turns": null,
+   "kl": null
+  },
+  "cost": "8H20：1推理7训练async；SFT10epochs/RL1epoch；maxseq12800，zoom≤2其他工具≤1，reflection≤2；evalT.7。",
+  "pitfalls": [],
+  "code": null,
+  "lesson": "当成功调用额外获奖时，必须单列正确无工具支撑与冗余调用，而不能只报定位收益。"
+ }
+}

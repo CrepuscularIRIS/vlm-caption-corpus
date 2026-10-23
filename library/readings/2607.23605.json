@@ -360,7 +360,7 @@
  "relevance": [
   {
    "problem": "P20",
-   "how": "turn/token混合提供跨尺度信用的近邻操作，但没有定义本项目旧视图caption、bbox、返回新图和后续caption的责任契约；需要critic和精确边界改造。",
+   "how": "[redacted: project-internal]",
    "strength": 2
   },
   {

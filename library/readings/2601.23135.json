@@ -1,0 +1,58 @@
+{
+ "paper_key": "2601.23135",
+ "title": "Why GRPO Needs Normalization: A Local-Curvature Perspective on Adaptive Gradients",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2601.23135.txt",
+  "sections_read": [
+   "Abstract/contributions",
+   "§2 binary/no-KL exact-gradient setup",
+   "§3.1–3.4/Algorithm3",
+   "§4.2 1.5B/7B",
+   "§5 limitation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "将prompt std视作局部曲率代理，并按std采prompt再用inverse-std更新使期望方向与全梯度对齐。",
+  "why_non_obvious": "std不只数值稳定：它重加权异质prompt；与成本系数保持是不同目标。",
+  "trigger_condition": "当prompt间二值reward方差异质时，用局部曲率解释/检验normalization收益，并测试重要性采样修正。",
+  "contribution_type": "method_and_analysis",
+  "abstract_strategy": "reframe_as_solvable_object",
+  "abstract_trigger_condition": "当prompt间二值reward方差异质时，用局部曲率解释/检验normalization收益，并测试重要性采样修正。"
+ },
+ "signatures": [
+  {
+   "sig_id": "2601.23135#s1",
+   "object": "sequence-level二值RLVR梯度",
+   "information": "log-linear特征、真prompt方差/精确梯度；实测G8估计仅近似",
+   "operation": "IS-GRPO p_i∝σ_i，g_i=∇J_i/(2σ_i)；普通GRPO定理先要求跨prompt特征正交",
+   "claimed_effect": "1.5B GSM8K中期约300迭代归一化领先no_std Easy约3pp、Hard约7pp；7B高已解设定差异落入seed std。",
+   "conditions": [
+    "仅本地原文定向浅读；未运行或复现"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "§4.2.1",
+    "quote": "as accuracies rise heterogeneously, ct falls and the scaling factors of active prompts spread out; per-\nprompt std opens a widening gap, reaching ≈ 3 pp (Easy) and ≈ 7 pp (Hard) over REINFORCE by\niteration 300. In Phase III (300–500) the gap narrows but persists (Table 3). This coincides with a"
+   },
+   "failure_boundary": "理论on-policy exact-gradient log-linear二值无KL；有限G/std同样本估计、真实共享网络、mixed cost不由此保证。7B held-out仅单seed。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P01",
+   "strength": 3,
+   "how": "解释何时std有收益，但不能推翻cost λ抵消失败。"
+  },
+  {
+   "problem": "P37",
+   "strength": 2,
+   "how": "IS采样重分配prompt，低方差/支持边界要另测。"
+  }
+ ],
+ "scientific_replication": false
+}

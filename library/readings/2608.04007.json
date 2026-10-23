@@ -1,0 +1,56 @@
+{
+ "paper_key": "2608.04007",
+ "title": "TurnSight: Turn-Level Hindsight Self-Distillation for Tool-Integrated Reasoning",
+ "tier": "lite",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "2608.04007.txt",
+  "sections_read": [
+   "Abstract",
+   "Introduction",
+   "Method",
+   "Table1",
+   "Table2",
+   "Additional Implementation Details"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "outside_taxonomy",
+  "key_step": "冻结初始reference看当前执行结果及1/2/3步hindsight，teacher-force原response；turn聚合、方向共识选择，再有界调制原adv大小。",
+  "why_non_obvious": "后见信号与当前visitedstate对齐但不是counterfactual value；保标量符号不等于保原优化目标。",
+  "trigger_condition": "When hindsight token evidence conflicts across horizons, aggregate by turn and use consensus evidence only to modulate verifier-based credit.",
+  "contribution_type": "method",
+  "abstract_strategy": "outside_taxonomy",
+  "abstract_trigger_condition": "When hindsight token evidence conflicts across horizons, aggregate by turn and use consensus evidence only to modulate verifier-based credit."
+ },
+ "signatures": [
+  {
+   "sig_id": "2608.04007#s1",
+   "object": "tool-use policy turn credit",
+   "information": "student轨迹、未来toolcall及observation、冻结reference和studentlogprob",
+   "operation": "turnmean loggap→crosshorizon选择→prompt tokenpool zscore→sign-aware bounded scale",
+   "claimed_effect": "Qwen3-8B总avg42.02 vsMatchTIR39.03/GRPO30.93；FTRL avg46.92，去turn聚合43.23、去groupnorm43.65。",
+   "conditions": [],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 Qwen3-8B",
+    "quote": "TurnSight (Ours)    46.99     50.71     43.07     46.92   59.50   51.50   42.00   45.00   23.50     27.74   37.56    41.58    42.02"
+   },
+   "failure_boundary": "teacher更新方向保留不等于不改变整体gradient/最优policy；未来信息只训练可得。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P11",
+   "how": "turn coherent magnitude modulation可改crop，但不识别action必要性。",
+   "strength": 3
+  },
+  {
+   "problem": "P16",
+   "how": "冻结reference confidence差不是当前actor outcomevalue。",
+   "strength": 3
+  }
+ ]
+}

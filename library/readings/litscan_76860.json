@@ -1,0 +1,227 @@
+{
+ "paper_key": "litscan:76860",
+ "title": "MASH: Modeling Abstention via Selective Help-Seeking",
+ "tier": "full",
+ "decision": null,
+ "access": {
+  "source": "local_pdf",
+  "locator": "litscan_76860.txt",
+  "sections_read": [
+   "Abstract/§1–2 pp1–4 Eq1–2",
+   "§3–4 pp4–8 Tables1–5",
+   "AppA pp14–15 optimal-policy argument",
+   "AppB.1–B.3 pp16–18 training/mask/trajectory generation"
+  ]
+ },
+ "rs": {
+  "innovation_approach": "reframe_as_solvable_object",
+  "key_step": "把拒答重述为付费求助：先用随机0/1/2检索次数合成SFT产生多样支持，再用正确性乘检索折扣RL；部署无工具时首次search直接终止为abstain。",
+  "why_non_obvious": "不需要先标注学生知识边界；warm-start允许35%错误，其目的为行动多样性；更强oracle helper反而导致总求助坍塌。",
+  "trigger_condition": "当模型难识别知识边界而有可调用检索时，以求助收益训练路由，再截断求助得到拒答。",
+  "contribution_type": "SFT→RL行为初始化、效率reward、拒答推理协议",
+  "abstract_strategy": "把抽象能力边界判断转化为外部帮助的代价—收益选择。",
+  "abstract_trigger_condition": "可提供替代信息且需保留无帮助分支。",
+  "abstract_key_step": "先拓展策略支持，再以相对成功轨迹成本训练；推理时重解释动作。",
+  "abstract_why_non_obvious": "奖励不能自动探索已丢失分支；求助质量变好也可能让捷径更稳定。",
+  "reviewer_praise": [
+   "low_evidence"
+  ],
+  "reviewer_concern": [
+   "low_evidence"
+  ],
+  "acceptance_signal": null
+ },
+ "signatures": [
+  {
+   "sig_id": "litscan:76860#s1",
+   "object": "检索次数/直答分布",
+   "information": "每题G16轨迹的EM正确性和最少成功检索次数n；不预标学生知识边界",
+   "operation": "随机次数1000例warm-start后使用OTC-Strict；正确无搜索存在则搜索轨迹reward0，否则沿用OTC",
+   "claimed_effect": "HotPotQA Acc53.32/TC1.10/TP32.55，OTC44.76/.81/28.64；去warmstart strict变26.97/0/26.97。NQ精度56.37低于OTC58.91。",
+   "conditions": [
+    "Qwen2.5-3B base",
+    "每数据集独立训练",
+    "evaluation4samples；非trainingseeds"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table1 p5",
+    "quote": "56.37   0.64   38.63    53.32    1.10   32.55    46.23    1.64   19.08"
+   },
+   "failure_boundary": "strict成功依赖组中出现正确无搜索样本；总调用不是单调下降。",
+   "verified": "fulltext"
+  },
+  {
+   "sig_id": "litscan:76860#s2",
+   "object": "求助政策的拒答提取",
+   "information": "模型自然生成首个search请求；不返回检索结果",
+   "operation": "禁用工具，首次search即停止并记abstain",
+   "claimed_effect": "HotPotQA整体Acc17.3/非拒答Prec59.9，对比DPO19.9/53.1；Abs(0)91.2/Delta60.3，DPO85.9/73.5。",
+   "conditions": [
+    "相同有工具训练所得模型",
+    "分类只比较base十采样全错或全对题"
+   ],
+   "evidence": {
+    "kind": "reported_experiment",
+    "locator": "Table3 p8",
+    "quote": "20.9     57.4    17.3        59.9      4.6    32.5"
+   },
+   "failure_boundary": "高精度可来自更保守拒答，不能只报告Prec；工具请求不是严格知识缺失真值。",
+   "verified": "fulltext"
+  }
+ ],
+ "relevance": [
+  {
+   "problem": "P28",
+   "strength": 3,
+   "how": "实际工具动作转换为拒答，而非单轮语言标签。"
+  },
+  {
+   "problem": "P25",
+   "strength": 3,
+   "how": "随机行为多样性SFT为RL提供直答与多工具支撑。"
+  },
+  {
+   "problem": "P06",
+   "strength": 3,
+   "how": "strict依赖组内成功零调用；无该支持时无法产生对应成本压力。"
+  },
+  {
+   "problem": "P03",
+   "strength": 3,
+   "how": "正确性乘成本惩罚，失败reward始终0。"
+  },
+  {
+   "problem": "P29",
+   "strength": 3,
+   "how": "无warmstart严格惩罚坍塌，oracle帮助也可诱导always-help。"
+  }
+ ],
+ "scientific_replication": false,
+ "baselines": [
+  {
+   "name": "OTC/Search-R1/R1",
+   "kind": "method"
+  },
+  {
+   "name": "5-shot/AFH-Absolute/AFH-Multisample/DPO/Ternary",
+   "kind": "method"
+  },
+  {
+   "name": "No warm-start; oracle helper",
+   "kind": "ablation"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "AppA假设β0并可逐题单独构造最优policy；相等收益允许多个最优行为，不能说所有最优policy都在tie时abstain。组依赖n还使reward分布随policy变，不能直接当固定轨迹效用。",
+   "locator": "AppA；reader推导边界"
+  },
+  {
+   "text": "知识边界以base十次采样0/1极端桶近似；多跳桶分布与训练后能力可变，不是完整能力校准。",
+   "locator": "§3.2"
+  },
+  {
+   "text": "训练/val EM、测试DeepSeek-V3.1judge，DPO数据又用更强judge；各方法验证选点指标不同，不能无条件称性能上界。",
+   "locator": "§3.1/§4.2/AppB.1"
+  }
+ ],
+ "question": {
+  "observed_failure": "OTC NQ100%一次搜索；strict无warmstart HotPotQA/2Wiki调用0；oracle helper50步内全求助。",
+  "load_bearing_assumption": "在足够行动支持下，正确性折扣能够把求助行为与参数知识关联。",
+  "scope": "知识QA中检索求助/拒答，最多5搜索。",
+  "success_criterion": "同时看有工具Acc/TC/TP和拒答整体Acc/Prec/Abs(0)/Delta；不能仅降调用或提precision。",
+  "why_open": "抽象拒答标签需要先估知识边界，奖励训练又常陷入总搜/从不搜捷径。"
+ },
+ "question_quality": {
+  "numeric_failure": 1,
+  "named_assumption": 1,
+  "small_scope": 1,
+  "measurable_criterion": 1,
+  "prior_break_point": 1
+ },
+ "moves": [
+  {
+   "vocab": "M",
+   "id": "M12",
+   "locator": "§2.2 warmstart35%错误但行为次数多样"
+  },
+  {
+   "vocab": "M",
+   "id": "M04",
+   "locator": "Table2按0/1/2+搜索分桶"
+  },
+  {
+   "vocab": "M",
+   "id": "M05",
+   "locator": "§4.5 oracle helper反例"
+  }
+ ],
+ "objective": {
+  "equations": [
+   {
+    "latex": "J=\\mathbb E[r_{acc}(y,\\tau)r_{help}(q,\\tau)]-\\beta KL(\\pi_\\theta\\Vert\\pi_{init}),\\quad\\beta=0\\text{ in actual runs}",
+    "locator": "Eq1/AppB.1"
+   },
+   {
+    "latex": "r_{help}^{EXP}=\\lambda^{m-n};\\quad r_{help}^{OTC}=\\begin{cases}1&m=n=0\\\\\\cos(m\\pi/(2m+c))&n=0,m>0\\\\\\sin(m\\pi/(m+n))&n>0\\end{cases}",
+    "locator": "§2.2/Eq2；n最少成功搜索，m当前搜索，c5"
+   },
+   {
+    "latex": "r_{help}^{OTC\\!ST}=0\\ (m>n=0),\\quad r_{help}^{OTC}\\text{ otherwise}",
+    "locator": "§2.2.2"
+   }
+  ],
+  "signal_routing": "EM correctness×搜索折扣为terminal trajectory scalar，GRPO训练。AppB明确retrieved-document tokens不参与loss；未给完整advantage均值/std形式和生成token长度reduction，不能从算法名补。warm-SFT也mask documents。无decision-only单独credit，未证明工具请求token独占信号。",
+  "normalization": null,
+  "invariance": "不是PBRS；改变求助效用与精度权衡。若实际采用std，EXP中同组λ^(−n)为共同正因子将抵消（reader条件推导；paper未明adv实现），但λ^m相对差仍在。OTC-ST把搜索成功降0是非线性门控，不能简单认为std全抵消。",
+  "baseline_or_potential": "n是同题组内成功轨迹最小搜索次数，非冻结teacher/能力真值。无成功组n处理未说明；因racc全0最终reward0，但实现需避免未定义n。",
+  "degenerate_cases": "全错reward0，无正确性区分；成功样本同调用数reward相同，常规组相对优势将0。无零搜索成功时strict不触发；全对但不同m可有成本差。n>0而失败m<n时EXP可能>1，实际乘0；作者rhelp∈[0,1]只对成功m≥n保证。"
+ },
+ "evidence_design": {
+  "discriminating_experiment": "同OTC有/无warmstart；三种惩罚；oracle helper替代retrieval；Table2次数分层。AppA仅给理想最优策略收益比较，不是GRPO收敛证明。",
+  "negative_results": [
+   {
+    "text": "NQ MASH strict56.37低于OTC58.91，TC1→.64；准确率非劣未证明。",
+    "locator": "Table1"
+   },
+   {
+    "text": "无warmstart strict多跳训练坍塌；oracle每个run50步内always help，强奖励与理想最优不能解决探索。",
+    "locator": "Table4/§4.5"
+   },
+   {
+    "text": "Ternary25步内全拒答；2Wiki全对测试桶仅58题，不报告拒答分类。",
+    "locator": "§3.2/§4.2"
+   }
+  ],
+  "seeds": "测试每题4samples；训练seed数未知",
+  "falsifier": "caption固定前缀上，若随机次数warmstart不能保持零crop成功支持，或strict提高TP却损失直答/必要crop准确率，则不能作为非劣必要性方法。"
+ },
+ "engineering": {
+  "setup": {
+   "model": "Qwen2.5-3B base；扩展7B/Qwen3-4B limited HotPotQA",
+   "framework": "veRL + HF TRL SFTTrainer",
+   "group_size": 16,
+   "max_turns": null,
+   "max_tool_calls": 5,
+   "kl": 0
+  },
+  "cost": "RL400steps/batch64/G16/1step per rollout，LR1e-6 clip.2 entropy.001；单generation512、含documents总6144。训练GPU-hours未确认。",
+  "pitfalls": [
+   {
+    "text": "Warmstart每数据集1000题，用Qwen2.5-32B base随机0/1/2搜索，N5择优；Qwen72B judge接受后将final替换GT格式，但仍35%错误。",
+    "locator": "§2.2/AppB.3"
+   },
+   {
+    "text": "SFT5epochs LR1e-5 effectivebatch16；不是每个RL组强制均衡动作，不能保证持续支持。",
+    "locator": "AppB.3"
+   },
+   {
+    "text": "TP=mean(correct/(1+calls))作为validation选择，Search-R1单用accuracy选点；保留此比较差异。",
+    "locator": "§3.1/AppB.1"
+   }
+  ],
+  "code": "https://github.com/momergul/mash（论文提供，未访问/执行）",
+  "lesson": "当效率奖励把政策压向单一行为时，先让SFT保有0/1/多步行动支持并测各桶准确率；成功次数折扣无法给全错组恢复方向。"
+ }
+}
